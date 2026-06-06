@@ -17,28 +17,21 @@
                 <span class="text-3xl">🚚</span>
                 <div>
                     <h1 class="text-xl font-black tracking-tight text-white">FREDWARE RECEPCIÓN</h1>
-                    <p class="text-xs text-emerald-400 font-bold tracking-widest uppercase">Módulo Online Independiente</p>
+                    <p class="text-xs text-emerald-400 font-bold tracking-widest uppercase">Módulo Online Estable</p>
                 </div>
             </div>
-            <span class="bg-slate-900 text-slate-400 text-xs px-3 py-1.5 rounded-md font-mono border border-slate-700">v4.0 (GitHub)</span>
+            <span class="bg-slate-900 text-slate-400 text-xs px-3 py-1.5 rounded-md font-mono border border-slate-700">v4.2</span>
         </div>
     </header>
 
     <main class="max-w-2xl mx-auto w-full px-4 mt-6 grid grid-cols-1 gap-6">
         
         <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
-            <div class="border-b border-slate-800 pb-3">
-                <h2 class="text-base font-bold text-white flex items-center space-x-2">
-                    <span>📝</span> <span>REGISTRO DE ENTRADA Y CONTROL APPCC</span>
-                </h2>
-                <p class="text-xs text-slate-400 mt-1">Los datos viajan por ngrok a la SQL local e imprimen pegatinas individuales.</p>
-            </div>
-
             <form id="form-recepcion" onsubmit="procesarLoteQROnline(event)" class="space-y-4">
                 
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Producto / Materia Prima:</label>
-                    <input type="text" id="rec-producto" required placeholder="Ej. ATÚN ROJO, HARINA..." list="productos-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-lg uppercase">
+                    <input type="text" id="rec-producto" required placeholder="Ej. ATÚN ROJO..." list="productos-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-emerald-500 text-lg uppercase">
                     <datalist id="productos-fav">
                         <option value="ATÚN ROJO">
                         <option value="PIMIENTOS DE PIQUILLO">
@@ -55,19 +48,19 @@
                     <div class="grid grid-cols-3 gap-3">
                         <label class="cursor-pointer">
                             <input type="radio" name="tipo_conservacion" value="NEVERA" checked onclick="cambiarTempDefecto(4)" class="peer hidden">
-                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm transition-all text-slate-400 peer-checked:text-emerald-400">
+                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm text-slate-400 peer-checked:text-emerald-400">
                                 ❄️ Nevera
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="tipo_conservacion" value="CONGELADOR" onclick="cambiarTempDefecto(-18)" class="peer hidden">
-                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm transition-all text-slate-400 peer-checked:text-emerald-400">
+                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm text-slate-400 peer-checked:text-emerald-400">
                                 🥶 Conge
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="tipo_conservacion" value="SECO" onclick="cambiarTempDefecto(20)" class="peer hidden">
-                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm transition-all text-slate-400 peer-checked:text-emerald-400">
+                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm text-slate-400 peer-checked:text-emerald-400">
                                 📦 Seco
                             </div>
                         </label>
@@ -81,7 +74,7 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Proveedor / Origen:</label>
-                    <input type="text" id="rec-proveedor" placeholder="Ej. MAKRO..." list="proveedores-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-lg uppercase">
+                    <input type="text" id="rec-proveedor" placeholder="Ej. MAKRO..." list="proveedores-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-emerald-500 text-lg uppercase">
                     <datalist id="proveedores-fav">
                         <option value="PESCASA">
                         <option value="MAKRO">
@@ -91,12 +84,12 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">¿Cuántas unidades / botes entran? (Stickers):</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">¿Cuántas unidades / botes? (Stickers):</label>
                     <input type="number" id="rec-cantidad" value="1" min="1" required inputmode="numeric" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white font-bold text-center text-lg focus:outline-none focus:border-emerald-500">
                 </div>
 
                 <div class="pt-2">
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 px-6 rounded-xl text-lg shadow-lg active:scale-[0.98] transition-transform duration-100 flex justify-center items-center space-x-2">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 px-6 rounded-xl text-lg shadow-lg flex justify-center items-center space-x-2">
                         <span>🖨️</span> <span>EMITIR Y GUARDAR POR TÚNEL ONLINE</span>
                     </button>
                 </div>
@@ -104,15 +97,10 @@
         </div>
 
         <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center space-y-4">
-            <div>
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider">👁️ Previsualizador del QR de Trazabilidad</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Así se generará el patrón dinámico para la pegatina Brother.</p>
-            </div>
-            
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider">👁️ Previsualizador QR</h3>
             <div class="bg-white p-4 rounded-xl inline-block shadow-inner">
                 <div id="qrcode"></div>
             </div>
-            
             <div id="qr-texto-log" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-slate-400 break-all text-left">
                 Esperando datos...
             </div>
@@ -152,7 +140,6 @@
         function actualizarPrevisualizador() {
             const cantidadTotal = parseInt(document.getElementById('rec-cantidad').value) || 1;
             const cadenaEjemplo = construirCadenaQR(1, cantidadTotal);
-            
             qrGenerador.clear();
             qrGenerador.makeCode(cadenaEjemplo);
             document.getElementById('qr-texto-log').innerText = cadenaEjemplo;
@@ -173,7 +160,6 @@
                 return;
             }
 
-            // SANEADO: Fecha limpia sin asignaciones rotas internamente
             const datosBaseDatos = {
                 producto: producto,
                 temperatura: temperatura,
@@ -188,14 +174,14 @@
                 loteEtiquetas.push({
                     producto: producto,
                     unidad: `${i} de ${cantidad}`,
-                    fecha: ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'}),
+                    fecha: ahora.toLocaleDateString('es-ES'),
                     texto_qr: construirCadenaQR(i, cantidad)
                 });
             }
 
             Swal.fire({
                 title: '📡 Transmitiendo...',
-                text: 'Guardando trazabilidad en el servidor unificado.',
+                text: 'Guardando trazabilidad...',
                 icon: 'info',
                 background: '#0f172a',
                 color: '#fff',
@@ -204,47 +190,53 @@
             });
 
             try {
-                // 1. Guardar en SQLite local a través de ngrok
+                // 1. Guardar en SQLite local
                 const resBD = await fetch(`${URL_SERVIDOR_NGROK}/guardar_mercancia`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datosBaseDatos)
                 });
 
-                if (!resBD.ok) throw new Error();
-
-                // 2. Disparar cola de la impresora Brother en segundo plano
+                // 2. Disparar impresión de fondo
                 fetch(`${URL_SERVIDOR_NGROK}/imprimir_lote`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ etiquetas: loteEtiquetas })
-                }).catch(err => console.log("Impresión lanzada en segundo plano."));
+                }).catch(err => console.log("Impresión lanzada."));
 
-                // ¡Aviso de éxito rotundo e inmediato para el operario!
-                Swal.fire({
-                    title: '✅ ¡PROCESO EXPEDIDO!',
-                    text: `Albarán registrado en SQL. Mandando a imprimir ${loteEtiquetas.length} QRs.`,
-                    icon: 'success',
-                    background: '#0f172a',
-                    color: '#fff',
-                    confirmButtonColor: '#10b981'
-                });
+                // CONTROL DIRECTO DE ESTADO (Sin throws raros que rompan el script)
+                if (resBD.status === 200) {
+                    Swal.fire({
+                        title: '✅ ¡PROCESO EXPEDIDO!',
+                        text: `Albarán registrado en SQL. Imprimiendo QRs.`,
+                        icon: 'success',
+                        background: '#0f172a',
+                        color: '#fff',
+                        confirmButtonColor: '#10b981'
+                    });
 
-                document.getElementById('rec-producto').value = '';
-                document.getElementById('rec-proveedor').value = '';
-                document.getElementById('rec-cantidad').value = '1';
-                actualizarPrevisualizador();
+                    document.getElementById('rec-producto').value = '';
+                    document.getElementById('rec-proveedor').value = '';
+                    document.getElementById('rec-cantidad').value = '1';
+                    actualizarPrevisualizador();
+                } else {
+                    lanzarCartelError();
+                }
 
             } catch (error) {
-                Swal.fire({
-                    title: '❌ ENTRADA RETENIDA',
-                    text: 'El servidor central rechazó el guardado. Verifica el script de Python.',
-                    icon: 'error',
-                    background: '#0f172a',
-                    color: '#fff',
-                    confirmButtonColor: '#ef4444'
-                });
+                lanzarCartelError();
             }
+        }
+
+        function lanzarCartelError() {
+            Swal.fire({
+                title: '❌ ENTRADA RETENIDA',
+                text: 'El servidor central rechazó el guardado. Verifica el script de Python.',
+                icon: 'error',
+                background: '#0f172a',
+                color: '#fff',
+                confirmButtonColor: '#ef4444'
+            });
         }
 
         actualizarPrevisualizador();
