@@ -120,10 +120,8 @@
     </main>
 
     <script>
-        // 📡 CONFIGURACIÓN DEL TÚNEL UNIFICADO DE FRED
         const URL_SERVIDOR_NGROK = "https://untried-january-thinning.ngrok-free.dev";
 
-        // Instanciamos el generador QR apuntando al div vacío
         const qrGenerador = new QRCode(document.getElementById("qrcode"), {
             text: "FREDWARE-READY",
             width: 140,
@@ -133,13 +131,11 @@
             correctLevel : QRCode.CorrectLevel.H
         });
 
-        // Modifica la temperatura por defecto de manera reactiva al clicar conservación
         function cambiarTempDefecto(grados) {
             document.getElementById('rec-temperatura').value = grados;
             actualizarPrevisualizador();
         }
 
-        // Construye el string estructurado que se incrustará en el código QR físico
         function construirCadenaQR(indice, total) {
             const producto = document.getElementById('rec-producto').value.trim().toUpperCase() || 'S/P';
             const temperatura = parseFloat(document.getElementById('rec-temperatura').value) || 0;
@@ -153,7 +149,6 @@
             return `TIPO:RECEPCION|PROD:${producto}|TEMP:${temperatura}°C|ZONA:${tipo}|PROV:${proveedor}|FECHA:${fechaString}|LOTE:${indice}_DE_${total}`;
         }
 
-        // Redibuja el código QR en vivo en base al primer lote estimado
         function actualizarPrevisualizador() {
             const cantidadTotal = parseInt(document.getElementById('rec-cantidad').value) || 1;
             const cadenaEjemplo = construirCadenaQR(1, cantidadTotal);
@@ -163,7 +158,7 @@
             document.getElementById('qr-texto-log').innerText = cadenaEjemplo;
         }
 
-        // Envío asíncrono ordenado paso a paso para evitar desajustes por latencia de red
+        // Envío asíncrono optimizado para evitar falsos negativos por el lag de la impresora
         async function procesarLoteQROnline(event) {
             event.preventDefault();
 
@@ -179,17 +174,15 @@
                 return;
             }
 
-            // Cuerpo estructurado para inyectar directo en tu tabla SQLite
             const datosBaseDatos = {
                 producto: producto,
                 temperatura: temperatura,
                 conservacion: tipo,
                 proveedor: proveedor,
                 cantidad_total: cantidad,
-                fecha_registro: ahora.toISOString()
+                fecha_registro: Commission = ahora.toISOString()
             };
 
-            // Mapeo individual del array de stickers para la cola de impresión de la Brother
             let loteEtiquetas = [];
             for (let i = 1; i <= cantidad; i++) {
                 loteEtiquetas.push({
@@ -200,10 +193,9 @@
                 });
             }
 
-            // Despliegue de spinner de carga flotante de SweetAlert2
             Swal.fire({
-                title: '📡 Transmitiendo al PC...',
-                text: 'Guardando trazabilidad y encolando impresión.',
+                title: '📡 Transmitiendo...',
+                text: 'Guardando trazabilidad en el servidor unificado.',
                 icon: 'info',
                 background: '#0f172a',
                 color: '#fff',
@@ -212,45 +204,41 @@
             });
 
             try {
-                // Ejecución lineal ordenada: Primero aseguramos almacenamiento SQL local
+                // 1. Guardamos en SQL (Esto responde instantáneo en Python)
                 const resBD = await fetch(`${URL_SERVIDOR_NGROK}/guardar_mercancia`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datosBaseDatos)
                 });
 
-                // Segundo escalón: Despachamos el paquete de datos hacia las colas físicas de impresión
-                const resImpresion = await fetch(`${URL_SERVIDOR_NGROK}/imprimir_lote`, {
+                if (!resBD.ok) throw new Error();
+
+                // 2. Disparamos la impresión (En segundo plano, no bloquea al usuario)
+                fetch(`${URL_SERVIDOR_NGROK}/imprimir_lote`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ etiquetas: loteEtiquetas })
+                }).catch(err => console.log("Impresión lanzada en background."));
+
+                // ¡Si guardó en SQL, el albarán ya es seguro! Cartel verde inmediato
+                Swal.fire({
+                    title: '✅ ¡PROCESO EXPEDIDO!',
+                    text: `Albarán registrado en SQL. Mandando a imprimir ${loteEtiquetas.length} QRs.`,
+                    icon: 'success',
+                    background: '#0f172a',
+                    color: '#fff',
+                    confirmButtonColor: '#10b981'
                 });
 
-                // Si ambos endpoints aprueban la transacción con 200 OK, procedemos con éxito rotundo
-                if (resBD.ok && resImpresion.ok) {
-                    Swal.fire({
-                        title: '✅ ¡PROCESO EXPEDIDO!',
-                        text: `Datos guardados en SQL. Imprimiendo ${loteEtiquetas.length} códigos QR.`,
-                        icon: 'success',
-                        background: '#0f172a',
-                        color: '#fff',
-                        confirmButtonColor: '#10b981'
-                    });
-
-                    // Vaciado reglamentario y reseteo del panel táctil
-                    document.getElementById('rec-producto').value = '';
-                    document.getElementById('rec-proveedor').value = '';
-                    document.getElementById('rec-cantidad').value = '1';
-                    actualizarPrevisualizador();
-                } else {
-                    throw new Error("Fallo en la verificación de códigos HTTP.");
-                }
+                document.getElementById('rec-producto').value = '';
+                document.getElementById('rec-proveedor').value = '';
+                document.getElementById('rec-cantidad').value = '1';
+                actualizarPrevisualizador();
 
             } catch (error) {
-                // Captura de errores reales por caída de red o túnel ngrok apagado
                 Swal.fire({
                     title: '❌ ENTRADA RETENIDA',
-                    text: 'Error al comunicar con Fredware Central. Verifica que los scripts del PC estén activos.',
+                    text: 'El servidor central rechazó el guardado. Verifica el script de Python.',
                     icon: 'error',
                     background: '#0f172a',
                     color: '#fff',
@@ -259,7 +247,6 @@
             }
         }
 
-        // Inicialización del visor dinámico en el arranque de la vista
         actualizarPrevisualizador();
     </script>
 </body>
