@@ -158,7 +158,6 @@
             document.getElementById('qr-texto-log').innerText = cadenaEjemplo;
         }
 
-        // Envío asíncrono optimizado para evitar falsos negativos por el lag de la impresora
         async function procesarLoteQROnline(event) {
             event.preventDefault();
 
@@ -174,13 +173,14 @@
                 return;
             }
 
+            // SANEADO: Fecha limpia sin asignaciones rotas internamente
             const datosBaseDatos = {
                 producto: producto,
                 temperatura: temperatura,
                 conservacion: tipo,
                 proveedor: proveedor,
                 cantidad_total: cantidad,
-                fecha_registro: Commission = ahora.toISOString()
+                fecha_registro: ahora.toISOString()
             };
 
             let loteEtiquetas = [];
@@ -204,7 +204,7 @@
             });
 
             try {
-                // 1. Guardamos en SQL (Esto responde instantáneo en Python)
+                // 1. Guardar en SQLite local a través de ngrok
                 const resBD = await fetch(`${URL_SERVIDOR_NGROK}/guardar_mercancia`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -213,14 +213,14 @@
 
                 if (!resBD.ok) throw new Error();
 
-                // 2. Disparamos la impresión (En segundo plano, no bloquea al usuario)
+                // 2. Disparar cola de la impresora Brother en segundo plano
                 fetch(`${URL_SERVIDOR_NGROK}/imprimir_lote`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ etiquetas: loteEtiquetas })
-                }).catch(err => console.log("Impresión lanzada en background."));
+                }).catch(err => console.log("Impresión lanzada en segundo plano."));
 
-                // ¡Si guardó en SQL, el albarán ya es seguro! Cartel verde inmediato
+                // ¡Aviso de éxito rotundo e inmediato para el operario!
                 Swal.fire({
                     title: '✅ ¡PROCESO EXPEDIDO!',
                     text: `Albarán registrado en SQL. Mandando a imprimir ${loteEtiquetas.length} QRs.`,
