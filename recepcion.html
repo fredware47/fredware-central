@@ -20,7 +20,7 @@
                     <p class="text-xs text-emerald-400 font-bold tracking-widest uppercase">Módulo Online Estable</p>
                 </div>
             </div>
-            <span class="bg-slate-900 text-slate-400 text-xs px-3 py-1.5 rounded-md font-mono border border-slate-700">v4.3</span>
+            <span class="bg-slate-900 text-slate-400 text-xs px-3 py-1.5 rounded-md font-mono border border-slate-700">v4.4 (GitHub)</span>
         </div>
     </header>
 
@@ -31,7 +31,7 @@
                 
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Producto / Materia Prima:</label>
-                    <input type="text" id="rec-producto" required placeholder="Ej. ATÚN ROJO..." list="productos-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-emerald-500 text-lg uppercase">
+                    <input type="text" id="rec-producto" required placeholder="Ej. ATÚN ROJO, HARINA..." list="productos-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-lg uppercase">
                     <datalist id="productos-fav">
                         <option value="ATÚN ROJO">
                         <option value="PIMIENTOS DE PIQUILLO">
@@ -48,19 +48,19 @@
                     <div class="grid grid-cols-3 gap-3">
                         <label class="cursor-pointer">
                             <input type="radio" name="tipo_conservacion" value="NEVERA" checked onclick="cambiarTempDefecto(4)" class="peer hidden">
-                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm text-slate-400 peer-checked:text-emerald-400">
+                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm transition-all text-slate-400 peer-checked:text-emerald-400">
                                 ❄️ Nevera
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="tipo_conservacion" value="CONGELADOR" onclick="cambiarTempDefecto(-18)" class="peer hidden">
-                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm text-slate-400 peer-checked:text-emerald-400">
+                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm transition-all text-slate-400 peer-checked:text-emerald-400">
                                 🥶 Conge
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="tipo_conservacion" value="SECO" onclick="cambiarTempDefecto(20)" class="peer hidden">
-                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm text-slate-400 peer-checked:text-emerald-400">
+                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm transition-all text-slate-400 peer-checked:text-emerald-400">
                                 📦 Seco
                             </div>
                         </label>
@@ -74,7 +74,7 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Proveedor / Origen:</label>
-                    <input type="text" id="rec-proveedor" placeholder="Ej. MAKRO..." list="proveedores-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-emerald-500 text-lg uppercase">
+                    <input type="text" id="rec-proveedor" placeholder="Ej. MAKRO..." list="proveedores-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-lg uppercase">
                     <datalist id="proveedores-fav">
                         <option value="PESCASA">
                         <option value="MAKRO">
@@ -84,12 +84,12 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">¿Cuántas unidades / botes? (Stickers):</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">¿Cuántas unidades / botes entran? (Stickers):</label>
                     <input type="number" id="rec-cantidad" value="1" min="1" required inputmode="numeric" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white font-bold text-center text-lg focus:outline-none focus:border-emerald-500">
                 </div>
 
                 <div class="pt-2">
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 px-6 rounded-xl text-lg shadow-lg flex justify-center items-center space-x-2">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 px-6 rounded-xl text-lg shadow-lg active:scale-[0.98] transition-transform duration-100 flex justify-center items-center space-x-2">
                         <span>🖨️</span> <span>EMITIR Y GUARDAR POR TÚNEL ONLINE</span>
                     </button>
                 </div>
@@ -97,10 +97,15 @@
         </div>
 
         <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center space-y-4">
-            <h3 class="text-sm font-bold text-white uppercase tracking-wider">👁️ Previsualizador QR</h3>
+            <div>
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">👁️ Previsualizador del QR de Trazabilidad</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Así se generará el patrón dinámico para la pegatina Brother.</p>
+            </div>
+            
             <div class="bg-white p-4 rounded-xl inline-block shadow-inner">
                 <div id="qrcode"></div>
             </div>
+            
             <div id="qr-texto-log" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-slate-400 break-all text-left">
                 Esperando datos...
             </div>
@@ -110,14 +115,14 @@
     <script>
         const URL_SERVIDOR_NGROK = "https://untried-january-thinning.ngrok-free.dev";
 
-        // Configuración tolerante del QR
+        // CONFIGURACIÓN MEJORADA: Mayor ancho/alto físico y Nivel L para máxima capacidad de datos
         const qrGenerador = new QRCode(document.getElementById("qrcode"), {
             text: "FREDWARE-READY",
-            width: 140,
-            height: 140,
+            width: 250,
+            height: 250,
             colorDark : "#000000",
             colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.M
+            correctLevel : QRCode.CorrectLevel.L
         });
 
         function cambiarTempDefecto(grados) {
@@ -125,7 +130,7 @@
             actualizarPrevisualizador();
         }
 
-        // 🎯 CLONADO DEL SISTEMA FREDWARE ORIGINAL (Corto, rápido, eficiente)
+        // 🎯 CLONADO DEL SISTEMA FREDWARE ORIGINAL (Compacto e inmune a overflows)
         function construirCadenaQR(indice, total) {
             const producto = document.getElementById('rec-producto').value.trim().toUpperCase() || 'S/P';
             const loteUnidad = `${indice}_DE_${total}`;
@@ -134,7 +139,6 @@
             const pad = (n) => n.toString().padStart(2, '0');
             const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
 
-            // Clona el patrón exacto: PROD:nombre|LOTE:unidad|F:fecha
             return `PROD:${producto}|LOTE:${loteUnidad}|F:${fechaString}`;
         }
 
@@ -142,6 +146,7 @@
             try {
                 const cantidadTotal = parseInt(document.getElementById('rec-cantidad').value) || 1;
                 const cadenaEjemplo = construirCadenaQR(1, cantidadTotal);
+                
                 qrGenerador.clear();
                 qrGenerador.makeCode(cadenaEjemplo);
                 document.getElementById('qr-texto-log').innerText = cadenaEjemplo;
@@ -186,7 +191,7 @@
 
             Swal.fire({
                 title: '📡 Transmitiendo...',
-                text: 'Guardando trazabilidad...',
+                text: 'Guardando trazabilidad en el servidor unificado.',
                 icon: 'info',
                 background: '#0f172a',
                 color: '#fff',
@@ -195,24 +200,25 @@
             });
 
             try {
-                // 1. Guardar en SQLite local a través del túnel
+                // 1. Guardar en SQLite local a través de ngrok
                 const resBD = await fetch(`${URL_SERVIDOR_NGROK}/guardar_mercancia`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datosBaseDatos)
                 });
 
-                // 2. Disparar impresión de fondo
+                // 2. Disparar cola de la impresora Brother en segundo plano
                 fetch(`${URL_SERVIDOR_NGROK}/imprimir_lote`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ etiquetas: loteEtiquetas })
-                }).catch(err => console.log("Impresión lanzada."));
+                }).catch(err => console.log("Impresión lanzada en segundo plano."));
 
+                // Control tolerante de estado HTTP
                 if (resBD.status === 200) {
                     Swal.fire({
                         title: '✅ ¡PROCESO EXPEDIDO!',
-                        text: `Albarán registrado en SQL. Imprimiendo QRs.`,
+                        text: `Albarán registrado en SQL. Mandando a imprimir ${loteEtiquetas.length} QRs.`,
                         icon: 'success',
                         background: '#0f172a',
                         color: '#fff',
