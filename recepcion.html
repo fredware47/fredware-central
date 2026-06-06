@@ -20,7 +20,7 @@
                     <p class="text-xs text-emerald-400 font-bold tracking-widest uppercase">Módulo Online Estable</p>
                 </div>
             </div>
-            <span class="bg-slate-900 text-slate-400 text-xs px-3 py-1.5 rounded-md font-mono border border-slate-700">v4.2</span>
+            <span class="bg-slate-900 text-slate-400 text-xs px-3 py-1.5 rounded-md font-mono border border-slate-700">v4.3</span>
         </div>
     </header>
 
@@ -110,13 +110,14 @@
     <script>
         const URL_SERVIDOR_NGROK = "https://untried-january-thinning.ngrok-free.dev";
 
+        // Configuración tolerante del QR
         const qrGenerador = new QRCode(document.getElementById("qrcode"), {
             text: "FREDWARE-READY",
             width: 140,
             height: 140,
             colorDark : "#000000",
             colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
+            correctLevel : QRCode.CorrectLevel.M
         });
 
         function cambiarTempDefecto(grados) {
@@ -124,25 +125,29 @@
             actualizarPrevisualizador();
         }
 
+        // 🎯 CLONADO DEL SISTEMA FREDWARE ORIGINAL (Corto, rápido, eficiente)
         function construirCadenaQR(indice, total) {
             const producto = document.getElementById('rec-producto').value.trim().toUpperCase() || 'S/P';
-            const temperatura = parseFloat(document.getElementById('rec-temperatura').value) || 0;
-            const proveedor = document.getElementById('rec-proveedor').value.trim().toUpperCase() || 'S/P';
-            const tipo = document.querySelector('input[name="tipo_conservacion"]:checked').value;
+            const loteUnidad = `${indice}_DE_${total}`;
             
             const ahora = new Date();
             const pad = (n) => n.toString().padStart(2, '0');
             const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
 
-            return `TIPO:RECEPCION|PROD:${producto}|TEMP:${temperatura}°C|ZONA:${tipo}|PROV:${proveedor}|FECHA:${fechaString}|LOTE:${indice}_DE_${total}`;
+            // Clona el patrón exacto: PROD:nombre|LOTE:unidad|F:fecha
+            return `PROD:${producto}|LOTE:${loteUnidad}|F:${fechaString}`;
         }
 
         function actualizarPrevisualizador() {
-            const cantidadTotal = parseInt(document.getElementById('rec-cantidad').value) || 1;
-            const cadenaEjemplo = construirCadenaQR(1, cantidadTotal);
-            qrGenerador.clear();
-            qrGenerador.makeCode(cadenaEjemplo);
-            document.getElementById('qr-texto-log').innerText = cadenaEjemplo;
+            try {
+                const cantidadTotal = parseInt(document.getElementById('rec-cantidad').value) || 1;
+                const cadenaEjemplo = construirCadenaQR(1, cantidadTotal);
+                qrGenerador.clear();
+                qrGenerador.makeCode(cadenaEjemplo);
+                document.getElementById('qr-texto-log').innerText = cadenaEjemplo;
+            } catch (err) {
+                console.error("Fallo previsualizador QR:", err);
+            }
         }
 
         async function procesarLoteQROnline(event) {
@@ -190,7 +195,7 @@
             });
 
             try {
-                // 1. Guardar en SQLite local
+                // 1. Guardar en SQLite local a través del túnel
                 const resBD = await fetch(`${URL_SERVIDOR_NGROK}/guardar_mercancia`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -204,7 +209,6 @@
                     body: JSON.stringify({ etiquetas: loteEtiquetas })
                 }).catch(err => console.log("Impresión lanzada."));
 
-                // CONTROL DIRECTO DE ESTADO (Sin throws raros que rompan el script)
                 if (resBD.status === 200) {
                     Swal.fire({
                         title: '✅ ¡PROCESO EXPEDIDO!',
