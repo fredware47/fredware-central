@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚚 Fredware - Recepción Online</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col pb-8 select-none">
+
+    <header class="bg-slate-950 border-b border-slate-800 py-4 px-6 sticky top-0 z-50 shadow-md">
+        <div class="max-w-2xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🚚</span>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight text-white">FREDWARE RECEPCIÓN</h1>
+                    <p class="text-xs text-emerald-400 font-bold tracking-widest uppercase">Módulo Online Independiente</p>
+                </div>
+            </div>
+            <span class="bg-slate-900 text-slate-400 text-xs px-3 py-1.5 rounded-md font-mono border border-slate-700">v4.0 (GitHub)</span>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto w-full px-4 mt-6 grid grid-cols-1 gap-6">
+        
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+            <div class="border-b border-slate-800 pb-3">
+                <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                    <span>📝</span> <span>REGISTRO DE ENTRADA Y CONTROL APPCC</span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">Los datos viajan por ngrok a la SQL local e imprimen pegatinas individuales.</p>
+            </div>
+
+            <form id="form-recepcion" onsubmit="procesarLoteQROnline(event)" class="space-y-4">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Producto / Materia Prima:</label>
+                    <input type="text" id="rec-producto" required placeholder="Ej. ATÚN ROJO, HARINA..." list="productos-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-lg uppercase">
+                    <datalist id="productos-fav">
+                        <option value="ATÚN ROJO">
+                        <option value="PIMIENTOS DE PIQUILLO">
+                        <option value="MERMELADA DE FRESA">
+                        <option value="KETCHUP">
+                        <option value="TOMATE FRITO">
+                        <option value="HARINA DE TRIGO">
+                        <option value="LEVADURA">
+                    </datalist>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tipo de Conservación:</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tipo_conservacion" value="NEVERA" checked onclick="cambiarTempDefecto(4)" class="peer hidden">
+                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm transition-all text-slate-400 peer-checked:text-emerald-400">
+                                ❄️ Nevera
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tipo_conservacion" value="CONGELADOR" onclick="cambiarTempDefecto(-18)" class="peer hidden">
+                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm transition-all text-slate-400 peer-checked:text-emerald-400">
+                                🥶 Conge
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tipo_conservacion" value="SECO" onclick="cambiarTempDefecto(20)" class="peer hidden">
+                            <div class="bg-slate-900 border-2 border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/30 p-3 text-center rounded-xl font-bold text-sm transition-all text-slate-400 peer-checked:text-emerald-400">
+                                📦 Seco
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Temperatura Recepción (°C):</label>
+                    <input type="number" id="rec-temperatura" value="4" step="0.1" required oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white font-bold text-center text-lg focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Proveedor / Origen:</label>
+                    <input type="text" id="rec-proveedor" placeholder="Ej. MAKRO..." list="proveedores-fav" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-lg uppercase">
+                    <datalist id="proveedores-fav">
+                        <option value="PESCASA">
+                        <option value="MAKRO">
+                        <option value="DISTRIBUCIONES GALICIA">
+                        <option value="FRUTAS PEPE">
+                    </datalist>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">¿Cuántas unidades / botes entran? (Stickers):</label>
+                    <input type="number" id="rec-cantidad" value="1" min="1" required inputmode="numeric" oninput="actualizarPrevisualizador()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-white font-bold text-center text-lg focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 px-6 rounded-xl text-lg shadow-lg active:scale-[0.98] transition-transform duration-100 flex justify-center items-center space-x-2">
+                        <span>🖨️</span> <span>EMITIR Y GUARDAR POR TÚNEL ONLINE</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center space-y-4">
+            <div>
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">👁️ Previsualizador del QR de Trazabilidad</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Así se generará el patrón dinámico para la pegatina Brother.</p>
+            </div>
+            
+            <div class="bg-white p-4 rounded-xl inline-block shadow-inner">
+                <div id="qrcode"></div>
+            </div>
+            
+            <div id="qr-texto-log" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-slate-400 break-all text-left">
+                Esperando datos...
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 📡 CONFIGURACIÓN DEL TÚNEL UNIFICADO DE FRED
+        const URL_SERVIDOR_NGROK = "https://untried-january-thinning.ngrok-free.dev";
+
+        // Instanciamos el generador QR apuntando al div vacío
+        const qrGenerador = new QRCode(document.getElementById("qrcode"), {
+            text: "FREDWARE-READY",
+            width: 140,
+            height: 140,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        // Modifica la temperatura por defecto de manera reactiva al clicar conservación
+        function cambiarTempDefecto(grados) {
+            document.getElementById('rec-temperatura').value = grados;
+            actualizarPrevisualizador();
+        }
+
+        // Construye el string estructurado que se incrustará en el código QR físico
+        function construirCadenaQR(indice, total) {
+            const producto = document.getElementById('rec-producto').value.trim().toUpperCase() || 'S/P';
+            const temperatura = parseFloat(document.getElementById('rec-temperatura').value) || 0;
+            const proveedor = document.getElementById('rec-proveedor').value.trim().toUpperCase() || 'S/P';
+            const tipo = document.querySelector('input[name="tipo_conservacion"]:checked').value;
+            
+            const ahora = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
+
+            return `TIPO:RECEPCION|PROD:${producto}|TEMP:${temperatura}°C|ZONA:${tipo}|PROV:${proveedor}|FECHA:${fechaString}|LOTE:${indice}_DE_${total}`;
+        }
+
+        // Redibuja el código QR en vivo en base al primer lote estimado
+        function actualizarPrevisualizador() {
+            const cantidadTotal = parseInt(document.getElementById('rec-cantidad').value) || 1;
+            const cadenaEjemplo = construirCadenaQR(1, cantidadTotal);
+            
+            qrGenerador.clear();
+            qrGenerador.makeCode(cadenaEjemplo);
+            document.getElementById('qr-texto-log').innerText = cadenaEjemplo;
+        }
+
+        // Envío asíncrono ordenado paso a paso para evitar desajustes por latencia de red
+        async function procesarLoteQROnline(event) {
+            event.preventDefault();
+
+            const producto = document.getElementById('rec-producto').value.trim().toUpperCase();
+            const temperatura = parseFloat(document.getElementById('rec-temperatura').value);
+            const proveedor = document.getElementById('rec-proveedor').value.trim().toUpperCase() || 'S/P';
+            const cantidad = parseInt(document.getElementById('rec-cantidad').value) || 1;
+            const tipo = document.querySelector('input[name="tipo_conservacion"]:checked').value;
+            const ahora = new Date();
+
+            if (!producto || isNaN(temperatura)) {
+                Swal.fire({ icon: 'warning', title: 'Campos Vacíos', text: 'Fred, rellena producto y temperatura.', background: '#0f172a', color: '#fff' });
+                return;
+            }
+
+            // Cuerpo estructurado para inyectar directo en tu tabla SQLite
+            const datosBaseDatos = {
+                producto: producto,
+                temperatura: temperatura,
+                conservacion: tipo,
+                proveedor: proveedor,
+                cantidad_total: cantidad,
+                fecha_registro: ahora.toISOString()
+            };
+
+            // Mapeo individual del array de stickers para la cola de impresión de la Brother
+            let loteEtiquetas = [];
+            for (let i = 1; i <= cantidad; i++) {
+                loteEtiquetas.push({
+                    producto: producto,
+                    unidad: `${i} de ${cantidad}`,
+                    fecha: ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'}),
+                    texto_qr: construirCadenaQR(i, cantidad)
+                });
+            }
+
+            // Despliegue de spinner de carga flotante de SweetAlert2
+            Swal.fire({
+                title: '📡 Transmitiendo al PC...',
+                text: 'Guardando trazabilidad y encolando impresión.',
+                icon: 'info',
+                background: '#0f172a',
+                color: '#fff',
+                showConfirmButton: false,
+                allowOutsideClick: false
+            });
+
+            try {
+                // Ejecución lineal ordenada: Primero aseguramos almacenamiento SQL local
+                const resBD = await fetch(`${URL_SERVIDOR_NGROK}/guardar_mercancia`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datosBaseDatos)
+                });
+
+                // Segundo escalón: Despachamos el paquete de datos hacia las colas físicas de impresión
+                const resImpresion = await fetch(`${URL_SERVIDOR_NGROK}/imprimir_lote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ etiquetas: loteEtiquetas })
+                });
+
+                // Si ambos endpoints aprueban la transacción con 200 OK, procedemos con éxito rotundo
+                if (resBD.ok && resImpresion.ok) {
+                    Swal.fire({
+                        title: '✅ ¡PROCESO EXPEDIDO!',
+                        text: `Datos guardados en SQL. Imprimiendo ${loteEtiquetas.length} códigos QR.`,
+                        icon: 'success',
+                        background: '#0f172a',
+                        color: '#fff',
+                        confirmButtonColor: '#10b981'
+                    });
+
+                    // Vaciado reglamentario y reseteo del panel táctil
+                    document.getElementById('rec-producto').value = '';
+                    document.getElementById('rec-proveedor').value = '';
+                    document.getElementById('rec-cantidad').value = '1';
+                    actualizarPrevisualizador();
+                } else {
+                    throw new Error("Fallo en la verificación de códigos HTTP.");
+                }
+
+            } catch (error) {
+                // Captura de errores reales por caída de red o túnel ngrok apagado
+                Swal.fire({
+                    title: '❌ ENTRADA RETENIDA',
+                    text: 'Error al comunicar con Fredware Central. Verifica que los scripts del PC estén activos.',
+                    icon: 'error',
+                    background: '#0f172a',
+                    color: '#fff',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
+
+        // Inicialización del visor dinámico en el arranque de la vista
+        actualizarPrevisualizador();
+    </script>
+</body>
+</html>
