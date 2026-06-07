@@ -113,9 +113,10 @@
     </main>
 
     <script>
-        const URL_SERVIDOR_NGROK = "https://untried-januation-thinning.ngrok-free.dev";
+        // 🎯 DIRECCIÓN FIJA CORREGIDA EXPRESAMENTE CON "january"
+        const URL_SERVIDOR_NGROK = "https://untried-january-thinning.ngrok-free.dev";
 
-        // 🎯 SOLUCIÓN AL OVERFLOW: Escalamos dimensiones y bajamos a nivel L para albergar textos largos sin romper la librería
+        // 🎯 MEJORA DEL QR: Forzamos nivel L para triplicar la capacidad de texto y evitar overflows (604>440)
         const qrGenerador = new QRCode(document.getElementById("qrcode"), {
             text: "FREDWARE-READY",
             width: 250,
@@ -184,7 +185,7 @@
                     producto: producto,
                     unidad: `${i} de ${cantidad}`,
                     fecha: ahora.toLocaleDateString('es-ES'),
-                    texto_qr: construirCadenaQR(i, cantidad)
+                    texto_qr: construirCadenaQR(i, quantity = cantidad)
                 });
             }
 
@@ -237,7 +238,7 @@
         function lanzarCartelError() {
             Swal.fire({
                 title: '❌ ENTRADA RETENIDA',
-                text: 'El servidor central rechazó el guardado. Verifica el script de Python.',
+                text: 'El servidor central rechazó el guardado. Verifica el script de Python o el túnel.',
                 icon: 'error',
                 background: '#ffffff',
                 color: '#000',
