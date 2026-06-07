@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>👨‍🍳 Fredware - Faltas de Cocina</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; background: #1e293b; padding: 20px; border-radius: 12px; }
+        h1 { font-size: 18px; text-align: center; margin-bottom: 5px; color: #38bdf8; font-weight: bold; }
+        .sub { text-align: center; font-size: 13px; color: #94a3b8; margin-bottom: 20px; }
+        label { display: block; font-size: 14px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px; }
+        input { width: 100%; padding: 15px; border: 2px solid #475569; background: #0f172a; color: white; border-radius: 8px; font-size: 16px; outline: none; }
+        input:focus { border-color: #38bdf8; }
+        .btn-add { width: 100%; background: #38bdf8; color: #0f172a; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; }
+        .lista-box { margin-top: 25px; border-top: 2px dashed #475569; padding-top: 20px; }
+        .lista-titulo { font-size: 14px; font-weight: bold; color: #94a3b8; margin-bottom: 10px; }
+        .item-row { background: #243347; padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-del { background: #ef4444; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📝 ANOTAR FALTA EN COCINA</h1>
+    <div class="sub">Lo que anotes aquí aparecerá en la pantalla del jefe de cocina</div>
+    <div class="form-group">
+        <label>¿Qué producto falta?:</label>
+        <input type="text" id="insumo-falta" placeholder="Ej: Mayonesa, Cebollas..." autocomplete="off">
+    </div>
+    <button class="btn-add" onclick="registrarFaltaCocina()">➕ Añadir a la Lista</button>
+    <div class="lista-box">
+        <div class="lista-titulo">📋 Faltas pendientes de revisar hoy:</div>
+        <div id="contenedor-faltas-local"></div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "https://untried-january-thinning.ngrok-free.dev/api"; 
+    let faltas = [];
+
+    async function cargarFaltas() {
+        try {
+            const res = await fetch(`${API_URL}/datos`);
+            const data = await res.json();
+            faltas = data.faltas || []; renderFaltasLocales();
+        } catch(e) { console.error("Error", e); }
+    }
+
+    async function sincronizarFaltas() {
+        try {
+            await fetch(`${API_URL}/faltas`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(faltas)
+            });
+        } catch(e) { console.error("Error", e); }
+    }
+
+    function registrarFaltaCocina() {
+        const input = document.getElementById('insumo-falta');
+        const valor = input.value.trim().toUpperCase();
+        if(!valor) return;
+        faltas.push(valor); input.value = ''; renderFaltasLocales(); sincronizarFaltas();
+    }
+
+    function renderFaltasLocales() {
+        const container = document.getElementById('contenedor-faltas-local'); container.innerHTML = '';
+        if(faltas.length === 0) {
+            container.innerHTML = `<div style="text-align:center; font-style:italic; color:#64748b; font-size:13px; padding:10px;">Todo en orden. Sin faltas anotadas.</div>`; return;
+        }
+        faltas.forEach((item, idx) => {
+            container.innerHTML += `<div class="item-row"><span>⚠️ <strong>${item}</strong></span><button class="btn-del" onclick="borrarFaltaLocal(${idx})">Eliminar</button></div>`;
+        });
+    }
+
+    function borrarFaltaLocal(idx) { faltas.splice(idx, 1); renderFaltasLocales(); sincronizarFaltas(); }
+    window.onload = cargarFaltas;
+</script>
+</body>
+</html>
