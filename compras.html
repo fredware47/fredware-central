@@ -31,6 +31,10 @@
         .item-list th { background: #e2e8f0; text-align: left; padding: 6px; font-size: 11px; color: #475569; }
         .item-list td { padding: 8px 6px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
         .delivery-card { background: white; border-left: 4px solid #10b981; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        
+        /* 🎨 Botón especial para el Respaldo PDF */
+        .btn-pdf { background: #dc2626; color: white; margin-top: 15px; }
+        .btn-pdf:active { background: #b91c1c; }
     </style>
 </head>
 <body>
@@ -61,6 +65,8 @@
                 <thead><tr><th>Artículo</th><th>Proveedor</th><th style="text-align:center;">Acción</th></tr></thead>
                 <tbody id="lista-compra-cuerpo"></tbody>
             </table>
+            
+            <button class="btn-action btn-pdf" onclick="generarRespaldoPDFDesdeTablet()">📄 Generar Checklist Respaldo (PDF/Imprimir)</button>
         </div>
     </div>
 
@@ -207,6 +213,73 @@
         cesta.push({ detalle: faltas[idx], proveedor_id: "S/P" });
         faltas.splice(idx, 1);
         renderVisorPasivo(); renderCesta(); sincronizar('faltas', faltas); sincronizar('cesta', cesta);
+    }
+
+    // 📄 FUNCIÓN DE RESPALDO DIRECTO DESDE LA INTERFAZ DE LA TABLET
+    function generarRespaldoPDFDesdeTablet() {
+        if (cesta.length === 0) {
+            alert("La cesta está vacía. No hay nada que respaldar.");
+            return;
+        }
+
+        // Calcular fecha de mañana
+        let hoy = new Date();
+        let manana = new Date(hoy);
+        manana.setDate(hoy.getDate() + 1);
+        
+        let fechaStr = manana.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        let diaNombre = DIAS_SEMANA[manana.getDay()].toUpperCase();
+
+        // Agrupar por proveedor
+        let agrupados = {};
+        cesta.forEach(item => {
+            let prov = item.proveedor_id || "SIN PROVEEDOR ASIGNADO";
+            if (!agrupados[prov]) agrupados[prov] = [];
+            agrupados[prov].push(item.detalle);
+        });
+
+        // Construir la plantilla de texto plano para impresión limpia
+        let txt = "====================================================\n";
+        txt += "   📋 HOJA DE RESPALDO DE RECEPCIÓN - FREDWARE\n";
+        txt += `  PREVISIÓN REPARTO: ${fechaStr} | DÍA: ${diaNombre}\n`;
+        txt += "====================================================\n\n";
+        txt += "📦 MERCANCÍA PROGRAMADA (CHECKLIST CON BOLÍGRAFO):\n";
+        txt += "----------------------------------------------------\n";
+
+        for (let prov in agrupados) {
+            txt += `\n🏢 PROVEEDOR: ${prov}\n`;
+            txt += "----------------------------------------------------\n";
+            agrupados[prov].forEach(art => {
+                txt += `  • [ ] ${art}\n`;
+            });
+        }
+
+        txt += "\n\n====================================================\n";
+        txt += " 📝 NOTA: REVISAR TEMPERATURAS Y ESTADO AL DESCARGAR\n";
+        txt += "====================================================";
+
+        // Abrir una nueva pestaña limpia e inyectar el formato para disparar el menú de impresión de la tablet
+        let ventanaImpresion = window.open('', '_blank');
+        ventanaImpresion.document.write(`
+            <html>
+            <head>
+                <title>Respaldo Fredware Compras - ${fechaStr}</title>
+                <style>
+                    body { font-family: 'Courier New', Courier, monospace; padding: 20px; line-height: 1.5; background: white; color: black; }
+                    pre { font-size: 15px; white-space: pre-wrap; }
+                </style>
+            </head>
+            <body>
+                <pre>${txt}</pre>
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    }
+                <\/script>
+            </body>
+            </html>
+        `);
+        ventanaImpresion.document.close();
     }
 
     initDaysGrids();
