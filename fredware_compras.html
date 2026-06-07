@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>👨‍🍳 Fredware - Gestión de Compras</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f1f5f9; color: #333; padding: 10px; }
+        .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        h1 { font-size: 18px; text-align: center; margin-bottom: 15px; background: #1e293b; color: white; padding: 12px; border-radius: 8px; }
+        .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; }
+        .tab-btn.active { background: #2563eb; color: white; }
+        .app-section { display: none; }
+        .app-section.active { display: block; }
+        .box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        h3 { font-size: 14px; margin-bottom: 10px; color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; }
+        label { display: block; font-size: 12px; font-weight: bold; margin-top: 8px; color: #475569; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; outline: none; }
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
+        .day-label { font-size: 11px; text-align: center; background: #fff; border: 1px solid #cbd5e1; padding: 6px 2px; border-radius: 4px; cursor: pointer; }
+        .day-check { display: none; }
+        .day-check:checked + .day-label { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
+        .btn-action { background: #10b981; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn-del-row { background: #fee2e2; color: #ef4444; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
+        .inline-form { display: flex; gap: 8px; margin-top: 6px; }
+        .inline-form input { margin-top: 0; flex: 1; }
+        .inline-form .btn-add-manual { background: #2563eb; color: white; border: none; padding: 0 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .item-list { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .item-list th { background: #e2e8f0; text-align: left; padding: 6px; font-size: 11px; color: #475569; }
+        .item-list td { padding: 8px 6px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
+        .delivery-card { background: white; border-left: 4px solid #10b981; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>👨‍🍳 Fredware Compras - Panel de Control</h1>
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">📥 Cesta y Pedidos</button>
+        <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">🚛 Repartos de Hoy</button>
+        <button class="tab-btn" id="btn-t3" onclick="switchTab(3)">📦 Catálogo y Proveedores</button>
+    </div>
+
+    <div id="sec1" class="app-section active">
+        <div class="box" style="border-left: 4px solid #2563eb;">
+            <h3>➕ Introducción Manual de Artículo</h3>
+            <div class="inline-form">
+                <input type="text" id="manual-articulo" placeholder="Ej: 3 Cajas de Tomate...">
+                <button class="btn-add-manual" onclick="agregarArticuloManual()">➕ Añadir</button>
+            </div>
+        </div>
+        <div class="box">
+            <h3>📝 Pegar Texto de WhatsApp</h3>
+            <textarea id="raw-whatsapp" rows="3" placeholder="Pega el bloque de texto aquí..."></textarea>
+            <button class="btn-action" onclick="parsearTextoWhatsApp()">⚡ Volcar Líneas de WhatsApp</button>
+        </div>
+        <div class="box">
+            <h3>🛒 Cesta de la Compra Actual (Online)</h3>
+            <table class="item-list">
+                <thead><tr><th>Artículo</th><th>Proveedor</th><th style="text-align:center;">Acción</th></tr></thead>
+                <tbody id="lista-compra-cuerpo"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="sec2" class="app-section">
+        <div class="box"><h3>📅 Mercancía programada para hoy</h3><div id="visor-repartos-hoy"></div></div>
+        <div class="box">
+            <h3>📝 Notas de la cocina</h3>
+            <table class="item-list">
+                <thead><tr><th>Producto Solicitado</th><th style="text-align:center;">Acción</th></tr></thead>
+                <tbody id="tabla-faltas-cocina"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="sec3" class="app-section">
+        <div class="box">
+            <h3>🏢 Alta de Proveedor</h3>
+            <label>Nombre Comercial:</label><input type="text" id="prov-nombre" placeholder="Ej: MAKRO">
+            <label>Hora Límite:</label><input type="time" id="prov-hora" value="13:00">
+            <label>Días de PEDIDO:</label><div class="days-grid" id="grid-pedidos"></div>
+            <label>Días de REPARTO:</label><div class="days-grid" id="grid-repartos"></div>
+            <button class="btn-action" onclick="guardarProveedor()">💾 Guardar Proveedor</button>
+        </div>
+        <div class="box"><h3>📋 Proveedores Registrados</h3><div id="lista-prov-config"></div></div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "https://untried-january-thinning.ngrok-free.dev/api"; 
+
+    const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    let cesta = [], proveedores = [], faltas = [];
+
+    async function cargarDatosServidor() {
+        try {
+            const res = await fetch(`${API_URL}/datos`);
+            const data = await res.json();
+            cesta = data.cesta || []; proveedores = data.proveedores || []; faltas = data.faltas || [];
+            renderCesta(); renderProveedoresConfig(); renderVisorPasivo();
+        } catch (e) { console.error("Error de red", e); }
+    }
+
+    async function sincronizar(endpoint, datos) {
+        try {
+            await fetch(`${API_URL}/${endpoint}`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(datos)
+            });
+        } catch (e) { console.error("Error al guardar", e); }
+    }
+
+    function initDaysGrids() {
+        ['pedidos', 'repartos'].forEach(tipo => {
+            const container = document.getElementById(`grid-${tipo}`); container.innerHTML = '';
+            DIAS_SEMANA.forEach((dia, idx) => {
+                container.innerHTML += `<div><input type="checkbox" id="chk-${tipo}-${idx}" class="day-check" value="${idx}"><label for="chk-${tipo}-${idx}" class="day-label">${dia.substring(0,2)}</label></div>`;
+            });
+        });
+    }
+
+    function switchTab(num) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`btn-t${num}`).classList.add('active');
+        document.getElementById(`sec${num}`).classList.add('active');
+        cargarDatosServidor();
+    }
+
+    function agregarArticuloManual() {
+        const input = document.getElementById('manual-articulo');
+        const detalle = input.value.trim().toUpperCase();
+        if(!detalle) return;
+        cesta.push({ detalle: detalle, proveedor_id: "S/P" });
+        input.value = ''; renderCesta(); sincronizar('cesta', cesta);
+    }
+
+    function parsearTextoWhatsApp() {
+        const txt = document.getElementById('raw-whatsapp').value.trim();
+        if(!txt) return;
+        txt.split('\n').forEach(linea => {
+            if(linea.trim() !== '') cesta.push({ detalle: linea.trim().toUpperCase(), proveedor_id: "S/P" });
+        });
+        document.getElementById('raw-whatsapp').value = ''; renderCesta(); sincronizar('cesta', cesta);
+    }
+
+    function renderCesta() {
+        const cuerpo = document.getElementById('lista-compra-cuerpo'); cuerpo.innerHTML = '';
+        if(cesta.length === 0) {
+            cuerpo.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:10px;">La cesta está vacía.</td></tr>`; return;
+        }
+        cesta.forEach((item, idx) => {
+            let opts = `<option value="S/P">Asignar Proveedor...</option>`;
+            proveedores.forEach(p => opts += `<option value="${p.nombre}" ${item.proveedor_id === p.nombre ? 'selected' : ''}>${p.nombre}</option>`);
+            const fila = document.createElement('tr');
+            fila.innerHTML = `<td><strong>${item.detalle}</strong></td><td><select onchange="cambiarProveedorItem(${idx}, this.value)">${opts}</select></td><td style="text-align:center;"><button class="btn-del-row" onclick="quitarItemCesta(${idx})">❌</button></td>`;
+            cuerpo.appendChild(fila);
+        });
+    }
+
+    function cambiarProveedorItem(idx, provNombre) { cesta[idx].proveedor_id = provNombre; sincronizar('cesta', cesta); }
+    function quitarItemCesta(idx) { cesta.splice(idx, 1); renderCesta(); sincronizar('cesta', cesta); }
+
+    function guardarProveedor() {
+        const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
+        const hora = document.getElementById('prov-hora').value;
+        if(!nombre) return;
+        let dPedir = [], dRepar = [];
+        DIAS_SEMANA.forEach((_, idx) => {
+            if(document.getElementById(`chk-pedidos-${idx}`).checked) dPedir.push(idx);
+            if(document.getElementById(`chk-repartos-${idx}`).checked) dRepar.push(idx);
+        });
+        proveedores.push({ nombre: nombre, hora_limite: hora, dias_pedido: dPedir, dias_reparto: dRepar });
+        document.getElementById('prov-nombre').value = ''; initDaysGrids(); renderProveedoresConfig(); sincronizar('proveedores', proveedores);
+    }
+
+    function renderProveedoresConfig() {
+        const div = document.getElementById('lista-prov-config'); div.innerHTML = '';
+        proveedores.forEach((p, idx) => {
+            div.innerHTML += `<div style="background:white; padding:8px; margin-bottom:4px; border-radius:4px; font-size:12px; display:flex; justify-content:space-between; align-items:center;"><span><strong>${p.nombre}</strong> - Límite: ${p.hora_limite}</span><button class="btn-del-row" onclick="eliminarProveedor(${idx})">Eliminar</button></div>`;
+        });
+    }
+
+    function eliminarProveedor(idx) { proveedores.splice(idx, 1); renderProveedoresConfig(); sincronizar('proveedores', proveedores); }
+
+    function renderVisorPasivo() {
+        const hoyIdx = new Date().getDay();
+        const container = document.getElementById('visor-repartos-hoy'); container.innerHTML = '';
+        let hoy = proveedores.filter(p => p.dias_reparto.includes(hoyIdx));
+        if(hoy.length === 0) container.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:13px;">Ningún reparto programado.</p>`;
+        else hoy.forEach(p => container.innerHTML += `<div class="delivery-card"><strong><b>🚛 Entrada de mercancía: ${p.nombre}</b></strong></div>`);
+        renderFaltasCocina();
+    }
+
+    function renderFaltasCocina() {
+        const cuerpo = document.getElementById('tabla-faltas-cocina'); cuerpo.innerHTML = '';
+        if(faltas.length === 0) { cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:10px;">Sin faltas registradas.</td></tr>`; return; }
+        faltas.forEach((item, idx) => {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `<td>⚠️ <strong>${item}</strong></td><td style="text-align:center;"><button class="btn-del-row" style="background:#dbeafe; color:#2563eb;" onclick="pasarFaltaACesta(${idx})">🛒 Cargar</button></td>`;
+            cuerpo.appendChild(fila);
+        });
+    }
+
+    function pasarFaltaACesta(idx) {
+        cesta.push({ detalle: faltas[idx], proveedor_id: "S/P" });
+        faltas.splice(idx, 1);
+        renderVisorPasivo(); renderCesta(); sincronizar('faltas', faltas); sincronizar('cesta', cesta);
+    }
+
+    initDaysGrids();
+    window.onload = cargarDatosServidor;
+</script>
+</body>
+</html>
