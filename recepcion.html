@@ -20,7 +20,7 @@
                     <p class="text-xs text-emerald-600 font-bold tracking-widest uppercase">Módulo Online Estable</p>
                 </div>
             </div>
-            <span class="bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-md font-mono border border-slate-300">v4.4 (GitHub)</span>
+            <span class="bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-md font-mono border border-slate-300">v4.5 (Fijo)</span>
         </div>
     </header>
 
@@ -113,10 +113,10 @@
     </main>
 
     <script>
-        // 🎯 DIRECCIÓN FIJA CORREGIDA EXPRESAMENTE CON "january"
+        // Enlace correcto de tu túnel oficial
         const URL_SERVIDOR_NGROK = "https://untried-january-thinning.ngrok-free.dev";
 
-        // 🎯 MEJORA DEL QR: Forzamos nivel L para triplicar la capacidad de texto y evitar overflows (604>440)
+        // 🎯 SOLUCIÓN INMUNE: Forzamos nivel L para triplicar espacio interno de datos y evitar el fallo 604>440 definitivamente
         const qrGenerador = new QRCode(document.getElementById("qrcode"), {
             text: "FREDWARE-READY",
             width: 250,
@@ -185,7 +185,7 @@
                     producto: producto,
                     unidad: `${i} de ${cantidad}`,
                     fecha: ahora.toLocaleDateString('es-ES'),
-                    texto_qr: construirCadenaQR(i, quantity = cantidad)
+                    texto_qr: construirCadenaQR(i, cantidad)
                 });
             }
 
