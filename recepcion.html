@@ -113,10 +113,10 @@
     </main>
 
     <script>
-        // Enlace correcto de tu túnel oficial
+        // 🎯 DIRECCIÓN FIJA CORREGIDA EXPRESAMENTE CON "january"
         const URL_SERVIDOR_NGROK = "https://untried-january-thinning.ngrok-free.dev";
 
-        // 🎯 SOLUCIÓN INMUNE: Forzamos nivel L para triplicar espacio interno de datos y evitar el fallo 604>440 definitivamente
+        // 🎯 MEJORA DEL QR: Forzamos nivel L para triplicar la capacidad de texto y evitar overflows (604>440)
         const qrGenerador = new QRCode(document.getElementById("qrcode"), {
             text: "FREDWARE-READY",
             width: 250,
