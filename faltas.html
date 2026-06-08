@@ -3,77 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>👨‍🍳 Fredware - Faltas de Cocina</title>
+    <title>👨‍🍳 Fredware - Terminal de Cocina</title>
+    <link rel="manifest" href="manifest.json">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #0f172a; color: #f8fafc; padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; background: #1e293b; padding: 20px; border-radius: 12px; }
         h1 { font-size: 18px; text-align: center; margin-bottom: 5px; color: #38bdf8; font-weight: bold; }
         .sub { text-align: center; font-size: 13px; color: #94a3b8; margin-bottom: 20px; }
+        
         label { display: block; font-size: 14px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px; }
         input { width: 100%; padding: 15px; border: 2px solid #475569; background: #0f172a; color: white; border-radius: 8px; font-size: 16px; outline: none; }
         input:focus { border-color: #38bdf8; }
+        
         .btn-add { width: 100%; background: #38bdf8; color: #0f172a; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; }
+        .btn-add:active { background: #0ea5e9; }
+
         .lista-box { margin-top: 25px; border-top: 2px dashed #475569; padding-top: 20px; }
         .lista-titulo { font-size: 14px; font-weight: bold; color: #94a3b8; margin-bottom: 10px; }
+        
         .item-row { background: #243347; padding: 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         .btn-del { background: #ef4444; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+
+        .repartos-box { margin-top: 25px; border-top: 2px solid #334155; padding-top: 20px; }
+        .repartos-titulo { font-size: 14px; font-weight: bold; color: #10b981; margin-bottom: 12px; }
+        .delivery-card { background: #1a2436; border: 1px solid #475569; padding: 12px; margin-bottom: 8px; border-radius: 6px; }
+        .delivery-card strong { color: #38bdf8; font-size: 14px; display: block; margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+        .merca-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #243347; }
+        .merca-row:last-child { border-bottom: none; }
+        .merca-row span { font-size: 13px; color: #f8fafc; }
+        .btn-llego { background: #10b981; color: white; border: none; padding: 5px 10px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>📝 ANOTAR FALTA EN COCINA</h1>
-    <div class="sub">Lo que anotes aquí aparecerá en la pantalla del jefe de cocina</div>
+    <h1>📝 TERMINAL DE CONTROL - COCINA</h1>
+    <div class="sub">Gestión de faltas y recepción de pedidos diarios</div>
+
     <div class="form-group">
-        <label>¿Qué producto falta?:</label>
-        <input type="text" id="insumo-falta" placeholder="Ej: Mayonesa, Cebollas..." autocomplete="off">
+        <label for="insumo-falta">¿Qué producto se ha gastado / falta?:</label>
+        <input type="text" id="insumo-falta" placeholder="Ej: Mayonesa, Vinagre, Cebollas..." autocomplete="off">
     </div>
-    <button class="btn-add" onclick="registrarFaltaCocina()">➕ Añadir a la Lista</button>
+    <button class="btn-add" onclick="registrarFaltaCocina()">➕ Añadir a la Lista de Faltas</button>
+
     <div class="lista-box">
-        <div class="lista-titulo">📋 Faltas pendientes de revisar hoy:</div>
+        <div class="lista-titulo">📋 Faltas apuntadas hoy por el equipo:</div>
         <div id="contenedor-faltas-local"></div>
+    </div>
+
+    <div class="repartos-box">
+        <div class="repartos-titulo">📥 RECEPCIÓN DE MERCANCÍA (CHECK DE HOY):</div>
+        <div id="visor-repartos-hoy"></div>
     </div>
 </div>
 
 <script>
-    const API_URL = "https://untried-january-thinning.ngrok-free.dev/api"; 
-    let faltas = [];
+    const API_URL = "https://TU-DOMINIO-FIJO.ngrok-free.app/";
+    const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-    async function cargarFaltas() {
+    async function sincronizarConOficina(endpoint, datos) {
         try {
-            const res = await fetch(`${API_URL}/datos`);
-            const data = await res.json();
-            faltas = data.faltas || []; renderFaltasLocales();
-        } catch(e) { console.error("Error", e); }
-    }
-
-    async function sincronizarFaltas() {
-        try {
-            await fetch(`${API_URL}/faltas`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(faltas)
+            await fetch(`${API_URL}api/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify(datos)
             });
-        } catch(e) { console.error("Error", e); }
+        } catch (error) {
+            console.error(`Error de red:`, error);
+        }
     }
+
+    async function cargarDatosDeOficina() {
+        try {
+            const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+            const db = await respuesta.json();
+            
+            if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
+            if (db.cesta) localStorage.setItem('fredware_cesta_compras', JSON.stringify(db.cesta));
+            if (db.proveedores) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
+            
+            renderFaltasLocales();
+            renderCheckMercancia(db.proveedores || [], db.cesta || []);
+        } catch (error) {
+            console.error("Modo offline activo.", error);
+            renderFaltasLocales();
+            const provs = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+            const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+            renderCheckMercancia(provs, cesta);
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', cargarDatosDeOficina);
 
     function registrarFaltaCocina() {
         const input = document.getElementById('insumo-falta');
         const valor = input.value.trim().toUpperCase();
         if(!valor) return;
-        faltas.push(valor); input.value = ''; renderFaltasLocales(); sincronizarFaltas();
+
+        let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+        faltas.push(valor);
+        localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+        sincronizarConOficina('faltas', faltas);
+
+        input.value = '';
+        renderFaltasLocales();
     }
 
     function renderFaltasLocales() {
-        const container = document.getElementById('contenedor-faltas-local'); container.innerHTML = '';
+        const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+        const container = document.getElementById('contenedor-faltas-local');
+        if(!container) return;
+        container.innerHTML = '';
+
         if(faltas.length === 0) {
-            container.innerHTML = `<div style="text-align:center; font-style:italic; color:#64748b; font-size:13px; padding:10px;">Todo en orden. Sin faltas anotadas.</div>`; return;
+            container.innerHTML = `<div style="text-align:center; font-style:italic; color:#64748b; font-size:13px; padding:10px;">No hay faltas apuntadas.</div>`;
+            return;
         }
+
         faltas.forEach((item, idx) => {
-            container.innerHTML += `<div class="item-row"><span>⚠️ <strong>${item}</strong></span><button class="btn-del" onclick="borrarFaltaLocal(${idx})">Eliminar</button></div>`;
+            container.innerHTML += `
+                <div class="item-row">
+                    <span>⚠️ <strong>${item}</strong></span>
+                    <button class="btn-del" onclick="borrarFaltaLocal(${idx})">Eliminar</button>
+                </div>
+            `;
         });
     }
 
-    function borrarFaltaLocal(idx) { faltas.splice(idx, 1); renderFaltasLocales(); sincronizarFaltas(); }
-    window.onload = cargarFaltas;
+    function borrarFaltaLocal(idx) {
+        let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+        faltas.splice(idx, 1);
+        localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+        sincronizarConOficina('faltas', faltas);
+        renderFaltasLocales();
+    }
+
+    function renderCheckMercancia(proveedores, cesta) {
+        const container = document.getElementById('visor-repartos-hoy');
+        if(!container) return;
+        container.innerHTML = '';
+
+        const hoyIdx = new Date().getDay();
+        let repartosHoy = proveedores.filter(p => p.dias_reparto && p.dias_reparto.includes(hoyIdx));
+
+        if(repartosHoy.length === 0) {
+            container.innerHTML = `<div style="font-style:italic; color:#64748b; font-size:13px; padding:5px;">Ningún reparto hoy (${DIAS_SEMANA[hoyIdx]}).</div>`;
+            return;
+        }
+
+        repartosHoy.forEach(p => {
+            let articulosDelProveedor = cesta.filter(item => item.proveedor_id === p.nombre && item.estado !== "RECIBIDO");
+            let htmlArticulos = '';
+            
+            if(articulosDelProveedor.length === 0) {
+                htmlArticulos = `<div style="font-size:12px; color:#64748b; font-style:italic; padding-top:4px;">No hay artículos pendientes.</div>`;
+            } else {
+                articulosDelProveedor.forEach(item => {
+                    let idxReal = cesta.findIndex(c => c.detalle === item.detalle && c.proveedor_id === item.proveedor_id && c.estado !== "RECIBIDO");
+                    htmlArticulos += `
+                        <div class="merca-row">
+                            <span>📦 <strong>${item.detalle}</strong></span>
+                            <button class="btn-llego" onclick="confirmarLlegadaArticulo(${idxReal})">✓ Llegó</button>
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML += `<div class="delivery-card"><strong>🏢 PROVEEDOR: ${p.nombre}</strong><div>${htmlArticulos}</div></div>`;
+        });
+    }
+
+    function confirmarLlegadaArticulo(idxGlobal) {
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        if(idxGlobal < 0 || idxGlobal >= cesta.length) return;
+        
+        cesta[idxGlobal].estado = "RECIBIDO";
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        renderCheckMercancia(proveedores, cesta);
+    }
 </script>
 </body>
 </html>
