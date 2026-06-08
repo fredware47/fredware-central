@@ -57,6 +57,7 @@
         <button class="tab-btn" id="btn-t3" onclick="switchTab(3)">📦 Catálogo y Proveedores</button>
     </div>
 
+    <!-- PESTAÑA 1 -->
     <div id="sec1" class="app-section active">
         <div class="box" style="border-left: 4px solid #2563eb;">
             <h3>➕ Introducción Manual de Artículo</h3>
@@ -89,6 +90,7 @@
         </div>
     </div>
 
+    <!-- PESTAÑA 2 -->
     <div id="sec2" class="app-section">
         <div class="box">
             <h3>📅 Distribución teórica de repartos para hoy</h3>
@@ -108,13 +110,18 @@
         </div>
     </div>
 
+    <!-- PESTAÑA 3 -->
     <div id="sec3" class="app-section">
         <div class="box">
             <h3>🏢 Alta / Modificación de Proveedor</h3>
             <label for="prov-nombre">Nombre Comercial:</label>
             <input type="text" id="prov-nombre" placeholder="Ej: MAKRO">
             
-            <label for="prov-telefono">📞 Teléfono de Contacto (Para Emergencias/Vacaciones):</label>
+            <!-- 👤 NUEVO CAMPO INTERFAZ DE USUARIO: PERSONA DE CONTACTO -->
+            <label for="prov-contacto">👤 Persona de Contacto:</label>
+            <input type="text" id="prov-contacto" placeholder="Ej: Paco, Laura Gallego...">
+            
+            <label for="prov-telefono">📞 Teléfono de Contacto:</label>
             <input type="text" id="prov-telefono" placeholder="Ej: 600123456">
 
             <label for="prov-hora">Hora Límite de Pedido:</label>
@@ -320,6 +327,7 @@
 
     function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
+        const contacto = document.getElementById('prov-contacto').value.trim(); // 👤 RECUPERACIÓN DEL NOMBRE
         const telefono = document.getElementById('prov-telefono').value.trim();
         const hora = document.getElementById('prov-hora').value;
         const txtCatalogo = document.getElementById('prov-catalogo').value.trim().toUpperCase();
@@ -335,7 +343,9 @@
 
         let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         let existenteIdx = proveedores.findIndex(p => p.nombre === nombre);
-        let nuevoProv = { nombre: nombre, telefono: telefono, hora_limite: hora, catalogo: arrayCatalogo, dias_pedido: diasPedir, dias_reparto: diasRepartir };
+        
+        // 🔄 INYECCIÓN DEL CAMPO CONTACTO EN LA BASE DE DATOS LOCAL
+        let nuevoProv = { nombre: nombre, contacto: contacto, telefono: telefono, hora_limite: hora, catalogo: arrayCatalogo, dias_pedido: diasPedir, dias_reparto: diasRepartir };
         
         if (existenteIdx !== -1) proveedores[existenteIdx] = nuevoProv;
         else proveedores.push(nuevoProv);
@@ -344,6 +354,7 @@
         sincronizarConOficina('proveedores', proveedores);
         
         document.getElementById('prov-nombre').value = '';
+        document.getElementById('prov-contacto').value = '';
         document.getElementById('prov-telefono').value = '';
         document.getElementById('prov-catalogo').value = '';
         initDaysGrids();
@@ -359,6 +370,8 @@
         proveedores.forEach((p, idx) => {
             let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
             let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono";
+            let contactoStr = p.contacto ? `👤 Contacto: ${p.contacto}` : "👤 Sin gestor asignado";
+            
             div.innerHTML += `
                 <div style="background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -366,7 +379,8 @@
                         <button class="btn-del-row" onclick="eliminarProveedor(${idx})">Eliminar</button>
                     </div>
                     <div style="margin-top:4px; color:#475569;">
-                        <span>${tel}</span> | <span>Reparte: ${listado}</span> | <span>Insumos: ${p.catalogo ? p.catalogo.length : 0}</span>
+                        <span>${contactoStr}</span> | <span>${tel}</span><br>
+                        <span style="color:#64748b; font-size:11px;">Reparte: ${listado} | Insumos: ${p.catalogo ? p.catalogo.length : 0}</span>
                     </div>
                 </div>
             `;
@@ -394,8 +408,9 @@
             container.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:13px;">Ningún reparto para hoy.</p>`;
         } else {
             repartosHoy.forEach(p => {
+                let c = p.contacto ? ` (${p.contacto})` : '';
                 let t = p.telefono ? ` - Tel: ${p.telefono}` : '';
-                container.innerHTML += `<div class="delivery-card"><strong> 🚛 Entrada teórica de: ${p.nombre}${t}</strong></div>`;
+                container.innerHTML += `<div class="delivery-card"><strong> 🚛 Entrada teórica de: ${p.nombre}${c}${t}</strong></div>`;
             });
         }
         renderFaltasCocina();
