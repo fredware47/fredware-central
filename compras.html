@@ -4,45 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>👨‍🍳 Fredware - Gestión de Compras</title>
+    <link rel="manifest" href="manifest.json">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #333; padding: 10px; }
         .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         h1 { font-size: 18px; text-align: center; margin-bottom: 15px; background: #1e293b; color: white; padding: 12px; border-radius: 8px; }
+        
         .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; }
         .tab-btn.active { background: #2563eb; color: white; }
         .app-section { display: none; }
         .app-section.active { display: block; }
+
         .box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         h3 { font-size: 14px; margin-bottom: 10px; color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; }
         label { display: block; font-size: 12px; font-weight: bold; margin-top: 8px; color: #475569; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; outline: none; }
+        
         .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
         .day-label { font-size: 11px; text-align: center; background: #fff; border: 1px solid #cbd5e1; padding: 6px 2px; border-radius: 4px; cursor: pointer; }
         .day-check { display: none; }
         .day-check:checked + .day-label { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
+
         .btn-action { background: #10b981; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
-        .btn-del-row { background: #fee2e2; color: #ef4444; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
-        .inline-form { display: flex; gap: 8px; margin-top: 6px; }
+        .btn-action:active { background: #059669; }
+        .btn-sec { background: #64748b; }
+
+        .inline-form { display: flex; gap: 8px; margin-top: 6px; position: relative; }
         .inline-form input { margin-top: 0; flex: 1; }
         .inline-form .btn-add-manual { background: #2563eb; color: white; border: none; padding: 0 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+
+        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; width: calc(100% - 110px); background: white; border: 1px solid #cbd5e1; border-radius: 0 0 6px 6px; max-height: 150px; overflow-y: auto; z-index: 999; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 10px; cursor: pointer; font-size: 13px; color: #1e293b; }
+        .suggestion-item:hover { background: #f1f5f9; }
+
         .item-list { width: 100%; border-collapse: collapse; margin-top: 8px; }
         .item-list th { background: #e2e8f0; text-align: left; padding: 6px; font-size: 11px; color: #475569; }
         .item-list td { padding: 8px 6px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
+        .btn-del-row { background: #fee2e2; color: #ef4444; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
+
         .delivery-card { background: white; border-left: 4px solid #10b981; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        
-        /* 🎨 Botón especial para el Respaldo PDF */
-        .btn-pdf { background: #dc2626; color: white; margin-top: 15px; }
-        .btn-pdf:active { background: #b91c1c; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>👨‍🍳 Fredware Compras - Panel de Control</h1>
+    
     <div class="tabs">
         <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">📥 Cesta y Pedidos</button>
-        <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">🚛 Repartos de Hoy</button>
+        <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">🚛 Vista de Control</button>
         <button class="tab-btn" id="btn-t3" onclick="switchTab(3)">📦 Catálogo y Proveedores</button>
     </div>
 
@@ -50,32 +61,48 @@
         <div class="box" style="border-left: 4px solid #2563eb;">
             <h3>➕ Introducción Manual de Artículo</h3>
             <div class="inline-form">
-                <input type="text" id="manual-articulo" placeholder="Ej: 3 Cajas de Tomate...">
+                <input type="text" id="manual-articulo" placeholder="Escribe para buscar o añadir artículo..." autocomplete="off" oninput="buscarAutocompletado(this.value)">
                 <button class="btn-add-manual" onclick="agregarArticuloManual()">➕ Añadir</button>
+                <div id="sugerencias-box" class="autocomplete-suggestions" style="display: none;"></div>
             </div>
         </div>
+
         <div class="box">
-            <h3>📝 Pegar Texto de WhatsApp</h3>
-            <textarea id="raw-whatsapp" rows="3" placeholder="Pega el bloque de texto aquí..."></textarea>
+            <h3>📝 Pegar Texto de WhatsApp (Bloque Completo)</h3>
+            <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje de WhatsApp..."></textarea>
             <button class="btn-action" onclick="parsearTextoWhatsApp()">⚡ Volcar Líneas de WhatsApp</button>
         </div>
+
         <div class="box">
-            <h3>🛒 Cesta de la Compra Actual (Online)</h3>
+            <h3>🛒 Cesta de la Compra Actual (Editable por Proveedor)</h3>
             <table class="item-list">
-                <thead><tr><th>Artículo</th><th>Proveedor</th><th style="text-align:center;">Acción</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Artículo / Detalle</th>
+                        <th>Proveedor Asignado</th>
+                        <th style="text-align: center;">Acción</th>
+                    </tr>
+                </thead>
                 <tbody id="lista-compra-cuerpo"></tbody>
             </table>
-            
-            <button class="btn-action btn-pdf" onclick="generarRespaldoPDFDesdeTablet()">📄 Generar Checklist Respaldo (PDF/Imprimir)</button>
+            <button class="btn-action btn-sec" onclick="exportarPedidosJson()">📥 Descargar Pedidos (.JSON)</button>
         </div>
     </div>
 
     <div id="sec2" class="app-section">
-        <div class="box"><h3>📅 Mercancía programada para hoy</h3><div id="visor-repartos-hoy"></div></div>
         <div class="box">
-            <h3>📝 Notas de la cocina</h3>
+            <h3>📅 Distribución teórica de repartos para hoy</h3>
+            <div id="visor-repartos-hoy"></div>
+        </div>
+        <div class="box">
+            <h3>📝 Notas de la cocina (Faltas registradas por el equipo)</h3>
             <table class="item-list">
-                <thead><tr><th>Producto Solicitado</th><th style="text-align:center;">Acción</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Producto Solicitado</th>
+                        <th style="text-align: center;">Acción</th>
+                    </tr>
+                </thead>
                 <tbody id="tabla-faltas-cocina"></tbody>
             </table>
         </div>
@@ -83,45 +110,51 @@
 
     <div id="sec3" class="app-section">
         <div class="box">
-            <h3>🏢 Alta de Proveedor</h3>
-            <label>Nombre Comercial:</label><input type="text" id="prov-nombre" placeholder="Ej: MAKRO">
-            <label>Hora Límite:</label><input type="time" id="prov-hora" value="13:00">
-            <label>Días de PEDIDO:</label><div class="days-grid" id="grid-pedidos"></div>
-            <label>Días de REPARTO:</label><div class="days-grid" id="grid-repartos"></div>
+            <h3>🏢 Alta / Modificación de Proveedor</h3>
+            <label for="prov-nombre">Nombre Comercial:</label>
+            <input type="text" id="prov-nombre" placeholder="Ej: MAKRO">
+            
+            <label for="prov-telefono">📞 Teléfono de Contacto (Para Emergencias/Vacaciones):</label>
+            <input type="text" id="prov-telefono" placeholder="Ej: 600123456">
+
+            <label for="prov-hora">Hora Límite de Pedido:</label>
+            <input type="time" id="prov-hora" value="13:00">
+
+            <label for="prov-catalogo">📦 Catálogo de Productos (Separados por comas):</label>
+            <textarea id="prov-catalogo" rows="2" placeholder="Ej: HUEVOS, HARINA, ACEITE..."></textarea>
+
+            <label>Días que hay que hacer el PEDIDO:</label>
+            <div class="days-grid" id="grid-pedidos"></div>
+
+            <label>Días que viene el REPARTO al local:</label>
+            <div class="days-grid" id="grid-repartos"></div>
+
             <button class="btn-action" onclick="guardarProveedor()">💾 Guardar Proveedor</button>
         </div>
-        <div class="box"><h3>📋 Proveedores Registrados</h3><div id="lista-prov-config"></div></div>
+        
+        <div class="box">
+            <h3>📋 Agenda de Proveedores y Catálogos</h3>
+            <div id="lista-prov-config"></div>
+        </div>
     </div>
 </div>
 
 <script>
-    const API_URL = "https://untried-january-thinning.ngrok-free.dev/api"; 
-
+    const API_URL = "https://TU-DOMINIO-FIJO.ngrok-free.app/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    let cesta = [], proveedores = [], faltas = [];
-
-    async function cargarDatosServidor() {
-        try {
-            const res = await fetch(`${API_URL}/datos`);
-            const data = await res.json();
-            cesta = data.cesta || []; proveedores = data.proveedores || []; faltas = data.faltas || [];
-            renderCesta(); renderProveedoresConfig(); renderVisorPasivo();
-        } catch (e) { console.error("Error de red", e); }
-    }
-
-    async function sincronizar(endpoint, datos) {
-        try {
-            await fetch(`${API_URL}/${endpoint}`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(datos)
-            });
-        } catch (e) { console.error("Error al guardar", e); }
-    }
 
     function initDaysGrids() {
         ['pedidos', 'repartos'].forEach(tipo => {
-            const container = document.getElementById(`grid-${tipo}`); container.innerHTML = '';
+            const container = document.getElementById(`grid-${tipo}`);
+            if(!container) return;
+            container.innerHTML = '';
             DIAS_SEMANA.forEach((dia, idx) => {
-                container.innerHTML += `<div><input type="checkbox" id="chk-${tipo}-${idx}" class="day-check" value="${idx}"><label for="chk-${tipo}-${idx}" class="day-label">${dia.substring(0,2)}</label></div>`;
+                container.innerHTML += `
+                    <div>
+                        <input type="checkbox" id="chk-${tipo}-${idx}" class="day-check" value="${idx}">
+                        <label for="chk-${tipo}-${idx}" class="day-label">${dia.substring(0,2)}</label>
+                    </div>
+                `;
             });
         });
     }
@@ -131,159 +164,311 @@
         document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
         document.getElementById(`btn-t${num}`).classList.add('active');
         document.getElementById(`sec${num}`).classList.add('active');
-        cargarDatosServidor();
+        if(num === 1) renderCesta();
+        if(num === 2) renderVisorPasivo();
+        if(num === 3) renderProveedoresConfig();
+    }
+
+    async function sincronizarConOficina(endpoint, datos) {
+        try {
+            await fetch(`${API_URL}api/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify(datos)
+            });
+        } catch (error) {
+            console.error(`Error en /api/${endpoint}:`, error);
+        }
+    }
+
+    async function cargarDatosDeOficina() {
+        try {
+            const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+            const db = await respuesta.json();
+            
+            if (db.cesta) localStorage.setItem('fredware_cesta_compras', JSON.stringify(db.cesta));
+            if (db.proveedores) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
+            if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
+            
+            renderCesta();
+            renderProveedoresConfig();
+        } catch (error) {
+            console.error("Modo offline activo.", error);
+            renderCesta();
+            renderProveedoresConfig();
+        }
+    }
+
+    function buscarAutocompletado(busqueda) {
+        const box = document.getElementById('sugerencias-box');
+        if (!busqueda.trim()) { box.style.display = 'none'; return; }
+        
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        box.innerHTML = '';
+        let coincidencias = 0;
+
+        proveedores.forEach(p => {
+            if (p.catalogo && Array.isArray(p.catalogo)) {
+                p.catalogo.forEach(prod => {
+                    if (prod.includes(busqueda.toUpperCase()) && coincidencias < 5) {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `📦 <strong>${prod}</strong> <span style="color:#64748b;font-size:11px;">(${p.nombre})</span>`;
+                        item.onclick = () => seleccionarSugerencia(prod, p.nombre);
+                        box.appendChild(item);
+                        coincidencias++;
+                    }
+                });
+            }
+        });
+        box.style.display = coincidencias > 0 ? 'block' : 'none';
+    }
+
+    function seleccionarSugerencia(producto, proveedorSugerido) {
+        document.getElementById('manual-articulo').value = producto;
+        document.getElementById('sugerencias-box').style.display = 'none';
+        document.getElementById('manual-articulo').dataset.sugerido = proveedorSugerido;
     }
 
     function agregarArticuloManual() {
         const input = document.getElementById('manual-articulo');
         const detalle = input.value.trim().toUpperCase();
         if(!detalle) return;
-        cesta.push({ detalle: detalle, proveedor_id: "S/P" });
-        input.value = ''; renderCesta(); sincronizar('cesta', cesta);
+
+        let provAsignado = input.dataset.sugerido || "S/P";
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        cesta.push({ detalle: detalle, proveedor_id: provAsignado, estado: "PENDIENTE" });
+
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        
+        input.value = '';
+        delete input.dataset.sugerido;
+        renderCesta();
     }
 
     function parsearTextoWhatsApp() {
         const txt = document.getElementById('raw-whatsapp').value.trim();
         if(!txt) return;
-        txt.split('\n').forEach(linea => {
-            if(linea.trim() !== '') cesta.push({ detalle: linea.trim().toUpperCase(), proveedor_id: "S/P" });
+        
+        let lineas = txt.split('\n');
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        
+        lineas.forEach(linea => {
+            let desc = linea.trim().toUpperCase();
+            if(desc === '') return;
+            
+            let provSugerido = "S/P";
+            for (let p of proveedores) {
+                if (p.catalogo && p.catalogo.some(prod => desc.includes(prod))) { provSugerido = p.nombre; break; }
+            }
+            cesta.push({ detalle: desc, proveedor_id: provSugerido, estado: "PENDIENTE" });
         });
-        document.getElementById('raw-whatsapp').value = ''; renderCesta(); sincronizar('cesta', cesta);
+        
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        document.getElementById('raw-whatsapp').value = '';
+        renderCesta();
     }
 
     function renderCesta() {
-        const cuerpo = document.getElementById('lista-compra-cuerpo'); cuerpo.innerHTML = '';
+        const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        const cuerpo = document.getElementById('lista-compra-cuerpo');
+        if(!cuerpo) return;
+        cuerpo.innerHTML = '';
+
         if(cesta.length === 0) {
-            cuerpo.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:10px;">La cesta está vacía.</td></tr>`; return;
+            cuerpo.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:10px;">La cesta está vacía.</td></tr>`;
+            return;
         }
+
         cesta.forEach((item, idx) => {
-            let opts = `<option value="S/P">Asignar Proveedor...</option>`;
-            proveedores.forEach(p => opts += `<option value="${p.nombre}" ${item.proveedor_id === p.nombre ? 'selected' : ''}>${p.nombre}</option>`);
+            let selectOptions = `<option value="S/P">Asignar Proveedor...</option>`;
+            proveedores.forEach(p => {
+                selectOptions += `<option value="${p.nombre}" ${item.proveedor_id === p.nombre ? 'selected' : ''}>${p.nombre}</option>`;
+            });
+
+            let estiloRecibido = item.estado === "RECIBIDO" ? 'style="text-decoration: line-through; color: #10b981;"' : '';
+            let tagCheck = item.estado === "RECIBIDO" ? ' ✓ (OK en Cocina)' : '';
+
             const fila = document.createElement('tr');
-            fila.innerHTML = `<td><strong>${item.detalle}</strong></td><td><select onchange="cambiarProveedorItem(${idx}, this.value)">${opts}</select></td><td style="text-align:center;"><button class="btn-del-row" onclick="quitarItemCesta(${idx})">❌</button></td>`;
+            fila.innerHTML = `
+                <td ${estiloRecibido}><strong>${item.detalle}</strong>${tagCheck}</td>
+                <td><select onchange="cambiarProveedorItem(${idx}, this.value)">${selectOptions}</select></td>
+                <td style="text-align:center;"><button class="btn-del-row" onclick="quitarItemCesta(${idx})">❌</button></td>
+            `;
             cuerpo.appendChild(fila);
         });
     }
 
-    function cambiarProveedorItem(idx, provNombre) { cesta[idx].proveedor_id = provNombre; sincronizar('cesta', cesta); }
-    function quitarItemCesta(idx) { cesta.splice(idx, 1); renderCesta(); sincronizar('cesta', cesta); }
+    function cambiarProveedorItem(idx, provNombre) {
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        cesta[idx].proveedor_id = provNombre;
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+    }
+
+    function quitarItemCesta(idx) {
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        cesta.splice(idx, 1);
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        renderCesta();
+    }
 
     function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
+        const telefono = document.getElementById('prov-telefono').value.trim();
         const hora = document.getElementById('prov-hora').value;
+        const txtCatalogo = document.getElementById('prov-catalogo').value.trim().toUpperCase();
         if(!nombre) return;
-        let dPedir = [], dRepar = [];
+
+        let arrayCatalogo = txtCatalogo ? txtCatalogo.split(',').map(i => i.trim()).filter(i => i !== '') : [];
+        let diasPedir = [];
+        let diasRepartir = [];
         DIAS_SEMANA.forEach((_, idx) => {
-            if(document.getElementById(`chk-pedidos-${idx}`).checked) dPedir.push(idx);
-            if(document.getElementById(`chk-repartos-${idx}`).checked) dRepar.push(idx);
+            if(document.getElementById(`chk-pedidos-${idx}`).checked) diasPedir.push(idx);
+            if(document.getElementById(`chk-repartos-${idx}`).checked) diasRepartir.push(idx);
         });
-        proveedores.push({ nombre: nombre, hora_limite: hora, dias_pedido: dPedir, dias_reparto: dRepar });
-        document.getElementById('prov-nombre').value = ''; initDaysGrids(); renderProveedoresConfig(); sincronizar('proveedores', proveedores);
+
+        let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        let existenteIdx = proveedores.findIndex(p => p.nombre === nombre);
+        let nuevoProv = { nombre: nombre, telefono: telefono, hora_limite: hora, catalogo: arrayCatalogo, dias_pedido: diasPedir, dias_reparto: diasRepartir };
+        
+        if (existenteIdx !== -1) proveedores[existenteIdx] = nuevoProv;
+        else proveedores.push(nuevoProv);
+
+        localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
+        sincronizarConOficina('proveedores', proveedores);
+        
+        document.getElementById('prov-nombre').value = '';
+        document.getElementById('prov-telefono').value = '';
+        document.getElementById('prov-catalogo').value = '';
+        initDaysGrids();
+        renderProveedoresConfig();
+        renderCesta();
     }
 
     function renderProveedoresConfig() {
-        const div = document.getElementById('lista-prov-config'); div.innerHTML = '';
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        const div = document.getElementById('lista-prov-config');
+        if(!div) return;
+        div.innerHTML = '';
         proveedores.forEach((p, idx) => {
-            div.innerHTML += `<div style="background:white; padding:8px; margin-bottom:4px; border-radius:4px; font-size:12px; display:flex; justify-content:space-between; align-items:center;"><span><strong>${p.nombre}</strong> - Límite: ${p.hora_limite}</span><button class="btn-del-row" onclick="eliminarProveedor(${idx})">Eliminar</button></div>`;
+            let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
+            let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono";
+            div.innerHTML += `
+                <div style="background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>🏢 ${p.nombre}</strong>
+                        <button class="btn-del-row" onclick="eliminarProveedor(${idx})">Eliminar</button>
+                    </div>
+                    <div style="margin-top:4px; color:#475569;">
+                        <span>${tel}</span> | <span>Reparte: ${listado}</span> | <span>Insumos: ${p.catalogo ? p.catalogo.length : 0}</span>
+                    </div>
+                </div>
+            `;
         });
     }
 
-    function eliminarProveedor(idx) { proveedores.splice(idx, 1); renderProveedoresConfig(); sincronizar('proveedores', proveedores); }
+    function eliminarProveedor(idx) {
+        let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        proveedores.splice(idx, 1);
+        localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
+        sincronizarConOficina('proveedores', proveedores);
+        renderProveedoresConfig();
+        renderCesta();
+    }
 
     function renderVisorPasivo() {
         const hoyIdx = new Date().getDay();
-        const container = document.getElementById('visor-repartos-hoy'); container.innerHTML = '';
-        let hoy = proveedores.filter(p => p.dias_reparto.includes(hoyIdx));
-        if(hoy.length === 0) container.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:13px;">Ningún reparto programado.</p>`;
-        else hoy.forEach(p => container.innerHTML += `<div class="delivery-card"><strong><b>🚛 Entrada de mercancía: ${p.nombre}</b></strong></div>`);
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        const container = document.getElementById('visor-repartos-hoy');
+        if(!container) return;
+        container.innerHTML = '';
+
+        let repartosHoy = proveedores.filter(p => p.dias_reparto && p.dias_reparto.includes(hoyIdx));
+        if(repartosHoy.length === 0) {
+            container.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:13px;">Ningún reparto para hoy.</p>`;
+        } else {
+            repartosHoy.forEach(p => {
+                let t = p.telefono ? ` - Tel: ${p.telefono}` : '';
+                container.innerHTML += `<div class="delivery-card"><strong> 🚛 Entrada teórica de: ${p.nombre}${t}</strong></div>`;
+            });
+        }
         renderFaltasCocina();
     }
 
     function renderFaltasCocina() {
-        const cuerpo = document.getElementById('tabla-faltas-cocina'); cuerpo.innerHTML = '';
-        if(faltas.length === 0) { cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:10px;">Sin faltas registradas.</td></tr>`; return; }
+        const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+        const cuerpo = document.getElementById('tabla-faltas-cocina');
+        if(!cuerpo) return;
+        cuerpo.innerHTML = '';
+
+        if(faltas.length === 0) {
+            cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:10px;">La cocina no ha anotado faltas.</td></tr>`;
+            return;
+        }
+
         faltas.forEach((item, idx) => {
             const fila = document.createElement('tr');
-            fila.innerHTML = `<td>⚠️ <strong>${item}</strong></td><td style="text-align:center;"><button class="btn-del-row" style="background:#dbeafe; color:#2563eb;" onclick="pasarFaltaACesta(${idx})">🛒 Cargar</button></td>`;
+            fila.innerHTML = `
+                <td>⚠️ <strong>${item}</strong></td>
+                <td style="text-align:center;"><button class="btn-del-row" style="background:#dbeafe; color:#2563eb;" onclick="pasarFaltaACesta(${idx})">🛒 Cargar</button></td>
+            `;
             cuerpo.appendChild(fila);
         });
     }
 
     function pasarFaltaACesta(idx) {
-        cesta.push({ detalle: faltas[idx], proveedor_id: "S/P" });
-        faltas.splice(idx, 1);
-        renderVisorPasivo(); renderCesta(); sincronizar('faltas', faltas); sincronizar('cesta', cesta);
-    }
-
-    // 📄 FUNCIÓN DE RESPALDO DIRECTO DESDE LA INTERFAZ DE LA TABLET
-    function generarRespaldoPDFDesdeTablet() {
-        if (cesta.length === 0) {
-            alert("La cesta está vacía. No hay nada que respaldar.");
-            return;
-        }
-
-        // Calcular fecha de mañana
-        let hoy = new Date();
-        let manana = new Date(hoy);
-        manana.setDate(hoy.getDate() + 1);
+        let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         
-        let fechaStr = manana.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        let diaNombre = DIAS_SEMANA[manana.getDay()].toUpperCase();
-
-        // Agrupar por proveedor
-        let agrupados = {};
-        cesta.forEach(item => {
-            let prov = item.proveedor_id || "SIN PROVEEDOR ASIGNADO";
-            if (!agrupados[prov]) agrupados[prov] = [];
-            agrupados[prov].push(item.detalle);
-        });
-
-        // Construir la plantilla de texto plano para impresión limpia
-        let txt = "====================================================\n";
-        txt += "   📋 HOJA DE RESPALDO DE RECEPCIÓN - FREDWARE\n";
-        txt += `  PREVISIÓN REPARTO: ${fechaStr} | DÍA: ${diaNombre}\n`;
-        txt += "====================================================\n\n";
-        txt += "📦 MERCANCÍA PROGRAMADA (CHECKLIST CON BOLÍGRAFO):\n";
-        txt += "----------------------------------------------------\n";
-
-        for (let prov in agrupados) {
-            txt += `\n🏢 PROVEEDOR: ${prov}\n`;
-            txt += "----------------------------------------------------\n";
-            agrupados[prov].forEach(art => {
-                txt += `  • [ ] ${art}\n`;
-            });
+        let desc = faltas[idx];
+        let provSugerido = "S/P";
+        for (let p of proveedores) {
+            if (p.catalogo && p.catalogo.some(prod => desc.includes(prod))) { provSugerido = p.nombre; break; }
         }
 
-        txt += "\n\n====================================================\n";
-        txt += " 📝 NOTA: REVISAR TEMPERATURAS Y ESTADO AL DESCARGAR\n";
-        txt += "====================================================";
-
-        // Abrir una nueva pestaña limpia e inyectar el formato para disparar el menú de impresión de la tablet
-        let ventanaImpresion = window.open('', '_blank');
-        ventanaImpresion.document.write(`
-            <html>
-            <head>
-                <title>Respaldo Fredware Compras - ${fechaStr}</title>
-                <style>
-                    body { font-family: 'Courier New', Courier, monospace; padding: 20px; line-height: 1.5; background: white; color: black; }
-                    pre { font-size: 15px; white-space: pre-wrap; }
-                </style>
-            </head>
-            <body>
-                <pre>${txt}</pre>
-                <script>
-                    window.onload = function() {
-                        window.print();
-                    }
-                <\/script>
-            </body>
-            </html>
-        `);
-        ventanaImpresion.document.close();
+        cesta.push({ detalle: desc, proveedor_id: provSugerido, estado: "PENDIENTE" });
+        faltas.splice(idx, 1);
+        
+        localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        
+        sincronizarConOficina('faltas', faltas);
+        sincronizarConOficina('cesta', cesta);
+        renderVisorPasivo();
+        renderCesta();
     }
+
+    function exportarPedidosJson() {
+        const cesta = localStorage.getItem('fredware_cesta_compras');
+        if(!cesta || JSON.parse(cesta).length === 0) return;
+        const dataStr = JSON.stringify({ "cesta": JSON.parse(cesta) }, null, 4);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `PEDIDO_CASA_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    document.addEventListener('click', (e) => {
+        if (e.target.id !== 'manual-articulo') {
+            const box = document.getElementById('sugerencias-box');
+            if(box) box.style.display = 'none';
+        }
+    });
 
     initDaysGrids();
-    window.onload = cargarDatosServidor;
+    cargarDatosDeOficina();
 </script>
 </body>
 </html>
