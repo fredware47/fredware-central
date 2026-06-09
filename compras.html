@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>👨‍🍳 Fredware - Gestión de Compras</title>
-    <link rel="manifest" href="manifest.json">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #333; padding: 10px; }
@@ -57,7 +56,6 @@
         <button class="tab-btn" id="btn-t3" onclick="switchTab(3)">📦 Catálogo y Proveedores</button>
     </div>
 
-    <!-- PESTAÑA 1 -->
     <div id="sec1" class="app-section active">
         <div class="box" style="border-left: 4px solid #2563eb;">
             <h3>➕ Introducción Manual de Artículo</h3>
@@ -90,7 +88,6 @@
         </div>
     </div>
 
-    <!-- PESTAÑA 2 -->
     <div id="sec2" class="app-section">
         <div class="box">
             <h3>📅 Distribución teórica de repartos para hoy</h3>
@@ -110,14 +107,12 @@
         </div>
     </div>
 
-    <!-- PESTAÑA 3 -->
     <div id="sec3" class="app-section">
         <div class="box">
             <h3>🏢 Alta / Modificación de Proveedor</h3>
             <label for="prov-nombre">Nombre Comercial:</label>
             <input type="text" id="prov-nombre" placeholder="Ej: MAKRO">
             
-            <!-- 👤 NUEVO CAMPO INTERFAZ DE USUARIO: PERSONA DE CONTACTO -->
             <label for="prov-contacto">👤 Persona de Contacto:</label>
             <input type="text" id="prov-contacto" placeholder="Ej: Paco, Laura Gallego...">
             
@@ -147,7 +142,8 @@
 </div>
 
 <script>
-    const API_URL = "https://TU-DOMINIO-FIJO.ngrok-free.app/";
+    // 🎯 TU TÚNEL ESTÁTICO DE NGROK INYECTADO DIRECTAMENTE
+    const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
     function initDaysGrids() {
@@ -327,7 +323,7 @@
 
     function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
-        const contacto = document.getElementById('prov-contacto').value.trim(); // 👤 RECUPERACIÓN DEL NOMBRE
+        const contacto = document.getElementById('prov-contacto').value.trim();
         const telefono = document.getElementById('prov-telefono').value.trim();
         const hora = document.getElementById('prov-hora').value;
         const txtCatalogo = document.getElementById('prov-catalogo').value.trim().toUpperCase();
@@ -344,7 +340,6 @@
         let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         let existenteIdx = proveedores.findIndex(p => p.nombre === nombre);
         
-        // 🔄 INYECCIÓN DEL CAMPO CONTACTO EN LA BASE DE DATOS LOCAL
         let nuevoProv = { nombre: nombre, contacto: contacto, telefono: telefono, hora_limite: hora, catalogo: arrayCatalogo, dias_pedido: diasPedir, dias_reparto: diasRepartir };
         
         if (existenteIdx !== -1) proveedores[existenteIdx] = nuevoProv;
