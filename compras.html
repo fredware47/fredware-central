@@ -10,6 +10,9 @@
         .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         h1 { font-size: 18px; text-align: center; margin-bottom: 15px; background: #1e293b; color: white; padding: 12px; border-radius: 8px; }
         
+        /* 🚨 MARQUESINA DE ALERTA DE TIEMPO EXCLUSIVA DE COMPRAS */
+        .banner-alerta-tiempo { display: none; background: #ef4444; color: white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; text-align: center; margin-bottom: 15px; animation: flashFred 1.5s infinite; border: 2px solid white; }
+
         .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; }
         .tab-btn.active { background: #2563eb; color: white; }
@@ -52,10 +55,19 @@
         .btn-wa-send:active { background: #128c7e; }
 
         .delivery-card { background: white; border-left: 4px solid #10b981; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        @keyframes flashFred {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; background: #b91c1c; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
+    <!-- 🚨 BANNER DE ALERTA TEMPORAL DE COMPRAS -->
+    <div id="alerta-reloj-compras" class="banner-alerta-tiempo"></div>
+
     <h1>👨‍🍳 Fredware Compras - Panel de Control</h1>
     
     <div class="tabs">
@@ -109,7 +121,12 @@
                 </thead>
                 <tbody id="lista-compra-cuerpo"></tbody>
             </table>
-            <button class="btn-action btn-sec" onclick="exportarPedidosJson()">📥 Descargar Pedidos (.JSON)</button>
+            
+            <!-- ⚡ DOBLE BOTÓN DINÁMICO: REMOTO + LOCAL -->
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-action" style="background: #2563eb; margin-top: 0;" onclick="subirCestaAlServidor()">⚡ Sincronizar Pedidos con la Oficina</button>
+                <button class="btn-action btn-sec" style="width: auto; padding: 12px 20px; margin-top: 0;" onclick="exportarPedidosJson()">📥 Guardar Copia .JSON</button>
+            </div>
         </div>
     </div>
 
@@ -228,6 +245,72 @@
         }
     }
 
+    // ⚡ NUEVA FUNCIÓN: Envía de una tajada la cesta local al backend por ngrok
+    function subirCestaAlServidor() {
+        const cestaLocal = localStorage.getItem('fredware_cesta_compras');
+        if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
+            alert("⚠️ La cesta está vacía. Añade artículos antes de sincronizar.");
+            return;
+        }
+
+        const btn = document.querySelector("button[onclick='subirCestaAlServidor()']");
+        if(btn) { btn.disabled = true; btn.innerText = "⏳ Sincronizando..."; }
+
+        fetch(`${API_URL}api/cesta`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify(JSON.parse(cestaLocal))
+        })
+        .then(res => {
+            if (res.ok) alert("✅ ¡Volcado con éxito! Pedidos inyectados en el servidor de la oficina.");
+            else alert("❌ El servidor de la oficina dio un error al procesar el JSON.");
+        })
+        .catch(err => {
+            console.error(err);
+            alert("❌ Conexión fallida. Revisa que el PC de la oficina y ngrok estén encendidos.");
+        })
+        .finally(() => {
+            if(btn) { btn.disabled = false; btn.innerText = "⚡ Sincronizar Pedidos con la Oficina"; }
+        });
+    }
+
+    // ⏰ NUEVA FUNCIÓN: Reloj local exclusivo del panel de compras
+    function verificarAlertasRelojCompras(proveedores, cesta) {
+        const banner = document.getElementById('alerta-reloj-compras');
+        if(!banner) return;
+
+        const ahora = new Date();
+        const hoyIdx = ahora.getDay();
+        let alertasActivas = [];
+
+        proveedores.forEach(p => {
+            const esDiaDePedido = p.dias_pedido && p.dias_pedido.includes(hoyIdx);
+            const tieneArticulosPendientes = cesta.some(item => item.proveedor_id === p.nombre && item.estado !== "RECIBIDO");
+
+            if (esDiaDePedido && tieneArticulosPendientes) {
+                const horaLimiteStr = p.hora_limite || "13:00";
+                const [horas, minutos] = horaLimiteStr.split(':').map(Number);
+                
+                const limiteRef = new Date();
+                limiteRef.setHours(horas, minutos, 0, 0);
+
+                const diferenciaMinutos = (limiteRef - ahora) / (1000 * 60);
+
+                if (diferenciaMinutos > 0 && diferenciaMinutos <= 60) {
+                    alertasActivas.push(`⏱️ El pedido de *${p.nombre}* cierra en ${Math.round(diferenciaMinutos)} min (${horaLimiteStr})`);
+                }
+            }
+        });
+
+        if (alertasActivas.length > 0) {
+            banner.innerHTML = `🚨 ALERTA DE CIERRE DE PEDIDOS:<br>${alertasActivas.join('<br>')}`;
+            banner.style.display = 'block';
+            if (navigator.vibrate) navigator.vibrate([400, 200, 400]); // Vibración doble
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
     function buscarAutocompletado(busqueda) {
         const box = document.getElementById('sugerencias-box');
         if (!busqueda.trim()) { box.style.display = 'none'; return; }
@@ -333,13 +416,11 @@
         renderCesta();
     }
 
-    // 🎯 NUEVA FUNCIÓN: Genera las cajitas de envío consolidated por WhatsApp
     function renderBloquesWhatsApp(cesta, proveedores) {
         const contenedor = document.getElementById('contenedor-bloques-whatsapp');
         if(!contenedor) return;
         contenedor.innerHTML = '';
 
-        // Sacamos los proveedores únicos que tienen mercancía pendiente en la cesta
         let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado !== "RECIBIDO").map(i => i.proveedor_id))];
 
         if(proveedoresConPedidos.length === 0) {
@@ -368,7 +449,6 @@
         });
     }
 
-    // 🎯 NUEVA FUNCIÓN: Redacta y redirecciona a la API de WhatsApp de forma nativa
     function dispararWhatsAppProveedor(provNombre, telefono) {
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -377,7 +457,6 @@
         const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado !== "RECIBIDO");
         if(articulos.length === 0) return;
 
-        // Redactamos el mensaje de forma bonita
         let contactoStr = datosProv.contacto ? ` ${datosProv.contacto}` : '';
         let textoMensaje = `¡Hola${contactoStr}! Te paso el pedido de hoy para el restaurante:\n\n`;
         
@@ -386,17 +465,12 @@
         });
         
         textoMensaje += `\n*Fredware System 👨‍🍳*`;
-
-        // Codificamos el texto para que sea apto para URLs de internet
         let textoUrl = encodeURIComponent(textoMensaje);
         
-        // Si no hay teléfono, abrimos WhatsApp para que Fred elija el contacto a mano
         let urlDestino = `https://wa.me/?text=${textoUrl}`;
         if(telefono) {
             urlDestino = `https://wa.me/${telefono}?text=${textoUrl}`;
         }
-
-        // Abrimos la ventana del chat
         window.open(urlDestino, '_blank');
     }
 
@@ -407,8 +481,8 @@
         if(!cuerpo) return;
         cuerpo.innerHTML = '';
 
-        // Actualizamos también la sección de bloques rápidos de WhatsApp
         renderBloquesWhatsApp(cesta, proveedores);
+        verificarAlertasRelojCompras(proveedores, cesta); // ⏰ Escaneo de hora límite en cada redibujado
 
         if(cesta.length === 0) {
             cuerpo.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:10px;">La cesta está vacía.</td></tr>`;
