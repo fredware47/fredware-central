@@ -30,11 +30,14 @@
         .btn-action:active { background: #059669; }
         .btn-sec { background: #64748b; }
 
-        .inline-form { display: flex; gap: 8px; margin-top: 6px; position: relative; }
-        .inline-form input { margin-top: 0; flex: 1; }
-        .inline-form .btn-add-manual { background: #2563eb; color: white; border: none; padding: 0 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        /* Formulario dinámico con cantidades fijas */
+        .inline-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; position: relative; }
+        .inline-form .input-cant { width: 70px; }
+        .inline-form .select-uni { width: 100px; }
+        .inline-form .input-art { flex: 1; min-width: 200px; }
+        .inline-form .btn-add-manual { background: #2563eb; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
 
-        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; width: calc(100% - 110px); background: white; border: 1px solid #cbd5e1; border-radius: 0 0 6px 6px; max-height: 150px; overflow-y: auto; z-index: 999; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 0 0 6px 6px; max-height: 150px; overflow-y: auto; z-index: 999; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .suggestion-item { padding: 10px; cursor: pointer; font-size: 13px; color: #1e293b; }
         .suggestion-item:hover { background: #f1f5f9; }
 
@@ -58,17 +61,27 @@
 
     <div id="sec1" class="app-section active">
         <div class="box" style="border-left: 4px solid #2563eb;">
-            <h3>➕ Introducción Manual de Artículo</h3>
+            <h3>➕ Introducción Manual de Artículo con Medida</h3>
             <div class="inline-form">
-                <input type="text" id="manual-articulo" placeholder="Escribe para buscar o añadir artículo..." autocomplete="off" oninput="buscarAutocompletado(this.value)">
+                <input type="number" id="manual-cantidad" class="input-cant" value="1" min="1" placeholder="Cant">
+                <select id="manual-unidad" class="select-uni">
+                    <option value="KG">Kg</option>
+                    <option value="L">Litros</option>
+                    <option value="CAJAS">Cajas</option>
+                    <option value="BOTES">Botes</option>
+                    <option value="UNIDADES">Unidades</option>
+                </select>
+                <div class="input-art" style="position: relative;">
+                    <input type="text" id="manual-articulo" placeholder="Escribe artículo..." autocomplete="off" oninput="buscarAutocompletado(this.value)">
+                    <div id="sugerencias-box" class="autocomplete-suggestions" style="display: none;"></div>
+                </div>
                 <button class="btn-add-manual" onclick="agregarArticuloManual()">➕ Añadir</button>
-                <div id="sugerencias-box" class="autocomplete-suggestions" style="display: none;"></div>
             </div>
         </div>
 
         <div class="box">
             <h3>📝 Pegar Texto de WhatsApp (Bloque Completo)</h3>
-            <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje de WhatsApp..."></textarea>
+            <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje (Ej: 7 kg de carne o 2 cajas de tomate)..."></textarea>
             <button class="btn-action" onclick="parsearTextoWhatsApp()">⚡ Volcar Líneas de WhatsApp</button>
         </div>
 
@@ -77,7 +90,7 @@
             <table class="item-list">
                 <thead>
                     <tr>
-                        <th>Artículo / Detalle</th>
+                        <th>Artículo / Medida / Detalle</th>
                         <th>Proveedor Asignado</th>
                         <th style="text-align: center;">Acción</th>
                     </tr>
@@ -142,7 +155,6 @@
 </div>
 
 <script>
-    // 🎯 TU TÚNEL ESTÁTICO DE NGROK INYECTADO DIRECTAMENTE
     const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -234,19 +246,29 @@
     }
 
     function agregarArticuloManual() {
-        const input = document.getElementById('manual-articulo');
-        const detalle = input.value.trim().toUpperCase();
-        if(!detalle) return;
+        const inputArt = document.getElementById('manual-articulo');
+        const inputCant = document.getElementById('manual-cantidad');
+        const selectUni = document.getElementById('manual-unidad');
 
-        let provAsignado = input.dataset.sugerido || "S/P";
+        const producto = inputArt.value.trim().toUpperCase();
+        const cantidad = inputCant.value.trim();
+        const unidad = selectUni.value;
+
+        if(!producto) return;
+
+        // Formateamos el detalle de forma limpia: [7 KG] CARNE
+        const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
+
+        let provAsignado = inputArt.dataset.sugerido || "S/P";
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        cesta.push({ detalle: detalle, proveedor_id: provAsignado, estado: "PENDIENTE" });
+        cesta.push({ detalle: detalleFormateado, proveedor_id: provAsignado, estado: "PENDIENTE" });
 
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('cesta', cesta);
         
-        input.value = '';
-        delete input.dataset.sugerido;
+        inputArt.value = '';
+        inputCant.value = '1';
+        delete inputArt.dataset.sugerido;
         renderCesta();
     }
 
@@ -262,11 +284,36 @@
             let desc = linea.trim().toUpperCase();
             if(desc === '') return;
             
+            // Regex inteligente para pescar patrones como "7 KG DE CARNE", "2 CAJAS TOMATE", "12 BOTES LECHE"
+            let regexMedidas = /^(\d+)\s*(KG|L|Caja|Cajas|Bote|Botes|Ud|Uds|Unidades)?\s*(?:DE)?\s+(.+)$/i;
+            let coincidencia = desc.match(regexMedidas);
+            
+            let detalleFinal = desc;
+            let productoSolo = desc;
+
+            if (coincidencia) {
+                let cant = coincidencia[1];
+                let unidad = coincidencia[2] || "UNIDADES";
+                productoSolo = coincidencia[3].trim();
+                
+                // Unificamos nombres de unidades comunes
+                if (unidad.startsWith("KG")) unidad = "KG";
+                else if (unidad.startsWith("L")) unidad = "L";
+                else if (unidad.startsWith("CAJA")) unidad = "CAJAS";
+                else if (unidad.startsWith("BOTE")) unidad = "BOTES";
+                else unidad = "UNIDADES";
+
+                detalleFinal = `[${cant} ${unidad}] ${productoSolo}`;
+            }
+            
             let provSugerido = "S/P";
             for (let p of proveedores) {
-                if (p.catalogo && p.catalogo.some(prod => desc.includes(prod))) { provSugerido = p.nombre; break; }
+                if (p.catalogo && p.catalogo.some(prod => productoSolo.includes(prod) || prod.includes(productoSolo))) { 
+                    provSugerido = p.nombre; 
+                    break; 
+                }
             }
-            cesta.push({ detalle: desc, proveedor_id: provSugerido, estado: "PENDIENTE" });
+            cesta.push({ detalle: detalleFinal, proveedor_id: provSugerido, estado: "PENDIENTE" });
         });
         
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
