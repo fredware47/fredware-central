@@ -53,6 +53,8 @@
         .whatsapp-provider-card strong { color: #2e7d32; font-size: 13px; }
         .btn-wa-send { background: #25d366; color: white; border: none; padding: 8px 14px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
         .btn-wa-send:active { background: #128c7e; }
+        .btn-wa-del { background: #64748b; color: white; border: none; padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .btn-wa-del:active { background: #475569; }
 
         .delivery-card { background: white; border-left: 4px solid #10b981; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 
@@ -65,7 +67,6 @@
 </head>
 <body>
 <div class="container">
-    <!-- 🚨 BANNER DE ALERTA TEMPORAL DE COMPRAS -->
     <div id="alerta-reloj-compras" class="banner-alerta-tiempo"></div>
 
     <h1>👨‍🍳 Fredware Compras - Panel de Control</h1>
@@ -76,7 +77,6 @@
         <button class="tab-btn" id="btn-t3" onclick="switchTab(3)">📦 Catálogo y Proveedores</button>
     </div>
 
-    <!-- PESTAÑA 1 -->
     <div id="sec1" class="app-section active">
         <div class="box" style="border-left: 4px solid #2563eb;">
             <h3>➕ Introducción Manual de Artículo con Medida</h3>
@@ -103,7 +103,6 @@
             <button class="btn-action" onclick="parsearTextoWhatsApp()">⚡ Volcar Líneas de WhatsApp</button>
         </div>
 
-        <!-- 🚀 NUEVA SECCIÓN DE LANZAMIENTO RÁPIDO DE WHATSAPP -->
         <div class="box" style="border-left: 4px solid #25d366;">
             <h3>📲 Lanzar Pedidos Consolidados por WhatsApp</h3>
             <div id="contenedor-bloques-whatsapp" style="margin-top: 8px;"></div>
@@ -122,7 +121,6 @@
                 <tbody id="lista-compra-cuerpo"></tbody>
             </table>
             
-            <!-- ⚡ DOBLE BOTÓN DINÁMICO: REMOTO + LOCAL -->
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button class="btn-action" style="background: #2563eb; margin-top: 0;" onclick="subirCestaAlServidor()">⚡ Sincronizar Pedidos con la Oficina</button>
                 <button class="btn-action btn-sec" style="width: auto; padding: 12px 20px; margin-top: 0;" onclick="exportarPedidosJson()">📥 Guardar Copia .JSON</button>
@@ -130,7 +128,6 @@
         </div>
     </div>
 
-    <!-- PESTAÑA 2 -->
     <div id="sec2" class="app-section">
         <div class="box">
             <h3>📅 Distribución teórica de repartos para hoy</h3>
@@ -150,7 +147,6 @@
         </div>
     </div>
 
-    <!-- PESTAÑA 3 -->
     <div id="sec3" class="app-section">
         <div class="box">
             <h3>🏢 Alta / Modificación de Proveedor</h3>
@@ -245,7 +241,7 @@
         }
     }
 
-    // ⚡ NUEVA FUNCIÓN: Envía de una tajada la cesta local al backend por ngrok
+    // ⚡ Envía la cesta local al backend por ngrok
     function subirCestaAlServidor() {
         const cestaLocal = localStorage.getItem('fredware_cesta_compras');
         if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
@@ -274,7 +270,7 @@
         });
     }
 
-    // ⏰ NUEVA FUNCIÓN: Reloj local exclusivo del panel de compras
+    // ⏰ Reloj local exclusivo del panel de compras
     function verificarAlertasRelojCompras(proveedores, cesta) {
         const banner = document.getElementById('alerta-reloj-compras');
         if(!banner) return;
@@ -292,7 +288,7 @@
                 const [horas, minutos] = horaLimiteStr.split(':').map(Number);
                 
                 const limiteRef = new Date();
-                limiteRef.setHours(horas, minutos, 0, 0);
+                limiteRef.setHours(horas, minutes, 0, 0);
 
                 const diferenciaMinutos = (limiteRef - ahora) / (1000 * 60);
 
@@ -443,10 +439,25 @@
                     <strong>🏢 ${provNombre}${contactoNombre}</strong>
                     <div style="font-size:11px; color:#475569; margin-top:2px;">Lineas de pedido: ${articulos.length}</div>
                 </div>
-                <button class="btn-wa-send" onclick="dispararWhatsAppProveedor('${provNombre}', '${telfDestino}')">💬 Enviar</button>
+                <div style="display:flex; gap: 8px;">
+                    <button class="btn-wa-send" onclick="dispararWhatsAppProveedor('${provNombre}', '${telfDestino}')">💬 Enviar</button>
+                    <button class="btn-wa-del" onclick="limpiarBloqueProveedor('${provNombre}')">❌ Ocultar</button>
+                </div>
             `;
             contenedor.appendChild(card);
         });
+    }
+
+    // 🎯 NUEVA FUNCIÓN: Limpia y purga todos los artículos pendientes de un proveedor del bloque de WhatsApp
+    function limpiarBloqueProveedor(provNombre) {
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        
+        // Eliminamos las líneas de este proveedor específico que estén pendientes
+        cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado !== "RECIBIDO"));
+        
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        renderCesta();
     }
 
     function dispararWhatsAppProveedor(provNombre, telefono) {
@@ -482,7 +493,7 @@
         cuerpo.innerHTML = '';
 
         renderBloquesWhatsApp(cesta, proveedores);
-        verificarAlertasRelojCompras(proveedores, cesta); // ⏰ Escaneo de hora límite en cada redibujado
+        verificarAlertasRelojCompras(proveedores, cesta);
 
         if(cesta.length === 0) {
             cuerpo.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:10px;">La cesta está vacía.</td></tr>`;
