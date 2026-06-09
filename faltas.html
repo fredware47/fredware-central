@@ -27,16 +27,18 @@
         .repartos-box { margin-top: 25px; border-top: 2px solid #334155; padding-top: 20px; }
         .repartos-titulo { font-size: 14px; font-weight: bold; color: #10b981; margin-bottom: 12px; }
         
-        /* 🗗 NUEVO DISEÑO DE ACORDEÓN DESPLEGABLE */
-        .accordion-item { background: #1a2436; border: 1px solid #475569; margin-bottom: 8px; border-radius: 6px; overflow: hidden; }
+        /* 🗗 DISEÑO DE ACORDEÓN DESPLEGABLE CON BORDES DINÁMICOS */
+        .accordion-item { background: #1a2436; border: 2px solid #475569; margin-bottom: 8px; border-radius: 6px; overflow: hidden; transition: border-color 0.2s; }
         
         .accordion-header { background: #243347; padding: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; transition: background 0.2s; }
         .accordion-header:hover { background: #2e3f57; }
-        .accordion-title { font-size: 14px; font-weight: bold; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+        .accordion-title { font-size: 14px; font-weight: bold; color: #38bdf8; display: flex; align-items: center; gap: 8px; width: 100%; }
         
-        /* 🔴 BADGE DE NOTIFICACIÓN DE ARTÍCULOS PENDIENTES */
-        .badge-count { background: #ef4444; color: white; font-size: 11px; font-weight: bold; padding: 2px 7px; border-radius: 10px; min-width: 18px; text-align: center; }
-        .badge-empty { background: #10b981; color: white; }
+        /* 🔴🟡🟢 NUEVO CONTROL DE COLORES INTEGRADO (MAÑANA VS ESPERA) */
+        .badge-count { color: white; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 10px; min-width: 20px; text-align: center; margin-left: auto; margin-right: 10px; }
+        .badge-rojo { background: #ef4444; animation: pulseFredware 2s infinite; }
+        .badge-naranja { background: #f97316; }
+        .badge-empty { background: #10b981; }
         
         .accordion-icon { color: #94a3b8; font-size: 12px; transition: transform 0.2s; }
         .accordion-item.open .accordion-icon { transform: rotate(180deg); }
@@ -49,6 +51,13 @@
         .merca-row span { font-size: 13px; color: #f8fafc; }
         .btn-llego { background: #10b981; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .btn-llego:active { background: #059669; }
+
+        /* Latido visual para la mercancía que entra mañana */
+        @keyframes pulseFredware {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
     </style>
 </head>
 <body>
@@ -68,7 +77,7 @@
     </div>
 
     <div class="repartos-box">
-        <div class="repartos-titulo">📥 RECEPCIÓN DE MERCANCÍA (CHECK DE HOY):</div>
+        <div class="repartos-titulo">📥 CONTROL DE PEDIDOS ACTIVOS Y REPARTO DE MAÑANA:</div>
         <div id="visor-repartos-hoy"></div>
     </div>
 </div>
@@ -77,7 +86,6 @@
     const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-    // Mantenemos memoria de qué pestañas ha decidido abrir el cocinero para que no se cierren al sincronizar
     let proveedoresAbiertos = {};
 
     async function sincronizarConOficina(endpoint, datos) {
@@ -114,7 +122,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         cargarDatosDeOficina();
-        // Sincronización automática de fondo cada 15 segundos para captar lo que pides en la oficina
         setInterval(cargarDatosDeOficina, 15000);
     });
 
@@ -161,40 +168,59 @@
         renderFaltasLocales();
     }
 
-    // 🔄 RENDERIZADO CON DISEÑO ACORDEÓN DESPLEGABLE CON INCIDENCIAS
+    // 🎨 FUSIÓN MAESTRA CON FILTRO PREVISIÓN DE MAÑANA Y CÓDIGO DE COLORES BLASTER
     function renderCheckMercancia(proveedores, cesta) {
         const container = document.getElementById('visor-repartos-hoy');
         if(!container) return;
         container.innerHTML = '';
 
-        const hoyIdx = new Date().getDay();
-        let repartosHoy = proveedores.filter(p => p.dias_reparto && p.dias_reparto.includes(hoyIdx));
+        // Calculamos el índice del día de MAÑANA
+        const fechaManana = new Date();
+        fechaManana.setDate(fechaManana.getDate() + 1); 
+        const mananaIdx = fechaManana.getDay(); 
 
-        if(repartosHoy.length === 0) {
-            container.innerHTML = `<div style="font-style:italic; color:#64748b; font-size:13px; padding:5px;">Ningún reparto hoy (${DIAS_SEMANA[hoyIdx]}).</div>`;
+        if(proveedores.length === 0) {
+            container.innerHTML = `<div style="font-style:italic; color:#64748b; font-size:13px; padding:5px;">No hay proveedores configurados en la agenda.</div>`;
             return;
         }
 
-        repartosHoy.forEach(p => {
-            // Sacamos los artículos que pertenecen a este proveedor y que NO han llegado todavía
+        const tituloBloque = document.querySelector('.repartos-titulo');
+        if (tituloBloque) {
+            tituloBloque.innerHTML = `📥 CONTROL DE PEDIDOS ACTIVOS Y REPARTO DE MAÑANA (${DIAS_SEMANA[mananaIdx].toUpperCase()}):`;
+        }
+
+        proveedores.forEach(p => {
+            // Sacamos los artículos pendientes de este proveedor
             let articulosDelProveedor = cesta.filter(item => item.proveedor_id === p.nombre && item.estado !== "RECIBIDO");
             let cuentaPendientes = articulosDelProveedor.length;
             
-            // Creamos el contenedor estructural del Acordeón
-            const itemAcordeon = document.createElement('div');
-            itemAcordeon.className = `accordion-item ${proveedoresAbiertos[p.nombre] ? 'open' : ''}`;
-            
-            // Generamos la cabecera con el Badge indicador de cuántos artículos faltan
-            let badgeHtml = cuentaPendientes > 0 
-                ? `<span class="badge-count">${cuentaPendientes}</span>` 
-                : `<span class="badge-count badge-empty">✓</span>`;
+            // Averiguamos si a este proveedor le toca venir mañana por calendario oficial
+            const vieneMananaOficial = p.dias_reparto && p.dias_reparto.includes(mananaIdx);
+
+            // Valores de control cromático por defecto (Verde = Todo OK / Sin pedidos pendientes)
+            let colorClaseBadge = "badge-empty";
+            let textoBadge = "✓";
+            let estiloTarjetaBorde = "border-color: #10b981;";
+
+            if (cuentaPendientes > 0) {
+                if (vieneMananaOficial) {
+                    // 🔴 ALERTA ROJA: Pedido activo y entra mañana por la puerta
+                    colorClaseBadge = "badge-rojo";
+                    textoBadge = `${cuentaPendientes} MAÑANA`;
+                    estiloTarjetaBorde = "border-color: #ef4444;";
+                } else {
+                    // 🟠 ALERTA NARANJA: Pedido activo en el JSON pero viene otro día
+                    colorClaseBadge = "badge-naranja";
+                    textoBadge = `${cuentaPendientes} ESPERA`;
+                    estiloTarjetaBorde = "border-color: #f97316;";
+                }
+            }
 
             let htmlArticulos = '';
             if(cuentaPendientes === 0) {
-                htmlArticulos = `<div style="font-size:12px; color:#10b981; font-style:italic; padding: 6px 0; text-align:center;">✨ Toda la mercancía de este proveedor ha sido confirmada.</div>`;
+                htmlArticulos = `<div style="font-size:12px; color:#10b981; font-style:italic; padding: 6px 0; text-align:center;">✨ Sin mercancía pendiente de recibir.</div>`;
             } else {
                 articulosDelProveedor.forEach(item => {
-                    // Localizamos la posición exacta en la cesta global para no tachar el artículo equivocado
                     let idxReal = cesta.findIndex(c => c.detalle === item.detalle && c.proveedor_id === item.proveedor_id && c.estado !== "RECIBIDO");
                     htmlArticulos += `
                         <div class="merca-row">
@@ -205,10 +231,14 @@
                 });
             }
 
+            const itemAcordeon = document.createElement('div');
+            itemAcordeon.className = `accordion-item ${proveedoresAbiertos[p.nombre] ? 'open' : ''}`;
+            itemAcordeon.style = estiloTarjetaBorde;
+            
             itemAcordeon.innerHTML = `
                 <div class="accordion-header" onclick="toggleProveedor('${p.nombre}')">
                     <div class="accordion-title">
-                        🏢 ${p.nombre} ${badgeHtml}
+                        🏢 <strong>${p.nombre}</strong> <span class="badge-count ${colorClaseBadge}">${textoBadge}</span>
                     </div>
                     <span class="accordion-icon">▼</span>
                 </div>
@@ -221,7 +251,6 @@
         });
     }
 
-    // Alternar visualización del acordeón
     function toggleProveedor(nombreProveedor) {
         proveedoresAbiertos[nombreProveedor] = !proveedoresAbiertos[nombreProveedor];
         const provs = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
