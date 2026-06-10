@@ -43,8 +43,8 @@
         .suggestion-item { padding: 10px; cursor: pointer; font-size: 13px; color: #1e293b; }
         .suggestion-item:hover { background: #f1f5f9; }
 
-        .item-list { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        .item-list th { background: #e2e8f0; text-align: left; padding: 6px; font-size: 11px; color: #475569; }
+        .item-list { width: 100%; border-collapse: collapse; margin-top: 0px; }
+        .item-list th { background: #e2e8f0; text-align: left; padding: 8px 6px; font-size: 11px; color: #475569; }
         .item-list td { padding: 8px 6px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
         .btn-del-row { background: #fee2e2; color: #ef4444; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
 
@@ -57,6 +57,14 @@
         .btn-wa-del:active { background: #475569; }
 
         .delivery-card { background: white; border-left: 4px solid #10b981; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        /* 🏗️ ESTILOS EXCLUSIVOS PARA EL ACORDEÓN DESPLEGABLE */
+        .accordion-header { background: #e2e8f0; color: #1e293b; padding: 12px; font-size: 13px; font-weight: bold; border-radius: 8px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s; }
+        .accordion-header:hover { background: #cbd5e1; }
+        .accordion-content { display: block; padding: 5px 0; margin-bottom: 10px; }
+        .accordion-content.collapsed { display: none; }
+        .accordion-icon { font-size: 12px; transition: transform 0.2s; color: #64748b; }
+        .accordion-header.active .accordion-icon { transform: rotate(180deg); }
 
         @keyframes flashFred {
             0% { opacity: 1; }
@@ -109,17 +117,9 @@
         </div>
 
         <div class="box">
-            <h3>🛒 Cesta de la Compra Actual (Editable por Proveedor)</h3>
-            <table class="item-list">
-                <thead>
-                    <tr>
-                        <th>Artículo / Medida / Detalle</th>
-                        <th>Proveedor Asignado</th>
-                        <th style="text-align: center;">Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-compra-cuerpo"></tbody>
-            </table>
+            <h3>🛒 Cesta de la Compra Actual (Organizada en Acordeón)</h3>
+            
+            <div id="contenedor-acordeon-cesta"></div>
             
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button class="btn-action" style="background: #2563eb; margin-top: 0;" onclick="subirCestaAlServidor()">⚡ Sincronizar Pedidos con la Oficina</button>
@@ -201,7 +201,6 @@
         });
     }
 
-    // 🔧 MEJORA 3: Ocultar o mostrar alertas de reloj de tiempo dependiendo de la pestaña activa de control
     function switchTab(num) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
@@ -236,14 +235,11 @@
         }
     }
 
-    // 🔧 MEJORA 4: Control de errores avanzado (Evita que el 502 HTML de Ngrok congele la pantalla)
     async function cargarDatosDeOficina() {
         try {
             const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
             
-            if(!respuesta.ok) {
-                throw new Error("El túnel central no devolvió un JSON válido.");
-            }
+            if(!respuesta.ok) throw new Error("Ngrok Gateway Error");
 
             const db = await respuesta.json();
             
@@ -251,13 +247,12 @@
             if (db.proveedores) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
             if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
             
-            // Renderizar la pestaña activa únicamente para no saturar memoria
             if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
             if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
             if (document.getElementById('btn-t3').classList.contains('active')) renderProveedoresConfig();
 
         } catch (error) {
-            console.log("Servidor Python desconectado u offline. Usando caché local.");
+            console.log("Servidor Python offline. Tirando de caché LocalStorage.");
             if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
             if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
             if (document.getElementById('btn-t3').classList.contains('active')) renderProveedoresConfig();
@@ -330,7 +325,6 @@
         }
     }
 
-    // 🔧 MEJORA 1: Robustez en autocompletado si el catálogo viene guardado como string plano
     function buscarAutocompletado(busqueda) {
         const box = document.getElementById('sugerencias-box');
         if (!busqueda.trim()) { box.style.display = 'none'; return; }
@@ -338,8 +332,6 @@
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         box.innerHTML = '';
         let coincidencias = 0;
-        
-        // 🔧 MEJORA 5: Eliminar guiones o caracteres extraños para búsquedas flexibles
         const busquedaLimpia = busqueda.toUpperCase().replace(/[^A-Z0-9]/g, ' ');
 
         proveedores.forEach(p => {
@@ -384,11 +376,10 @@
         const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
 
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        
-        // Evitar duplicados manuales exactos que estén pendientes
         const duplicado = cesta.some(item => item.detalle === detalleFormateado && item.estado !== "RECIBIDO");
+
         if (duplicado) {
-            if (!confirm(`"${detalleFormateado}" ya está en la cesta activa como pendiente. ¿Deseas añadirlo otra vez?`)) {
+            if (!confirm(`"${detalleFormateado}" ya está en la cesta activa como pendiente. ¿Deseas añadirlo de todas formas?`)) {
                 return;
             }
         }
@@ -405,7 +396,6 @@
         renderCesta();
     }
 
-    // 🔧 MEJORA 2: Regex de WhatsApp flexible y control estricto de pegado duplicado
     function parsearTextoWhatsApp() {
         const txt = document.getElementById('raw-whatsapp').value.trim();
         if(!txt) return;
@@ -439,9 +429,8 @@
                 detalleFinal = `[${cant} ${unidad}] ${productoSolo}`;
             }
             
-            // Comprobación estricta de duplicados en el bloque pegado
             const existeYa = cesta.some(item => item.detalle === detalleFinal && item.estado !== "RECIBIDO");
-            if (existeYa) return; // Si ya existe en la cesta como pendiente, nos lo saltamos de forma segura
+            if (existeYa) return;
 
             let provSugerido = "S/P";
             for (let p of proveedores) {
@@ -460,7 +449,7 @@
         sincronizarConOficina('cesta', cesta);
         document.getElementById('raw-whatsapp').value = '';
         renderCesta();
-        if(itemsAnadidos > 0) alert(`✅ Volcado de WhatsApp completado. Se inyectaron ${itemsAnadidos} nuevas líneas.`);
+        if(itemsAnadidos > 0) alert(`✅ Volcado de WhatsApp completado. Se añadieron ${itemsAnadidos} nuevas líneas.`);
     }
 
     function renderBloquesWhatsApp(cesta, proveedores) {
@@ -516,7 +505,6 @@
         }
     }
 
-    // 🔧 MEJORA 8: Purgado de caracteres no numéricos en teléfonos antes de enviar a wa.me
     function dispararWhatsAppProveedor(provNombre, telefono) {
         const telefonoLimpio = telefono.replace(/\D/g, '');
 
@@ -546,38 +534,121 @@
         window.open(urlDestino, '_blank');
     }
 
+    // 🏗️ 🎯 LOGÍSTICA DE REESTRUCTURACIÓN DE LA CESTA MEDIANTE ACORDEONES DINÁMICOS
     function renderCesta() {
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-        const cuerpo = document.getElementById('lista-compra-cuerpo');
-        if(!cuerpo) return;
-        cuerpo.innerHTML = '';
+        const contenedorAcordeon = document.getElementById('contenedor-acordeon-cesta');
+        if(!contenedorAcordeon) return;
+        
+        contenedorAcordeon.innerHTML = '';
 
         renderBloquesWhatsApp(cesta, proveedores);
         verificarAlertasRelojCompras(proveedores, cesta);
 
         if(cesta.length === 0) {
-            cuerpo.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:10px;">La cesta está vacía.</td></tr>`;
+            contenedorAcordeon.innerHTML = `<div class="text-center text-slate-400 py-6 italic text-sm">La cesta está vacía. Añade insumos manuales o vuelca desde WhatsApp.</div>`;
             return;
         }
 
+        // Recuperar memoria de qué acordeones estaban colapsados antes de refrescar el bucle
+        const estadosColapsados = JSON.parse(localStorage.getItem('fredware_acordeon_estados')) || {};
+
+        // Agrupar los artículos por su clave de Proveedor asignado
+        let grupos = {};
         cesta.forEach((item, idx) => {
-            let selectOptions = `<option value="S/P">Asignar Proveedor...</option>`;
-            proveedores.forEach(p => {
-                selectOptions += `<option value="${p.nombre}" ${item.proveedor_id === p.nombre ? 'selected' : ''}>${p.nombre}</option>`;
+            let pId = item.proveedor_id || "S/P";
+            if(!grupos[pId]) grupos[pId] = [];
+            grupos[pId].push({ item, idxReal: idx });
+        });
+
+        // Asegurar que "S/P" (Sin Proveedor) salga siempre arriba del todo si tiene líneas activas
+        let clavesOrdenadas = Object.keys(grupos).sort((a, b) => {
+            if (a === "S/P") return -1;
+            if (b === "S/P") return 1;
+            return a.localeCompare(b);
+        });
+
+        clavesOrdenadas.forEach(pId => {
+            const listaItems = grupos[pId];
+            if (listaItems.length === 0) return;
+
+            let tituloMuestra = pId === "S/P" ? "❓ INSUMOS SIN PROVEEDOR ASIGNADO" : `🏢 DISTRIBUIDOR: ${pId}`;
+            
+            // Determinar si este acordeón arranca cerrado o abierto por defecto
+            let esColapsado = estadosColapsados[pId] === true;
+            let claseContenido = esColapsado ? "accordion-content collapsed" : "accordion-content";
+            let claseHeader = esColapsado ? "accordion-header" : "accordion-header active";
+
+            // Crear la estructura de la tarjeta del Acordeón
+            let bloqueHtml = document.createElement('div');
+            bloqueHtml.className = "mb-2";
+
+            let headerHtml = `
+                <div class="${claseHeader}" onclick="conmutarAcordeon('${pId}')">
+                    <span>${tituloMuestra} <span class="ml-1 text-xs text-slate-500 font-normal">(${listaItems.length} líneas)</span></span>
+                    <span class="accordion-icon">▼</span>
+                </div>
+            `;
+
+            let tablaCuerpoHtml = '';
+            listaItems.forEach(pack => {
+                let selectOptions = `<option value="S/P">Asignar Proveedor...</option>`;
+                proveedores.forEach(p => {
+                    selectOptions += `<option value="${p.nombre}" ${pack.item.proveedor_id === p.nombre ? 'selected' : ''}>${p.nombre}</option>`;
+                });
+
+                let estiloRecibido = pack.item.estado === "RECIBIDO" ? 'style="text-decoration: line-through; color: #10b981;"' : '';
+                let tagCheck = pack.item.estado === "RECIBIDO" ? ' ✓ (Recibido)' : '';
+
+                tablaCuerpoHtml += `
+                    <tr>
+                        <td ${estiloRecibido}><strong>${pack.item.detalle}</strong>${tagCheck}</td>
+                        <td style="width: 180px;"><select onchange="cambiarProveedorItem(${pack.idxReal}, this.value)" style="padding:6px; margin:0; font-size:12px;">${selectOptions}</select></td>
+                        <td style="text-align:center; width: 50px;"><button class="btn-del-row" onclick="quitarItemCesta(${pack.idxReal})">❌</button></td>
+                    </tr>
+                `;
             });
 
-            let estiloRecibido = item.estado === "RECIBIDO" ? 'style="text-decoration: line-through; color: #10b981;"' : '';
-            let tagCheck = item.estado === "RECIBIDO" ? ' ✓ (OK en Cocina)' : '';
-
-            const fila = document.createElement('tr');
-            fila.innerHTML = `
-                <td ${estiloRecibido}><strong>${item.detalle}</strong>${tagCheck}</td>
-                <td><select onchange="cambiarProveedorItem(${idx}, this.value)">${selectOptions}</select></td>
-                <td style="text-align:center;"><button class="btn-del-row" onclick="quitarItemCesta(${idx})">❌</button></td>
+            let contenidoHtml = `
+                <div id="acord-content-${pId}" class="${claseContenido}">
+                    <table class="item-list">
+                        <thead>
+                            <tr>
+                                <th>Artículo / Volumen / Formato</th>
+                                <th>Distribuidor</th>
+                                <th style="text-align: center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tablaCuerpoHtml}
+                        </tbody>
+                    </table>
+                </div>
             `;
-            cuerpo.appendChild(fila);
+
+            bloqueHtml.innerHTML = headerHtml + contenidoHtml;
+            contenedorAcordeon.appendChild(bloqueHtml);
         });
+    }
+
+    // Cambiar dinámicamente el estado abierto/cerrado del acordeón en vivo
+    function conmutarAcordeon(pId) {
+        const content = document.getElementById(`acord-content-${pId}`);
+        if(!content) return;
+
+        let estadosColapsados = JSON.parse(localStorage.getItem('fredware_acordeon_estados')) || {};
+        
+        if(content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            estadosColapsados[pId] = false;
+        } else {
+            content.classList.add('collapsed');
+            estadosColapsados[pId] = true;
+        }
+        
+        localStorage.setItem('fredware_acordeon_estados', JSON.stringify(estadosColapsados));
+        renderCesta(); // Refresco síncrono para actualizar las flechas de estado
     }
 
     function cambiarProveedorItem(idx, provNombre) {
@@ -680,7 +751,7 @@
             repartosHoy.forEach(p => {
                 let c = p.contacto ? ` (${p.contacto})` : '';
                 let t = p.telefono ? ` - Tel: ${p.telefono}` : '';
-                container.innerHTML += `<div class="delivery-card"><strong> 🚛 Entrada teórica de: ${p.nombre}${c}${t}</strong></div>`;
+                container.innerHTML += `<div class="delivery-card"><strong> Distribución teórica de repartos para hoy: ${p.nombre}${c}${t}</strong></div>`;
             });
         }
         renderFaltasCocina();
@@ -770,7 +841,7 @@
     initDaysGrids();
     cargarDatosDeOficina();
 
-    // 🔧 MEJORA 7: Polling automático en bucle cada 30 segundos para sincronizar oficina con la cocina en segundo plano
+    // Reloj automático de fondo para traer los datos actualizados de cocina
     setInterval(() => {
         cargarDatosDeOficina();
     }, 30000);
