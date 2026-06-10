@@ -201,11 +201,24 @@
         });
     }
 
+    // 🔧 FIX 3: Control y ocultación del banner de cierre según la pestaña activa
     function switchTab(num) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
         document.getElementById(`btn-t${num}`).classList.add('active');
         document.getElementById(`sec${num}`).classList.add('active');
+        
+        const banner = document.getElementById('alerta-reloj-compras');
+        if (banner) {
+            if (num === 1) {
+                const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+                const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+                verificarAlertasRelojCompras(proveedores, cesta);
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
         if(num === 1) renderCesta();
         if(num === 2) renderVisorPasivo();
         if(num === 3) renderProveedoresConfig();
@@ -270,6 +283,9 @@
     }
 
     function verificarAlertasRelojCompras(proveedores, cesta) {
+        // Solo calcular si estamos en la pestaña 1
+        if (!document.getElementById('btn-t1').classList.contains('active')) return;
+
         const banner = document.getElementById('alerta-reloj-compras');
         if(!banner) return;
 
@@ -305,6 +321,7 @@
         }
     }
 
+    // 🔧 FIX 1: Robustez estructural en la desestructuración de catálogos cruzados (String vs Array)
     function buscarAutocompletado(busqueda) {
         const box = document.getElementById('sugerencias-box');
         if (!busqueda.trim()) { box.style.display = 'none'; return; }
@@ -312,11 +329,16 @@
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         box.innerHTML = '';
         let coincidencias = 0;
+        const busquedaUpper = busqueda.toUpperCase();
 
         proveedores.forEach(p => {
-            if (p.catalogo && Array.isArray(p.catalogo)) {
-                p.catalogo.forEach(prod => {
-                    if (prod.includes(busqueda.toUpperCase()) && coincidencias < 5) {
+            let catalogo = p.catalogo;
+            if (!catalogo) catalogo = [];
+            if (typeof catalogo === 'string') catalogo = catalogo.split(',').map(c => c.trim());
+
+            if (catalogo.length > 0) {
+                catalogo.forEach(prod => {
+                    if (prod && prod.includes(busquedaUpper) && coincidencias < 5) {
                         const item = document.createElement('div');
                         item.className = 'suggestion-item';
                         item.innerHTML = `📦 <strong>${prod}</strong> <span style="color:#64748b;font-size:11px;">(${p.nombre})</span>`;
@@ -336,6 +358,7 @@
         document.getElementById('manual-articulo').dataset.sugerido = proveedorSugerido;
     }
 
+    // 🔧 FIX 8: Verificación e intercepción reactiva de elementos duplicados en la cesta local
     function agregarArticuloManual() {
         const inputArt = document.getElementById('manual-articulo');
         const inputCant = document.getElementById('manual-cantidad');
@@ -349,8 +372,16 @@
 
         const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
 
-        let provAsignado = inputArt.dataset.sugerido || "S/P";
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const duplicado = cesta.some(item => item.detalle === detalleFormateado && item.estado !== "RECIBIDO");
+
+        if (duplicado) {
+            if (!confirm(`"${detalleFormateado}" ya está en la cesta activa. ¿Deseas añadirlo de todas formas?`)) {
+                return;
+            }
+        }
+
+        let provAsignado = inputArt.dataset.sugerido || "S/P";
         cesta.push({ detalle: detalleFormateado, proveedor_id: provAsignado, estado: "PENDIENTE" });
 
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
@@ -362,6 +393,7 @@
         renderCesta();
     }
 
+    // 🔧 FIX 6: Flexibilidad posicional de la expresión regular para la extracción del parseo de WhatsApp
     function parsearTextoWhatsApp() {
         const txt = document.getElementById('raw-whatsapp').value.trim();
         if(!txt) return;
@@ -369,12 +401,13 @@
         let lineas = txt.split('\n');
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        let contadorAgregados = 0;
         
         lineas.forEach(linea => {
             let desc = linea.trim().toUpperCase();
             if(desc === '') return;
             
-            let regexMedidas = /^(\d+)\s*(KG|L|Caja|Cajas|Bote|Botes|Ud|Uds|Unidades)?\s*(?:DE)?\s+(.+)$/i;
+            let regexMedidas = /^(\d+(?:\.\d+)?)\s*(KG|LITROS|L|CAJA|CAJAS|BOTE|BOTES|UD|UDS|UNIDADES?)?\s*(?:DE\s+)?(.+)$/i;
             let coincidencia = desc.match(regexMedidas);
             
             let detalleFinal = desc;
@@ -382,13 +415,13 @@
 
             if (coincidencia) {
                 let cant = coincidencia[1];
-                let unidad = coincidencia[2] || "UNIDADES";
+                let unidad = (coincidencia[2] || "UNIDADES").toUpperCase();
                 productoSolo = coincidencia[3].trim();
                 
                 if (unidad.startsWith("KG")) unidad = "KG";
-                else if (unidad.startsWith("L")) unidad = "L";
-                else if (unidad.startsWith("CAJA")) unidad = "CAJAS";
-                else if (unidad.startsWith("BOTE")) unidad = "BOTES";
+                else if (unidad === "L" || unidad === "LITROS") unidad = "L";
+                else if (unidad.includes("CAJA")) unidad = "CAJAS";
+                else if (unidad.includes("BOTE")) unidad = "BOTES";
                 else unidad = "UNIDADES";
 
                 detalleFinal = `[${cant} ${unidad}] ${productoSolo}`;
@@ -396,35 +429,35 @@
             
             let provSugerido = "S/P";
             for (let p of proveedores) {
-                if (p.catalogo && p.catalogo.some(prod => productoSolo.includes(prod) || prod.includes(productoSolo))) { 
+                let catalogo = p.catalogo || [];
+                if (typeof catalogo === 'string') catalogo = catalogo.split(',').map(c => c.trim());
+                if (catalogo.some(prod => productoSolo.includes(prod) || prod.includes(productoSolo))) { 
                     provSugerido = p.nombre; 
                     break; 
                 }
             }
             cesta.push({ detalle: detalleFinal, proveedor_id: provSugerido, estado: "PENDIENTE" });
+            contadorAgregados++;
         });
         
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('cesta', cesta);
         document.getElementById('raw-whatsapp').value = '';
         renderCesta();
+        alert(`✅ Se añadieron ${contadorAgregados} artículos a la cesta de control.`);
     }
 
-    // 🎯 MODIFICADO: Genera bloques verdes SOLO si el proveedor tiene un teléfono configurado
     function renderBloquesWhatsApp(cesta, proveedores) {
         const contenedor = document.getElementById('contenedor-bloques-whatsapp');
         if(!contenedor) return;
         contenedor.innerHTML = '';
 
-        // Sacar los proveedores únicos que tienen productos pendientes en la cesta
         let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado !== "RECIBIDO").map(i => i.proveedor_id))];
-
         let bloquesMostrados = 0;
 
         proveedoresConPedidos.forEach(provNombre => {
             const datosProv = proveedores.find(p => p.nombre === provNombre) || {};
             
-            // FILTRO INTERACTIVO: Si el proveedor no tiene teléfono, no se genera el bloque de WhatsApp
             if (!datosProv.telefono || datosProv.telefono.trim() === "") {
                 return; 
             }
@@ -457,16 +490,24 @@
         }
     }
 
-    // 🎯 CORREGIDO: Elimina la purga automática masiva. Solo oculta/borra el bloque si el usuario lo pide expresamente
+    // 🔧 FIX 7: Modal de interrupción y confirmación para evitar purgas erróneas en el distribuidor
     function limpiarBloqueProveedor(provNombre) {
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado !== "RECIBIDO"));
-        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('cesta', cesta);
-        renderCesta();
+        if (confirm(`¿Estás seguro, Fred? Vas a eliminar TODOS los artículos pendientes de ${provNombre} de la cesta de control.`)) {
+            let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+            cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado !== "RECIBIDO"));
+            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+            sincronizarConOficina('cesta', cesta);
+            renderCesta();
+        }
     }
 
+    // 🔧 FIX 5: Validación explícita de hardware/red del canal numérico de destino para WhatsApp
     function dispararWhatsAppProveedor(provNombre, telefono) {
+        if (!telefono || telefono.trim() === "") {
+            alert(`❌ El proveedor *${provNombre}* no tiene un número de teléfono válido configurado.\n\nEdítalo abajo en la pestaña 'Catálogo y Proveedores'.`);
+            return;
+        }
+
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         const datosProv = proveedores.find(p => p.nombre === provNombre) || {};
@@ -484,10 +525,7 @@
         textoMensaje += `\n*Fredware System 👨‍🍳*`;
         let textoUrl = encodeURIComponent(textoMensaje);
         
-        let urlDestino = `https://wa.me/?text=${textoUrl}`;
-        if(telefono) {
-            urlDestino = `https://wa.me/${telefono}?text=${textoUrl}`;
-        }
+        let urlDestino = `https://wa.me/${telefono}?text=${textoUrl}`;
         window.open(urlDestino, '_blank');
     }
 
@@ -498,7 +536,6 @@
         if(!cuerpo) return;
         cuerpo.innerHTML = '';
 
-        // Renderiza los bloques de WhatsApp de forma controlada sin alterar el array de la cesta
         renderBloquesWhatsApp(cesta, proveedores);
         verificarAlertasRelojCompras(proveedores, cesta);
 
@@ -626,7 +663,7 @@
             repartosHoy.forEach(p => {
                 let c = p.contacto ? ` (${p.contacto})` : '';
                 let t = p.telefono ? ` - Tel: ${p.telefono}` : '';
-                container.innerHTML += `<div class="delivery-card"><strong> 🚛 Entrada teórica de: ${p.nombre}${c}${t}</strong></div>`;
+                container.innerHTML += `<div class="delivery-card"><strong> Distribución teórica de repartos para hoy: ${p.nombre}${c}${t}</strong></div>`;
             });
         }
         renderFaltasCocina();
@@ -639,7 +676,7 @@
         cuerpo.innerHTML = '';
 
         if(faltas.length === 0) {
-            cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:10px;">La cocina no ha anotado faltas.</td></tr>`;
+            cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:10px;">La cocina no ha anotado mermas ni faltas pendientes.</td></tr>`;
             return;
         }
 
@@ -653,26 +690,33 @@
         });
     }
 
+    // 🔧 FIX 2: Blindaje de parsing recursivo de strings para evitar duplicados en corchetes de volumen
     function pasarFaltaACesta(idx) {
         let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         
         let desc = faltas[idx];
+        let tieneFormato = desc.trim().startsWith('[');
+        let detalleFormateado;
         
-        let cantidadIngresada = prompt(`Falta de cocina: ${desc}\n\nIntroduce la cantidad y formato (Ej: 3 KG, 2 CAJAS, 4 BOTES o solo el número):`, "1 UNIDADES");
-        
-        if (cantidadIngresada === null) return; 
-        if (cantidadIngresada.trim() === "") cantidadIngresada = "1 UNIDADES";
-
-        let detalleFormateado = desc;
-        if (!desc.startsWith("[")) {
+        if (!tieneFormato) {
+            let cantidadIngresada = prompt(`Falta registrada en cocina: ${desc}\n\nIntroduce el volumen y el formato (Ej: 3 KG, 2 CAJAS, 4 BOTES o solo el número):`, "1 UNIDADES");
+            if (cantidadIngresada === null) return;
+            if (cantidadIngresada.trim() === "") cantidadIngresada = "1 UNIDADES";
             detalleFormateado = `[${cantidadIngresada.trim().toUpperCase()}] ${desc}`;
+        } else {
+            detalleFormateado = desc;
         }
 
         let provSugerido = "S/P";
         for (let p of proveedores) {
-            if (p.catalogo && p.catalogo.some(prod => desc.includes(prod))) { provSugerido = p.nombre; break; }
+            let catalogo = p.catalogo || [];
+            if (typeof catalogo === 'string') catalogo = catalogo.split(',').map(c => c.trim());
+            if (catalogo.some(prod => desc.includes(prod))) { 
+                provSugerido = p.nombre; 
+                break; 
+            }
         }
 
         cesta.push({ detalle: detalleFormateado, proveedor_id: provSugerido, estado: "PENDIENTE" });
@@ -702,10 +746,12 @@
         URL.revokeObjectURL(url);
     }
 
+    // 🔧 FIX 4: Captura selectiva del foco para el cierre dinámico del visor de sugerencias flotantes
     document.addEventListener('click', (e) => {
-        if (e.target.id !== 'manual-articulo') {
-            const box = document.getElementById('sugerencias-box');
-            if(box) box.style.display = 'none';
+        const box = document.getElementById('sugerencias-box');
+        const input = document.getElementById('manual-articulo');
+        if (box && input && e.target !== input && !box.contains(e.target)) {
+            box.style.display = 'none';
         }
     });
 
