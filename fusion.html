@@ -11,16 +11,16 @@
     
     <style>
         /* 🏗️ ESTILOS PARA EL ACORDEÓN DESPLEGABLE EN LA TABLET */
-        .accordion-header { background: #e2e8f0; color: #1e293b; padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s; }
-        .accordion-header:hover { background: #cbd5e1; }
+        .accordion-header { padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s; }
         .accordion-content { display: block; padding: 4px 0; }
         .accordion-content.collapsed { display: none; }
-        .accordion-icon { font-size: 12px; transition: transform 0.2s; color: #64748b; }
+        .accordion-icon { font-size: 12px; transition: transform 0.2s; color: #475569; }
         .accordion-header.active .accordion-icon { transform: rotate(180deg); }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
 
+    <!-- CABECERA -->
     <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
         <div class="max-w-2xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -34,13 +34,14 @@
                 <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                     ➕ ENTRADA DIRECTA
                 </button>
-                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v5.6</span>
+                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v5.7</span>
             </div>
         </div>
     </header>
 
     <main class="max-w-2xl mx-auto w-full px-4 mt-6 space-y-6">
         
+        <!-- SECCIÓN 1: REGISTRO DE FALTAS -->
         <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                 <span>📝</span> Control de Faltas Diarias
@@ -54,6 +55,7 @@
             <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto"></div>
         </div>
 
+        <!-- SECCIÓN 2: RECEPCIÓN INTELIGENTE (ACORDEÓN CON COLOR POR DÍA) -->
         <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
                 <span>🚛</span> Entradas Esperadas Hoy (Check & Trazabilidad)
@@ -157,7 +159,7 @@
             renderFaltasLocales();
         }
 
-        // --- 🏗️ PANEL DE REPARTO CON ACORDEÓN DESPLEGABLE EN COCINA ---
+        // --- 🏗️ PANEL DE REPARTO CON ACORDEÓN CROMÁTICO POR DÍA ---
         function renderCheckMercancia(proveedores, cesta) {
             const container = document.getElementById('visor-repartos-hoy');
             if(!container) return;
@@ -171,12 +173,24 @@
                 return;
             }
 
-            // Cargar histórico de acordeones cerrados por el equipo
             const estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
+
+            // 🎨 PALETA DE NOTIFICACIONES DE COLORES POR DÍAS (Semáforo de Fredware)
+            const coloresPorDia = {
+                1: "bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100", // Lunes: Verde fresco
+                2: "bg-sky-50 border-sky-300 text-sky-900 hover:bg-sky-100",           // Martes: Azul cielo
+                3: "bg-indigo-50 border-indigo-300 text-indigo-900 hover:bg-indigo-100", // Miércoles: Indigo
+                4: "bg-purple-50 border-purple-300 text-purple-900 hover:bg-purple-100", // Jueves: Púrpura
+                5: "bg-rose-50 border-rose-300 text-rose-900 hover:bg-rose-100",       // Viernes: Rosa fuerte
+                6: "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100",   // Sábado: Ámbar fin de semana
+                0: "bg-red-50 border-red-300 text-red-900 hover:bg-red-100"            // Domingo: Rojo guardia
+            };
+
+            const estiloCabeceraHoy = coloresPorDia[hoyIdx] || "bg-slate-100 text-slate-900";
 
             repartosHoy.forEach(p => {
                 let articulosDelProveedor = cesta.filter(item => item.proveedor_id === p.nombre && item.estado !== "RECIBIDO");
-                if (articulosDelProveedor.length === 0) return; // Si no hay nada pendiente de este proveedor, saltamos
+                if (articulosDelProveedor.length === 0) return;
 
                 let htmlArticulos = '';
                 articulosDelProveedor.forEach(item => {
@@ -198,8 +212,8 @@
                 let cardHtml = document.createElement('div');
                 cardHtml.className = "mb-2";
                 cardHtml.innerHTML = `
-                    <div class="${claseHeader}" onclick="conmutarAcordeonCocina('${p.nombre}')">
-                        <span>🏢 DISTRIBUIDOR: ${p.nombre} <span class="ml-1 text-xs text-slate-500 font-normal">(${articulosDelProveedor.length} pendientes)</span></span>
+                    <div class="${claseHeader} ${estiloCabeceraHoy}" onclick="conmutarAcordeonCocina('${p.nombre}')">
+                        <span>🏢 DISTRIBUIDOR: <span class="font-black">${p.nombre}</span> <span class="ml-1 text-xs opacity-70 font-normal">(${articulosDelProveedor.length} pendientes)</span></span>
                         <span class="accordion-icon">▼</span>
                     </div>
                     <div id="acord-cocina-${p.nombre}" class="${claseContenido} bg-white border-x border-b border-slate-200 px-4 pb-2 rounded-b-xl shadow-sm">
@@ -210,7 +224,6 @@
             });
         }
 
-        // Manejador del despliegue del acordeón en la tablet
         function conmutarAcordeonCocina(provNombre) {
             const content = document.getElementById(`acord-cocina-${provNombre}`);
             if(!content) return;
@@ -226,10 +239,10 @@
             }
             
             localStorage.setItem('fredware_cocina_acordeon_estados', JSON.stringify(estadosColapsados));
-            cargarDatosDeOficina(); // Refrescar render sin perder sincronía
+            cargarDatosDeOficina();
         }
 
-        // --- ADVERTENCIA DINÁMICA DE TEMPERATURAS EN VENTANAS SWEETALERT ---
+        // --- ADVERTENCIA DINÁMICA DE TEMPERATURAS ---
         function evaluarAlertaTemperatura() {
             const temp = parseFloat(document.getElementById('swal-temp').value);
             const alertaBox = document.getElementById('swal-alerta-temp');
@@ -281,7 +294,7 @@
             evaluarAlertaTemperatura();
         }
 
-        // --- FLUJO POPUP DE RECEPCIÓN (TEMA BLANCO REFORZADO) ---
+        // --- FLUJO POPUP DE RECEPCIÓN ---
         async function abrirFlujoRecepcion(detalleCompleto, proveedor, idxGlobal) {
             let productoLimpio = detalleCompleto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
             
@@ -292,7 +305,6 @@
             let conservacionInicial = "NEVERA";
             if (productoLimpio.includes("CONGELADO") || productoLimpio.includes("CONGE") || productoLimpio.includes("HELADO")) {
                 conservacionInicial = "CONGELADOR";
-            // Quitamos la detección automática ciega de "PEZ" para evitar congelar el pescado fresco
             } else if (productoLimpio.includes("HARINA") || productoLimpio.includes("SECO") || productoLimpio.includes("ACEITE") || productoLimpio.includes("LATA") || productoLimpio.includes("BOTE")) {
                 conservacionInicial = "SECO";
             }
@@ -374,7 +386,6 @@
                 fecha_registro: ahora.toISOString()
             };
 
-            // Inyectamos la fecha DD/MM/AAAA en la cadena QR para romper los duplicados estáticos
             let loteEtiquetas = [];
             for (let i = 1; i <= formValues.cantidad; i++) {
                 const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
@@ -391,7 +402,6 @@
             Swal.fire({ title: '📡 Sincronizando albarán...', background: '#ffffff', color: '#0f172a', showConfirmButton: false, allowOutsideClick: false });
 
             try {
-                // Rutas directas alineadas con FastAPI
                 const resBD = await fetch(`${API_URL}/guardar_mercancia`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -446,7 +456,7 @@
                 renderCheckMercancia(proveedores, cestaGlobal);
 
             } catch (error) {
-                Swal.fire({ title: '❌ ERROR DE CONEXIÓN', text: 'El servidor local de la oficina no responde.', icon: 'error', background: '#ffffff', color: '#0f172a' });
+                Swal.fire({ title: '❌ ERROR', text: 'Error de túnel Ngrok.', icon: 'error', background: '#ffffff', color: '#0f172a' });
             }
         }
 
