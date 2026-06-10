@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚚 Fredware - Terminal Unificada de Cocina</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
+
+    <!-- CABECERA -->
+    <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-2xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🚚</span>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-slate-900">FREDWARE CENTRAL</h1>
+                    <p class="text-xs text-emerald-600 font-bold tracking-widest uppercase">Cocina, Recepción & Congelación</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
+                    ➕ ENTRADA DIRECTA
+                </button>
+                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v5.2</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto w-full px-4 mt-6 space-y-6">
+        
+        <!-- SECCIÓN 1: REGISTRO DE FALTAS -->
+        <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <span>📝</span> Control de Faltas Diarias
+            </h2>
+            <div class="flex gap-2">
+                <input type="text" id="insumo-falta" placeholder="Ej: MAYONESA, CEBOLLAS..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 uppercase text-base shadow-inner">
+                <button onclick="registrarFaltaCocina()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-5 rounded-xl shadow-sm transition-all active:scale-95">
+                    ➕ Añadir
+                </button>
+            </div>
+            <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto"></div>
+        </div>
+
+        <!-- SECCIÓN 2: RECEPCIÓN INTELIGENTE -->
+        <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
+                <span>🚛</span> Entradas Esperadas Hoy (Check & Trazabilidad)
+            </h2>
+            <div id="visor-repartos-hoy" class="space-y-4"></div>
+        </div>
+
+        <div id="qrcode" class="hidden"></div>
+    </main>
+
+    <script>
+        const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+
+        // --- SISTEMA DE COMUNICACIÓN ---
+        async function sincronizarConOficina(endpoint, datos) {
+            try {
+                await fetch(`${API_URL}/api/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify(datos)
+                });
+            } catch (error) { console.error(error); }
+        }
+
+        async function cargarDatosDeOficina() {
+            try {
+                const respuesta = await fetch(`${API_URL}/api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+                const db = await respuesta.json();
+                if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
+                if (db.cesta) localStorage.setItem('fredware_cesta_compras', JSON.stringify(db.cesta));
+                if (db.proveedores) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
+                
+                renderFaltasLocales();
+                renderCheckMercancia(db.proveedores || [], db.cesta || []);
+            } catch (error) {
+                renderFaltasLocales();
+                const provs = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+                const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+                renderCheckMercancia(provs, cesta);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', cargarDatosDeOficina);
+
+        // --- GESTIÓN DE FALTAS ---
+        function registrarFaltaCocina() {
+            const input = document.getElementById('insumo-falta');
+            const valor = input.value.trim().toUpperCase();
+            if(!valor) return;
+
+            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            faltas.push(valor);
+            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+            sincronizarConOficina('faltas', faltas);
+            input.value = '';
+            renderFaltasLocales();
+        }
+
+        // Renderizado de la lista de faltas con estética limpia y clara
+        function renderFaltasLocales() {
+            const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            const container = document.getElementById('contenedor-faltas-local');
+            if(!container) return;
+            container.innerHTML = '';
+            if(faltas.length === 0) {
+                container.innerHTML = `<div class="text-center italic text-slate-400 text-xs py-2">No hay faltas apuntadas hoy.</div>`;
+                return;
+            }
+            faltas.forEach((item, idx) => {
+                container.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
+                        <span class="text-sm font-bold text-amber-600">⚠️ ${item}</span>
+                        <button onclick="borrarFaltaLocal(${idx})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
+                    </div>
+                `;
+            });
+        }
+
+        function borrarFaltaLocal(idx) {
+            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            faltas.splice(idx, 1);
+            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+            sincronizarConOficina('faltas', faltas);
+            renderFaltasLocales();
+        }
+
+        // --- PANEL DE REPARTO CLARO ---
+        function renderCheckMercancia(proveedores, cesta) {
+            const container = document.getElementById('visor-repartos-hoy');
+            if(!container) return;
+            container.innerHTML = '';
+
+            const hoyIdx = new Date().getDay();
+            let repartosHoy = proveedores.filter(p => p.dias_reparto && p.dias_reparto.includes(hoyIdx));
+
+            if(repartosHoy.length === 0) {
+                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">Ningún reparto programado en agenda para hoy.</div>`;
+                return;
+            }
+
+            repartosHoy.forEach(p => {
+                let articulosDelProveedor = cesta.filter(item => item.proveedor_id === p.nombre && item.estado !== "RECIBIDO");
+                let htmlArticulos = '';
+                
+                if(articulosDelProveedor.length === 0) {
+                    htmlArticulos = `<div class="text-xs text-slate-400 italic p-2">Todo el pedido de este distribuidor procesado.</div>`;
+                } else {
+                    articulosDelProveedor.forEach(item => {
+                        let idxReal = cesta.findIndex(c => c.detalle === item.detalle && c.proveedor_id === item.proveedor_id && c.estado !== "RECIBIDO");
+                        htmlArticulos += `
+                            <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
+                                <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
+                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${p.nombre}', ${idxReal})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm">
+                                    📥 Recibir
+                                </button>
+                            </div>
+                        `;
+                    });
+                }
+
+                container.innerHTML += `
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm">
+                        <div class="text-xs font-black text-sky-700 border-b border-slate-200 pb-2 mb-2 uppercase tracking-wider">🏢 Distribuidor: ${p.nombre}</div>
+                        <div class="divide-y divide-slate-100">${htmlArticulos}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- ADVERTENCIA DINÁMICA DE TEMPERATURAS EN VENTANAS SWEETALERT ---
+        function evaluarAlertaTemperatura() {
+            const temp = parseFloat(document.getElementById('swal-temp').value);
+            const alertaBox = document.getElementById('swal-alerta-temp');
+            const modo = document.getElementById('swal-modo-congelacion').value;
+            
+            if (isNaN(temp)) { alertaBox.style.display = 'none'; return; }
+
+            if (modo === "SI" || temp <= -15) {
+                if (temp > -12) {
+                    alertaBox.innerHTML = "🚨 RECHAZO CRÍTICO: ¡CONGELADO FUERA DE MARGEN! (MÁX -12°C)";
+                    alertaBox.className = "p-2.5 bg-red-100 text-red-700 border border-red-300 rounded-xl text-xs font-black text-center animate-pulse shadow-sm";
+                    alertaBox.style.display = 'block';
+                } else {
+                    alertaBox.style.display = 'none';
+                }
+            } else {
+                if (temp > 8) {
+                    alertaBox.innerHTML = "⚠️ ALERTA: REFRIGERADO ALTO. VALORAR DEVOLUCIÓN (MÁX 8°C)";
+                    alertaBox.className = "p-2.5 bg-amber-100 text-amber-700 border border-amber-300 rounded-xl text-xs font-black text-center shadow-sm";
+                    alertaBox.style.display = 'block';
+                } else {
+                    alertaBox.style.display = 'none';
+                }
+            }
+        }
+
+        function conmutarModoCongelacion(modo) {
+            const btnSi = document.getElementById('btn-conge-si');
+            const btnNo = document.getElementById('btn-conge-no');
+            const inputModo = document.getElementById('swal-modo-congelacion');
+            const inputTemp = document.getElementById('swal-temp');
+
+            inputModo.value = modo;
+            if(modo === 'SI') {
+                btnSi.className = "bg-sky-600 text-white font-black px-3 py-2 rounded-xl text-xs shadow-sm";
+                btnNo.className = "bg-slate-100 text-slate-500 font-bold px-3 py-2 rounded-xl text-xs border border-slate-200";
+                if(parseFloat(inputTemp.value) > 0) inputTemp.value = -18;
+            } else {
+                btnNo.className = "bg-emerald-600 text-white font-black px-3 py-2 rounded-xl text-xs shadow-sm";
+                btnSi.className = "bg-slate-100 text-slate-500 font-bold px-3 py-2 rounded-xl text-xs border border-slate-200";
+                if(parseFloat(inputTemp.value) <= -12) inputTemp.value = 4;
+            }
+            evaluarAlertaTemperatura();
+        }
+
+        // --- FLUJO POPUP DE RECEPCIÓN (TEMA BLANCO REFORZADO) ---
+        async function abrirFlujoRecepcion(detalleCompleto, proveedor, idxGlobal) {
+            let productoLimpio = detalleCompleto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+            
+            let tempDefecto = 4;
+            let esCongeladoInicial = "NO";
+            if (productoLimpio.includes("CONGELADO") || productoLimpio.includes("CONGE") || productoLimpio.includes("HELADO") || productoLimpio.includes("PEZ")) {
+                tempDefecto = -18;
+                esCongeladoInicial = "SI";
+            } else if (productoLimpio.includes("HARINA") || productoLimpio.includes("SECO") || productoLimpio.includes("ACEITE")) {
+                tempDefecto = 20;
+            }
+
+            const { value: formValues } = await Swal.fire({
+                title: `📥 Recibir: ${productoLimpio}`,
+                background: '#ffffff',
+                color: '#0f172a',
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                showCancelButton: true,
+                confirmButtonText: 'Procesar Entrada',
+                cancelButtonText: 'Cancelar',
+                html: `
+                    <div class="text-left space-y-3 font-sans px-1">
+                        <div id="swal-alerta-temp" style="display:none;"></div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Temperatura de Entrada Real (°C):</label>
+                            <input id="swal-temp" type="number" step="0.1" value="${tempDefecto}" oninput="evaluarAlertaTemperatura()" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-lg focus:outline-none focus:border-emerald-500 shadow-inner">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">📦 ¿Va directo a la Cámara de Congelación?:</label>
+                            <div class="grid grid-cols-2 gap-2 mt-1">
+                                <button type="button" id="btn-conge-si" onclick="conmutarModoCongelacion('SI')" class="py-2.5 rounded-xl font-bold text-xs border transition-all">🥶 SÍ (F. Congelación Directa)</button>
+                                <button type="button" id="btn-conge-no" onclick="conmutarModoCongelacion('NO')" class="py-2.5 rounded-xl font-bold text-xs border transition-all">❄️ NO (Uso Diario / Seco)</button>
+                            </div>
+                            <input id="swal-modo-congelacion" type="hidden" value="${esCongeladoInicial}">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">¿Cuántas pegatinas necesitas? (Stickers):</label>
+                            <input id="swal-cantidad" type="number" min="1" value="1" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-lg focus:outline-none focus:border-emerald-500 shadow-inner">
+                        </div>
+                    </div>
+                `,
+                didOpen: () => { conmutarModoCongelacion(esCongeladoInicial); },
+                preConfirm: () => {
+                    return {
+                        temperatura: parseFloat(document.getElementById('swal-temp').value),
+                        cantidad: parseInt(document.getElementById('swal-cantidad').value) || 1,
+                        directoCongelador: document.getElementById('swal-modo-congelacion').value
+                    }
+                }
+            });
+
+            if (!formValues) return;
+
+            let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+            let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+            const ahora = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
+
+            if(idxGlobal !== null) {
+                cesta[idxGlobal].estado = "RECIBIDO";
+                localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+            }
+
+            const tipoConservacion = formValues.directoCongelador === "SI" ? "CONGELADOR" : (formValues.temperatura > 15 ? "SECO" : "NEVERA");
+
+            const datosBaseDatos = {
+                producto: productoLimpio,
+                temperatura: formValues.temperatura,
+                conservacion: tipoConservacion,
+                proveedor: proveedor,
+                cantidad_total: formValues.cantidad,
+                fecha_registro: ahora.toISOString()
+            };
+
+            let loteEtiquetas = [];
+            for (let i = 1; i <= formValues.cantidad; i++) {
+                const tagOperacion = formValues.directoCongelador === "SI" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
+                const cadenaQrUnidad = `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.cantidad}|${tagOperacion}`;
+                
+                loteEtiquetas.push({
+                    producto: productoLimpio,
+                    unidad: formValues.directoCongelador === "SI" ? `🥶 CÁMARA CONGE (${i}/${formValues.cantidad})` : `${i} DE ${formValues.cantidad}`,
+                    fecha: formValues.directoCongelador === "SI" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
+                    texto_qr: cadenaQrUnidad
+                });
+            }
+
+            Swal.fire({ title: '📡 Procesando...', background: '#ffffff', color: '#0f172a', showConfirmButton: false, allowOutsideClick: false });
+
+            try {
+                await fetch(`${API_URL}/guardar_mercancia`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datosBaseDatos)
+                });
+
+                fetch(`${API_URL}/imprimir_lote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ etiquetas: loteEtiquetas })
+                }).catch(e => console.log("Lanzado a hardware."));
+
+                if(idxGlobal !== null) {
+                    await fetch(`${API_URL}/api/cesta`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                        body: JSON.stringify(cesta)
+                    });
+                }
+
+                Swal.fire({
+                    title: '✅ ¡LOGÍSTICA REGISTRADA!',
+                    text: `Lote de ${loteEtiquetas.length} etiquetas enviado a la Brother QL-700.`,
+                    icon: 'success',
+                    background: '#ffffff',
+                    color: '#0f172a',
+                    confirmButtonColor: '#10b981'
+                });
+
+                renderCheckMercancia(proveedores, cesta);
+
+            } catch (error) {
+                Swal.fire({ title: '❌ ERROR DE ENTRADA', text: 'Servidor desconectado.', icon: 'error', background: '#ffffff', color: '#0f172a' });
+            }
+        }
+
+        // --- SISTEMA ENTRADAS DE ÚLTIMA HORA ---
+        async function abrirEntradaDirecta() {
+            const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+            let optionsHtml = '<option value="S/P">PROVEEDOR GENÉRICO / COMPRA DIRECTA</option>';
+            proveedores.forEach(p => { optionsHtml += `<option value="${p.nombre}">${p.nombre}</option>`; });
+
+            const { value: directoValues } = await Swal.fire({
+                title: '➕ Compra de Última Hora',
+                background: '#ffffff',
+                color: '#0f172a',
+                confirmButtonColor: '#d97706',
+                showCancelButton: true,
+                confirmButtonText: 'Siguiente paso',
+                cancelButtonText: 'Volver',
+                html: `
+                    <div class="text-left space-y-3 font-sans px-1">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre de la Mercancía:</label>
+                            <input id="dir-producto" type="text" placeholder="Ej: HARINA DE TRIGO..." class="w-full bg-slate-50 text-slate-900 font-bold border border-slate-300 rounded-xl py-2.5 px-3 uppercase focus:outline-none focus:border-amber-500 shadow-inner">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Origen / Distribuidor:</label>
+                            <select id="dir-proveedor" class="w-full bg-slate-50 text-slate-900 border border-slate-300 rounded-xl py-2.5 px-3 focus:outline-none focus:border-amber-500 font-bold">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                `,
+                preConfirm: () => {
+                    return {
+                        producto: document.getElementById('dir-producto').value.trim().toUpperCase(),
+                        proveedor: document.getElementById('dir-proveedor').value
+                    }
+                }
+            });
+
+            if (!directoValues || !directoValues.producto) return;
+
+            abrirFlujoRecepcion(directoValues.producto, directoValues.proveedor, null);
+        }
+    </script>
+</body>
+</html>
