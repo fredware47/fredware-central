@@ -1,4 +1,3 @@
-HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -411,32 +410,39 @@ HTML
         renderCesta();
     }
 
+    // 🎯 MODIFICADO: Genera bloques verdes SOLO si el proveedor tiene un teléfono configurado
     function renderBloquesWhatsApp(cesta, proveedores) {
         const contenedor = document.getElementById('contenedor-bloques-whatsapp');
         if(!contenedor) return;
         contenedor.innerHTML = '';
 
+        // Sacar los proveedores únicos que tienen productos pendientes en la cesta
         let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado !== "RECIBIDO").map(i => i.proveedor_id))];
 
-        if(proveedoresConPedidos.length === 0) {
-            contenedor.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:12px;">No hay pedidos asignados pendientes de enviar.</p>`;
-            return;
-        }
+        let bloquesMostrados = 0;
 
         proveedoresConPedidos.forEach(provNombre => {
             const datosProv = proveedores.find(p => p.nombre === provNombre) || {};
-            const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado !== "RECIBIDO");
             
+            // FILTRO INTERACTIVO: Si el proveedor no tiene teléfono, no se genera el bloque de WhatsApp
+            if (!datosProv.telefono || datosProv.telefono.trim() === "") {
+                return; 
+            }
+
+            const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado !== "RECIBIDO");
+            if (articulos.length === 0) return;
+
+            bloquesMostrados++;
             const card = document.createElement('div');
             card.className = 'whatsapp-provider-card';
             
-            let telfDestino = datosProv.telefono ? datosProv.telefono.replace(/\s+/g, '') : '';
+            let telfDestino = datosProv.telefono.replace(/\s+/g, '');
             let contactoNombre = datosProv.contacto ? ` (${datosProv.contacto})` : '';
 
             card.innerHTML = `
                 <div>
                     <strong>🏢 ${provNombre}${contactoNombre}</strong>
-                    <div style="font-size:11px; color:#475569; margin-top:2px;">Lineas de pedido: ${articulos.length}</div>
+                    <div style="font-size:11px; color:#475569; margin-top:2px;">Líneas de pedido: ${articulos.length}</div>
                 </div>
                 <div style="display:flex; gap: 8px;">
                     <button class="btn-wa-send" onclick="dispararWhatsAppProveedor('${provNombre}', '${telfDestino}')">💬 Enviar</button>
@@ -445,8 +451,13 @@ HTML
             `;
             contenedor.appendChild(card);
         });
+
+        if(bloquesMostrados === 0) {
+            contenedor.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:12px;">No hay pedidos de WhatsApp pendientes para hoy (o los proveedores asignados no usan app móvil).</p>`;
+        }
     }
 
+    // 🎯 CORREGIDO: Elimina la purga automática masiva. Solo oculta/borra el bloque si el usuario lo pide expresamente
     function limpiarBloqueProveedor(provNombre) {
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado !== "RECIBIDO"));
@@ -487,6 +498,7 @@ HTML
         if(!cuerpo) return;
         cuerpo.innerHTML = '';
 
+        // Renderiza los bloques de WhatsApp de forma controlada sin alterar el array de la cesta
         renderBloquesWhatsApp(cesta, proveedores);
         verificarAlertasRelojCompras(proveedores, cesta);
 
@@ -573,7 +585,7 @@ HTML
         div.innerHTML = '';
         proveedores.forEach((p, idx) => {
             let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
-            let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono";
+            let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono (Compra Directa)";
             let contactoStr = p.contacto ? `👤 Contacto: ${p.contacto}` : "👤 Sin gestor asignado";
             
             div.innerHTML += `
@@ -641,7 +653,6 @@ HTML
         });
     }
 
-    // 🎯 FUNCIÓN MODIFICADA INTERACTIVA CON SOLICITUD DE CANTIDADES
     function pasarFaltaACesta(idx) {
         let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
@@ -649,10 +660,9 @@ HTML
         
         let desc = faltas[idx];
         
-        // Solicitar cantidad al usuario antes de meter en el pedido
         let cantidadIngresada = prompt(`Falta de cocina: ${desc}\n\nIntroduce la cantidad y formato (Ej: 3 KG, 2 CAJAS, 4 BOTES o solo el número):`, "1 UNIDADES");
         
-        if (cantidadIngresada === null) return; // Si cancelas el cuadro, abortamos sin borrar nada
+        if (cantidadIngresada === null) return; 
         if (cantidadIngresada.trim() === "") cantidadIngresada = "1 UNIDADES";
 
         let detalleFormateado = desc;
