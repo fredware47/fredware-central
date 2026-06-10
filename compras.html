@@ -1,3 +1,4 @@
+HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -241,7 +242,6 @@
         }
     }
 
-    // ⚡ Envía la cesta local al backend por ngrok
     function subirCestaAlServidor() {
         const cestaLocal = localStorage.getItem('fredware_cesta_compras');
         if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
@@ -270,7 +270,6 @@
         });
     }
 
-    // ⏰ Reloj local exclusivo del panel de compras
     function verificarAlertasRelojCompras(proveedores, cesta) {
         const banner = document.getElementById('alerta-reloj-compras');
         if(!banner) return;
@@ -288,7 +287,7 @@
                 const [horas, minutos] = horaLimiteStr.split(':').map(Number);
                 
                 const limiteRef = new Date();
-                limiteRef.setHours(horas, minutes, 0, 0);
+                limiteRef.setHours(horas, minutos, 0, 0);
 
                 const diferenciaMinutos = (limiteRef - ahora) / (1000 * 60);
 
@@ -301,7 +300,7 @@
         if (alertasActivas.length > 0) {
             banner.innerHTML = `🚨 ALERTA DE CIERRE DE PEDIDOS:<br>${alertasActivas.join('<br>')}`;
             banner.style.display = 'block';
-            if (navigator.vibrate) navigator.vibrate([400, 200, 400]); // Vibración doble
+            if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
         } else {
             banner.style.display = 'none';
         }
@@ -448,13 +447,9 @@
         });
     }
 
-    // 🎯 NUEVA FUNCIÓN: Limpia y purga todos los artículos pendientes de un proveedor del bloque de WhatsApp
     function limpiarBloqueProveedor(provNombre) {
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        
-        // Eliminamos las líneas de este proveedor específico que estén pendientes
         cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado !== "RECIBIDO"));
-        
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('cesta', cesta);
         renderCesta();
@@ -646,18 +641,31 @@
         });
     }
 
+    // 🎯 FUNCIÓN MODIFICADA INTERACTIVA CON SOLICITUD DE CANTIDADES
     function pasarFaltaACesta(idx) {
         let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         
         let desc = faltas[idx];
+        
+        // Solicitar cantidad al usuario antes de meter en el pedido
+        let cantidadIngresada = prompt(`Falta de cocina: ${desc}\n\nIntroduce la cantidad y formato (Ej: 3 KG, 2 CAJAS, 4 BOTES o solo el número):`, "1 UNIDADES");
+        
+        if (cantidadIngresada === null) return; // Si cancelas el cuadro, abortamos sin borrar nada
+        if (cantidadIngresada.trim() === "") cantidadIngresada = "1 UNIDADES";
+
+        let detalleFormateado = desc;
+        if (!desc.startsWith("[")) {
+            detalleFormateado = `[${cantidadIngresada.trim().toUpperCase()}] ${desc}`;
+        }
+
         let provSugerido = "S/P";
         for (let p of proveedores) {
             if (p.catalogo && p.catalogo.some(prod => desc.includes(prod))) { provSugerido = p.nombre; break; }
         }
 
-        cesta.push({ detalle: desc, proveedor_id: provSugerido, estado: "PENDIENTE" });
+        cesta.push({ detalle: detalleFormateado, proveedor_id: provSugerido, estado: "PENDIENTE" });
         faltas.splice(idx, 1);
         
         localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
