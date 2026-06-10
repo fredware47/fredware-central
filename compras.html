@@ -201,7 +201,7 @@
         });
     }
 
-    // 🔧 FIX 3: Control y ocultación del banner de cierre según la pestaña activa
+    // 🔧 MEJORA 3: Ocultar o mostrar alertas de reloj de tiempo dependiendo de la pestaña activa de control
     function switchTab(num) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
@@ -232,25 +232,35 @@
                 body: JSON.stringify(datos)
             });
         } catch (error) {
-            console.error(`Error en /api/${endpoint}:`, error);
+            console.error(`Error de pasarela en /api/${endpoint}:`, error);
         }
     }
 
+    // 🔧 MEJORA 4: Control de errores avanzado (Evita que el 502 HTML de Ngrok congele la pantalla)
     async function cargarDatosDeOficina() {
         try {
             const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+            
+            if(!respuesta.ok) {
+                throw new Error("El túnel central no devolvió un JSON válido.");
+            }
+
             const db = await respuesta.json();
             
             if (db.cesta) localStorage.setItem('fredware_cesta_compras', JSON.stringify(db.cesta));
             if (db.proveedores) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
             if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
             
-            renderCesta();
-            renderProveedoresConfig();
+            // Renderizar la pestaña activa únicamente para no saturar memoria
+            if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
+            if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
+            if (document.getElementById('btn-t3').classList.contains('active')) renderProveedoresConfig();
+
         } catch (error) {
-            console.error("Modo offline activo.", error);
-            renderCesta();
-            renderProveedoresConfig();
+            console.log("Servidor Python desconectado u offline. Usando caché local.");
+            if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
+            if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
+            if (document.getElementById('btn-t3').classList.contains('active')) renderProveedoresConfig();
         }
     }
 
@@ -283,9 +293,8 @@
     }
 
     function verificarAlertasRelojCompras(proveedores, cesta) {
-        // Solo calcular si estamos en la pestaña 1
         if (!document.getElementById('btn-t1').classList.contains('active')) return;
-
+        
         const banner = document.getElementById('alerta-reloj-compras');
         if(!banner) return;
 
@@ -321,7 +330,7 @@
         }
     }
 
-    // 🔧 FIX 1: Robustez estructural en la desestructuración de catálogos cruzados (String vs Array)
+    // 🔧 MEJORA 1: Robustez en autocompletado si el catálogo viene guardado como string plano
     function buscarAutocompletado(busqueda) {
         const box = document.getElementById('sugerencias-box');
         if (!busqueda.trim()) { box.style.display = 'none'; return; }
@@ -329,7 +338,9 @@
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         box.innerHTML = '';
         let coincidencias = 0;
-        const busquedaUpper = busqueda.toUpperCase();
+        
+        // 🔧 MEJORA 5: Eliminar guiones o caracteres extraños para búsquedas flexibles
+        const busquedaLimpia = busqueda.toUpperCase().replace(/[^A-Z0-9]/g, ' ');
 
         proveedores.forEach(p => {
             let catalogo = p.catalogo;
@@ -338,7 +349,8 @@
 
             if (catalogo.length > 0) {
                 catalogo.forEach(prod => {
-                    if (prod && prod.includes(busquedaUpper) && coincidencias < 5) {
+                    const prodLimpio = prod.toUpperCase().replace(/[^A-Z0-9]/g, ' ');
+                    if (prodLimpio.includes(busquedaLimpia) && coincidencias < 5) {
                         const item = document.createElement('div');
                         item.className = 'suggestion-item';
                         item.innerHTML = `📦 <strong>${prod}</strong> <span style="color:#64748b;font-size:11px;">(${p.nombre})</span>`;
@@ -358,7 +370,6 @@
         document.getElementById('manual-articulo').dataset.sugerido = proveedorSugerido;
     }
 
-    // 🔧 FIX 8: Verificación e intercepción reactiva de elementos duplicados en la cesta local
     function agregarArticuloManual() {
         const inputArt = document.getElementById('manual-articulo');
         const inputCant = document.getElementById('manual-cantidad');
@@ -373,10 +384,11 @@
         const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
 
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        
+        // Evitar duplicados manuales exactos que estén pendientes
         const duplicado = cesta.some(item => item.detalle === detalleFormateado && item.estado !== "RECIBIDO");
-
         if (duplicado) {
-            if (!confirm(`"${detalleFormateado}" ya está en la cesta activa. ¿Deseas añadirlo de todas formas?`)) {
+            if (!confirm(`"${detalleFormateado}" ya está en la cesta activa como pendiente. ¿Deseas añadirlo otra vez?`)) {
                 return;
             }
         }
@@ -393,7 +405,7 @@
         renderCesta();
     }
 
-    // 🔧 FIX 6: Flexibilidad posicional de la expresión regular para la extracción del parseo de WhatsApp
+    // 🔧 MEJORA 2: Regex de WhatsApp flexible y control estricto de pegado duplicado
     function parsearTextoWhatsApp() {
         const txt = document.getElementById('raw-whatsapp').value.trim();
         if(!txt) return;
@@ -401,7 +413,7 @@
         let lineas = txt.split('\n');
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-        let contadorAgregados = 0;
+        let itemsAnadidos = 0;
         
         lineas.forEach(linea => {
             let desc = linea.trim().toUpperCase();
@@ -427,6 +439,10 @@
                 detalleFinal = `[${cant} ${unidad}] ${productoSolo}`;
             }
             
+            // Comprobación estricta de duplicados en el bloque pegado
+            const existeYa = cesta.some(item => item.detalle === detalleFinal && item.estado !== "RECIBIDO");
+            if (existeYa) return; // Si ya existe en la cesta como pendiente, nos lo saltamos de forma segura
+
             let provSugerido = "S/P";
             for (let p of proveedores) {
                 let catalogo = p.catalogo || [];
@@ -437,14 +453,14 @@
                 }
             }
             cesta.push({ detalle: detalleFinal, proveedor_id: provSugerido, estado: "PENDIENTE" });
-            contadorAgregados++;
+            itemsAnadidos++;
         });
         
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('cesta', cesta);
         document.getElementById('raw-whatsapp').value = '';
         renderCesta();
-        alert(`✅ Se añadieron ${contadorAgregados} artículos a la cesta de control.`);
+        if(itemsAnadidos > 0) alert(`✅ Volcado de WhatsApp completado. Se inyectaron ${itemsAnadidos} nuevas líneas.`);
     }
 
     function renderBloquesWhatsApp(cesta, proveedores) {
@@ -490,9 +506,8 @@
         }
     }
 
-    // 🔧 FIX 7: Modal de interrupción y confirmación para evitar purgas erróneas en el distribuidor
     function limpiarBloqueProveedor(provNombre) {
-        if (confirm(`¿Estás seguro, Fred? Vas a eliminar TODOS los artículos pendientes de ${provNombre} de la cesta de control.`)) {
+        if (confirm(`¿Estás seguro de vaciar el bloque de pedido completo de ${provNombre}?`)) {
             let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
             cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado !== "RECIBIDO"));
             localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
@@ -501,10 +516,12 @@
         }
     }
 
-    // 🔧 FIX 5: Validación explícita de hardware/red del canal numérico de destino para WhatsApp
+    // 🔧 MEJORA 8: Purgado de caracteres no numéricos en teléfonos antes de enviar a wa.me
     function dispararWhatsAppProveedor(provNombre, telefono) {
-        if (!telefono || telefono.trim() === "") {
-            alert(`❌ El proveedor *${provNombre}* no tiene un número de teléfono válido configurado.\n\nEdítalo abajo en la pestaña 'Catálogo y Proveedores'.`);
+        const telefonoLimpio = telefono.replace(/\D/g, '');
+
+        if (!telefonoLimpio || telefonoLimpio.trim() === "") {
+            alert(`❌ El proveedor *${provNombre}* no tiene un número de teléfono móvil reglamentario asignado.`);
             return;
         }
 
@@ -525,7 +542,7 @@
         textoMensaje += `\n*Fredware System 👨‍🍳*`;
         let textoUrl = encodeURIComponent(textoMensaje);
         
-        let urlDestino = `https://wa.me/${telefono}?text=${textoUrl}`;
+        let urlDestino = `https://wa.me/${telefonoLimpio}?text=${textoUrl}`;
         window.open(urlDestino, '_blank');
     }
 
@@ -663,7 +680,7 @@
             repartosHoy.forEach(p => {
                 let c = p.contacto ? ` (${p.contacto})` : '';
                 let t = p.telefono ? ` - Tel: ${p.telefono}` : '';
-                container.innerHTML += `<div class="delivery-card"><strong> Distribución teórica de repartos para hoy: ${p.nombre}${c}${t}</strong></div>`;
+                container.innerHTML += `<div class="delivery-card"><strong> 🚛 Entrada teórica de: ${p.nombre}${c}${t}</strong></div>`;
             });
         }
         renderFaltasCocina();
@@ -676,7 +693,7 @@
         cuerpo.innerHTML = '';
 
         if(faltas.length === 0) {
-            cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:10px;">La cocina no ha anotado mermas ni faltas pendientes.</td></tr>`;
+            cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:10px;">La cocina no ha anotado faltas.</td></tr>`;
             return;
         }
 
@@ -690,7 +707,6 @@
         });
     }
 
-    // 🔧 FIX 2: Blindaje de parsing recursivo de strings para evitar duplicados en corchetes de volumen
     function pasarFaltaACesta(idx) {
         let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
@@ -701,8 +717,8 @@
         let detalleFormateado;
         
         if (!tieneFormato) {
-            let cantidadIngresada = prompt(`Falta registrada en cocina: ${desc}\n\nIntroduce el volumen y el formato (Ej: 3 KG, 2 CAJAS, 4 BOTES o solo el número):`, "1 UNIDADES");
-            if (cantidadIngresada === null) return;
+            let cantidadIngresada = prompt(`Falta de cocina: ${desc}\n\nIntroduce la cantidad y formato (Ej: 3 KG, 2 CAJAS, 4 BOTES o solo el número):`, "1 UNIDADES");
+            if (cantidadIngresada === null) return; 
             if (cantidadIngresada.trim() === "") cantidadIngresada = "1 UNIDADES";
             detalleFormateado = `[${cantidadIngresada.trim().toUpperCase()}] ${desc}`;
         } else {
@@ -713,10 +729,7 @@
         for (let p of proveedores) {
             let catalogo = p.catalogo || [];
             if (typeof catalogo === 'string') catalogo = catalogo.split(',').map(c => c.trim());
-            if (catalogo.some(prod => desc.includes(prod))) { 
-                provSugerido = p.nombre; 
-                break; 
-            }
+            if (catalogo.some(prod => desc.includes(prod))) { provSugerido = p.nombre; break; }
         }
 
         cesta.push({ detalle: detalleFormateado, proveedor_id: provSugerido, estado: "PENDIENTE" });
@@ -746,7 +759,6 @@
         URL.revokeObjectURL(url);
     }
 
-    // 🔧 FIX 4: Captura selectiva del foco para el cierre dinámico del visor de sugerencias flotantes
     document.addEventListener('click', (e) => {
         const box = document.getElementById('sugerencias-box');
         const input = document.getElementById('manual-articulo');
@@ -757,6 +769,11 @@
 
     initDaysGrids();
     cargarDatosDeOficina();
+
+    // 🔧 MEJORA 7: Polling automático en bucle cada 30 segundos para sincronizar oficina con la cocina en segundo plano
+    setInterval(() => {
+        cargarDatosDeOficina();
+    }, 30000);
 </script>
 </body>
 </html>
