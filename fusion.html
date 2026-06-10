@@ -8,10 +8,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        /* 🏗️ ESTILOS PARA EL ACORDEÓN DESPLEGABLE EN LA TABLET */
+        .accordion-header { background: #e2e8f0; color: #1e293b; padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s; }
+        .accordion-header:hover { background: #cbd5e1; }
+        .accordion-content { display: block; padding: 4px 0; }
+        .accordion-content.collapsed { display: none; }
+        .accordion-icon { font-size: 12px; transition: transform 0.2s; color: #64748b; }
+        .accordion-header.active .accordion-icon { transform: rotate(180deg); }
+    </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
 
-    <!-- CABECERA -->
     <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
         <div class="max-w-2xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -25,14 +34,13 @@
                 <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                     ➕ ENTRADA DIRECTA
                 </button>
-                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v5.5</span>
+                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v5.6</span>
             </div>
         </div>
     </header>
 
     <main class="max-w-2xl mx-auto w-full px-4 mt-6 space-y-6">
         
-        <!-- SECCIÓN 1: REGISTRO DE FALTAS -->
         <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                 <span>📝</span> Control de Faltas Diarias
@@ -46,7 +54,6 @@
             <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto"></div>
         </div>
 
-        <!-- SECCIÓN 2: RECEPCIÓN INTELIGENTE -->
         <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
                 <span>🚛</span> Entradas Esperadas Hoy (Check & Trazabilidad)
@@ -69,16 +76,16 @@
                     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                     body: JSON.stringify(datos)
                 });
-                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-            } catch (error) { console.error("Error en sincronización pasiva:", error); }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            } catch (error) { console.error("Error pasivo:", error); }
         }
 
         async function cargarDatosDeOficina() {
             try {
                 const respuesta = await fetch(`${API_URL}/api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-                if (!respuesta.ok) throw new Error("Error al consultar el JSON central");
-                
+                if (!respuesta.ok) throw new Error("Gateway Error");
                 const db = await respuesta.json();
+                
                 if (db.cesta) cestaGlobal = db.cesta;
                 if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
                 if (db.cesta) localStorage.setItem('fredware_cesta_compras', JSON.stringify(db.cesta));
@@ -87,7 +94,6 @@
                 renderFaltasLocales();
                 renderCheckMercancia(db.proveedores || [], db.cesta || []);
             } catch (error) {
-                console.log("Modo offline activado. Usando copias de seguridad de LocalStorage.");
                 renderFaltasLocales();
                 const provs = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
                 cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
@@ -102,17 +108,16 @@
             const input = document.getElementById('insumo-falta');
             const valor = input.value.trim().toUpperCase();
             if(!valor) return;
-            
+
             if(valor.length < 3) {
-                Swal.fire({ icon: 'warning', title: 'Falta no registrada', text: 'Escribe un nombre de ingrediente real (Mínimo 3 letras).', background: '#ffffff', color: '#000' });
+                Swal.fire({ icon: 'warning', title: 'Texto muy corto', text: 'Escribe al menos 3 letras para registrar la falta.', background: '#ffffff', color: '#000' });
                 return;
             }
 
             let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
             
-            // 🔧 MEJORA 6: Evitar duplicación de faltas consecutivas en el pase
             if(faltas.includes(valor)) {
-                Swal.fire({ icon: 'info', title: 'Ya anotado', text: 'Este producto ya está en la lista de faltas de hoy.', background: '#ffffff', color: '#000' });
+                Swal.fire({ icon: 'info', title: 'Ya registrado', text: 'Este insumo ya está anotado en la lista.', background: '#ffffff', color: '#000' });
                 return;
             }
 
@@ -152,7 +157,7 @@
             renderFaltasLocales();
         }
 
-        // --- PANEL DE REPARTO ---
+        // --- 🏗️ PANEL DE REPARTO CON ACORDEÓN DESPLEGABLE EN COCINA ---
         function renderCheckMercancia(proveedores, cesta) {
             const container = document.getElementById('visor-repartos-hoy');
             if(!container) return;
@@ -166,36 +171,65 @@
                 return;
             }
 
+            // Cargar histórico de acordeones cerrados por el equipo
+            const estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
+
             repartosHoy.forEach(p => {
                 let articulosDelProveedor = cesta.filter(item => item.proveedor_id === p.nombre && item.estado !== "RECIBIDO");
-                let htmlArticulos = '';
-                
-                if(articulosDelProveedor.length === 0) {
-                    htmlArticulos = `<div class="text-xs text-slate-400 italic p-2">Todo el pedido de este distribuidor procesado.</div>`;
-                } else {
-                    articulosDelProveedor.forEach(item => {
-                        let idxReal = cesta.findIndex(c => c.detalle === item.detalle && c.proveedor_id === item.proveedor_id && c.estado !== "RECIBIDO");
-                        htmlArticulos += `
-                            <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
-                                <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
-                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${p.nombre}', ${idxReal})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm">
-                                    📥 Recibir
-                                </button>
-                            </div>
-                        `;
-                    });
-                }
+                if (articulosDelProveedor.length === 0) return; // Si no hay nada pendiente de este proveedor, saltamos
 
-                container.innerHTML += `
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm">
-                        <div class="text-xs font-black text-sky-700 border-b border-slate-200 pb-2 mb-2 uppercase tracking-wider">🏢 Distribuidor: ${p.nombre}</div>
+                let htmlArticulos = '';
+                articulosDelProveedor.forEach(item => {
+                    let idxReal = cesta.findIndex(c => c.detalle === item.detalle && c.proveedor_id === item.proveedor_id && c.estado !== "RECIBIDO");
+                    htmlArticulos += `
+                        <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
+                            <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
+                            <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${p.nombre}', ${idxReal})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm">
+                                📥 Recibir
+                            </button>
+                        </div>
+                    `;
+                });
+
+                let esColapsado = estadosColapsados[p.nombre] === true;
+                let claseContenido = esColapsado ? "accordion-content collapsed" : "accordion-content";
+                let claseHeader = esColapsado ? "accordion-header" : "accordion-header active";
+
+                let cardHtml = document.createElement('div');
+                cardHtml.className = "mb-2";
+                cardHtml.innerHTML = `
+                    <div class="${claseHeader}" onclick="conmutarAcordeonCocina('${p.nombre}')">
+                        <span>🏢 DISTRIBUIDOR: ${p.nombre} <span class="ml-1 text-xs text-slate-500 font-normal">(${articulosDelProveedor.length} pendientes)</span></span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div id="acord-cocina-${p.nombre}" class="${claseContenido} bg-white border-x border-b border-slate-200 px-4 pb-2 rounded-b-xl shadow-sm">
                         <div class="divide-y divide-slate-100">${htmlArticulos}</div>
                     </div>
                 `;
+                container.appendChild(cardHtml);
             });
         }
 
-        // --- ADVERTENCIA DINÁMICA DE TEMPERATURAS (Corregida e Inteligente) ---
+        // Manejador del despliegue del acordeón en la tablet
+        function conmutarAcordeonCocina(provNombre) {
+            const content = document.getElementById(`acord-cocina-${provNombre}`);
+            if(!content) return;
+
+            let estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
+            
+            if(content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                estadosColapsados[provNombre] = false;
+            } else {
+                content.classList.add('collapsed');
+                estadosColapsados[provNombre] = true;
+            }
+            
+            localStorage.setItem('fredware_cocina_acordeon_estados', JSON.stringify(estadosColapsados));
+            cargarDatosDeOficina(); // Refrescar render sin perder sincronía
+        }
+
+        // --- ADVERTENCIA DINÁMICA DE TEMPERATURAS EN VENTANAS SWEETALERT ---
         function evaluarAlertaTemperatura() {
             const temp = parseFloat(document.getElementById('swal-temp').value);
             const alertaBox = document.getElementById('swal-alerta-temp');
@@ -203,7 +237,6 @@
             
             if (isNaN(temp)) { alertaBox.style.display = 'none'; return; }
 
-            // 🔧 MEJORA 4: Lógica limpia y directa por canales de conservación independientes
             if (modo === "CONGELADOR") {
                 if (temp > -12) {
                     alertaBox.innerHTML = "🚨 RECHAZO CRÍTICO: ¡CONGELADO FUERA DE MARGEN! (MÁX -12°C)";
@@ -248,7 +281,7 @@
             evaluarAlertaTemperatura();
         }
 
-        // --- FLUJO POPUP DE RECEPCIÓN ---
+        // --- FLUJO POPUP DE RECEPCIÓN (TEMA BLANCO REFORZADO) ---
         async function abrirFlujoRecepcion(detalleCompleto, proveedor, idxGlobal) {
             let productoLimpio = detalleCompleto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
             
@@ -259,7 +292,7 @@
             let conservacionInicial = "NEVERA";
             if (productoLimpio.includes("CONGELADO") || productoLimpio.includes("CONGE") || productoLimpio.includes("HELADO")) {
                 conservacionInicial = "CONGELADOR";
-            // 🔧 MEJORA 8: Eliminada la regla ciega del "PEZ" para evitar congelar el pescado fresco del día
+            // Quitamos la detección automática ciega de "PEZ" para evitar congelar el pescado fresco
             } else if (productoLimpio.includes("HARINA") || productoLimpio.includes("SECO") || productoLimpio.includes("ACEITE") || productoLimpio.includes("LATA") || productoLimpio.includes("BOTE")) {
                 conservacionInicial = "SECO";
             }
@@ -317,7 +350,6 @@
             let huboRotura = false;
             let cantidadFaltante = 0;
             
-            // 🔧 MEJORA 2: Validación explícita de límites de desbordamiento en el array de la cesta
             if(idxGlobal !== null && idxGlobal >= 0 && idxGlobal < cestaGlobal.length) {
                 if(formValues.cantidad < cantidadEsperada) {
                     huboRotura = true;
@@ -342,7 +374,7 @@
                 fecha_registro: ahora.toISOString()
             };
 
-            // 🔧 MEJORA 9: Inyección síncrona de la fecha DD/MM/AAAA en el QR para evitar duplicados idénticos en días distintos
+            // Inyectamos la fecha DD/MM/AAAA en la cadena QR para romper los duplicados estáticos
             let loteEtiquetas = [];
             for (let i = 1; i <= formValues.cantidad; i++) {
                 const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
@@ -359,27 +391,26 @@
             Swal.fire({ title: '📡 Sincronizando albarán...', background: '#ffffff', color: '#0f172a', showConfirmButton: false, allowOutsideClick: false });
 
             try {
-                // 🔧 MEJORA ERROR CRÍTICO: Corrección de rutas de hardware eliminando o añadiendo /api según corresponda con FastAPI
+                // Rutas directas alineadas con FastAPI
                 const resBD = await fetch(`${API_URL}/guardar_mercancia`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datosBaseDatos)
                 });
-                if (!resBD.ok) throw new Error("Fallo al inyectar albarán SQL.");
+                if (!resBD.ok) throw new Error("Error SQL backend");
 
                 fetch(`${API_URL}/imprimir_lote`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ etiquetas: loteEtiquetas })
-                }).catch(e => console.log("Impresión enviada a cola de hardware."));
+                }).catch(e => console.log("Impresión lanzada."));
 
                 if(idxGlobal !== null) {
-                    const resCesta = await fetch(`${API_URL}/api/cesta`, {
+                    await fetch(`${API_URL}/api/cesta`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                         body: JSON.stringify(cestaGlobal)
                     });
-                    if (!resCesta.ok) throw new Error("Fallo al actualizar cesta.");
                 }
 
                 if(huboRotura) {
@@ -415,15 +446,7 @@
                 renderCheckMercancia(proveedores, cestaGlobal);
 
             } catch (error) {
-                // 🔧 MEJORA 5: Intercepción de excepciones de pasarela con avisos explícitos al usuario en pantalla (SweetAlert)
-                Swal.fire({ 
-                    title: '❌ ERROR DE CONEXIÓN', 
-                    text: 'No se pudo comunicar con el PC de la oficina. Verifica que el script de Python y Ngrok estén encendidos.', 
-                    icon: 'error', 
-                    background: '#ffffff', 
-                    color: '#0f172a',
-                    confirmButtonColor: '#ef4444'
-                });
+                Swal.fire({ title: '❌ ERROR DE CONEXIÓN', text: 'El servidor local de la oficina no responde.', icon: 'error', background: '#ffffff', color: '#0f172a' });
             }
         }
 
