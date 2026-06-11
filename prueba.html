@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>👨‍🍳 Fredware - Panel de Compras Avanzada</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f1f5f9; color: #333; padding: 10px; }
+        .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        h1 { font-size: 18px; text-align: center; margin-bottom: 15px; background: #1e293b; color: white; padding: 12px; border-radius: 8px; }
+        
+        .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; }
+        .tab-btn.active { background: #2563eb; color: white; }
+        .app-section { display: none; }
+        .app-section.active { display: block; }
+
+        .box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        h3 { font-size: 14px; margin-bottom: 10px; color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; }
+        label { display: block; font-size: 12px; font-weight: bold; margin-top: 8px; color: #475569; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; outline: none; }
+        
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
+        .day-label { font-size: 11px; text-align: center; background: #fff; border: 1px solid #cbd5e1; padding: 6px 2px; border-radius: 4px; cursor: pointer; display: block; user-select: none; }
+        .day-check { display: none; }
+        .day-check:checked + .day-label { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
+
+        .btn-action { background: #10b981; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn-action:active { background: #059669; }
+        .btn-sec { background: #64748b; }
+
+        .inline-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; position: relative; }
+        .inline-form .input-cant { width: 70px; }
+        .inline-form .select-uni { width: 100px; }
+        .inline-form .input-art { flex: 1; min-width: 200px; }
+        .inline-form .btn-add-manual { background: #2563eb; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+
+        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 0 0 6px 6px; max-height: 150px; overflow-y: auto; z-index: 999; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 10px; cursor: pointer; font-size: 13px; color: #1e293b; }
+        .suggestion-item:hover { background: #f1f5f9; }
+
+        .item-list { width: 100%; border-collapse: collapse; margin-top: 0px; }
+        .item-list th { background: #e2e8f0; text-align: left; padding: 8px 6px; font-size: 11px; color: #475569; }
+        .item-list td { padding: 8px 6px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
+        .btn-del-row { background: #fee2e2; color: #ef4444; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
+
+        .whatsapp-provider-card { background: #e8f5e9; border: 1px solid #a5d6a7; padding: 12px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .whatsapp-provider-card strong { color: #2e7d32; font-size: 13px; }
+        .btn-wa-send { background: #25d366; color: white; border: none; padding: 8px 14px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-wa-send:active { background: #128c7e; }
+        .btn-wa-del { background: #64748b; color: white; border: none; padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .btn-wa-del:active { background: #475569; }
+
+        .delivery-card { background: white; border-left: 4px solid #10b981; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        .accordion-header { background: #e2e8f0; color: #1e293b; padding: 12px; font-size: 13px; font-weight: bold; border-radius: 8px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s; }
+        .accordion-header:hover { background: #cbd5e1; }
+        .accordion-content { display: block; padding: 5px 0; margin-bottom: 10px; }
+        .accordion-content.collapsed { display: none; }
+        .accordion-icon { font-size: 12px; transition: transform 0.2s; color: #64748b; }
+        .accordion-header.active .accordion-icon { transform: rotate(180deg); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="alerta-reloj-compras" class="banner-alerta-tiempo"></div>
+
+    <h1>👨‍🍳 Fredware Compras - Panel de Control</h1>
+    
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">📥 Cesta y Pedidos</button>
+        <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">🚛 Vista de Control</button>
+        <button class="tab-btn" id="btn-t3" onclick="switchTab(3)">📦 Catálogo y Proveedores</button>
+    </div>
+
+    <!-- PESTAÑA 1 -->
+    <div id="sec1" class="app-section active">
+        <div class="box" style="border-left: 4px solid #2563eb;">
+            <h3>➕ Introducción Manual de Artículo con Medida</h3>
+            <div class="inline-form">
+                <input type="number" id="manual-cantidad" class="input-cant" value="1" min="1" placeholder="Cant">
+                <select id="manual-unidad" class="select-uni">
+                    <option value="KG">Kg</option>
+                    <option value="L">Litros</option>
+                    <option value="CAJAS">Cajas</option>
+                    <option value="BOTES">Botes</option>
+                    <option value="UNIDADES">Unidades</option>
+                </select>
+                <div class="input-art" style="position: relative;">
+                    <input type="text" id="manual-articulo" placeholder="Escribe artículo..." autocomplete="off" oninput="buscarAutocompletado(this.value)">
+                    <div id="sugerencias-box" class="autocomplete-suggestions" style="display: none;"></div>
+                </div>
+                <button class="btn-add-manual" onclick="agregarArticuloManual()">➕ Añadir</button>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>📝 Pegar Texto de WhatsApp (Bloque Completo)</h3>
+            <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje (Ej: carne, tomate, cebollas)..."></textarea>
+            <button class="btn-action" onclick="parsearTextoWhatsApp()">⚡ Volcar Líneas de WhatsApp</button>
+        </div>
+
+        <div class="box" style="border-left: 4px solid #25d366;">
+            <h3>📲 Lanzar Pedidos Consolidados por WhatsApp</h3>
+            <div id="contenedor-bloques-whatsapp" style="margin-top: 8px;"></div>
+        </div>
+
+        <div class="box">
+            <h3>🛒 Cesta de la Compra Actual (Organizada en Acordeón)</h3>
+            <div id="contenedor-acordeon-cesta"></div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-action" style="background: #2563eb; margin-top: 0;" onclick="subirCestaAlServidor()">⚡ Sincronizar Pedidos con la Oficina</button>
+                <button class="btn-action btn-sec" style="width: auto; padding: 12px 20px; margin-top: 0;" onclick="exportarPedidosJson()">📥 Guardar Copia .JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑA 2 -->
+    <div id="sec2" class="app-section">
+        <div class="box">
+            <h3>📅 Distribución teórica de repartos para hoy</h3>
+            <div id="visor-repartos-hoy"></div>
+        </div>
+        <div class="box">
+            <h3>📝 Notas de la cocina (Faltas registradas por el equipo)</h3>
+            <table class="item-list">
+                <thead>
+                    <tr>
+                        <th>Producto Solicitado</th>
+                        <th style="text-align: center;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-faltas-cocina"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PESTAÑA 3: RESTAURADA COMPLETA EN ALTA E INTERACTIVIDAD -->
+    <div id="sec3" class="app-section">
+        <div class="box">
+            <h3>🏢 Alta / Modificación de Proveedor</h3>
+            <label for="prov-nombre">Nombre Comercial:</label>
+            <input type="text" id="prov-nombre" placeholder="Ej: MAKRO">
+            
+            <label for="prov-contacto">👤 Persona de Contacto:</label>
+            <input type="text" id="prov-contacto" placeholder="Ej: Paco, Laura Gallego...">
+            
+            <label for="prov-telefono">📞 Teléfono de Contacto (Prefijo sin +, Ej: 34600123456):</label>
+            <input type="text" id="prov-telefono" placeholder="Ej: 34600123456">
+
+            <label for="prov-hora">Hora Límite de Pedido:</label>
+            <input type="time" id="prov-hora" value="13:00">
+
+            <label for="prov-catalogo">📦 Catálogo de Productos (Separados por comas):</label>
+            <textarea id="prov-catalogo" rows="2" placeholder="Ej: HUEVOS, HARINA, ACEITE..."></textarea>
+
+            <label>Días que hay que hacer el PEDIDO:</label>
+            <div class="days-grid" id="grid-pedidos"></div>
+
+            <label>Días que viene el REPARTO al local:</label>
+            <div class="days-grid" id="grid-repartos"></div>
+
+            <button class="btn-action" onclick="guardarProveedor()">💾 Guardar Proveedor</button>
+        </div>
+        
+        <div class="box">
+            <h3>📋 Agenda de Proveedores y Catálogos Activos</h3>
+            <div id="lista-prov-config"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
+    const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+    function initDaysGrids() {
+        ['pedidos', 'repartos'].forEach(tipo => {
+            const container = document.getElementById(`grid-${tipo}`);
+            if(!container) return;
+            container.innerHTML = '';
+            DIAS_SEMANA.forEach((dia, idx) => {
+                container.innerHTML += `
+                    <div>
+                        <input type="checkbox" id="chk-${tipo}-${idx}" class="day-check" value="${idx}">
+                        <label for="chk-${tipo}-${idx}" class="day-label">${dia.substring(0,2)}</label>
+                    </div>
+                `;
+            });
+        });
+    }
+
+    function switchTab(num) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`btn-t${num}`).classList.add('active');
+        document.getElementById(`sec${num}`).classList.add('active');
+        if(num === 1) renderCesta();
+        if(num === 2) renderVisorPasivo();
+        if(num === 3) renderProveedoresConfig();
+    }
+
+    async function sincronizarConOficina(endpoint, datos) {
+        try {
+            await fetch(`${API_URL}api/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify(datos)
+            });
+        } catch (error) {
+            console.error(`Error en /api/${endpoint}:`, error);
+        }
+    }
+
+    async function cargarDatosDeOficina() {
+        try {
+            const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+            if(!respuesta.ok) throw new Error("Ngrok Gateway Error");
+            const db = await respuesta.json();
+            
+            let cestaLocal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+            let cestaServidor = db.cesta || [];
+
+            if (cestaServidor.length > 0) {
+                cestaServidor.forEach(itemServ => {
+                    let idxExistente = cestaLocal.findIndex(l => l.detalle === itemServ.detalle);
+                    if (idxExistente !== -1) {
+                        cestaLocal[idxExistente].estado = itemServ.estado;
+                    } else {
+                        cestaLocal.push(itemServ);
+                    }
+                });
+                localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaLocal));
+            }
+
+            if (db.proveedores) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
+            if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
+            
+            if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
+            if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
+            if (document.getElementById('btn-t3').classList.contains('active')) renderProveedoresConfig();
+
+        } catch (error) {
+            console.log("Servidor Offline. Usando caché.");
+        }
+    }
+
+    function subirCestaAlServidor() {
+        const cestaLocal = localStorage.getItem('fredware_cesta_compras');
+        if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
+            alert("⚠️ La cesta está vacía.");
+            return;
+        }
+
+        const btn = document.querySelector("button[onclick='subirCestaAlServidor()']");
+        if(btn) { btn.disabled = true; btn.innerText = "⏳ Sincronizando..."; }
+
+        fetch(`${API_URL}api/cesta`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify(JSON.parse(cestaLocal))
+        })
+        .then(res => {
+            if (res.ok) alert("✅ ¡Pedidos enviados directamente a la terminal de cocina!");
+            else alert("❌ Error al inyectar JSON.");
+        })
+        .catch(err => alert("❌ Conexión fallida."))
+        .finally(() => {
+            if(btn) { btn.disabled = false; btn.innerText = "⚡ Sincronizar Pedidos con la Oficina"; }
+        });
+    }
+
+    function buscarAutocompletado(busqueda) {
+        const box = document.getElementById('sugerencias-box');
+        if (!busqueda.trim()) { box.style.display = 'none'; return; }
+        
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        box.innerHTML = '';
+        let coincidencias = 0;
+        const busquedaLimpia = busqueda.toUpperCase();
+
+        proveedores.forEach(p => {
+            let catalogo = p.catalogo || [];
+            if (typeof catalogo === 'string') catalogo = catalogo.split(',').map(c => c.trim());
+
+            catalogo.forEach(prod => {
+                if (prod.toUpperCase().includes(busquedaLimpia) && coincidencias < 5) {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.innerHTML = `📦 <strong>${prod}</strong> <span style="color:#64748b;font-size:11px;">(${p.nombre})</span>`;
+                    item.onclick = () => seleccionarSugerencia(prod, p.nombre);
+                    box.appendChild(item);
+                    coincidencias++;
+                }
+            });
+        });
+        box.style.display = coincidencias > 0 ? 'block' : 'none';
+    }
+
+    function seleccionarSugerencia(producto, proveedorSugerido) {
+        document.getElementById('manual-articulo').value = producto;
+        document.getElementById('sugerencias-box').style.display = 'none';
+        document.getElementById('manual-articulo').dataset.sugerido = proveedorSugerido;
+    }
+
+    function agregarArticuloManual() {
+        const inputArt = document.getElementById('manual-articulo');
+        const inputCant = document.getElementById('manual-cantidad');
+        const selectUni = document.getElementById('manual-unidad');
+
+        const producto = inputArt.value.trim().toUpperCase();
+        const cantidad = inputCant.value.trim();
+        const unidad = selectUni.value;
+
+        if(!producto) return;
+        const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
+
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        let provAsignado = inputArt.dataset.sugerido || "S/P";
+        
+        cesta.push({ detalle: detalleFormateado, proveedor_id: provAsignado, estado: "PENDIENTE" });
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        
+        sincronizarConOficina('cesta', cesta);
+        inputArt.value = ''; inputCant.value = '1'; delete inputArt.dataset.sugerido;
+        renderCesta();
+    }
+
+    function parsearTextoWhatsApp() {
+        const txt = document.getElementById('raw-whatsapp').value.trim();
+        if(!txt) return;
+        
+        let lineas = txt.split('\n');
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        let itemsAnadidos = 0;
+        
+        lineas.forEach(linea => {
+            let desc = linea.trim().toUpperCase();
+            if(desc === '') return;
+            
+            let descLimpia = desc.replace(/^\[.*?\]\s*/, '');
+
+            let cantidadIngresada = prompt(`Falta detectada: ${descLimpia}\n\nIntroduce cantidad y formato (Ej: 5 KG, 2 CAJAS, 10 BOTES):`, "1 UNIDADES");
+            if (cantidadIngresada === null) return; 
+            if (cantidadIngresada.trim() === "") cantidadIngresada = "1 UNIDADES";
+
+            let detalleFinal = `[${cantidadIngresada.trim().toUpperCase()}] ${descLimpia}`;
+            
+            const existeYa = cesta.some(item => item.detalle === detalleFinal && item.estado !== "RECIBIDO");
+            if (existeYa) return;
+
+            let provSugerido = "S/P";
+            for (let p of proveedores) {
+                let catalogo = p.catalogo || [];
+                if (typeof catalogo === 'string') catalogo = catalogo.split(',').map(c => c.trim());
+                if (catalogo.some(prod => descLimpia.includes(prod.toUpperCase()))) { 
+                    provSugerido = p.nombre; 
+                    break; 
+                }
+            }
+
+            cesta.push({ detalle: detalleFinal, proveedor_id: provSugerido, estado: "PENDIENTE" });
+            itemsAnadidos++;
+        });
+        
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        document.getElementById('raw-whatsapp').value = '';
+        renderCesta();
+    }
+
+    function renderBloquesWhatsApp(cesta, proveedores) {
+        const contenedor = document.getElementById('contenedor-bloques-whatsapp');
+        if(!contenedor) return; contenedor.innerHTML = '';
+        let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado === "PENDIENTE").map(i => i.proveedor_id))];
+
+        proveedoresConPedidos.forEach(provNombre => {
+            const datosProv = proveedores.find(p => p.nombre === provNombre) || {};
+            if (!datosProv.telefono || datosProv.telefono.trim() === "") return; 
+            const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado === "PENDIENTE");
+            if (articulos.length === 0) return;
+
+            const card = document.createElement('div');
+            card.className = 'whatsapp-provider-card';
+            card.innerHTML = `
+                <div><strong>🏢 ${provNombre}</strong><div style="font-size:11px; color:#475569;">Líneas: ${articulos.length}</div></div>
+                <div style="display:flex; gap: 8px;">
+                    <button class="btn-wa-send" onclick="dispararWhatsAppProveedor('${provNombre}', '${datosProv.telefono}')">💬 Enviar</button>
+                    <button class="btn-wa-del" onclick="limpiarBloqueProveedor('${provNombre}')">❌ Ocultar</button>
+                </div>
+            `;
+            contenedor.appendChild(card);
+        });
+    }
+
+    function limpiarBloqueProveedor(provNombre) {
+        if (!confirm(`¿Vaciar bloque de ${provNombre}?`)) return;
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado === "PENDIENTE"));
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        renderCesta();
+    }
+
+    function dispararWhatsAppProveedor(provNombre, telefono) {
+        const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado === "PENDIENTE");
+        let textoMensaje = `¡Hola! Te paso el pedido de hoy:\n\n`;
+        articulos.forEach(item => { textoMensaje += `• ${item.detalle}\n`; });
+        window.open(`https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(textoMensaje)}`, '_blank');
+    }
+
+    function renderCesta() {
+        const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        const contenedorAcordeon = document.getElementById('contenedor-acordeon-cesta');
+        if(!contenedorAcordeon) return; contenedorAcordeon.innerHTML = '';
+
+        renderBloquesWhatsApp(cesta, proveedores);
+        if(cesta.length === 0) {
+            contenedorAcordeon.innerHTML = `<div class="text-center text-slate-400 py-6 italic text-sm">La cesta está vacía.</div>`;
+            return;
+        }
+
+        const estadosColapsados = JSON.parse(localStorage.getItem('fredware_acordeon_estados')) || {};
+        let grupos = {};
+        cesta.forEach((item, idx) => {
+            let pId = item.proveedor_id || "S/P";
+            if(!grupos[pId]) grupos[pId] = [];
+            grupos[pId].push({ item, idxReal: idx });
+        });
+
+        Object.keys(grupos).sort().forEach(pId => {
+            const listaItems = grupos[pId];
+            let esColapsado = estadosColapsados[pId] === true;
+            let bloqueHtml = document.createElement('div');
+            bloqueHtml.className = "mb-2";
+            bloqueHtml.innerHTML = `
+                <div class="accordion-header ${esColapsado ? '' : 'active'}" onclick="conmutarAcordeon('${pId}')">
+                    <span>🏢 DISTRIBUIDOR: ${pId} <span class="text-xs text-slate-500 font-normal">(${listaItems.length} líneas)</span></span><span class="accordion-icon">▼</span>
+                </div>
+                <div id="acord-content-${pId}" class="accordion-content ${esColapsado ? 'collapsed' : ''}">
+                    <table class="item-list">
+                        <thead><tr><th>Artículo</th><th>Distribuidor</th><th>Acción</th></tr></thead>
+                        <tbody>
+                            ${listaItems.map(pack => {
+                                let selectOptions = `<option value="S/P">Asignar...</option>`;
+                                proveedores.forEach(p => { selectOptions += `<option value="${p.nombre}" ${pack.item.proveedor_id === p.nombre ? 'selected' : ''}>${p.nombre}</option>`; });
+                                let estiloRecibido = pack.item.estado === "RECIBIDO" ? 'style="text-decoration: line-through; color: #10b981;"' : '';
+                                return `<tr>
+                                    <td ${estiloRecibido}><strong>${pack.item.detalle}</strong></td>
+                                    <td><select onchange="cambiarProveedorItem(${pack.idxReal}, this.value)">${selectOptions}</select></td>
+                                    <td><button class="btn-del-row" onclick="quitarItemCesta(${pack.idxReal})">❌</button></td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            contenedorAcordeon.appendChild(bloqueHtml);
+        });
+    }
+
+    function conmutarAcordeon(pId) {
+        const content = document.getElementById(`acord-content-${pId}`);
+        let estadosColapsados = JSON.parse(localStorage.getItem('fredware_acordeon_estados')) || {};
+        estadosColapsados[pId] = !content.classList.contains('collapsed');
+        localStorage.setItem('fredware_acordeon_estados', JSON.stringify(estadosColapsados));
+        renderCesta();
+    }
+
+    function cambiarProveedorItem(idx, provNombre) {
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        cesta[idx].proveedor_id = provNombre;
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        renderCesta();
+    }
+
+    function quitarItemCesta(idx) {
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        cesta.splice(idx, 1);
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        renderCesta();
+    }
+
+    // 🔧 FUNCIÓN RESTAURADA: Guarda la ficha de proveedor completa con días y catálogos
+    function guardarProveedor() {
+        const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
+        const contacto = document.getElementById('prov-contacto').value.trim();
+        const telefono = document.getElementById('prov-telefono').value.trim();
+        const hora = document.getElementById('prov-hora').value;
+        const txtCatalogo = document.getElementById('prov-catalogo').value.trim().toUpperCase();
+        if(!nombre) return;
+
+        let arrayCatalogo = txtCatalogo ? txtCatalogo.split(',').map(i => i.trim()).filter(i => i !== '') : [];
+        let diasPedir = [];
+        let diasRepartir = [];
+        DIAS_SEMANA.forEach((_, idx) => {
+            if(document.getElementById(`chk-pedidos-${idx}`).checked) diasPedir.push(idx);
+            if(document.getElementById(`chk-repartos-${idx}`).checked) diasRepartir.push(idx);
+        });
+
+        let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        let existenteIdx = proveedores.findIndex(p => p.nombre === nombre);
+        
+        let nuevoProv = { nombre: nombre, contacto: contacto, telefono: telefono, hora_limite: hora, catalogo: arrayCatalogo, dias_pedido: diasPedir, dias_reparto: diasRepartir };
+        
+        if (existenteIdx !== -1) proveedores[existenteIdx] = nuevoProv;
+        else proveedores.push(nuevoProv);
+
+        localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
+        sincronizarConOficina('proveedores', proveedores);
+        
+        document.getElementById('prov-nombre').value = '';
+        document.getElementById('prov-contacto').value = '';
+        document.getElementById('prov-telefono').value = '';
+        document.getElementById('prov-catalogo').value = '';
+        initDaysGrids();
+        renderProveedoresConfig();
+        renderCesta();
+    }
+
+    // 🔧 LOGÍSTICA RESTAURADA: Carga de datos interactiva completa al pinchar encima
+    function verProveedorEnFormulario(idx) {
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        const p = proveedores[idx];
+        if(!p) return;
+
+        document.getElementById('prov-nombre').value = p.nombre || '';
+        document.getElementById('prov-contacto').value = p.contacto || '';
+        document.getElementById('prov-telefono').value = p.telefono || '';
+        document.getElementById('prov-hora').value = p.hora_limite || '13:00';
+        
+        let catalogoTexto = Array.isArray(p.catalogo) ? p.catalogo.join(', ') : (p.catalogo || '');
+        document.getElementById('prov-catalogo').value = catalogoTexto;
+
+        initDaysGrids();
+        
+        if(p.dias_pedido) p.dias_pedido.forEach(d => { let chk = document.getElementById(`chk-pedidos-${d}`); if(chk) chk.checked = true; });
+        if(p.dias_reparto) p.dias_reparto.forEach(d => { let chk = document.getElementById(`chk-repartos-${d}`); if(chk) chk.checked = true; });
+    }
+
+    // 🔧 RENDERIZADO INTERACTIVO: Panel de proveedores cliqueable y con botón de eliminar real
+    function renderProveedoresConfig() {
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        const div = document.getElementById('lista-prov-config'); 
+        if(!div) return; 
+        div.innerHTML = '';
+        
+        proveedores.forEach((p, idx) => {
+            let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
+            let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono";
+            let contactoStr = p.contacto ? `👤 Contacto: ${p.contacto}` : "👤 Sin gestor asignado";
+            
+            div.innerHTML += `
+                <div style="background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1; cursor:pointer;" onclick="verProveedorEnFormulario(${idx})">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>🏢 ${p.nombre}</strong>
+                        <button class="btn-del-row" onclick="event.stopPropagation(); eliminarProveedor(${idx})">Eliminar</button>
+                    </div>
+                    <div style="margin-top:4px; color:#475569;">
+                        <span>${contactoStr}</span> | <span>${tel}</span><br>
+                        <span style="color:#64748b; font-size:11px;">Reparte: ${listado} | Insumos: ${p.catalogo ? p.catalogo.length : 0} | Hora límite: ${p.hora_limite || '13:00'}</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function eliminarProveedor(idx) {
+        if(!confirm("¿Estás seguro de que deseas eliminar este distribuidor por completo?")) return;
+        let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        proveedores.splice(idx, 1);
+        localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
+        sincronizarConOficina('proveedores', proveedores);
+        renderProveedoresConfig();
+        renderCesta();
+    }
+
+    function renderVisorPasivo() { renderFaltasCocina(); }
+    
+    function renderFaltasCocina() {
+        const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+        const cuerpo = document.getElementById('tabla-faltas-cocina'); if(!cuerpo) return; cuerpo.innerHTML = '';
+        faltas.forEach((item, idx) => {
+            cuerpo.innerHTML += `<tr><td>⚠️ <strong>${item}</strong></td><td><button class="btn-del-row" onclick="pasarFaltaACesta(${idx})">🛒 Cargar</button></td></tr>`;
+        });
+    }
+
+    function pasarFaltaACesta(idx) {
+        let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        
+        let desc = faltas[idx];
+        let cantidadIngresada = prompt(`Falta de cocina: ${desc}\n\nIntroduce cantidad y formato:`, "1 UNIDADES");
+        if (cantidadIngresada === null) return;
+
+        cesta.push({ detalle: `[${cantidadIngresada.toUpperCase()}] ${desc}`, proveedor_id: "S/P", estado: "PENDIENTE" });
+        faltas.splice(idx, 1);
+        localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('faltas', faltas); sincronizarConOficina('cesta', cesta);
+        renderVisorPasivo(); renderCesta();
+    }
+
+    function exportarPedidosJson() {
+        const blob = new Blob([localStorage.getItem('fredware_cesta_compras')], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup.json'; a.click();
+    }
+
+    initDaysGrids();
+    cargarDatosDeOficina();
+    setInterval(cargarDatosDeOficina, 25000); 
+</script>
+</body>
+</html>
