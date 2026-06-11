@@ -21,7 +21,6 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
 
-    <!-- CABECERA -->
     <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
         <div class="max-w-2xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -35,14 +34,13 @@
                 <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                     ➕ ENTRADA DIRECTA
                 </button>
-                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v5.9</span>
+                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v6.4</span>
             </div>
         </div>
     </header>
 
     <main class="max-w-2xl mx-auto w-full px-4 mt-6 space-y-6">
         
-        <!-- SECCIÓN 1: REGISTRO DE FALTAS -->
         <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                 <span>📝</span> Control de Faltas Diarias
@@ -56,7 +54,6 @@
             <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto"></div>
         </div>
 
-        <!-- SECCIÓN 2: RECEPCIÓN INTELIGENTE -->
         <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
                 <span>🚛</span> Entradas Esperadas Hoy (Check & Trazabilidad)
@@ -97,14 +94,13 @@
                 renderFaltasLocales();
                 renderCheckMercancia(db.proveedores || [], db.cesta || []);
             } catch (error) {
+                console.log("Fallo de red en pasarela central. Tirando de base de datos local.");
                 renderFaltasLocales();
                 const provs = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
                 cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
                 renderCheckMercancia(provs, cestaGlobal);
             }
         }
-
-        window.addEventListener('DOMContentLoaded', cargarDatosDeOficina);
 
         // --- GESTIÓN DE FALTAS ---
         function registrarFaltaCocina() {
@@ -160,7 +156,7 @@
             renderFaltasLocales();
         }
 
-        // --- 🏗️ PANEL DE REPARTO CON SEMÁFORO DE RETRASOS (Semaforización de Albaranes) ---
+        // --- PANEL DE REPARTO ---
         function renderCheckMercancia(proveedores, cesta) {
             const container = document.getElementById('visor-repartos-hoy');
             if(!container) return;
@@ -181,14 +177,12 @@
                 let articulosDelProveedor = cesta.filter(item => item.proveedor_id === p.nombre && item.estado !== "RECIBIDO");
                 if (articulosDelProveedor.length === 0) return;
 
-                // 🕰️ CÁLCULO DE URGENGIA: Encontrar el artículo más viejo de este proveedor para dictar el color de la cabecera
                 let maxDiasRetraso = 0;
                 
                 let htmlArticulos = '';
                 articulosDelProveedor.forEach(item => {
                     let idxReal = cesta.findIndex(c => c.detalle === item.detalle && c.proveedor_id === p.nombre && c.estado !== "RECIBIDO");
                     
-                    // Calcular retraso basándonos en la estampa de tiempo del registro
                     if (item.fecha_registro) {
                         let fechaRegistro = new Date(item.fecha_registro);
                         let diferenciaTiempo = ahora - fechaRegistro;
@@ -196,23 +190,28 @@
                         if (diasDiferencia > maxDiasRetraso) maxDiasRetraso = diasDiferencia;
                     }
 
+                    // 🔧 MEJORA v6.4: Agregado el botón secundario "No llegó" con su propio trigger independiente
                     htmlArticulos += `
                         <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
                             <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
-                            <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${p.nombre}', ${idxReal})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm">
-                                📥 Recibir
-                            </button>
+                            <div class="flex space-x-2">
+                                <button onclick="marcarProductoNoLlego(${idxReal})" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl transition-all active:scale-95 shadow-sm border border-slate-300">
+                                    ❌ No llegó
+                                </button>
+                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${p.nombre}', ${idxReal})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm">
+                                    📥 Recibir
+                                </button>
+                            </div>
                         </div>
                     `;
                 });
 
-                // 🎨 ASIGNACIÓN DINÁMICA DEL SEMÁFORO DE COLORES EXCLUSIVO DE FREDWARE
-                let estiloCabeceraUrgencia = "bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100"; // Verde (Hoy / Mañana)
+                let estiloCabeceraUrgencia = "bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100";
                 
                 if (maxDiasRetraso === 1) {
-                    estiloCabeceraUrgencia = "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100"; // Amarillo (Ayer / Pasado)
+                    estiloCabeceraUrgencia = "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100";
                 } else if (maxDiasRetraso >= 2) {
-                    estiloCabeceraUrgencia = "bg-red-50 border-red-300 text-red-900 hover:bg-red-100 animate-pulse"; // Rojo (Más de 2 días de retraso)
+                    estiloCabeceraUrgencia = "bg-red-50 border-red-300 text-red-900 hover:bg-red-100 animate-pulse";
                 }
 
                 let esColapsado = estadosColapsados[p.nombre] === true;
@@ -232,6 +231,72 @@
                 `;
                 container.appendChild(cardHtml);
             });
+        }
+
+        // --- ❌ FUNCIÓN EXCLUSIVA v6.4: PROCESAR ENTRADAS NO ENTREGADAS AL INSTANTE ---
+        async function marcarProductoNoLlego(idxGlobal) {
+            if(idxGlobal === null || idxGlobal < 0 || idxGlobal >= cestaGlobal.length) return;
+            
+            const item = cestaGlobal[idxGlobal];
+            let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+
+            // Mensaje de confirmación rápido para evitar errores accidentales en la tablet
+            const confirmacion = await Swal.fire({
+                title: '¿Confirmas incidencia?',
+                text: `¿Quieres marcar "${productoLimpio}" de ${item.proveedor_id} como no entregado? Pasará automáticamente a la lista de faltas de la oficina.`,
+                icon: 'warning',
+                background: '#ffffff',
+                color: '#0f172a',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, registrar falta',
+                cancelButtonText: 'Volver'
+            });
+
+            if (!confirmacion.isConfirmed) return;
+
+            // 1. Marcar el artículo como procesado en la cesta activa para sacarlo del panel
+            cestaGlobal[idxGlobal].estado = "RECIBIDO";
+            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
+
+            // 2. Volcar la falta en el LocalStorage
+            let faltasLocales = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            faltasLocales.push(`${productoLimpio} (PROVEEDOR NO ENTREGÓ EN REPARTO)`);
+            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltasLocales));
+
+            Swal.fire({ title: '📡 Notificando a la oficina...', background: '#ffffff', color: '#0f172a', showConfirmButton: false, allowOutsideClick: false });
+
+            try {
+                // 3. Sincronizar en bloque ambos estados directamente contra FastAPI sin pasar por el flujo de impresión
+                await fetch(`${API_URL}/api/cesta`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify(cestaGlobal)
+                });
+
+                await fetch(`${API_URL}/api/faltas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify(faltasLocales)
+                });
+
+                Swal.fire({
+                    title: '🚨 INCIDENCIA REGISTRADA',
+                    text: `El artículo se ha devuelto a la cesta de faltas de la oficina con éxito.`,
+                    icon: 'success',
+                    background: '#ffffff',
+                    color: '#0f172a',
+                    confirmButtonColor: '#10b981'
+                });
+
+                renderFaltasLocales();
+                const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+                renderCheckMercancia(proveedores, cestaGlobal);
+
+            } catch (error) {
+                Swal.fire({ title: '❌ ERROR', text: 'Se guardó en local, pero el PC central está desconectado.', icon: 'error', background: '#ffffff', color: '#0f172a' });
+            }
         }
 
         function conmutarAcordeonCocina(provNombre) {
@@ -347,9 +412,15 @@
                             <input id="swal-temp" type="number" step="0.1" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-lg focus:outline-none focus:border-emerald-500 shadow-inner">
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">¿Cuántas unidades entran reales? (Pedido: ${cantidadEsperada}):</label>
-                            <input id="swal-cantidad" type="number" min="1" value="${cantidadEsperada}" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-lg focus:outline-none focus:border-emerald-500 shadow-inner">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Kilos/Unidades Reales:</label>
+                                <input id="swal-cantidad" type="number" min="0" step="1" value="${cantidadEsperada}" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-base focus:outline-none focus:border-emerald-500 shadow-inner">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-sky-600 uppercase tracking-wider mb-1">Nº Pegatinas (Imprimir):</label>
+                                <input id="swal-stickers" type="number" min="0" value="1" class="w-full bg-sky-50 text-slate-900 font-bold text-center border border-sky-300 rounded-xl py-2.5 text-base focus:outline-none focus:border-sky-500 shadow-inner">
+                            </div>
                         </div>
                     </div>
                 `,
@@ -357,7 +428,8 @@
                 preConfirm: () => {
                     return {
                         temperatura: parseFloat(document.getElementById('swal-temp').value),
-                        cantidad: parseInt(document.getElementById('swal-cantidad').value) || 1,
+                        cantidad: parseInt(document.getElementById('swal-cantidad').value) || 0,
+                        stickers: parseInt(document.getElementById('swal-stickers').value) ?? 0,
                         conservacion: document.getElementById('swal-modo-conservacion').value
                     }
                 }
@@ -397,16 +469,18 @@
             };
 
             let loteEtiquetas = [];
-            for (let i = 1; i <= formValues.cantidad; i++) {
-                const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
-                const cadenaQrUnidad = `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.cantidad}|${tagOperacion}`;
-                
-                loteEtiquetas.push({
-                    producto: productoLimpio,
-                    unidad: formValues.conservacion === "CONGELADOR" ? `🥶 CÁMARA CONGE (${i}/${formValues.cantidad})` : `${i} DE ${formValues.cantidad}`,
-                    fecha: formValues.conservacion === "CONGELADOR" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
-                    texto_qr: cadenaQrUnidad
-                });
+            if (formValues.stickers > 0) {
+                for (let i = 1; i <= formValues.stickers; i++) {
+                    const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
+                    const cadenaQrUnidad = `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}`;
+                    
+                    loteEtiquetas.push({
+                        producto: productoLimpio,
+                        unidad: formValues.conservacion === "CONGELADOR" ? `🥶 CÁMARA CONGE (${i}/${formValues.stickers})` : `${i} DE ${formValues.stickers}`,
+                        fecha: formValues.conservacion === "CONGELADOR" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
+                        texto_qr: cadenaQrUnidad
+                    });
+                }
             }
 
             Swal.fire({ title: '📡 Sincronizando albarán...', background: '#ffffff', color: '#0f172a', showConfirmButton: false, allowOutsideClick: false });
@@ -419,11 +493,15 @@
                 });
                 if (!resBD.ok) throw new Error("Error SQL backend");
 
-                fetch(`${API_URL}/imprimir_lote`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ etiquetas: loteEtiquetas })
-                }).catch(e => console.log("Impresión lanzada."));
+                if (loteEtiquetas.length > 0) {
+                    fetch(`${API_URL}/imprimir_lote`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ etiquetas: loteEtiquetas })
+                    }).catch(e => console.log("Impresión lanzada."));
+                } else {
+                    console.log("Entrada sin etiquetado térmico (Valor 0 seleccionado).");
+                }
 
                 if(idxGlobal !== null) {
                     await fetch(`${API_URL}/api/cesta`, {
@@ -451,9 +529,13 @@
                         confirmButtonColor: '#d97706'
                     });
                 } else {
+                    let textoNotificacion = loteEtiquetas.length > 0 
+                        ? `Lote de ${loteEtiquetas.length} etiquetas enviado a la Brother.`
+                        : `Albarán registrado en base de datos sin lanzar impresión física.`;
+
                     Swal.fire({
                         title: '✅ ¡LOGÍSTICA COMPLETA!',
-                        text: `Lote de ${loteEtiquetas.length} etiquetas enviado a la Brother.`,
+                        text: textoNotificacion,
                         icon: 'success',
                         background: '#ffffff',
                         color: '#0f172a',
@@ -510,6 +592,14 @@
 
             abrirFlujoRecepcion(directoValues.producto, directoValues.proveedor, null);
         }
+
+        // DISPARADOR DE ARRANQUE SEGURO CON ANTICIPACIÓN LOCAL
+        renderFaltasLocales();
+        const provsCache = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        renderCheckMercancia(provsCache, cestaGlobal);
+
+        cargarDatosDeOficina();
     </script>
 </body>
 </html>
