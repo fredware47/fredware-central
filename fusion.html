@@ -21,6 +21,7 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
 
+    <!-- CABECERA PRINCIPAL DE LA COCINA -->
     <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
         <div class="max-w-2xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -34,13 +35,14 @@
                 <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                     ➕ ENTRADA DIRECTA
                 </button>
-                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v6.4</span>
+                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v6.9 - Real</span>
             </div>
         </div>
     </header>
 
     <main class="max-w-2xl mx-auto w-full px-4 mt-6 space-y-6">
         
+        <!-- SECCIÓN 1: CONTROL DE FALTAS DIARIAS DE LA COCINA -->
         <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                 <span>📝</span> Control de Faltas Diarias
@@ -54,6 +56,7 @@
             <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto"></div>
         </div>
 
+        <!-- SECCIÓN 2: ENTRADAS ESPERADAS SIN RESTRICCIONES DE CALENDARIO -->
         <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
                 <span>🚛</span> Entradas Esperadas Hoy (Check & Trazabilidad)
@@ -68,7 +71,13 @@
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
         let cestaGlobal = [];
 
-        // --- SISTEMA DE COMUNICACIÓN ---
+        const CONFIG_APPCC = {
+            CONGELADOR: { min: -30, max: -12, defecto: -18, alerta: "🚨 RECHAZO CRÍTICO: ¡CONGELADO FUERA DE MARGEN! (MÁX -12°C)" },
+            NEVERA:     { min: 0,   max: 8,   defecto: 4,   alerta: "⚠️ ALERTA: REFRIGERADO ALTO. VALORAR DEVOLUCIÓN (MÁX 8°C)" },
+            SECO:       { min: 5,   max: 28,  defecto: 20,  alerta: "⚠️ ADVERTENCIA: AMBIENTE MUY ALTO (MÁX RECOMENDADO 25°C)" }
+        };
+
+        // --- 📡 SISTEMA DE COMUNICACIÓN CON EL SERVIDOR CENTRAL ---
         async function sincronizarConOficina(endpoint, datos) {
             try {
                 const response = await fetch(`${API_URL}/api/${endpoint}`, {
@@ -77,7 +86,7 @@
                     body: JSON.stringify(datos)
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            } catch (error) { console.error("Error pasivo:", error); }
+            } catch (error) { console.error("Error pasivo en red local:", error); }
         }
 
         async function cargarDatosDeOficina() {
@@ -92,17 +101,16 @@
                 if (db.proveedores) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
                 
                 renderFaltasLocales();
-                renderCheckMercancia(db.proveedores || [], db.cesta || []);
+                renderCheckMercancia(db.cesta || []);
             } catch (error) {
-                console.log("Fallo de red en pasarela central. Tirando de base de datos local.");
+                console.log("Fallo de red pasarela central. Usando almacenamiento local.");
                 renderFaltasLocales();
-                const provs = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
                 cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-                renderCheckMercancia(provs, cestaGlobal);
+                renderCheckMercancia(cestaGlobal);
             }
         }
 
-        // --- GESTIÓN DE FALTAS ---
+        // --- 📝 GESTIÓN DE LA LISTA DE FALTAS DE LA COCINA ---
         function registrarFaltaCocina() {
             const input = document.getElementById('insumo-falta');
             const valor = input.value.trim().toUpperCase();
@@ -114,7 +122,6 @@
             }
 
             let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            
             if(faltas.includes(valor)) {
                 Swal.fire({ icon: 'info', title: 'Ya registrado', text: 'Este insumo ya está anotado en la lista.', background: '#ffffff', color: '#000' });
                 return;
@@ -156,32 +163,43 @@
             renderFaltasLocales();
         }
 
-        // --- PANEL DE REPARTO ---
-        function renderCheckMercancia(proveedores, cesta) {
+        // --- 📊 INTERFAZ DE RECEPCIÓN DIRECTA DESDE LA CESTA CENTRAL (SIN FILTROS DE AGENDA) ---
+        function renderCheckMercancia(cesta) {
             const container = document.getElementById('visor-repartos-hoy');
             if(!container) return;
             container.innerHTML = '';
 
-            const hoyIdx = new Date().getDay();
-            let repartosHoy = proveedores.filter(p => p.dias_reparto && p.dias_reparto.includes(hoyIdx));
-
-            if(repartosHoy.length === 0) {
-                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">Ningún reparto programado en agenda para hoy.</div>`;
+            if(!cesta || cesta.length === 0) {
+                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">La cesta central está vacía en este momento.</div>`;
                 return;
             }
 
             const estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
             const ahora = new Date();
 
-            repartosHoy.forEach(p => {
-                let articulosDelProveedor = cesta.filter(item => item.proveedor_id === p.nombre && item.estado !== "RECIBIDO");
-                if (articulosDelProveedor.length === 0) return;
+            // 🎯 LÓGICA DE FRED: Agrupamos de forma directa y limpia por los nombres reales de la cesta
+            let gruposCesta = {};
+            cesta.forEach(item => {
+                if(item.estado === "PENDIENTE" || item.estado === "PREPARADO") {
+                    let prov = (item.proveedor_id || "S/P").trim().toUpperCase();
+                    if(!gruposCesta[prov]) gruposCesta[prov] = [];
+                    gruposCesta[prov].push(item);
+                }
+            });
 
+            let deClaves = Object.keys(gruposCesta);
+            if(deClaves.length === 0) {
+                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">No quedan artículos con estado PENDIENTE en el servidor.</div>`;
+                return;
+            }
+
+            deClaves.sort().forEach(provNombre => {
+                let articulosDelProveedor = gruposCesta[provNombre];
                 let maxDiasRetraso = 0;
-                
                 let htmlArticulos = '';
+                
                 articulosDelProveedor.forEach(item => {
-                    let idxReal = cesta.findIndex(c => c.detalle === item.detalle && c.proveedor_id === p.nombre && c.estado !== "RECIBIDO");
+                    let idxReal = cesta.findIndex(c => c.detalle === item.detalle && (c.proveedor_id || "S/P").trim().toUpperCase() === provNombre && c.estado !== "RECIBIDO");
                     
                     if (item.fecha_registro) {
                         let fechaRegistro = new Date(item.fecha_registro);
@@ -190,7 +208,6 @@
                         if (diasDiferencia > maxDiasRetraso) maxDiasRetraso = diasDiferencia;
                     }
 
-                    // 🔧 MEJORA v6.4: Agregado el botón secundario "No llegó" con su propio trigger independiente
                     htmlArticulos += `
                         <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
                             <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
@@ -198,7 +215,7 @@
                                 <button onclick="marcarProductoNoLlego(${idxReal})" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl transition-all active:scale-95 shadow-sm border border-slate-300">
                                     ❌ No llegó
                                 </button>
-                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${p.nombre}', ${idxReal})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm">
+                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${provNombre}', ${idxReal})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm">
                                     📥 Recibir
                                 </button>
                             </div>
@@ -207,25 +224,21 @@
                 });
 
                 let estiloCabeceraUrgencia = "bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100";
-                
-                if (maxDiasRetraso === 1) {
-                    estiloCabeceraUrgencia = "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100";
-                } else if (maxDiasRetraso >= 2) {
-                    estiloCabeceraUrgencia = "bg-red-50 border-red-300 text-red-900 hover:bg-red-100 animate-pulse";
-                }
+                if (maxDiasRetraso === 1) estiloCabeceraUrgencia = "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100";
+                else if (maxDiasRetraso >= 2) estiloCabeceraUrgencia = "bg-red-50 border-red-300 text-red-900 hover:bg-red-100 animate-pulse";
 
-                let esColapsado = estadosColapsados[p.nombre] === true;
+                let esColapsado = estadosColapsados[provNombre] === true;
                 let claseContenido = esColapsado ? "accordion-content collapsed" : "accordion-content";
                 let claseHeader = esColapsado ? "accordion-header" : "accordion-header active";
 
                 let cardHtml = document.createElement('div');
                 cardHtml.className = "mb-2";
                 cardHtml.innerHTML = `
-                    <div class="${claseHeader} ${estiloCabeceraUrgencia}" onclick="conmutarAcordeonCocina('${p.nombre}')">
-                        <span>🏢 DISTRIBUIDOR: <span class="font-black tracking-wide">${p.nombre}</span> <span class="ml-1 text-xs opacity-70 font-normal">(${articulosDelProveedor.length} pendientes)</span></span>
+                    <div class="${claseHeader} ${estiloCabeceraUrgencia}" onclick="conmutarAcordeonCocina('${provNombre}')">
+                        <span>🏢 DISTRIBUIDOR: <span class="font-black tracking-wide">${provNombre}</span> <span class="ml-1 text-xs opacity-70 font-normal">(${articulosDelProveedor.length} pendientes)</span></span>
                         <span class="accordion-icon">▼</span>
                     </div>
-                    <div id="acord-cocina-${p.nombre}" class="${claseContenido} bg-white border-x border-b border-slate-200 px-4 pb-2 rounded-b-xl shadow-sm">
+                    <div id="acord-cocina-${provNombre}" class="${claseContenido} bg-white border-x border-b border-slate-200 px-4 pb-2 rounded-b-xl shadow-sm">
                         <div class="divide-y divide-slate-100">${htmlArticulos}</div>
                     </div>
                 `;
@@ -233,14 +246,13 @@
             });
         }
 
-        // --- ❌ FUNCIÓN EXCLUSIVA v6.4: PROCESAR ENTRADAS NO ENTREGADAS AL INSTANTE ---
+        // --- ❌ INCIDENCIA DIRECTA DE EXPULSIÓN HACIA LAS FALTAS ---
         async function marcarProductoNoLlego(idxGlobal) {
             if(idxGlobal === null || idxGlobal < 0 || idxGlobal >= cestaGlobal.length) return;
             
             const item = cestaGlobal[idxGlobal];
             let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
 
-            // Mensaje de confirmación rápido para evitar errores accidentales en la tablet
             const confirmacion = await Swal.fire({
                 title: '¿Confirmas incidencia?',
                 text: `¿Quieres marcar "${productoLimpio}" de ${item.proveedor_id} como no entregado? Pasará automáticamente a la lista de faltas de la oficina.`,
@@ -256,11 +268,9 @@
 
             if (!confirmacion.isConfirmed) return;
 
-            // 1. Marcar el artículo como procesado en la cesta activa para sacarlo del panel
             cestaGlobal[idxGlobal].estado = "RECIBIDO";
             localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
 
-            // 2. Volcar la falta en el LocalStorage
             let faltasLocales = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
             faltasLocales.push(`${productoLimpio} (PROVEEDOR NO ENTREGÓ EN REPARTO)`);
             localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltasLocales));
@@ -268,7 +278,6 @@
             Swal.fire({ title: '📡 Notificando a la oficina...', background: '#ffffff', color: '#0f172a', showConfirmButton: false, allowOutsideClick: false });
 
             try {
-                // 3. Sincronizar en bloque ambos estados directamente contra FastAPI sin pasar por el flujo de impresión
                 await fetch(`${API_URL}/api/cesta`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -281,21 +290,13 @@
                     body: JSON.stringify(faltasLocales)
                 });
 
-                Swal.fire({
-                    title: '🚨 INCIDENCIA REGISTRADA',
-                    text: `El artículo se ha devuelto a la cesta de faltas de la oficina con éxito.`,
-                    icon: 'success',
-                    background: '#ffffff',
-                    color: '#0f172a',
-                    confirmButtonColor: '#10b981'
-                });
+                Swal.fire({ title: '🚨 INCIDENCIA REGISTRADA', text: `El artículo se ha devuelto a la oficina con éxito.`, icon: 'success', background: '#ffffff', color: '#0f172a', confirmButtonColor: '#10b981' });
 
                 renderFaltasLocales();
-                const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-                renderCheckMercancia(proveedores, cestaGlobal);
+                renderCheckMercancia(cestaGlobal);
 
             } catch (error) {
-                Swal.fire({ title: '❌ ERROR', text: 'Se guardó en local, pero el PC central está desconectado.', icon: 'error', background: '#ffffff', color: '#0f172a' });
+                Swal.fire({ title: '❌ ERROR', text: 'Se guardó en local, pero el PC central de la oficina está apagado.', icon: 'error', background: '#ffffff', color: '#0f172a' });
             }
         }
 
@@ -304,7 +305,6 @@
             if(!content) return;
 
             let estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
-            
             if(content.classList.contains('collapsed')) {
                 content.classList.remove('collapsed');
                 estadosColapsados[provNombre] = false;
@@ -312,12 +312,11 @@
                 content.classList.add('collapsed');
                 estadosColapsados[provNombre] = true;
             }
-            
             localStorage.setItem('fredware_cocina_acordeon_estados', JSON.stringify(estadosColapsados));
-            cargarDatosDeOficina();
+            renderCheckMercancia(cestaGlobal);
         }
 
-        // --- ADVERTENCIA DINÁMICA DE TEMPERATURAS ---
+        // --- 📋 VALIDACIÓN DE TEMPERATURAS (APPCC) ---
         function evaluarAlertaTemperatura() {
             const temp = parseFloat(document.getElementById('swal-temp').value);
             const alertaBox = document.getElementById('swal-alerta-temp');
@@ -369,10 +368,9 @@
             evaluarAlertaTemperatura();
         }
 
-        // --- FLUJO POPUP DE RECEPCIÓN ---
+        // --- 📥 FLUJO DE RECOLECCIÓN DE ALBARANES Y STICKERS ---
         async function abrirFlujoRecepcion(detalleCompleto, proveedor, idxGlobal) {
             let productoLimpio = detalleCompleto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
-            
             let cantidadEsperada = 1;
             let matchCant = detalleCompleto.match(/^\[(\d+)\s*\w+\]/);
             if(matchCant) { cantidadEsperada = parseInt(matchCant[1]); }
@@ -386,13 +384,7 @@
 
             const { value: formValues } = await Swal.fire({
                 title: `📥 Recibir: ${productoLimpio}`,
-                background: '#ffffff',
-                color: '#0f172a',
-                confirmButtonColor: '#10b981',
-                cancelButtonColor: '#64748b',
-                showCancelButton: true,
-                confirmButtonText: 'Procesar Entrada',
-                cancelButtonText: 'Cancelar',
+                background: '#ffffff', color: '#0f172a', confirmButtonColor: '#10b981', cancelButtonColor: '#64748b', showCancelButton: true, confirmButtonText: 'Procesar Entrada', cancelButtonText: 'Cancelar',
                 html: `
                     <div class="text-left space-y-3 font-sans px-1">
                         <div id="swal-alerta-temp" style="display:none;"></div>
@@ -408,18 +400,18 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Temperatura de Entrada Real (°C):</label>
-                            <input id="swal-temp" type="number" step="0.1" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-lg focus:outline-none focus:border-emerald-500 shadow-inner">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Temperatura Real (°C):</label>
+                            <input id="swal-temp" type="number" step="0.1" oninput="evaluarAlertaTemperatura()" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-lg shadow-inner">
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Kilos/Unidades Reales:</label>
-                                <input id="swal-cantidad" type="number" min="0" step="1" value="${cantidadEsperada}" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-base focus:outline-none focus:border-emerald-500 shadow-inner">
+                                <input id="swal-cantidad" type="number" min="0" step="1" value="${cantidadEsperada}" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-base shadow-inner">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-sky-600 uppercase tracking-wider mb-1">Nº Pegatinas (Imprimir):</label>
-                                <input id="swal-stickers" type="number" min="0" value="1" class="w-full bg-sky-50 text-slate-900 font-bold text-center border border-sky-300 rounded-xl py-2.5 text-base focus:outline-none focus:border-sky-500 shadow-inner">
+                                <label class="block text-xs font-bold text-sky-600 uppercase tracking-wider mb-1">Nº Pegatinas (Brother):</label>
+                                <input id="swal-stickers" type="number" min="0" value="1" class="w-full bg-sky-50 text-slate-900 font-bold text-center border border-sky-300 rounded-xl py-2.5 text-base shadow-inner">
                             </div>
                         </div>
                     </div>
@@ -472,13 +464,11 @@
             if (formValues.stickers > 0) {
                 for (let i = 1; i <= formValues.stickers; i++) {
                     const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
-                    const cadenaQrUnidad = `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}`;
-                    
                     loteEtiquetas.push({
                         producto: productoLimpio,
                         unidad: formValues.conservacion === "CONGELADOR" ? `🥶 CÁMARA CONGE (${i}/${formValues.stickers})` : `${i} DE ${formValues.stickers}`,
                         fecha: formValues.conservacion === "CONGELADOR" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
-                        texto_qr: cadenaQrUnidad
+                        texto_qr: `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}`
                     });
                 }
             }
@@ -499,8 +489,6 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ etiquetas: loteEtiquetas })
                     }).catch(e => console.log("Impresión lanzada."));
-                } else {
-                    console.log("Entrada sin etiquetado térmico (Valor 0 seleccionado).");
                 }
 
                 if(idxGlobal !== null) {
@@ -519,33 +507,15 @@
                     });
                 }
 
-                if(huboRotura) {
-                    Swal.fire({
-                        title: '⚠️ ROTURA DE CAMIÓN DETECTADA',
-                        text: `Procesadas ${formValues.cantidad} unidades. ¡Han faltado ${cantidadFaltante} de ${productoLimpio}! Se han devuelto a la lista de faltas automáticamente.`,
-                        icon: 'warning',
-                        background: '#ffffff',
-                        color: '#0f172a',
-                        confirmButtonColor: '#d97706'
-                    });
-                } else {
-                    let textoNotificacion = loteEtiquetas.length > 0 
-                        ? `Lote de ${loteEtiquetas.length} etiquetas enviado a la Brother.`
-                        : `Albarán registrado en base de datos sin lanzar impresión física.`;
-
-                    Swal.fire({
-                        title: '✅ ¡LOGÍSTICA COMPLETA!',
-                        text: textoNotificacion,
-                        icon: 'success',
-                        background: '#ffffff',
-                        color: '#0f172a',
-                        confirmButtonColor: '#10b981'
-                    });
-                }
+                Swal.fire({
+                    title: huboRotura ? '⚠️ ROTURA DE STOCK REGISTRADA' : '✅ ¡LOGÍSTICA COMPLETA!',
+                    text: huboRotura ? `¡Faltaron ${cantidadFaltante} bultos! Notificado a la oficina.` : `Datos guardados e impresión térmica enviada.`,
+                    icon: huboRotura ? 'warning' : 'success',
+                    background: '#ffffff', color: '#0f172a', confirmButtonColor: '#10b981'
+                });
 
                 renderFaltasLocales();
-                const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-                renderCheckMercancia(proveedores, cestaGlobal);
+                renderCheckMercancia(cestaGlobal);
 
             } catch (error) {
                 Swal.fire({ title: '❌ ERROR', text: 'El PC central de la oficina está apagado.', icon: 'error', background: '#ffffff', color: '#0f172a' });
@@ -560,12 +530,7 @@
 
             const { value: directoValues } = await Swal.fire({
                 title: '➕ Compra de Última Hora',
-                background: '#ffffff',
-                color: '#0f172a',
-                confirmButtonColor: '#d97706',
-                showCancelButton: true,
-                confirmButtonText: 'Siguiente paso',
-                cancelButtonText: 'Volver',
+                background: '#ffffff', color: '#0f172a', confirmButtonColor: '#d97706', showCancelButton: true, confirmButtonText: 'Siguiente paso', cancelButtonText: 'Volver',
                 html: `
                     <div class="text-left space-y-3 font-sans px-1">
                         <div>
@@ -589,17 +554,16 @@
             });
 
             if (!directoValues || !directoValues.producto) return;
-
             abrirFlujoRecepcion(directoValues.producto, directoValues.proveedor, null);
         }
 
-        // DISPARADOR DE ARRANQUE SEGURO CON ANTICIPACIÓN LOCAL
+        // DISPARADOR DE ARRANQUE SEGURO
         renderFaltasLocales();
-        const provsCache = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        renderCheckMercancia(provsCache, cestaGlobal);
+        renderCheckMercancia(cestaGlobal);
 
         cargarDatosDeOficina();
+        setInterval(cargarDatosDeOficina, 25000); // 🔄 Sincronización automática continua cada 25 segundos
     </script>
 </body>
 </html>
