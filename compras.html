@@ -96,8 +96,7 @@
 
         <div class="box">
             <h3>📝 Pegar Texto de WhatsApp (Bloque Completo)</h3>
-            <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje (Ej: carne, tomate, cebollas)..."></textarea>
-            <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje (Ej: carne, tomate, cebollas)..."></textarea>
+            <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje de faltas (Ej: carne, tomate, cebollas)..."></textarea>
             <button class="btn-action" onclick="parsearTextoWhatsApp()">⚡ Volcar Líneas de WhatsApp</button>
         </div>
 
@@ -200,7 +199,7 @@
         if(num === 3) renderProveedoresConfig();
     }
 
-    // 🎯 FIX 3: Cambiado print por console.error estándar para evitar congelación del JS
+    // 🎯 FIX 3: Corregida la consola reemplazando el viejo 'print' por 'console.error' estándar
     async function sincronizarConOficina(endpoint, datos) {
         try {
             await fetch(`${API_URL}api/${endpoint}`, {
@@ -209,11 +208,11 @@
                 body: JSON.stringify(datos)
             });
         } catch (error) {
-            console.error("Error en sincronización con oficinacentral:", error);
+            console.error("Error en sincronización con backend central:", error);
         }
     }
 
-    // 🎯 FIX 1 & 5: Corregido el barrido automático. No borra si el server viene vacío.
+    // 🎯 FIX 1 & 4: Escudo total de proveedores y control estricto de Array en la cesta del server
     async function cargarDatosDeOficina() {
         try {
             const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
@@ -221,7 +220,9 @@
             const db = await respuesta.json();
             
             let cestaLocal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-            let cestaServidor = db.cesta || [];
+            
+            // ✅ FIX 4: Comprobación estricta de array en el JSON entrante
+            let cestaServidor = Array.isArray(db.cesta) ? db.cesta : [];
 
             if (cestaServidor.length > 0) {
                 cestaServidor.forEach(itemServ => {
@@ -235,11 +236,11 @@
                 localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaLocal));
             }
 
-            // ✅ FIX 1: Escudo protector de proveedores locales contra respuestas vacías
+            // ✅ FIX 1: Bloqueo de sobreescritura de agenda local si la oficina viene vacía o nula
             if (db.proveedores && Array.isArray(db.proveedores) && db.proveedores.length > 0) {
                 localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
             } else if (db.proveedores && db.proveedores.length === 0) {
-                console.log("Servidor devolvió lista vacía de proveedores. Se mantienen los locales intactos.");
+                console.log("Servidor devolvió lista vacía de proveedores. Manteniendo local.");
             }
 
             if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
@@ -249,11 +250,11 @@
             if (document.getElementById('btn-t3').classList.contains('active')) renderProveedoresConfig();
 
         } catch (error) {
-            console.log("Offline mode o fallo transitorio de Ngrok.");
+            console.log("Offline mode activo.");
         }
     }
 
-    // 🎯 FIX 8: Agregado sistema de control de errores HTTP detallado
+    // 🎯 FIX 8: Mensajes de control informativos y detallados con el estado HTTP de red
     function subirCestaAlServidor() {
         const cestaLocal = localStorage.getItem('fredware_cesta_compras');
         if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
@@ -270,16 +271,16 @@
             body: JSON.stringify(JSON.parse(cestaLocal))
         })
         .then(res => {
-            if (res.ok) alert("✅ ¡Pedidos enviados directamente a la terminal de cocina!");
-            else alert(`❌ El servidor de la oficina devolvió un código de error de red: ${res.status}`);
+            if (res.ok) alert("✅ ¡Pedidos inyectados en la terminal de cocina!");
+            else alert(`❌ Error de pasarela. El PC central dio respuesta HTTP: ${res.status}`);
         })
-        .catch(err => alert("❌ Conexión fallida. Revisa que el PC de la oficina y ngrok estén encendidos."))
+        .catch(err => alert("❌ Conexión fallida. Comprueba el terminal de Ngrok en el ordenador central."))
         .finally(() => {
             if(btn) { btn.disabled = false; btn.innerText = "⚡ Sincronizar Pedidos con la Oficina"; }
         });
     }
 
-    // 🎯 FIX 6: Autocompletado optimizado y ordenado alfabéticamente
+    // 🎯 FIX 6: Autocompletado depurado sin duplicados y ordenado por relevancia alfabética
     function buscarAutocompletado(busqueda) {
         const box = document.getElementById('sugerencias-box');
         if (!busqueda.trim()) { box.style.display = 'none'; return; }
@@ -300,10 +301,20 @@
             });
         });
 
-        // Ordenamos alfabéticamente por cercanía
-        coincidencias.sort((a, b) => a.producto.localeCompare(b.producto));
+        // Purgamos duplicados exactos en el catálogo cruzado
+        coincidencias = coincidencias.filter((item, index, self) =>
+            index === self.findIndex(t => t.producto === item.producto && t.proveedor === item.proveedor)
+        );
 
-        // Limitamos a los 5 más relevantes
+        // Priorizamos los que EMPIEZAN por el texto escrito (startsWith) antes de los que lo contienen
+        coincidencias.sort((a, b) => {
+            const aStarts = a.producto.toUpperCase().startsWith(busquedaLimpia);
+            const bStarts = b.producto.toUpperCase().startsWith(busquedaLimpia);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+            return a.producto.localeCompare(b.producto);
+        });
+
         const finalCinco = coincidencias.slice(0, 5);
 
         finalCinco.forEach(c => {
@@ -323,6 +334,7 @@
         document.getElementById('manual-articulo').dataset.sugerido = proveedorSugerido;
     }
 
+    // 🎯 FIX 3: Bloqueo anti-duplicados en la entrada manual
     function agregarArticuloManual() {
         const inputArt = document.getElementById('manual-articulo');
         const inputCant = document.getElementById('manual-cantidad');
@@ -336,8 +348,15 @@
         const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
 
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        let provAsignado = inputArt.dataset.sugerido || "S/P";
         
+        // ✅ FIX 3: Validación estricta anti-duplicados
+        const existeYa = cesta.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
+        if(existeYa){
+            alert(`⚠️ El artículo "${detalleFormateado}" ya se encuentra activo en tu cesta.`);
+            return;
+        }
+
+        let provAsignado = inputArt.dataset.sugerido || "S/P";
         cesta.push({ detalle: detalleFormateado, proveedor_id: provAsignado, estado: "PENDIENTE" });
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         
@@ -346,7 +365,7 @@
         renderCesta();
     }
 
-    // 🎯 FIX 7: Mejorado el volcado de texto para que recuerde líneas sin prompts infinitos
+    // 🎯 FIX 7: ¡SE ACABARON LOS PROMPTS INFINITOS! El volcado mete "1 UNIDADES" automático y tú editas en la tabla
     function parsearTextoWhatsApp() {
         const txt = document.getElementById('raw-whatsapp').value.trim();
         if(!txt) return;
@@ -362,11 +381,8 @@
             
             let descLimpia = desc.replace(/^\[.*?\]\s*/, '');
 
-            let cantidadIngresada = prompt(`Falta detectada: ${descLimpia}\n\nIntroduce cantidad y formato (O cancela para omitir):`, "1 UNIDADES");
-            if (cantidadIngresada === null) return; 
-            if (cantidadIngresada.trim() === "") cantidadIngresada = "1 UNIDADES";
-
-            let detalleFinal = `[${cantidadIngresada.trim().toUpperCase()}] ${descLimpia}`;
+            // ✅ FIX 7: Metemos formato base por defecto de forma rápida sin bloquear la tablet con ventanas emergentes
+            let detalleFinal = `[1 UNIDADES] ${descLimpia}`;
             
             const existeYa = cesta.some(item => item.detalle === detalleFinal && item.estado !== "RECIBIDO");
             if (existeYa) return;
@@ -389,6 +405,7 @@
         sincronizarConOficina('cesta', cesta);
         document.getElementById('raw-whatsapp').value = '';
         renderCesta();
+        if(itemsAnadidos > 0) alert(`✅ Volcado rápido completado. Se inyectaron ${itemsAnadidos} artículos. Modifica cantidades en la tabla si lo necesitas.`);
     }
 
     function renderBloquesWhatsApp(cesta, proveedores) {
@@ -424,22 +441,21 @@
         renderCesta();
     }
 
-    // 🎯 FIX 9: Añadida validación estricta de longitud de prefijo telefónico antes de disparar el link
+    // 🎯 FIX 9: Añadida verificación de longitud telefónica para blindar el enlace externo wa.me
     function dispararWhatsAppProveedor(provNombre, telefono) {
         const telefonoLimpio = telefono.replace(/\D/g, '');
         if (telefonoLimpio.length < 9) {
-            alert("❌ Error: El número de teléfono guardado es inválido o demasiado corto.");
+            alert("❌ Error: El distribuidor no tiene un teléfono móvil reglamentario asignado.");
             return;
         }
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const articulos = cesta.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && i.estado !== "RECIBIDO");
-        let textoMensaje = `¡Hola! Te paso el pedido de hoy para el restaurante:\n\n`;
+        let textoMensaje = `¡Hola! Te paso el pedido de hoy:\n\n`;
         articulos.forEach(item => { textoMensaje += `• ${item.detalle}\n`; });
-        textoMensaje += `\n*Fredware System 👨‍🍳*`;
         window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(textoMensaje)}`, '_blank');
     }
 
-    // 🎯 FIX 2: Sanitizados los IDs reemplazando barras y espacios por barras bajas en el DOM
+    // 🎯 FIX 2: Sanitizados los IDs del DOM reemplazando barras (S/P) y espacios por guiones bajos
     function renderCesta() {
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -466,7 +482,7 @@
             const listaItems = grupos[pId];
             let esColapsado = estadosColapsados[pId] === true;
             
-            // ✅ FIX 2: Sanitización total del ID para el acordeón HTML
+            // ✅ FIX 2: Sanitización de caracteres prohibidos para IDs HTML
             const safeId = pId.replace(/[^a-zA-Z0-9]/g, '_');
 
             let bloqueHtml = document.createElement('div');
@@ -496,7 +512,7 @@
         });
     }
 
-    // 🎯 FIX 2 CONTINUACIÓN: Conmutador de acordeón adaptado al ID sanitizado
+    // 🎯 FIX 2 CONTINUACIÓN: Conmutador adaptado al ID de seguridad limpio
     function conmutarAcordeon(pId) {
         const safeId = pId.replace(/[^a-zA-Z0-9]/g, '_');
         const content = document.getElementById(`acord-content-${safeId}`);
@@ -559,7 +575,7 @@
         renderCesta();
     }
 
-    // 🎯 FIX 10: Añadida verificación previa de array para evitar fallos de renderizado en fichas en blanco
+    // 🎯 FIX 10: Verificación previa de Array para evitar congelación en fichas nuevas sin rellenar
     function verProveedorEnFormulario(idx) {
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         const p = proveedores[idx];
@@ -577,6 +593,14 @@
         if(p.dias_pedido && Array.isArray(p.dias_pedido)) p.dias_pedido.forEach(d => { let chk = document.getElementById(`chk-pedidos-${d}`); if(chk) chk.checked = true; });
         if(p.dias_reparto && Array.isArray(p.dias_reparto)) p.dias_reparto.forEach(d => { let chk = document.getElementById(`chk-repartos-${d}`); if(chk) chk.checked = true; });
     }
+
+    document.addEventListener('click', (e) => {
+        const box = document.getElementById('sugerencias-box');
+        const input = document.getElementById('manual-articulo');
+        if (box && input && e.target !== input && !box.contains(e.target)) {
+            box.style.display = 'none';
+        }
+    });
 
     function renderProveedoresConfig() {
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -613,13 +637,13 @@
         renderCesta();
     }
 
-    // 🎯 FIX 4: Conectado e inyectado el visor pasivo de repartos diarios reales
+    // 🎯 FIX 4: Conexión del visor teórico de reparto diario
     function renderVisorPasivo() { 
         renderFaltasCocina(); 
         renderRepartosHoy(); 
     }
     
-    // 🎯 FIX 4 CONTINUACIÓN: Función encargada de renderizar la distribución teórica de camiones del día
+    // 🎯 FIX 4 CONTINUACIÓN: Función encargada de renderizar la distribución del calendario
     function renderRepartosHoy() {
         const hoy = new Date().getDay();
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -628,12 +652,12 @@
         if (!div) return;
         
         if (repartenHoy.length === 0) {
-            div.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:13px;">🔔 Ningún proveedor tiene reparto programado para hoy en agenda.</p>`;
+            div.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:13px;">🔔 Ningún proveedor tiene reparto programado para hoy en la agenda.</p>`;
         } else {
             div.innerHTML = `<ul style="list-style-type: none; padding: 0;">
                 ${repartenHoy.map(p => `
                     <div class="delivery-card">
-                        <strong>🚛 Entrada teórica de: ${p.nombre}</strong> — <span style="font-size:11px; color:#64748b;">Hora límite de aviso: ${p.hora_limite || 'No definida'}</span>
+                        <strong>🚛 Entrada esperada de: ${p.nombre}</strong> — <span style="font-size:11px; color:#64748b;">Aviso límite: ${p.hora_limite || 'No definida'}</span>
                     </div>
                 `).join('')}
             </ul>`;
@@ -664,9 +688,17 @@
         renderVisorPasivo(); renderCesta();
     }
 
+    // 🎯 MEJORA EXTRA: Nombres de backup fechados dinámicamente con año y hora actual
     function exportarPedidosJson() {
+        const ahora = new Date();
+        const pad = (n) => n.toString().padStart(2, '0');
+        const marcaTiempo = `${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}`;
+        
         const blob = new Blob([localStorage.getItem('fredware_cesta_compras')], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup.json'; a.click();
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = `backup_fredware_${marcaTiempo}.json`; 
+        a.click();
     }
 
     initDaysGrids();
