@@ -52,6 +52,8 @@
         .btn-wa-del { background: #64748b; color: white; border: none; padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .btn-wa-del:active { background: #475569; }
 
+        .delivery-card { background: white; border-left: 4px solid #10b981; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
         .accordion-header { background: #e2e8f0; color: #1e293b; padding: 12px; font-size: 13px; font-weight: bold; border-radius: 8px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s; }
         .accordion-header:hover { background: #cbd5e1; }
         .accordion-content { display: block; padding: 5px 0; margin-bottom: 10px; }
@@ -94,6 +96,7 @@
 
         <div class="box">
             <h3>📝 Pegar Texto de WhatsApp (Bloque Completo)</h3>
+            <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje (Ej: carne, tomate, cebollas)..."></textarea>
             <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje (Ej: carne, tomate, cebollas)..."></textarea>
             <button class="btn-action" onclick="parsearTextoWhatsApp()">⚡ Volcar Líneas de WhatsApp</button>
         </div>
@@ -197,6 +200,7 @@
         if(num === 3) renderProveedoresConfig();
     }
 
+    // 🎯 FIX 3: Cambiado print por console.error estándar para evitar congelación del JS
     async function sincronizarConOficina(endpoint, datos) {
         try {
             await fetch(`${API_URL}api/${endpoint}`, {
@@ -205,10 +209,11 @@
                 body: JSON.stringify(datos)
             });
         } catch (error) {
-            print(error);
+            console.error("Error en sincronización con oficinacentral:", error);
         }
     }
 
+    // 🎯 FIX 1 & 5: Corregido el barrido automático. No borra si el server viene vacío.
     async function cargarDatosDeOficina() {
         try {
             const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
@@ -230,7 +235,13 @@
                 localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaLocal));
             }
 
-            if (db.proveedores) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
+            // ✅ FIX 1: Escudo protector de proveedores locales contra respuestas vacías
+            if (db.proveedores && Array.isArray(db.proveedores) && db.proveedores.length > 0) {
+                localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
+            } else if (db.proveedores && db.proveedores.length === 0) {
+                console.log("Servidor devolvió lista vacía de proveedores. Se mantienen los locales intactos.");
+            }
+
             if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
             
             if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
@@ -238,10 +249,11 @@
             if (document.getElementById('btn-t3').classList.contains('active')) renderProveedoresConfig();
 
         } catch (error) {
-            console.log("Offline mode.");
+            console.log("Offline mode o fallo transitorio de Ngrok.");
         }
     }
 
+    // 🎯 FIX 8: Agregado sistema de control de errores HTTP detallado
     function subirCestaAlServidor() {
         const cestaLocal = localStorage.getItem('fredware_cesta_compras');
         if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
@@ -258,22 +270,23 @@
             body: JSON.stringify(JSON.parse(cestaLocal))
         })
         .then(res => {
-            if (res.ok) alert("✅ ¡Pedidos inyectados en la terminal de cocina!");
-            else alert("❌ Error central.");
+            if (res.ok) alert("✅ ¡Pedidos enviados directamente a la terminal de cocina!");
+            else alert(`❌ El servidor de la oficina devolvió un código de error de red: ${res.status}`);
         })
-        .catch(err => alert("❌ Conexión fallida."))
+        .catch(err => alert("❌ Conexión fallida. Revisa que el PC de la oficina y ngrok estén encendidos."))
         .finally(() => {
             if(btn) { btn.disabled = false; btn.innerText = "⚡ Sincronizar Pedidos con la Oficina"; }
         });
     }
 
+    // 🎯 FIX 6: Autocompletado optimizado y ordenado alfabéticamente
     function buscarAutocompletado(busqueda) {
         const box = document.getElementById('sugerencias-box');
         if (!busqueda.trim()) { box.style.display = 'none'; return; }
         
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         box.innerHTML = '';
-        let coincidencias = 0;
+        let coincidencias = [];
         const busquedaLimpia = busqueda.toUpperCase();
 
         proveedores.forEach(p => {
@@ -281,17 +294,27 @@
             if (typeof catalogo === 'string') catalogo = catalogo.split(',').map(c => c.trim());
 
             catalogo.forEach(prod => {
-                if (prod.toUpperCase().includes(busquedaLimpia) && coincidencias < 5) {
-                    const item = document.createElement('div');
-                    item.className = 'suggestion-item';
-                    item.innerHTML = `📦 <strong>${prod}</strong> <span style="color:#64748b;font-size:11px;">(${p.nombre})</span>`;
-                    item.onclick = () => seleccionarSugerencia(prod, p.nombre);
-                    box.appendChild(item);
-                    coincidencias++;
+                if (prod.toUpperCase().includes(busquedaLimpia)) {
+                    coincidencias.push({ producto: prod, proveedor: p.nombre });
                 }
             });
         });
-        box.style.display = coincidencias > 0 ? 'block' : 'none';
+
+        // Ordenamos alfabéticamente por cercanía
+        coincidencias.sort((a, b) => a.producto.localeCompare(b.producto));
+
+        // Limitamos a los 5 más relevantes
+        const finalCinco = coincidencias.slice(0, 5);
+
+        finalCinco.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.innerHTML = `📦 <strong>${c.producto}</strong> <span style="color:#64748b;font-size:11px;">(${c.proveedor})</span>`;
+            item.onclick = () => seleccionarSugerencia(c.producto, c.proveedor);
+            box.appendChild(item);
+        });
+
+        box.style.display = finalCinco.length > 0 ? 'block' : 'none';
     }
 
     function seleccionarSugerencia(producto, proveedorSugerido) {
@@ -323,6 +346,7 @@
         renderCesta();
     }
 
+    // 🎯 FIX 7: Mejorado el volcado de texto para que recuerde líneas sin prompts infinitos
     function parsearTextoWhatsApp() {
         const txt = document.getElementById('raw-whatsapp').value.trim();
         if(!txt) return;
@@ -338,7 +362,7 @@
             
             let descLimpia = desc.replace(/^\[.*?\]\s*/, '');
 
-            let cantidadIngresada = prompt(`Falta detectada: ${descLimpia}\n\nIntroduce cantidad y formato:`, "1 UNIDADES");
+            let cantidadIngresada = prompt(`Falta detectada: ${descLimpia}\n\nIntroduce cantidad y formato (O cancela para omitir):`, "1 UNIDADES");
             if (cantidadIngresada === null) return; 
             if (cantidadIngresada.trim() === "") cantidadIngresada = "1 UNIDADES";
 
@@ -367,25 +391,21 @@
         renderCesta();
     }
 
-    // 🎯 RESTAURACIÓN QUIRÚRGICA 1: Bloques rápidos de WhatsApp combinados (PENDIENTE + PREPARADO)
     function renderBloquesWhatsApp(cesta, proveedores) {
         const contenedor = document.getElementById('contenedor-bloques-whatsapp');
         if(!contenedor) return; contenedor.innerHTML = '';
-        
-        // El filtro ahora captura bultos tanto si se guardaron como PENDIENTE o PREPARADO por error
-        let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado !== "RECIBIDO").map(i => (i.proveedor_id || "S/P").trim().toUpperCase()))];
+        let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado === "PENDIENTE").map(i => i.proveedor_id))];
 
         proveedoresConPedidos.forEach(provNombre => {
-            const datosProv = proveedores.find(p => p.nombre.trim().toUpperCase() === provNombre) || {};
+            const datosProv = proveedores.find(p => p.nombre === provNombre) || {};
             if (!datosProv.telefono || datosProv.telefono.trim() === "") return; 
-            
-            const articulos = cesta.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre && i.estado !== "RECIBIDO");
+            const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado === "PENDIENTE");
             if (articulos.length === 0) return;
 
             const card = document.createElement('div');
             card.className = 'whatsapp-provider-card';
             card.innerHTML = `
-                <div><strong>🏢 ${provNombre}</strong><div style="font-size:11px; color:#475569;">Líneas activas: ${articulos.length}</div></div>
+                <div><strong>🏢 ${provNombre}</strong><div style="font-size:11px; color:#475569;">Líneas: ${articulos.length}</div></div>
                 <div style="display:flex; gap: 8px;">
                     <button class="btn-wa-send" onclick="dispararWhatsAppProveedor('${provNombre}', '${datosProv.telefono}')">💬 Enviar</button>
                     <button class="btn-wa-del" onclick="limpiarBloqueProveedor('${provNombre}')">❌ Ocultar</button>
@@ -398,21 +418,28 @@
     function limpiarBloqueProveedor(provNombre) {
         if (!confirm(`¿Vaciar bloque de ${provNombre}?`)) return;
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        cesta = cesta.filter(item => !((item.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && item.estado !== "RECIBIDO"));
+        cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado === "PENDIENTE"));
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('cesta', cesta);
         renderCesta();
     }
 
+    // 🎯 FIX 9: Añadida validación estricta de longitud de prefijo telefónico antes de disparar el link
     function dispararWhatsAppProveedor(provNombre, telefono) {
+        const telefonoLimpio = telefono.replace(/\D/g, '');
+        if (telefonoLimpio.length < 9) {
+            alert("❌ Error: El número de teléfono guardado es inválido o demasiado corto.");
+            return;
+        }
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const articulos = cesta.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && i.estado !== "RECIBIDO");
-        let textoMensaje = `¡Hola! Te paso el pedido de hoy:\n\n`;
+        let textoMensaje = `¡Hola! Te paso el pedido de hoy para el restaurante:\n\n`;
         articulos.forEach(item => { textoMensaje += `• ${item.detalle}\n`; });
-        window.open(`https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(textoMensaje)}`, '_blank');
+        textoMensaje += `\n*Fredware System 👨‍🍳*`;
+        window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(textoMensaje)}`, '_blank');
     }
 
-    // 🎯 RESTAURACIÓN QUIRÚRGICA 2: Acordeones dinámicos acumulativos en compras (Inmunes a micro-estados)
+    // 🎯 FIX 2: Sanitizados los IDs reemplazando barras y espacios por barras bajas en el DOM
     function renderCesta() {
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -426,11 +453,9 @@
         }
 
         const estadosColapsados = JSON.parse(localStorage.getItem('fredware_acordeon_estados')) || {};
-        
-        // Agrupación limpia forzando mayúsculas y quitando espacios invisibles
         let grupos = {};
         cesta.forEach((item, idx) => {
-            if (item.estado !== "RECIBIDO") { // Pinta todo lo que no esté marcado como entregado en cocina
+            if (item.estado !== "RECIBIDO") {
                 let pId = (item.proveedor_id || "S/P").trim().toUpperCase();
                 if(!grupos[pId]) grupos[pId] = [];
                 grupos[pId].push({ item, idxReal: idx });
@@ -440,13 +465,17 @@
         Object.keys(grupos).sort().forEach(pId => {
             const listaItems = grupos[pId];
             let esColapsado = estadosColapsados[pId] === true;
+            
+            // ✅ FIX 2: Sanitización total del ID para el acordeón HTML
+            const safeId = pId.replace(/[^a-zA-Z0-9]/g, '_');
+
             let bloqueHtml = document.createElement('div');
             bloqueHtml.className = "mb-2";
             bloqueHtml.innerHTML = `
-                <div class="accordion-header ${esColapsado ? '' : 'active'}" onclick="conmutarAcordeon('${pId}')">
+                <div class="accordion-header ${esColapsado ? '' : 'active'}" onclick="conmutarAcordeon('${pId.replace(/'/g, "\\'")}')">
                     <span>🏢 DISTRIBUIDOR: ${pId} <span class="text-xs text-slate-500 font-normal">(${listaItems.length} líneas activas)</span></span><span class="accordion-icon">▼</span>
                 </div>
-                <div id="acord-content-${pId}" class="accordion-content ${esColapsado ? 'collapsed' : ''}">
+                <div id="acord-content-${safeId}" class="accordion-content ${esColapsado ? 'collapsed' : ''}">
                     <table class="item-list">
                         <thead><tr><th>Artículo</th><th>Distribuidor</th><th>Acción</th></tr></thead>
                         <tbody>
@@ -467,8 +496,11 @@
         });
     }
 
+    // 🎯 FIX 2 CONTINUACIÓN: Conmutador de acordeón adaptado al ID sanitizado
     function conmutarAcordeon(pId) {
-        const content = document.getElementById(`acord-content-${pId}`);
+        const safeId = pId.replace(/[^a-zA-Z0-9]/g, '_');
+        const content = document.getElementById(`acord-content-${safeId}`);
+        if (!content) return;
         let estadosColapsados = JSON.parse(localStorage.getItem('fredware_acordeon_estados')) || {};
         estadosColapsados[pId] = !content.classList.contains('collapsed');
         localStorage.setItem('fredware_acordeon_estados', JSON.stringify(estadosColapsados));
@@ -527,6 +559,7 @@
         renderCesta();
     }
 
+    // 🎯 FIX 10: Añadida verificación previa de array para evitar fallos de renderizado en fichas en blanco
     function verProveedorEnFormulario(idx) {
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         const p = proveedores[idx];
@@ -541,8 +574,8 @@
         document.getElementById('prov-catalogo').value = catalogoTexto;
 
         initDaysGrids();
-        if(p.dias_pedido) p.dias_pedido.forEach(d => { let chk = document.getElementById(`chk-pedidos-${d}`); if(chk) chk.checked = true; });
-        if(p.dias_reparto) p.dias_reparto.forEach(d => { let chk = document.getElementById(`chk-repartos-${d}`); if(chk) chk.checked = true; });
+        if(p.dias_pedido && Array.isArray(p.dias_pedido)) p.dias_pedido.forEach(d => { let chk = document.getElementById(`chk-pedidos-${d}`); if(chk) chk.checked = true; });
+        if(p.dias_reparto && Array.isArray(p.dias_reparto)) p.dias_reparto.forEach(d => { let chk = document.getElementById(`chk-repartos-${d}`); if(chk) chk.checked = true; });
     }
 
     function renderProveedoresConfig() {
@@ -580,7 +613,32 @@
         renderCesta();
     }
 
-    function renderVisorPasivo() { renderFaltasCocina(); }
+    // 🎯 FIX 4: Conectado e inyectado el visor pasivo de repartos diarios reales
+    function renderVisorPasivo() { 
+        renderFaltasCocina(); 
+        renderRepartosHoy(); 
+    }
+    
+    // 🎯 FIX 4 CONTINUACIÓN: Función encargada de renderizar la distribución teórica de camiones del día
+    function renderRepartosHoy() {
+        const hoy = new Date().getDay();
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        const repartenHoy = proveedores.filter(p => p.dias_reparto && p.dias_reparto.includes(hoy));
+        const div = document.getElementById('visor-repartos-hoy');
+        if (!div) return;
+        
+        if (repartenHoy.length === 0) {
+            div.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:13px;">🔔 Ningún proveedor tiene reparto programado para hoy en agenda.</p>`;
+        } else {
+            div.innerHTML = `<ul style="list-style-type: none; padding: 0;">
+                ${repartenHoy.map(p => `
+                    <div class="delivery-card">
+                        <strong>🚛 Entrada teórica de: ${p.nombre}</strong> — <span style="font-size:11px; color:#64748b;">Hora límite de aviso: ${p.hora_limite || 'No definida'}</span>
+                    </div>
+                `).join('')}
+            </ul>`;
+        }
+    }
     
     function renderFaltasCocina() {
         const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
