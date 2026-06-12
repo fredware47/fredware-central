@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>👨‍🍳 Fredware - Panel de Compras Avanzada</title>
+    <title>👨‍🍳 Fredware - Panel de Compras Avanzado</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #333; padding: 10px; }
@@ -52,8 +52,6 @@
         .btn-wa-del { background: #64748b; color: white; border: none; padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .btn-wa-del:active { background: #475569; }
 
-        .delivery-card { background: white; border-left: 4px solid #10b981; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-
         .accordion-header { background: #e2e8f0; color: #1e293b; padding: 12px; font-size: 13px; font-weight: bold; border-radius: 8px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s; }
         .accordion-header:hover { background: #cbd5e1; }
         .accordion-content { display: block; padding: 5px 0; margin-bottom: 10px; }
@@ -74,7 +72,6 @@
         <button class="tab-btn" id="btn-t3" onclick="switchTab(3)">📦 Catálogo y Proveedores</button>
     </div>
 
-    <!-- PESTAÑA 1 -->
     <div id="sec1" class="app-section active">
         <div class="box" style="border-left: 4px solid #2563eb;">
             <h3>➕ Introducción Manual de Artículo con Medida</h3>
@@ -117,7 +114,6 @@
         </div>
     </div>
 
-    <!-- PESTAÑA 2 -->
     <div id="sec2" class="app-section">
         <div class="box">
             <h3>📅 Distribución teórica de repartos para hoy</h3>
@@ -137,7 +133,6 @@
         </div>
     </div>
 
-    <!-- PESTAÑA 3: RESTAURADA COMPLETA EN ALTA E INTERACTIVIDAD -->
     <div id="sec3" class="app-section">
         <div class="box">
             <h3>🏢 Alta / Modificación de Proveedor</h3>
@@ -210,7 +205,7 @@
                 body: JSON.stringify(datos)
             });
         } catch (error) {
-            console.error(`Error en /api/${endpoint}:`, error);
+            print(error);
         }
     }
 
@@ -243,7 +238,7 @@
             if (document.getElementById('btn-t3').classList.contains('active')) renderProveedoresConfig();
 
         } catch (error) {
-            console.log("Servidor Offline. Usando caché.");
+            console.log("Offline mode.");
         }
     }
 
@@ -263,8 +258,8 @@
             body: JSON.stringify(JSON.parse(cestaLocal))
         })
         .then(res => {
-            if (res.ok) alert("✅ ¡Pedidos enviados directamente a la terminal de cocina!");
-            else alert("❌ Error al inyectar JSON.");
+            if (res.ok) alert("✅ ¡Pedidos inyectados en la terminal de cocina!");
+            else alert("❌ Error central.");
         })
         .catch(err => alert("❌ Conexión fallida."))
         .finally(() => {
@@ -343,7 +338,7 @@
             
             let descLimpia = desc.replace(/^\[.*?\]\s*/, '');
 
-            let cantidadIngresada = prompt(`Falta detectada: ${descLimpia}\n\nIntroduce cantidad y formato (Ej: 5 KG, 2 CAJAS, 10 BOTES):`, "1 UNIDADES");
+            let cantidadIngresada = prompt(`Falta detectada: ${descLimpia}\n\nIntroduce cantidad y formato:`, "1 UNIDADES");
             if (cantidadIngresada === null) return; 
             if (cantidadIngresada.trim() === "") cantidadIngresada = "1 UNIDADES";
 
@@ -372,21 +367,25 @@
         renderCesta();
     }
 
+    // 🎯 RESTAURACIÓN QUIRÚRGICA 1: Bloques rápidos de WhatsApp combinados (PENDIENTE + PREPARADO)
     function renderBloquesWhatsApp(cesta, proveedores) {
         const contenedor = document.getElementById('contenedor-bloques-whatsapp');
         if(!contenedor) return; contenedor.innerHTML = '';
-        let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado === "PENDIENTE").map(i => i.proveedor_id))];
+        
+        // El filtro ahora captura bultos tanto si se guardaron como PENDIENTE o PREPARADO por error
+        let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado !== "RECIBIDO").map(i => (i.proveedor_id || "S/P").trim().toUpperCase()))];
 
         proveedoresConPedidos.forEach(provNombre => {
-            const datosProv = proveedores.find(p => p.nombre === provNombre) || {};
+            const datosProv = proveedores.find(p => p.nombre.trim().toUpperCase() === provNombre) || {};
             if (!datosProv.telefono || datosProv.telefono.trim() === "") return; 
-            const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado === "PENDIENTE");
+            
+            const articulos = cesta.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre && i.estado !== "RECIBIDO");
             if (articulos.length === 0) return;
 
             const card = document.createElement('div');
             card.className = 'whatsapp-provider-card';
             card.innerHTML = `
-                <div><strong>🏢 ${provNombre}</strong><div style="font-size:11px; color:#475569;">Líneas: ${articulos.length}</div></div>
+                <div><strong>🏢 ${provNombre}</strong><div style="font-size:11px; color:#475569;">Líneas activas: ${articulos.length}</div></div>
                 <div style="display:flex; gap: 8px;">
                     <button class="btn-wa-send" onclick="dispararWhatsAppProveedor('${provNombre}', '${datosProv.telefono}')">💬 Enviar</button>
                     <button class="btn-wa-del" onclick="limpiarBloqueProveedor('${provNombre}')">❌ Ocultar</button>
@@ -399,7 +398,7 @@
     function limpiarBloqueProveedor(provNombre) {
         if (!confirm(`¿Vaciar bloque de ${provNombre}?`)) return;
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado === "PENDIENTE"));
+        cesta = cesta.filter(item => !((item.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && item.estado !== "RECIBIDO"));
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('cesta', cesta);
         renderCesta();
@@ -407,12 +406,13 @@
 
     function dispararWhatsAppProveedor(provNombre, telefono) {
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado === "PENDIENTE");
+        const articulos = cesta.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && i.estado !== "RECIBIDO");
         let textoMensaje = `¡Hola! Te paso el pedido de hoy:\n\n`;
         articulos.forEach(item => { textoMensaje += `• ${item.detalle}\n`; });
         window.open(`https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(textoMensaje)}`, '_blank');
     }
 
+    // 🎯 RESTAURACIÓN QUIRÚRGICA 2: Acordeones dinámicos acumulativos en compras (Inmunes a micro-estados)
     function renderCesta() {
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -426,11 +426,15 @@
         }
 
         const estadosColapsados = JSON.parse(localStorage.getItem('fredware_acordeon_estados')) || {};
+        
+        // Agrupación limpia forzando mayúsculas y quitando espacios invisibles
         let grupos = {};
         cesta.forEach((item, idx) => {
-            let pId = item.proveedor_id || "S/P";
-            if(!grupos[pId]) grupos[pId] = [];
-            grupos[pId].push({ item, idxReal: idx });
+            if (item.estado !== "RECIBIDO") { // Pinta todo lo que no esté marcado como entregado en cocina
+                let pId = (item.proveedor_id || "S/P").trim().toUpperCase();
+                if(!grupos[pId]) grupos[pId] = [];
+                grupos[pId].push({ item, idxReal: idx });
+            }
         });
 
         Object.keys(grupos).sort().forEach(pId => {
@@ -440,7 +444,7 @@
             bloqueHtml.className = "mb-2";
             bloqueHtml.innerHTML = `
                 <div class="accordion-header ${esColapsado ? '' : 'active'}" onclick="conmutarAcordeon('${pId}')">
-                    <span>🏢 DISTRIBUIDOR: ${pId} <span class="text-xs text-slate-500 font-normal">(${listaItems.length} líneas)</span></span><span class="accordion-icon">▼</span>
+                    <span>🏢 DISTRIBUIDOR: ${pId} <span class="text-xs text-slate-500 font-normal">(${listaItems.length} líneas activas)</span></span><span class="accordion-icon">▼</span>
                 </div>
                 <div id="acord-content-${pId}" class="accordion-content ${esColapsado ? 'collapsed' : ''}">
                     <table class="item-list">
@@ -448,10 +452,9 @@
                         <tbody>
                             ${listaItems.map(pack => {
                                 let selectOptions = `<option value="S/P">Asignar...</option>`;
-                                proveedores.forEach(p => { selectOptions += `<option value="${p.nombre}" ${pack.item.proveedor_id === p.nombre ? 'selected' : ''}>${p.nombre}</option>`; });
-                                let estiloRecibido = pack.item.estado === "RECIBIDO" ? 'style="text-decoration: line-through; color: #10b981;"' : '';
+                                proveedores.forEach(p => { selectOptions += `<option value="${p.nombre}" ${pack.item.proveedor_id.trim().toUpperCase() === p.nombre.trim().toUpperCase() ? 'selected' : ''}>${p.nombre}</option>`; });
                                 return `<tr>
-                                    <td ${estiloRecibido}><strong>${pack.item.detalle}</strong></td>
+                                    <td><strong>${pack.item.detalle}</strong></td>
                                     <td><select onchange="cambiarProveedorItem(${pack.idxReal}, this.value)">${selectOptions}</select></td>
                                     <td><button class="btn-del-row" onclick="quitarItemCesta(${pack.idxReal})">❌</button></td>
                                 </tr>`;
@@ -488,7 +491,6 @@
         renderCesta();
     }
 
-    // 🔧 FUNCIÓN RESTAURADA: Guarda la ficha de proveedor completa con días y catálogos
     function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
         const contacto = document.getElementById('prov-contacto').value.trim();
@@ -525,7 +527,6 @@
         renderCesta();
     }
 
-    // 🔧 LOGÍSTICA RESTAURADA: Carga de datos interactiva completa al pinchar encima
     function verProveedorEnFormulario(idx) {
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         const p = proveedores[idx];
@@ -540,22 +541,19 @@
         document.getElementById('prov-catalogo').value = catalogoTexto;
 
         initDaysGrids();
-        
         if(p.dias_pedido) p.dias_pedido.forEach(d => { let chk = document.getElementById(`chk-pedidos-${d}`); if(chk) chk.checked = true; });
         if(p.dias_reparto) p.dias_reparto.forEach(d => { let chk = document.getElementById(`chk-repartos-${d}`); if(chk) chk.checked = true; });
     }
 
-    // 🔧 RENDERIZADO INTERACTIVO: Panel de proveedores cliqueable y con botón de eliminar real
     function renderProveedoresConfig() {
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         const div = document.getElementById('lista-prov-config'); 
-        if(!div) return; 
-        div.innerHTML = '';
+        if(!div) return; div.innerHTML = '';
         
         proveedores.forEach((p, idx) => {
             let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
             let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono";
-            let contactoStr = p.contacto ? `👤 Contacto: ${p.contacto}` : "👤 Sin gestor asignado";
+            let contactoStr = p.contacto ? `👤 Contacto: ${p.contacto}` : "👤 Sin gestor";
             
             div.innerHTML += `
                 <div style="background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1; cursor:pointer;" onclick="verProveedorEnFormulario(${idx})">
@@ -565,7 +563,7 @@
                     </div>
                     <div style="margin-top:4px; color:#475569;">
                         <span>${contactoStr}</span> | <span>${tel}</span><br>
-                        <span style="color:#64748b; font-size:11px;">Reparte: ${listado} | Insumos: ${p.catalogo ? p.catalogo.length : 0} | Hora límite: ${p.hora_limite || '13:00'}</span>
+                        <span style="color:#64748b; font-size:11px;">Reparte: ${listado} | Insumos: ${p.catalogo ? p.catalogo.length : 0}</span>
                     </div>
                 </div>
             `;
@@ -573,7 +571,7 @@
     }
 
     function eliminarProveedor(idx) {
-        if(!confirm("¿Estás seguro de que deseas eliminar este distribuidor por completo?")) return;
+        if(!confirm("¿Eliminar distribuidor?")) return;
         let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         proveedores.splice(idx, 1);
         localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
