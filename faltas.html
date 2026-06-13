@@ -7,13 +7,24 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* 🏗️ ESTILOS PARA EL ACORDEÓN DESPLEGABLE EN LA TABLET */
         .accordion-header { padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s, transform 0.1s; }
         .accordion-header:active { transform: scale(0.99); }
         .accordion-content { display: block; padding: 4px 0; }
         .accordion-content.collapsed { display: none; }
         .accordion-icon { font-size: 12px; transition: transform 0.2s; color: inherit; }
         .accordion-header.active .accordion-icon { transform: rotate(180deg); }
+
+        /* 🎨 NOTIFICACIONES TOAST FLOTANTES */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { border-left: 4px solid #10b981; }
+        .toast-error { border-left: 4px solid #ef4444; }
+        .toast-warning { border-left: 4px solid #f59e0b; }
+
+        /* 🔄 SPINNER GIRADOR */
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
@@ -27,12 +38,15 @@
                     <p class="text-xs text-emerald-600 font-bold tracking-widest uppercase">Cocina, Recepción & Congelación</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <span id="badge-red" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold">🟢 ONLINE</span>
-                <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
-                    ➕ ENTRADA DIRECTA
-                </button>
-                <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v7.5 - Final</span>
+            <div class="flex flex-col items-end space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span id="badge-red" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold">🟢 ONLINE</span>
+                    <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale:95">
+                        ➕ ENTRADA DIRECTA
+                    </button>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v7.8</span>
+                </div>
+                <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
         </div>
     </header>
@@ -43,9 +57,14 @@
             <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                 <span>📝</span> Control de Faltas Diarias
             </h2>
-            <div class="flex gap-2">
+            <div class="flex gap-2 items-center">
                 <input type="text" id="insumo-falta" placeholder="Ej: MAYONESA, CEBOLLAS..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 uppercase text-base shadow-inner">
-                <button onclick="registrarFaltaCocina()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-5 rounded-xl shadow-sm transition-all active:scale-95">
+                
+                <button id="btn-micro-voz" onclick="activarDictadoPorVoz()" class="bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center h-[50px] w-[50px]">
+                    🎙️
+                </button>
+
+                <button onclick="registrarFaltaCocina()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
                     ➕ Añadir
                 </button>
             </div>
@@ -60,16 +79,34 @@
         </div>
     </main>
 
+    <div id="toast-container"></div>
+
     <script>
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
         let cestaGlobal = [];
 
-        // ✅ FIX APPCC: Alineada la temperatura de Seco a 25°C tanto en margen como en string de alerta
         const CONFIG_APPCC = {
             CONGELADOR: { min: -30, max: -12, defecto: -18, alerta: "🚨 RECHAZO CRÍTICO: ¡CONGELADO FUERA DE MARGEN! (MÁX -12°C)" },
             NEVERA:     { min: 0,   max: 8,   defecto: 4,   alerta: "⚠️ ALERTA: REFRIGERADO ALTO. VALORAR DEVOLUCIÓN (MÁX 8°C)" },
             SECO:       { min: 5,   max: 25,  defecto: 20,  alerta: "⚠️ ADVERTENCIA: AMBIENTE MUY ALTO (MÁX RECOMENDADO 25°C)" }
         };
+
+        function lanzarToast(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${tipo}`;
+            let icono = '✅';
+            if (tipo === 'error') icono = '❌';
+            if (tipo === 'warning') icono = '⚠️';
+            toast.innerHTML = `<span>${icono}</span> <span>${mensaje}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 50);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
 
         function actualizarEstadoRed(online) {
             const badge = document.getElementById('badge-red');
@@ -77,6 +114,8 @@
             if (online) {
                 badge.innerHTML = "🟢 ONLINE";
                 badge.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold";
+                const ahora = new Date();
+                document.getElementById('timestamp-sincro').innerText = `Última actualización: ${ahora.toTimeString().split(' ')[0]}`;
             } else {
                 badge.innerHTML = "📡 OFFLINE";
                 badge.className = "bg-amber-500 text-white text-xs px-2.5 py-2 rounded-xl border border-amber-600 font-black animate-pulse shadow-sm";
@@ -103,7 +142,6 @@
                 if (!respuesta.ok) throw new Error("Gateway Error");
                 const db = await respuesta.json();
                 
-                // ✅ FIX 5: Verificación estricta anti-borrados por arrays vacíos o nulos del server
                 if (Array.isArray(db.cesta) && db.cesta.length > 0) {
                     let cestaLocal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
                     const cestaServidor = db.cesta;
@@ -125,7 +163,12 @@
                     localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaCombinada));
                 }
                 
-                if (db.faltas && Array.isArray(db.faltas)) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
+                if (db.faltas && Array.isArray(db.faltas)) {
+                    let faltasLocales = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+                    let faltasFusionadas = [...new Set([...faltasLocales, ...db.faltas])];
+                    localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltasFusionadas));
+                }
+                
                 if (db.proveedores && Array.isArray(db.proveedores)) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
                 
                 renderFaltasLocales();
@@ -145,13 +188,14 @@
             if(!valor) return;
 
             if(valor.length < 3) {
-                Swal.fire({ icon: 'warning', title: 'Texto muy corto', text: 'Escribe al menos 3 letras para registrar la falta.', background: '#ffffff', color: '#000' });
+                Swal.fire({ icon: 'warning', title: 'Texto muy corto', text: 'Escribe al menos 3 letras para registrar la falta.', confirmButtonColor: '#0284c7' });
                 return;
             }
 
             let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
             if(faltas.includes(valor)) {
-                Swal.fire({ icon: 'info', title: 'Ya registrado', text: 'Este insumo ya está anotado en la lista.', background: '#ffffff', color: '#000' });
+                lanzarToast("Insumo ya anotado anteriormente.", "warning");
+                input.value = '';
                 return;
             }
 
@@ -159,14 +203,60 @@
             localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
             sincronizarConOficina('faltas', faltas);
             input.value = '';
+            lanzarToast(`⚠️ Falta añadida: ${valor}`);
             renderFaltasLocales();
+        }
+
+        // 🎙️ COMANDOS DE VOZ NATIVOS AUTOMÁTICOS
+        function activarDictadoPorVoz() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                lanzarToast("Este navegador o dispositivo no soporta dictado por voz.", "error");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            const btnMicro = document.getElementById('btn-micro-voz');
+            const inputFalta = document.getElementById('insumo-falta');
+
+            recognition.lang = 'es-ES';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                btnMicro.className = "bg-red-500 border border-red-700 text-xl p-3 rounded-xl shadow-sm animate-pulse flex items-center justify-center h-[50px] w-[50px]";
+                lanzarToast("🎙️ Escuchando... Habla ahora", "warning");
+            };
+
+            recognition.onerror = (event) => {
+                console.error(event.error);
+                lanzarToast("No se pudo abrir el micro. Revisa permisos.", "error");
+                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
+            };
+
+            recognition.onend = () => {
+                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
+            };
+
+            recognition.onresult = (event) => {
+                const textoDictado = event.results[0][0].transcript;
+                if (textoDictado) {
+                    // Limpieza total del texto capturado
+                    const limpio = textoDictado.trim().toUpperCase().replace(/\.$/, '');
+                    inputFalta.value = limpio;
+                    
+                    // Inyección inmediata a la base de datos sin tocar la pantalla
+                    registrarFaltaCocina();
+                }
+            };
+
+            recognition.start();
         }
 
         function renderFaltasLocales() {
             const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
             const container = document.getElementById('contenedor-faltas-local');
-            if(!container) return;
-            container.innerHTML = '';
+            if(!container) return; container.innerHTML = '';
             if(faltas.length === 0) {
                 container.innerHTML = `<div class="text-center italic text-slate-400 text-xs py-2">No hay faltas apuntadas hoy.</div>`;
                 return;
@@ -191,7 +281,6 @@
             renderFaltasLocales();
         }
 
-        // --- 📊 RENDERIZADO CON ACORDEÓN SANITIZADO ---
         function renderCheckMercancia(cesta) {
             const container = document.getElementById('visor-repartos-hoy');
             if(!container) return; container.innerHTML = '';
@@ -215,7 +304,7 @@
 
             let deClaves = Object.keys(gruposCesta);
             if(deClaves.length === 0) {
-                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">No quedan artículos pendientes.</div>`;
+                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">No quedan artículos pendientes de verificar hoy.</div>`;
                 return;
             }
 
@@ -237,10 +326,10 @@
                         <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
                             <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
                             <div class="flex space-x-2">
-                                <button onclick="marcarProductoNoLlego('${uId}')" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl transition-all active:scale-95 shadow-sm border border-slate-300">
+                                <button onclick="marcarProductoNo Llego('${uId}')" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl border border-slate-300 shadow-sm">
                                     ❌ No llegó
                                 </button>
-                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${provNombre}', '${uId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm">
+                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${provNombre}', '${uId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl shadow-sm">
                                     📥 Recibir
                                 </button>
                             </div>
@@ -253,7 +342,7 @@
                 else if (maxDiasRetraso >= 2) estiloCabeceraUrgencia = "bg-red-50 border-red-300 text-red-900 hover:bg-red-100 animate-pulse";
 
                 let esColapsado = estadosColapsados[provNombre] === true;
-                const safeId = provNombre.replace(/[^a-z0-9]/gi, '_'); // ✅ FIX 14: Sanitización de caracteres en ID del DOM
+                const safeId = provNombre.replace(/[^a-z0-9]/gi, '_'); 
 
                 let cardHtml = document.createElement('div');
                 cardHtml.className = "mb-2";
@@ -261,7 +350,7 @@
                     <div class="accordion-header ${esColapsado ? '' : 'active'} ${estiloCabeceraUrgencia}" onclick="conmutarAcordeonCocina('${provNombre}')">
                         <span>🏢 DISTRIBUIDOR: <span class="font-black tracking-wide">${provNombre}</span> <span class="ml-1 text-xs opacity-70 font-normal">(${articulosDelProveedor.length} pendientes)</span></span>
                         <div class="flex items-center space-x-2" onclick="event.stopPropagation();">
-                            <button onclick="recibirTodoElProveedor('${provNombre}')" class="bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg shadow-sm border border-sky-700 transition-all active:scale-95">⚡ RECIBIR TODO</button>
+                            <button onclick="recibirTodoElProveedor('${provNombre}')" class="bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg border border-sky-700 shadow-sm">⚡ RECIBIR TODO</button>
                             <span class="accordion-icon ml-2">▼</span>
                         </div>
                     </div>
@@ -273,84 +362,99 @@
             });
         }
 
-        // --- 🚀 ACCIÓN REVOLUCIONARIA: RECEPCIÓN TOTAL EXTRARÁPIDA DE UN CAMIÓN ---
         async function recibirTodoElProveedor(provNombre) {
             let bultosPendientes = cestaGlobal.filter(item => (item.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && (item.estado === "PENDIENTE" || item.estado === "PREPARADO"));
             if(bultosPendientes.length === 0) return;
 
-            // Pedimos una sola vez la temperatura para rellenar todo el bloque APPCC
             const { value: tempMasiva } = await Swal.fire({
                 title: `⚡ Recepción Rápida: ${provNombre}`,
-                text: `Introduce la temperatura general del camión de reparto (°C) para procesar las ${bultosPendientes.length} líneas de golpe:`,
+                text: `Introduce la temperatura general del camión (°C) para procesar las ${bultosPendientes.length} líneas juntas:`,
                 input: 'number',
                 inputAttributes: { step: '0.1' },
                 inputValue: 4.0,
                 showCancelButton: true,
                 confirmButtonColor: '#10b981',
-                confirmButtonText: 'Validar y Firmar Todo',
+                confirmButtonText: 'Validar Camión',
                 cancelButtonText: 'Cancelar'
             });
 
             if (tempMasiva === undefined || tempMasiva === "") return;
             const tFloat = parseFloat(tempMasiva);
 
-            // Doble escudo higiénico APPCC masivo
+            let autorizador = "SISTEMA";
             if(tFloat > 8.0) {
                 const confCritica = await Swal.fire({
-                    title: '🚨 ADVERTENCIA TÉRMICA',
-                    text: `La temperatura de ${tFloat}°C supera el límite de refrigeración de seguridad. ¿Confirmas la entrada del camión completo bajo tu riesgo?`,
-                    icon: 'warning',
+                    title: '🚨 CRÍTICO: FUERA DE RANGO',
+                    text: `La temperatura de ${tFloat}°C rompe el APPCC. Introduce el NOMBRE de la persona que autoriza la descarga de este camión:`,
+                    input: 'text',
+                    placeholder: 'Ej: Carlos, Daniela...',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
-                    confirmButtonText: 'Sí, autorizar descarga masiva',
-                    cancelButtonText: 'Rechazar camión'
+                    confirmButtonText: 'Forzar entrada y Firmar',
+                    cancelButtonText: 'Rechazar albarán',
+                    preConfirm: (value) => {
+                        if (!value.trim()) { Swal.showValidationMessage('⚠️ Debes introducir un nombre para firmar la excepción.'); }
+                        return value.trim().toUpperCase();
+                    }
                 });
                 if(!confCritica.isConfirmed) return;
+                autorizador = confCritica.value;
             }
 
-            Swal.fire({ title: '📡 Procesando lote completo...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
+            Swal.fire({ title: '📡 Procesando lote y rodillo...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
 
             const ahora = new Date();
             const pad = (n) => n.toString().padStart(2, '0');
             const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
 
-            // Recorremos y liquidamos todas las líneas en background de una sola pasada
+            let arrayLoteMercancias = [];
+            let loteCompletoEtiquetas = [];
+
             for (let item of bultosPendientes) {
                 let idx = cestaGlobal.findIndex(c => c.id === item.id);
                 if (idx !== -1) cestaGlobal[idx].estado = "RECIBIDO";
 
                 let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
 
-                const datosBaseDatos = {
+                arrayLoteMercancias.push({
                     producto: productoLimpio,
                     temperatura: tFloat,
                     conservacion: "NEVERA",
                     proveedor: provNombre,
                     cantidad_total: 1,
-                    fecha_registro: ahora.toISOString()
-                };
+                    fecha_registro: ahora.toISOString(),
+                    autorizado_por: autorizador
+                });
 
-                // Guardamos en SQL de fondo
-                await fetch(`${API_URL}/guardar_mercancia`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosBaseDatos) });
-                
-                // Escupimos 1 etiqueta Brother por cada bulto del camión de forma automática
-                let etiquetaUnica = [{
+                loteCompletoEtiquetas.push({
                     producto: productoLimpio,
                     unidad: `1 DE 1`,
                     fecha: `RECP: ${fechaString}`,
-                    texto_qr: `PROD:${productoLimpio}|LOTE:MASIVO|F.ENTRADA:${fechaString}`
-                }];
+                    texto_qr: `PROD:${productoLimpio}|LOTE:MASIVO|F.ENTRADA:${fechaString}|FIRMA:${autorizador}`
+                });
+            }
 
-                fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: etiquetaUnica }) }).catch(() => {});
+            try {
+                await fetch(`${API_URL}/guardar_mercancia_lote`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ lote: arrayLoteMercancias }) 
+                });
+            } catch(e) {
+                for(let datosIndividual of arrayLoteMercancias) {
+                    await fetch(`${API_URL}/guardar_mercancia`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosIndividual) });
+                }
+            }
+
+            if (loteCompletoEtiquetas.length > 0) {
+                fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: loteCompletoEtiquetas }) }).catch(() => {});
             }
 
             localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
-
-            // Sincronización atómica masiva al terminar el bucle
             await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
 
-            Swal.fire({ icon: 'success', title: '🚚 ENTRADA COMPLETADA', text: `Se han procesado las ${bultosPendientes.length} líneas de ${provNombre} y enviado los stickers al rodillo Brother.`, confirmButtonColor: '#10b981' });
-
+            lanzarToast("Camión procesado por lote.");
+            Swal.close();
             renderCheckMercancia(cestaGlobal);
         }
 
@@ -363,7 +467,7 @@
 
             const confirmacion = await Swal.fire({
                 title: '¿Confirmas incidencia?',
-                text: `¿Quieres marcar "${productoLimpio}" como no entregado? Rebotará automáticamente a la lista de compras de la oficina.`,
+                text: `¿Quieres marcar "${productoLimpio}" como no entregado? Rebotará automáticamente a la lista de la oficina.`,
                 icon: 'warning',
                 background: '#ffffff',
                 color: '#0f172a',
@@ -375,7 +479,6 @@
 
             if (!confirmacion.isConfirmed) return;
 
-            // ✅ FIX 2: Cambiado el estado a "AUSENTE" para no falsear las analíticas de stock
             cestaGlobal[idxGlobal].estado = "AUSENTE";
             localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
 
@@ -389,15 +492,15 @@
                 await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
                 await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(faltasLocales) });
 
-                Swal.fire({ title: '🚨 INCIDENCIA REGISTRADA', text: `Enviado con éxito a la central.`, icon: 'success', background: '#ffffff', color: '#0f172a', confirmButtonColor: '#10b981' });
+                lanzarToast("Incidencia comunicada a oficina.", "error");
+                Swal.close();
                 renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
             } catch (error) {
-                Swal.fire({ title: '❌ ERROR DE RED', text: 'Guardado en local. No se pudo conectar con el PC central.', icon: 'error', background: '#ffffff', color: '#0f172a' });
+                Swal.fire({ title: '❌ ERROR DE RED', text: 'Guardado en local. No se pudo conectar con el PC central.', icon: 'error' });
             }
         }
 
-        // 🎯 FIX 7: Conmutación nativa de clases del acordeón sin destruir/reconstruir el DOM
         function conmutarAcordeonCocina(provNombre) {
             const safeId = provNombre.replace(/[^a-z0-9]/gi, '_');
             const content = document.getElementById(`acord-cocina-${safeId}`);
@@ -523,19 +626,25 @@
 
             if (!formValues) return;
 
-            // 🎯 FIX 8: Doble confirmación obligatoria APPCC si saltó la alerta térmica crítica
+            let autorizador = "SISTEMA";
             const limitesRef = CONFIG_APPCC[formValues.conservacion];
             if (formValues.temperatura > limitesRef.max) {
                 const confirmacionCritica = await Swal.fire({
                     title: '🚨 ADVERTENCIA APPCC',
-                    text: `La mercancía está fuera de rango térmico para ${formValues.conservacion}. ¿Confirmas la entrada bajo supervisión de cocina?`,
-                    icon: 'warning',
+                    text: `Mercancía fuera de rango térmico para ${formValues.conservacion}. Introduce tu NOMBRE para firmar la autorización:`,
+                    input: 'text',
+                    placeholder: 'Ej: Carlos, Daniela...',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
-                    confirmButtonText: 'Sí, autorizar entrada',
-                    cancelButtonText: 'Rechazar bulto'
+                    confirmButtonText: 'Firmar y Forzar Entrada',
+                    cancelButtonText: 'Rechazar bulto',
+                    preConfirm: (value) => {
+                        if (!value.trim()) { Swal.showValidationMessage('⚠️ Es obligatorio firmar con tu nombre para forzar la entrada.'); }
+                        return value.trim().toUpperCase();
+                    }
                 });
                 if (!confirmacionCritica.isConfirmed) return;
+                autorizador = confirmacionCritica.value;
             }
 
             const ahora = new Date();
@@ -566,7 +675,8 @@
                 conservacion: formValues.conservacion,
                 proveedor: proveedor,
                 cantidad_total: formValues.cantidad,
-                fecha_registro: ahora.toISOString()
+                fecha_registro: ahora.toISOString(),
+                autorizado_por: autorizador
             };
 
             let loteEtiquetas = [];
@@ -577,7 +687,7 @@
                         producto: productoLimpio,
                         unidad: formValues.conservacion === "CONGELADOR" ? `🥶 CÁMARA CONGE (${i}/${formValues.stickers})` : `${i} DE ${formValues.stickers}`,
                         fecha: formValues.conservacion === "CONGELADOR" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
-                        texto_qr: `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}`
+                        texto_qr: `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}|FIRMA:${autorizador}`
                     });
                 }
             }
@@ -588,12 +698,11 @@
                 const resBD = await fetch(`${API_URL}/guardar_mercancia`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosBaseDatos) });
                 if (!resBD.ok) throw new Error("Error en grabación SQL.");
 
-                // ✅ FIX 6: El rodillo Brother solo dispara la orden si la base de datos confirmó el OK primero
                 if (loteEtiquetas.length > 0) {
                     try {
                         await fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: loteEtiquetas }) });
                     } catch (e) {
-                        alert("⚠️ Advertencia: El albarán se guardó, pero la etiquetadora Brother no responde.");
+                        lanzarToast("Bulto guardado. Impresora Brother desconectada.", "warning");
                     }
                 }
 
@@ -603,25 +712,20 @@
                     await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(faltasLocales) });
                 }
 
-                Swal.fire({
-                    title: huboRotura ? '⚠️ ROTURA DE STOCK REGISTRADA' : '✅ ¡LOGÍSTICA COMPLETA!',
-                    text: huboRotura ? `¡Faltaron ${cantidadFaltante} bultos! Rebotado a la central.` : `Albarán anotado y etiquetas enviadas de forma segura.`,
-                    icon: huboRotura ? 'warning' : 'success',
-                    background: '#ffffff', color: '#0f172a', confirmButtonColor: '#10b981'
-                });
-
+                lanzarToast(huboRotura ? "Rotura de stock enviada" : "Albarán guardado con éxito");
+                Swal.close();
                 renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
 
             } catch (error) {
-                Swal.fire({ title: '❌ ERROR DE RED', text: 'El PC central de la oficina está apagado.', icon: 'error', background: '#ffffff', color: '#0f172a' });
+                Swal.fire({ title: '❌ ERROR DE RED', text: 'El PC central de la oficina está apagado.', icon: 'error' });
             }
         }
 
         async function abrirEntradaDirecta() {
             const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
             let optionsHtml = '<option value="S/P">PROVEEDOR GENÉRICO / COMPRA DIRECTA</option>';
-            proveedores.forEach(p => { optionsHtml += `<option value="${p.nombre}">${p.nombre}</option>`; });
+            proveedores.forEach(p => { optionsHtml += `<option value="${p.nombre}">${p.nombre}</option>'; });
 
             const { value: directoValues } = await Swal.fire({
                 title: '➕ Compra de Última Hora',
@@ -657,6 +761,7 @@
         cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         renderCheckMercancia(cestaGlobal);
 
+        // Arranques pasivos
         cargarDatosDeOficina();
         setInterval(cargarDatosDeOficina, 25000); 
     </script>
