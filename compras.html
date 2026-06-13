@@ -27,7 +27,7 @@
         .day-check { display: none; }
         .day-check:checked + .day-label { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
 
-        .btn-action { background: #10b981; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn-action { background: #10b981; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .btn-action:active { background: #059669; }
         .btn-sec { background: #64748b; }
 
@@ -61,6 +61,18 @@
         .accordion-content.collapsed { display: none; }
         .accordion-icon { font-size: 12px; transition: transform 0.2s; color: #64748b; }
         .accordion-header.active .accordion-icon { transform: rotate(180deg); }
+
+        /* 🎨 CONTENEDOR PARA LAS NOTIFICACIONES TOAST (FLOTANTES) */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { border-left: 4px solid #10b981; }
+        .toast-error { border-left: 4px solid #ef4444; }
+        .toast-warning { border-left: 4px solid #f59e0b; }
+
+        /* 🔄 CSS SPINNER (GIRADOR DE CARGA) */
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -111,7 +123,9 @@
             <div id="contenedor-acordeon-cesta"></div>
             
             <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="btn-action" style="background: #2563eb; margin-top: 0;" onclick="subirCestaAlServidor()">⚡ Sincronizar Pedidos con la Oficina</button>
+                <button class="btn-action" style="background: #2563eb; margin-top: 0;" onclick="subirCestaAlServidor()">
+                    <span id="btn-sync-text">⚡ Sincronizar Pedidos con la Oficina</span>
+                </button>
                 <button class="btn-action btn-sec" style="width: auto; padding: 12px 20px; margin-top: 0;" onclick="exportarPedidosJson()">📥 Guardar Copia .JSON</button>
             </div>
         </div>
@@ -151,9 +165,6 @@
             <label for="prov-hora">Hora Límite de Pedido:</label>
             <input type="time" id="prov-hora" value="13:00">
 
-            <label for="prov-catalogo">📦 Catálogo de Productos (Separados por comas):</label>
-            <textarea id="prov-catalogo" rows="2" placeholder="Ej: HUEVOS, HARINA, ACEITE..."></textarea>
-
             <label>Días que hay que hacer el PEDIDO:</label>
             <div class="days-grid" id="grid-pedidos"></div>
 
@@ -161,6 +172,27 @@
             <div class="days-grid" id="grid-repartos"></div>
 
             <button class="btn-action" onclick="guardarProveedor()">💾 Guardar Proveedor</button>
+        </div>
+
+        <div id="panel-plantilla-habituales" class="box" style="border-left: 4px solid #10b981; display: none;">
+            <h3>📋 Plantilla de Artículos Habituales de: <span id="nombre-prov-plantilla" style="color:#2563eb;"></span></h3>
+            
+            <div class="inline-form" style="margin-bottom: 15px;">
+                <input type="text" id="nuevo-articulo-plantilla" placeholder="Ej: PATATAS FRITAS, LIMONES, LECHE..." class="input-art uppercase" style="text-transform: uppercase;">
+                <select id="unidad-articulo-plantilla" class="select-uni">
+                    <option value="KG">Kg</option>
+                    <option value="L">Litros</option>
+                    <option value="CAJAS">Cajas</option>
+                    <option value="BOTES">Botes</option>
+                    <option value="UNIDADES" selected>Unidades</option>
+                </select>
+                <button class="btn-add-manual" style="background:#10b981;" onclick="agregarArticuloAPlantilla()">➕ Añadir a Lista</button>
+            </div>
+
+            <div id="lista-articulos-plantilla" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px;">
+                </div>
+
+            <button class="btn-action" style="background:#2563eb;" onclick="volcarPlantillaACesta()">🛒 Volcar seleccionados a la Cesta</button>
         </div>
         
         <div class="box">
@@ -170,14 +202,41 @@
     </div>
 </div>
 
+<div id="toast-container"></div>
+
 <script>
-    // 🛰️ CONEXIÓN MAESTRA CORREGIDA - Variable renombrada a db_nube para evitar duplicidad de nombres
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
     const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    let proveedorSeleccionadoId = null;
+
+    // 🎨 SISTEMA NATIVO DE NOTIFICACIONES TOAST (REEMPLAZA LOS ALERT)
+    function lanzarToast(mensaje, tipo = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${tipo}`;
+        
+        let icono = '✅';
+        if (tipo === 'error') icono = '❌';
+        if (tipo === 'warning') icono = '⚠️';
+
+        toast.innerHTML = `<span>${icono}</span> <span>${mensaje}</span>`;
+        container.appendChild(toast);
+
+        // Disparar animación
+        setTimeout(() => toast.classList.add('show'), 50);
+
+        // Auto-eliminar a los 3.5 segundos
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
 
     function initDaysGrids() {
         ['pedidos', 'repartos'].forEach(tipo => {
@@ -202,7 +261,10 @@
         document.getElementById(`sec${num}`).classList.add('active');
         if(num === 1) renderCesta();
         if(num === 2) renderVisorPasivo();
-        if(num === 3) cargarProveedoresDesdeSupabase();
+        if(num === 3) {
+            cargarProveedoresDesdeSupabase();
+            document.getElementById('panel-plantilla-habituales').style.display = 'none';
+        }
     }
 
     async function sincronizarConOficina(endpoint, datos) {
@@ -248,15 +310,21 @@
         }
     }
 
+    // 🔄 REFACTOREADA: Inyecta Spinner de carga y usa el sistema Toast
     function subirCestaAlServidor() {
         const cestaLocal = localStorage.getItem('fredware_cesta_compras');
         if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
-            alert("⚠️ La cesta está vacía.");
+            lanzarToast("La cesta está vacía.", "warning");
             return;
         }
 
         const btn = document.querySelector("button[onclick='subirCestaAlServidor()']");
-        if(btn) { btn.disabled = true; btn.innerText = "⏳ Sincronizando..."; }
+        const btnText = document.getElementById('btn-sync-text');
+        
+        if(btn && btnText) { 
+            btn.disabled = true; 
+            btnText.innerHTML = `<span class="spinner"></span> Sincronizando con Oficina...`; 
+        }
 
         fetch(`${API_URL}api/cesta`, {
             method: 'POST',
@@ -264,12 +332,15 @@
             body: JSON.stringify(JSON.parse(cestaLocal))
         })
         .then(res => {
-            if (res.ok) alert("✅ ¡Pedidos inyectados en la terminal de cocina!");
-            else alert(`❌ Error de pasarela. El PC central dio respuesta HTTP: ${res.status}`);
+            if (res.ok) lanzarToast("¡Pedidos inyectados en la terminal de cocina!");
+            else lanzarToast(`Error en central. Respuesta HTTP: ${res.status}`, "error");
         })
-        .catch(err => alert("❌ Conexión fallida. Comprueba el terminal de Ngrok en el ordenador central."))
+        .catch(err => lanzarToast("Conexión fallida con el PC central.", "error"))
         .finally(() => {
-            if(btn) { btn.disabled = false; btn.innerText = "⚡ Sincronizar Pedidos con la Oficina"; }
+            if(btn && btnText) { 
+                btn.disabled = false; 
+                btnText.innerHTML = `⚡ Sincronizar Pedidos con la Oficina`; 
+            }
         });
     }
 
@@ -330,17 +401,23 @@
         const selectUni = document.getElementById('manual-unidad');
 
         const producto = inputArt.value.trim().toUpperCase();
-        const cantidad = inputCant.value.trim();
+        const cantidad = parseInt(inputCant.value.trim()) || 0;
         const unidad = selectUni.value;
 
         if(!producto) return;
-        const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
+        
+        // 🛡️ VALIDACIÓN DE ENTRADA: Evita cantidades absurdas o negativas
+        if(cantidad <= 0) {
+            lanzarToast("La cantidad debe ser mayor que 0.", "warning");
+            return;
+        }
 
+        const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         
         const existeYa = cesta.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
         if(existeYa){
-            alert(`⚠️ El artículo "${detalleFormateado}" ya se encuentra activo en tu cesta.`);
+            lanzarToast("Este artículo ya está activo en tu cesta.", "warning");
             return;
         }
 
@@ -350,6 +427,7 @@
         
         sincronizarConOficina('cesta', cesta);
         inputArt.value = ''; inputCant.value = '1'; delete inputArt.dataset.sugerido;
+        lanzarToast("Insumo añadido manual.");
         renderCesta();
     }
 
@@ -390,7 +468,7 @@
         sincronizarConOficina('cesta', cesta);
         document.getElementById('raw-whatsapp').value = '';
         renderCesta();
-        if(itemsAnadidos > 0) alert(`✅ Volcado rápido completado. Se inyectaron ${itemsAnadidos} artículos.`);
+        if(itemsAnadidos > 0) lanzarToast(`Volcado completado. +${itemsAnadidos} artículos.`);
     }
 
     function renderBloquesWhatsApp(cesta, proveedores) {
@@ -423,20 +501,21 @@
         cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado === "PENDIENTE"));
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('cesta', cesta);
+        lanzarToast(`Bloque de ${provNombre} vaciado.`);
         renderCesta();
     }
 
     function dispararWhatsAppProveedor(provNombre, telefono) {
         const telefonoLimpio = telefono.replace(/\D/g, '');
         if (telefonoLimpio.length < 9) {
-            alert("❌ Error: El distribuidor no tiene un teléfono móvil reglamentario asignado.");
+            lanzarToast("Teléfono de proveedor inválido.", "error");
             return;
         }
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const articulos = cesta.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && i.estado !== "RECIBIDO");
         let textoMensaje = `¡Hola! Te paso el pedido de hoy:\n\n`;
         articulos.forEach(item => { textoMensaje += `• ${item.detalle}\n`; });
-        window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(textoMensaje)}`, '_blank');
+        window.open('https://wa.me/' + telefonoLimpio + '?text=' + encodeURIComponent(textoMensaje), '_blank');
     }
 
     function renderCesta() {
@@ -519,13 +598,12 @@
         renderCesta();
     }
 
-    // 🎯 MODIFICACIÓN ATÓMICA DE SEGURIDAD EN SUPABASE CON VARIABLE CORREGIDA (db_nube)
     async function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
         const contacto = document.getElementById('prov-contacto').value.trim();
         const telefono = document.getElementById('prov-telefono').value.trim();
         const hora = document.getElementById('prov-hora').value;
-        if(!nombre) { alert("⚠️ El nombre del proveedor es obligatorio."); return; }
+        if(!nombre) { lanzarToast("El nombre es obligatorio.", "warning"); return; }
 
         let diasPedir = [];
         let diasRepartir = [];
@@ -549,18 +627,18 @@
             .upsert([datosProv], { onConflict: 'id' });
 
         if (error) {
-            console.error("Error al inyectar datos en Supabase:", error);
-            alert("❌ Error: No se pudo salvar la ficha en la nube.");
+            console.error(error);
+            lanzarToast("No se pudo salvar la ficha en la nube.", "error");
             return;
         }
 
         document.getElementById('prov-nombre').value = '';
         document.getElementById('prov-contacto').value = '';
         document.getElementById('prov-telefono').value = '';
-        document.getElementById('prov-catalogo').value = '';
         
         initDaysGrids();
-        alert(`✅ ¡Ficha de ${nombre} guardada y blindada en Supabase!`);
+        document.getElementById('panel-plantilla-habituales').style.display = 'none';
+        lanzarToast(`Ficha de ${nombre} blindada en la nube.`);
         cargarProveedoresDesdeSupabase();
         renderCesta();
     }
@@ -575,8 +653,7 @@
             .order('nombre', { ascending: true });
 
         if (error) {
-            console.error("Error de lectura remota:", error);
-            div.innerHTML = '<div style="font-size:12px;color:#ef4444;">❌ No se pudo conectar con el servidor de la nube.</div>';
+            div.innerHTML = '<div style="font-size:12px;color:#ef4444;">❌ Error de conexión remota.</div>';
             return;
         }
 
@@ -615,15 +692,16 @@
         document.getElementById('prov-contacto').value = p.contacto || '';
         document.getElementById('prov-telefono').value = p.telefono || '';
         document.getElementById('prov-hora').value = p.hora_limite || '13:00';
-        document.getElementById('prov-catalogo').value = '';
 
         initDaysGrids();
         if(p.dias_pedido && Array.isArray(p.dias_pedido)) p.dias_pedido.forEach(d => { let chk = document.getElementById(`chk-pedidos-${d}`); if(chk) chk.checked = true; });
         if(p.dias_reparto && Array.isArray(p.dias_reparto)) p.dias_reparto.forEach(d => { let chk = document.getElementById(`chk-repartos-${d}`); if(chk) chk.checked = true; });
+
+        cargarPlantillaProveedor(p.id);
     }
 
     async function eliminarProveedorSupabase(idProv) {
-        if(!confirm(`¿Eliminar de forma permanente el distribuidor ${idProv} de la nube de Supabase?`)) return;
+        if(!confirm(`¿Eliminar permanentemente a ${idProv}?`)) return;
 
         const { error } = await db_nube
             .from('proveedores')
@@ -631,14 +709,127 @@
             .eq('id', idProv);
 
         if (error) {
-            console.error("Error al borrar en la nube:", error);
-            alert("❌ Operación denegada por el servidor.");
+            lanzarToast("Operación denegada por el servidor.", "error");
             return;
         }
 
-        alert("🗑️ Distribuidor eliminado de la base de datos.");
+        document.getElementById('panel-plantilla-habituales').style.display = 'none';
+        lanzarToast("Distribuidor eliminado.");
         cargarProveedoresDesdeSupabase();
         renderCesta();
+    }
+
+    // --- SISTEMA PLANTILLAS RELACIONALES ---
+    async function cargarPlantillaProveedor(idProv) {
+        proveedorSeleccionadoId = idProv;
+        const panel = document.getElementById('panel-plantilla-habituales');
+        const titulo = document.getElementById('nombre-prov-plantilla');
+        const contenedorLista = document.getElementById('lista-articulos-plantilla');
+        
+        if(!panel || !contenedorLista) return;
+
+        titulo.innerText = idProv;
+        panel.style.display = 'block'; 
+        contenedorLista.innerHTML = '<div style="font-size:12px;color:#64748b;padding:5px;">⏳ Cargando habituales...</div>';
+
+        const { data: articulos, error } = await db_nube
+            .from('articulos_habituales')
+            .select('*')
+            .eq('proveedor_id', idProv)
+            .order('nombre_articulo', { ascending: true });
+
+        if (error) {
+            contenedorLista.innerHTML = '<div style="font-size:12px;color:#ef4444;padding:5px;">❌ Error al leer Supabase.</div>';
+            return;
+        }
+
+        if(!articulos || articulos.length === 0) {
+            contenedorLista.innerHTML = '<div style="font-size:12px;color:#94a3b8;font-style:italic;padding:5px;">Esta plantilla no tiene artículos guardados todavía.</div>';
+            return;
+        }
+
+        contenedorLista.innerHTML = '';
+        articulos.forEach(art => {
+            const fila = document.createElement('div');
+            fila.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:6px; border-bottom:1px solid #f1f5f9;";
+            fila.innerHTML = `
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:normal; margin-top:0;">
+                    <input type="checkbox" class="chk-plantilla-item" value="${art.nombre_articulo}" data-unidad="${art.unidad_defecto}" style="width:auto; margin-top:0;">
+                    <span><strong>${art.nombre_articulo}</strong> <span style="color:#64748b; font-size:11px;">(${art.unidad_defecto})</span></span>
+                </label>
+                <button class="btn-del-row" style="padding:2px 6px;" onclick="eliminarArticuloPlantilla(${art.id})">❌</button>
+            `;
+            contenedorLista.appendChild(fila);
+        });
+    }
+
+    async function agregarArticuloAPlantilla() {
+        const inputArt = document.getElementById('nuevo-articulo-plantilla');
+        const selectUni = document.getElementById('unidad-articulo-plantilla');
+        const articulo = inputArt.value.trim().toUpperCase();
+        const unidad = selectUni.value;
+
+        if(!articulo || !proveedorSeleccionadoId) return;
+
+        const { error } = await db_nube
+            .from('articulos_habituales')
+            .insert([{ proveedor_id: proveedorSeleccionadoId, nombre_articulo: articulo, unidad_defecto: unidad }]);
+
+        if (error) {
+            lanzarToast("No se pudo añadir a la plantilla.", "error");
+            return;
+        }
+
+        inputArt.value = '';
+        lanzarToast("Añadido a la lista de habituales.");
+        cargarPlantillaProveedor(proveedorSeleccionadoId);
+    }
+
+    async function eliminarArticuloPlantilla(idArticulo) {
+        if(!confirm("¿Quitar de la lista de habituales?")) return;
+
+        const { error } = await db_nube
+            .from('articulos_habituales')
+            .delete()
+            .eq('id', idArticulo);
+
+        if (error) {
+            lanzarToast("No se pudo borrar de la nube.", "error");
+            return;
+        }
+
+        lanzarToast("Artículo removido.");
+        cargarPlantillaProveedor(proveedorSeleccionadoId);
+    }
+
+    function volcarPlantillaACesta() {
+        const checkboxes = document.querySelectorAll('.chk-plantilla-item:checked');
+        if(checkboxes.length === 0) { lanzarToast("No has seleccionado ningún artículo.", "warning"); return; }
+
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        let contador = 0;
+
+        checkboxes.forEach(chk => {
+            const producto = chk.value;
+            const unidad = chk.dataset.unidad;
+            const detalleFormateado = `[1 ${unidad}] ${producto}`;
+
+            const existe = cesta.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
+            if(!existe) {
+                cesta.push({ detalle: detalleFormateado, proveedor_id: proveedorSeleccionadoId, estado: "PENDIENTE" });
+                contador++;
+            }
+            chk.checked = false; 
+        });
+
+        if(contador > 0) {
+            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+            sincronizarConOficina('cesta', cesta);
+            lanzarToast(`¡Volcados +${contador} bultos a tu cesta!`);
+            renderCesta();
+        } else {
+            lanzarToast("Los artículos ya estaban activos en la cesta.", "warning");
+        }
     }
 
     document.addEventListener('click', (e) => {
@@ -662,7 +853,7 @@
         if (!div) return;
         
         if (repartenHoy.length === 0) {
-            div.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:13px;">🔔 Ningún proveedor tiene reparto programado para hoy en la agenda.</p>`;
+            div.innerHTML = `<p style="font-style:italic; color:#64748b; font-size:13px;">🔔 Ningún proveedor tiene reparto programado para hoy.</p>`;
         } else {
             div.innerHTML = `<ul style="list-style-type: none; padding: 0;">
                 ${repartenHoy.map(p => `
@@ -695,6 +886,7 @@
         localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('faltas', faltas); sincronizarConOficina('cesta', cesta);
+        lanzarToast("Falta cargada en la cesta.");
         renderVisorPasivo(); renderCesta();
     }
 
@@ -710,7 +902,6 @@
         a.click();
     }
 
-    // Inicialización limpia de hilos
     initDaysGrids();
     cargarDatosDeOficina();
     cargarProveedoresDesdeSupabase(); 
