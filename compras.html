@@ -171,10 +171,10 @@
 </div>
 
 <script>
-    // 🛰️ CONEXIÓN MAESTRA A SUPABASE (CON NOMBRE DE VARIABLE CORREGIDO EN MINÚSCULAS)
+    // 🛰️ CONEXIÓN MAESTRA CORREGIDA - Variable renombrada a db_nube para evitar duplicidad de nombres
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -519,7 +519,7 @@
         renderCesta();
     }
 
-    // 🎯 INTEGRACIÓN EN MINÚSCULAS CON EL CONECTOR DE SUPABASE
+    // 🎯 MODIFICACIÓN ATÓMICA DE SEGURIDAD EN SUPABASE CON VARIABLE CORREGIDA (db_nube)
     async function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
         const contacto = document.getElementById('prov-contacto').value.trim();
@@ -544,7 +544,7 @@
             dias_reparto: diasRepartir
         };
 
-        const { error } = await supabase
+        const { error } = await db_nube
             .from('proveedores')
             .upsert([datosProv], { onConflict: 'id' });
 
@@ -569,7 +569,7 @@
         const div = document.getElementById('lista-prov-config'); 
         if(!div) return; div.innerHTML = '<div style="font-size:12px;color:#64748b;padding:5px;">⏳ Sincronizando con Supabase...</div>';
         
-        const { data: listaProveedores, error } = await supabase
+        const { data: listaProveedores, error } = await db_nube
             .from('proveedores')
             .select('*')
             .order('nombre', { ascending: true });
@@ -625,7 +625,7 @@
     async function eliminarProveedorSupabase(idProv) {
         if(!confirm(`¿Eliminar de forma permanente el distribuidor ${idProv} de la nube de Supabase?`)) return;
 
-        const { error } = await supabase
+        const { error } = await db_nube
             .from('proveedores')
             .delete()
             .eq('id', idProv);
@@ -710,6 +710,7 @@
         a.click();
     }
 
+    // Inicialización limpia de hilos
     initDaysGrids();
     cargarDatosDeOficina();
     cargarProveedoresDesdeSupabase(); 
