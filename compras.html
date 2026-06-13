@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>👨‍🍳 Fredware - Panel de Compras Avanzado</title>
-    <!-- ✅ INYECCIÓN CONECTOR OFICIAL DE SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -172,10 +171,10 @@
 </div>
 
 <script>
-    // 🛰️ CONEXIÓN MAESTRA A TU BASE DE DATOS CENTRAL SUPABASE
+    // 🛰️ CONEXIÓN MAESTRA A SUPABASE (CON NOMBRE DE VARIABLE CORREGIDO EN MINÚSCULAS)
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-    const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -203,7 +202,7 @@
         document.getElementById(`sec${num}`).classList.add('active');
         if(num === 1) renderCesta();
         if(num === 2) renderVisorPasivo();
-        if(num === 3) cargarProveedoresDesdeSupabase(); // Refresco inmediato al entrar en la agenda
+        if(num === 3) cargarProveedoresDesdeSupabase();
     }
 
     async function sincronizarConOficina(endpoint, datos) {
@@ -520,16 +519,14 @@
         renderCesta();
     }
 
-    // 🎯 MODIFICACIÓN SUPABASE: Guarda los datos de la ficha directamente en la tabla SQL de la nube
+    // 🎯 INTEGRACIÓN EN MINÚSCULAS CON EL CONECTOR DE SUPABASE
     async function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
         const contacto = document.getElementById('prov-contacto').value.trim();
         const telefono = document.getElementById('prov-telefono').value.trim();
         const hora = document.getElementById('prov-hora').value;
-        const txtCatalogo = document.getElementById('prov-catalogo').value.trim().toUpperCase();
         if(!nombre) { alert("⚠️ El nombre del proveedor es obligatorio."); return; }
 
-        let arrayCatalogo = txtCatalogo ? txtCatalogo.split(',').map(i => i.trim()).filter(i => i !== '') : [];
         let diasPedir = [];
         let diasRepartir = [];
         DIAS_SEMANA.forEach((_, idx) => {
@@ -538,17 +535,15 @@
         });
 
         const datosProv = {
-            id: nombre, // Clave primaria
+            id: nombre,
             nombre: nombre,
             contacto: contacto,
             telefono: telefono,
             hora_limite: hora,
             dias_pedido: diasPedir,
             dias_reparto: diasRepartir
-            // Nota: El catálogo se inyectará en la tabla cruzada de habituales en el siguiente paso
         };
 
-        // Operación Upsert directa en la nube
         const { error } = await supabase
             .from('proveedores')
             .upsert([datosProv], { onConflict: 'id' });
@@ -570,7 +565,6 @@
         renderCesta();
     }
 
-    // 🎯 MODIFICACIÓN SUPABASE: Lee la agenda en la nube haciendo un select ordenado por nombre
     async function cargarProveedoresDesdeSupabase() {
         const div = document.getElementById('lista-prov-config'); 
         if(!div) return; div.innerHTML = '<div style="font-size:12px;color:#64748b;padding:5px;">⏳ Sincronizando con Supabase...</div>';
@@ -586,7 +580,6 @@
             return;
         }
 
-        // Mantenemos espejo local para procesos de rendimiento (Autocompletado)
         localStorage.setItem('fredware_proveedores', JSON.stringify(listaProveedores || []));
 
         if(!listaProveedores || listaProveedores.length === 0) {
@@ -617,20 +610,18 @@
         });
     }
 
-    // Auxiliar para rellenar las casillas al pinchar la tarjeta
     function verProveedorEnFormularioDirecto(p) {
         document.getElementById('prov-nombre').value = p.nombre || '';
         document.getElementById('prov-contacto').value = p.contacto || '';
         document.getElementById('prov-telefono').value = p.telefono || '';
         document.getElementById('prov-hora').value = p.hora_limite || '13:00';
-        document.getElementById('prov-catalogo').value = ''; // Queda listo para la tabla relacional de habituales
+        document.getElementById('prov-catalogo').value = '';
 
         initDaysGrids();
         if(p.dias_pedido && Array.isArray(p.dias_pedido)) p.dias_pedido.forEach(d => { let chk = document.getElementById(`chk-pedidos-${d}`); if(chk) chk.checked = true; });
         if(p.dias_reparto && Array.isArray(p.dias_reparto)) p.dias_reparto.forEach(d => { let chk = document.getElementById(`chk-repartos-${d}`); if(chk) chk.checked = true; });
     }
 
-    // 🎯 MODIFICACIÓN SUPABASE: Eliminación atómica segura mediante filtro 'eq'
     async function eliminarProveedorSupabase(idProv) {
         if(!confirm(`¿Eliminar de forma permanente el distribuidor ${idProv} de la nube de Supabase?`)) return;
 
@@ -719,10 +710,9 @@
         a.click();
     }
 
-    // Inicialización de arranque unificada
     initDaysGrids();
     cargarDatosDeOficina();
-    cargarProveedoresDesdeSupabase(); // Lanzamiento inicial a la nube
+    cargarProveedoresDesdeSupabase(); 
     setInterval(cargarDatosDeOficina, 25000); 
 </script>
 </body>
