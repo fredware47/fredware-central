@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fredware Kitchen System</title>
+    <title>Fredware caducidades</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f0f4f8; margin: 0; padding: 10px; color: #333; }
         .app-container { max-width: 600px; margin: 0 auto; background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -64,7 +64,7 @@
 <body>
 
 <div class="app-container">
-    <h2>Fredware Kitchen System 🍳</h2>
+    <h2>Fredware caducidades 🍳</h2>
     
     <div id="offline-banner" class="estado-offline">⚠️ Modo offline - Los datos se guardarán localmente y se sincronizarán después.</div>
     
@@ -93,7 +93,6 @@
             
             <h3>⚙️ Selecciona el Proceso de Destino:</h3>
             <div class="opciones-grid">
-                <!-- Botón de Congelados eliminado -->
                 <button class="btn-opcion" id="opt-descongelado" onclick="procesarOpcion('descongelado')">🐟 2. Descongelado</button>
                 <button class="btn-opcion" id="opt-refrigerado" onclick="procesarOpcion('refrigerado')">❄️ 3. Refrigerado (+5d)</button>
                 <button class="btn-opcion" id="opt-otras" onclick="procesarOpcion('otras')">📦 4. Otras Caducidades</button>
@@ -126,7 +125,7 @@
         </div>
     </div>
 
-    <!-- Nueva pestaña: Visor -->
+    <!-- Pestaña Visor -->
     <div id="app3" class="app-section">
         <div class="box">
             <h3>🔍 Visor del Escáner</h3>
@@ -166,7 +165,7 @@
     let html5QrcodeScanner = null;
     let ultimoQRGenerado = '';
     let colaOffline = [];
-    let ultimoEscaneoRaw = '';      // Para el visor
+    let ultimoEscaneoRaw = '';
     let ultimoEscaneoParseado = { nombre: '', lote: '', fecha: '' };
     
     // ----- Funciones auxiliares -----
@@ -325,7 +324,6 @@
         let lote = "S/L";
         let fecha = "";
         
-        // Parseo del QR (idéntico al original)
         if (cadena.toLowerCase().includes("producto:")) {
             let textoLimpio = cadena.replace(/[\r\n]+/g, " ");
             let posProd = textoLimpio.toLowerCase().indexOf("producto:");
@@ -355,12 +353,10 @@
             fecha = `${pad(hoy.getDate())}/${pad(hoy.getMonth() + 1)}/${hoy.getFullYear()}`;
         }
         
-        // Actualizar campos de la pestaña 1
         document.getElementById('p1-nombre').value = nombre.toUpperCase();
         document.getElementById('p1-lote').value = lote.toUpperCase();
         document.getElementById('p1-fecha-elab').value = fecha;
         
-        // Guardar para el visor
         ultimoEscaneoRaw = cadena;
         ultimoEscaneoParseado = { nombre: nombre.toUpperCase(), lote: lote.toUpperCase(), fecha: fecha };
         actualizarVisor(ultimoEscaneoRaw, ultimoEscaneoParseado);
@@ -368,7 +364,7 @@
         mostrarToast(`📷 Escaneado: ${nombre}`, "#3b82f6");
     }
     
-    // Inicializar escáner (una sola vez)
+    // Inicializar escáner
     if (!html5QrcodeScanner) {
         html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 }, false);
         html5QrcodeScanner.render(onScanSuccess, (err) => {});
@@ -400,11 +396,10 @@
     }
     
     function mapearConservacion(opcion) {
-        // Ya no existe congelado, todas las opciones van a NEVERA
         return 'NEVERA';
     }
     
-    // ----- Emitir elaborado (validado) -----
+    // ----- Emitir elaborado -----
     function enviarEtiquetaElaborado() {
         const nombre = document.getElementById('p1-nombre').value.trim().toUpperCase();
         const lote = document.getElementById('p1-lote').value.trim().toUpperCase();
@@ -441,7 +436,6 @@
         
         dispararServidorDual(paqueteImpresion, datosBD).catch(() => {});
         
-        // Limpiar
         document.getElementById('p1-nombre').value = '';
         document.getElementById('p1-lote').value = '';
         document.getElementById('p1-fecha-elab').value = '';
@@ -451,7 +445,7 @@
         document.getElementById('panel-dinamico').innerHTML = '';
     }
     
-    // ----- Emitir seco (sin cambios) -----
+    // ----- Emitir seco -----
     function enviarEtiquetaSeco() {
         const nombre = document.getElementById('p2-nombre').value.trim().toUpperCase();
         const lote = document.getElementById('p2-lote').value.trim().toUpperCase() || 'S/L';
@@ -496,7 +490,7 @@
         }
     });
     
-    // ----- Inicialización y eventos -----
+    // ----- Inicialización -----
     document.getElementById('p2-fecha-recep').value = new Date().toISOString().split('T')[0];
     cargarCatalogo();
     actualizarHistorialUI();
@@ -511,7 +505,6 @@
     window.addEventListener('online', () => { mostrarToast("Conexión restaurada", "#10b981"); procesarColaOffline(); actualizarEstadoServidor(); });
     window.addEventListener('offline', () => { mostrarToast("Sin conexión - modo offline activado", "#ef4444"); document.getElementById('offline-banner').style.display = 'block'; });
     
-    // Cambio de pestaña (sin interferir con la cámara)
     window.cambiarApp = function(appNum) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
@@ -524,12 +517,10 @@
         } else if (appNum === 3) {
             document.getElementById('btn-tab3').classList.add('active');
             document.getElementById('app3').classList.add('active');
-            // Al mostrar la pestaña visor, aseguramos que tenga los últimos datos
             actualizarVisor(ultimoEscaneoRaw || "(Esperando escaneo...)", ultimoEscaneoParseado);
         }
     };
     
-    // Exponer funciones globales
     window.procesarOpcion = procesarOpcion;
     window.enviarEtiquetaElaborado = enviarEtiquetaElaborado;
     window.enviarEtiquetaSeco = enviarEtiquetaSeco;
