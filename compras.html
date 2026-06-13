@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>👨‍🍳 Fredware - Panel de Compras Avanzado</title>
+    <!-- ✅ INYECCIÓN CONECTOR OFICIAL DE SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #333; padding: 10px; }
@@ -170,6 +172,11 @@
 </div>
 
 <script>
+    // 🛰️ CONEXIÓN MAESTRA A TU BASE DE DATOS CENTRAL SUPABASE
+    const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+    const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -196,10 +203,9 @@
         document.getElementById(`sec${num}`).classList.add('active');
         if(num === 1) renderCesta();
         if(num === 2) renderVisorPasivo();
-        if(num === 3) renderProveedoresConfig();
+        if(num === 3) cargarProveedoresDesdeSupabase(); // Refresco inmediato al entrar en la agenda
     }
 
-    // 🎯 FIX 3: Corregida la consola reemplazando el viejo 'print' por 'console.error' estándar
     async function sincronizarConOficina(endpoint, datos) {
         try {
             await fetch(`${API_URL}api/${endpoint}`, {
@@ -212,7 +218,6 @@
         }
     }
 
-    // 🎯 FIX 1 & 4: Escudo total de proveedores y control estricto de Array en la cesta del server
     async function cargarDatosDeOficina() {
         try {
             const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
@@ -220,8 +225,6 @@
             const db = await respuesta.json();
             
             let cestaLocal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-            
-            // ✅ FIX 4: Comprobación estricta de array en el JSON entrante
             let cestaServidor = Array.isArray(db.cesta) ? db.cesta : [];
 
             if (cestaServidor.length > 0) {
@@ -236,25 +239,16 @@
                 localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaLocal));
             }
 
-            // ✅ FIX 1: Bloqueo de sobreescritura de agenda local si la oficina viene vacía o nula
-            if (db.proveedores && Array.isArray(db.proveedores) && db.proveedores.length > 0) {
-                localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
-            } else if (db.proveedores && db.proveedores.length === 0) {
-                console.log("Servidor devolvió lista vacía de proveedores. Manteniendo local.");
-            }
-
             if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
             
             if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
             if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
-            if (document.getElementById('btn-t3').classList.contains('active')) renderProveedoresConfig();
 
         } catch (error) {
-            console.log("Offline mode activo.");
+            console.log("Offline mode activo para terminal de cocina.");
         }
     }
 
-    // 🎯 FIX 8: Mensajes de control informativos y detallados con el estado HTTP de red
     function subirCestaAlServidor() {
         const cestaLocal = localStorage.getItem('fredware_cesta_compras');
         if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
@@ -280,7 +274,6 @@
         });
     }
 
-    // 🎯 FIX 6: Autocompletado depurado sin duplicados y ordenado por relevancia alfabética
     function buscarAutocompletado(busqueda) {
         const box = document.getElementById('sugerencias-box');
         if (!busqueda.trim()) { box.style.display = 'none'; return; }
@@ -301,12 +294,10 @@
             });
         });
 
-        // Purgamos duplicados exactos en el catálogo cruzado
         coincidencias = coincidencias.filter((item, index, self) =>
             index === self.findIndex(t => t.producto === item.producto && t.proveedor === item.proveedor)
         );
 
-        // Priorizamos los que EMPIEZAN por el texto escrito (startsWith) antes de los que lo contienen
         coincidencias.sort((a, b) => {
             const aStarts = a.producto.toUpperCase().startsWith(busquedaLimpia);
             const bStarts = b.producto.toUpperCase().startsWith(busquedaLimpia);
@@ -334,7 +325,6 @@
         document.getElementById('manual-articulo').dataset.sugerido = proveedorSugerido;
     }
 
-    // 🎯 FIX 3: Bloqueo anti-duplicados en la entrada manual
     function agregarArticuloManual() {
         const inputArt = document.getElementById('manual-articulo');
         const inputCant = document.getElementById('manual-cantidad');
@@ -349,7 +339,6 @@
 
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         
-        // ✅ FIX 3: Validación estricta anti-duplicados
         const existeYa = cesta.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
         if(existeYa){
             alert(`⚠️ El artículo "${detalleFormateado}" ya se encuentra activo en tu cesta.`);
@@ -365,7 +354,6 @@
         renderCesta();
     }
 
-    // 🎯 FIX 7: ¡SE ACABARON LOS PROMPTS INFINITOS! El volcado mete "1 UNIDADES" automático y tú editas en la tabla
     function parsearTextoWhatsApp() {
         const txt = document.getElementById('raw-whatsapp').value.trim();
         if(!txt) return;
@@ -380,8 +368,6 @@
             if(desc === '') return;
             
             let descLimpia = desc.replace(/^\[.*?\]\s*/, '');
-
-            // ✅ FIX 7: Metemos formato base por defecto de forma rápida sin bloquear la tablet con ventanas emergentes
             let detalleFinal = `[1 UNIDADES] ${descLimpia}`;
             
             const existeYa = cesta.some(item => item.detalle === detalleFinal && item.estado !== "RECIBIDO");
@@ -405,7 +391,7 @@
         sincronizarConOficina('cesta', cesta);
         document.getElementById('raw-whatsapp').value = '';
         renderCesta();
-        if(itemsAnadidos > 0) alert(`✅ Volcado rápido completado. Se inyectaron ${itemsAnadidos} artículos. Modifica cantidades en la tabla si lo necesitas.`);
+        if(itemsAnadidos > 0) alert(`✅ Volcado rápido completado. Se inyectaron ${itemsAnadidos} artículos.`);
     }
 
     function renderBloquesWhatsApp(cesta, proveedores) {
@@ -441,7 +427,6 @@
         renderCesta();
     }
 
-    // 🎯 FIX 9: Añadida verificación de longitud telefónica para blindar el enlace externo wa.me
     function dispararWhatsAppProveedor(provNombre, telefono) {
         const telefonoLimpio = telefono.replace(/\D/g, '');
         if (telefonoLimpio.length < 9) {
@@ -455,7 +440,6 @@
         window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(textoMensaje)}`, '_blank');
     }
 
-    // 🎯 FIX 2: Sanitizados los IDs del DOM reemplazando barras (S/P) y espacios por guiones bajos
     function renderCesta() {
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -481,8 +465,6 @@
         Object.keys(grupos).sort().forEach(pId => {
             const listaItems = grupos[pId];
             let esColapsado = estadosColapsados[pId] === true;
-            
-            // ✅ FIX 2: Sanitización de caracteres prohibidos para IDs HTML
             const safeId = pId.replace(/[^a-zA-Z0-9]/g, '_');
 
             let bloqueHtml = document.createElement('div');
@@ -512,7 +494,6 @@
         });
     }
 
-    // 🎯 FIX 2 CONTINUACIÓN: Conmutador adaptado al ID de seguridad limpio
     function conmutarAcordeon(pId) {
         const safeId = pId.replace(/[^a-zA-Z0-9]/g, '_');
         const content = document.getElementById(`acord-content-${safeId}`);
@@ -539,13 +520,14 @@
         renderCesta();
     }
 
-    function guardarProveedor() {
+    // 🎯 MODIFICACIÓN SUPABASE: Guarda los datos de la ficha directamente en la tabla SQL de la nube
+    async function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
         const contacto = document.getElementById('prov-contacto').value.trim();
         const telefono = document.getElementById('prov-telefono').value.trim();
         const hora = document.getElementById('prov-hora').value;
         const txtCatalogo = document.getElementById('prov-catalogo').value.trim().toUpperCase();
-        if(!nombre) return;
+        if(!nombre) { alert("⚠️ El nombre del proveedor es obligatorio."); return; }
 
         let arrayCatalogo = txtCatalogo ? txtCatalogo.split(',').map(i => i.trim()).filter(i => i !== '') : [];
         let diasPedir = [];
@@ -555,43 +537,117 @@
             if(document.getElementById(`chk-repartos-${idx}`).checked) diasRepartir.push(idx);
         });
 
-        let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-        let existenteIdx = proveedores.findIndex(p => p.nombre === nombre);
-        
-        let nuevoProv = { nombre: nombre, contacto: contacto, telefono: telefono, hora_limite: hora, catalogo: arrayCatalogo, dias_pedido: diasPedir, dias_reparto: diasRepartir };
-        
-        if (existenteIdx !== -1) proveedores[existenteIdx] = nuevoProv;
-        else proveedores.push(nuevoProv);
+        const datosProv = {
+            id: nombre, // Clave primaria
+            nombre: nombre,
+            contacto: contacto,
+            telefono: telefono,
+            hora_limite: hora,
+            dias_pedido: diasPedir,
+            dias_reparto: diasRepartir
+            // Nota: El catálogo se inyectará en la tabla cruzada de habituales en el siguiente paso
+        };
 
-        localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
-        sincronizarConOficina('proveedores', proveedores);
-        
+        // Operación Upsert directa en la nube
+        const { error } = await supabase
+            .from('proveedores')
+            .upsert([datosProv], { onConflict: 'id' });
+
+        if (error) {
+            console.error("Error al inyectar datos en Supabase:", error);
+            alert("❌ Error: No se pudo salvar la ficha en la nube.");
+            return;
+        }
+
         document.getElementById('prov-nombre').value = '';
         document.getElementById('prov-contacto').value = '';
         document.getElementById('prov-telefono').value = '';
         document.getElementById('prov-catalogo').value = '';
+        
         initDaysGrids();
-        renderProveedoresConfig();
+        alert(`✅ ¡Ficha de ${nombre} guardada y blindada en Supabase!`);
+        cargarProveedoresDesdeSupabase();
         renderCesta();
     }
 
-    // 🎯 FIX 10: Verificación previa de Array para evitar congelación en fichas nuevas sin rellenar
-    function verProveedorEnFormulario(idx) {
-        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-        const p = proveedores[idx];
-        if(!p) return;
+    // 🎯 MODIFICACIÓN SUPABASE: Lee la agenda en la nube haciendo un select ordenado por nombre
+    async function cargarProveedoresDesdeSupabase() {
+        const div = document.getElementById('lista-prov-config'); 
+        if(!div) return; div.innerHTML = '<div style="font-size:12px;color:#64748b;padding:5px;">⏳ Sincronizando con Supabase...</div>';
+        
+        const { data: listaProveedores, error } = await supabase
+            .from('proveedores')
+            .select('*')
+            .order('nombre', { ascending: true });
 
+        if (error) {
+            console.error("Error de lectura remota:", error);
+            div.innerHTML = '<div style="font-size:12px;color:#ef4444;">❌ No se pudo conectar con el servidor de la nube.</div>';
+            return;
+        }
+
+        // Mantenemos espejo local para procesos de rendimiento (Autocompletado)
+        localStorage.setItem('fredware_proveedores', JSON.stringify(listaProveedores || []));
+
+        if(!listaProveedores || listaProveedores.length === 0) {
+            div.innerHTML = '<div style="font-size:12px;color:#94a3b8;text-align:center;padding:12px;">Agenda en blanco en la nube.</div>';
+            return;
+        }
+
+        div.innerHTML = '';
+        listaProveedores.forEach((p) => {
+            let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
+            let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono";
+            let contactoStr = p.contacto ? `👤 Contacto: ${p.contacto}` : "👤 Sin gestor";
+            
+            const tarjeta = document.createElement('div');
+            tarjeta.style.cssText = "background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1; cursor:pointer;";
+            tarjeta.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong>🏢 ${p.nombre}</strong>
+                    <button class="btn-del-row" onclick="event.stopPropagation(); eliminarProveedorSupabase('${p.id}')">Eliminar</button>
+                </div>
+                <div style="margin-top:4px; color:#475569;">
+                    <span>${contactoStr}</span> | <span>${tel}</span><br>
+                    <span style="color:#64748b; font-size:11px;">Reparte: ${listado} | Límite: ${p.hora_limite || '13:00'}</span>
+                </div>
+            `;
+            tarjeta.onclick = () => verProveedorEnFormularioDirecto(p);
+            div.appendChild(tarjeta);
+        });
+    }
+
+    // Auxiliar para rellenar las casillas al pinchar la tarjeta
+    function verProveedorEnFormularioDirecto(p) {
         document.getElementById('prov-nombre').value = p.nombre || '';
         document.getElementById('prov-contacto').value = p.contacto || '';
         document.getElementById('prov-telefono').value = p.telefono || '';
         document.getElementById('prov-hora').value = p.hora_limite || '13:00';
-        
-        let catalogoTexto = Array.isArray(p.catalogo) ? p.catalogo.join(', ') : (p.catalogo || '');
-        document.getElementById('prov-catalogo').value = catalogoTexto;
+        document.getElementById('prov-catalogo').value = ''; // Queda listo para la tabla relacional de habituales
 
         initDaysGrids();
         if(p.dias_pedido && Array.isArray(p.dias_pedido)) p.dias_pedido.forEach(d => { let chk = document.getElementById(`chk-pedidos-${d}`); if(chk) chk.checked = true; });
         if(p.dias_reparto && Array.isArray(p.dias_reparto)) p.dias_reparto.forEach(d => { let chk = document.getElementById(`chk-repartos-${d}`); if(chk) chk.checked = true; });
+    }
+
+    // 🎯 MODIFICACIÓN SUPABASE: Eliminación atómica segura mediante filtro 'eq'
+    async function eliminarProveedorSupabase(idProv) {
+        if(!confirm(`¿Eliminar de forma permanente el distribuidor ${idProv} de la nube de Supabase?`)) return;
+
+        const { error } = await supabase
+            .from('proveedores')
+            .delete()
+            .eq('id', idProv);
+
+        if (error) {
+            console.error("Error al borrar en la nube:", error);
+            alert("❌ Operación denegada por el servidor.");
+            return;
+        }
+
+        alert("🗑️ Distribuidor eliminado de la base de datos.");
+        cargarProveedoresDesdeSupabase();
+        renderCesta();
     }
 
     document.addEventListener('click', (e) => {
@@ -602,48 +658,11 @@
         }
     });
 
-    function renderProveedoresConfig() {
-        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-        const div = document.getElementById('lista-prov-config'); 
-        if(!div) return; div.innerHTML = '';
-        
-        proveedores.forEach((p, idx) => {
-            let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
-            let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono";
-            let contactoStr = p.contacto ? `👤 Contacto: ${p.contacto}` : "👤 Sin gestor";
-            
-            div.innerHTML += `
-                <div style="background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1; cursor:pointer;" onclick="verProveedorEnFormulario(${idx})">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <strong>🏢 ${p.nombre}</strong>
-                        <button class="btn-del-row" onclick="event.stopPropagation(); eliminarProveedor(${idx})">Eliminar</button>
-                    </div>
-                    <div style="margin-top:4px; color:#475569;">
-                        <span>${contactoStr}</span> | <span>${tel}</span><br>
-                        <span style="color:#64748b; font-size:11px;">Reparte: ${listado} | Insumos: ${p.catalogo ? p.catalogo.length : 0}</span>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    function eliminarProveedor(idx) {
-        if(!confirm("¿Eliminar distribuidor?")) return;
-        let proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-        proveedores.splice(idx, 1);
-        localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
-        sincronizarConOficina('proveedores', proveedores);
-        renderProveedoresConfig();
-        renderCesta();
-    }
-
-    // 🎯 FIX 4: Conexión del visor teórico de reparto diario
     function renderVisorPasivo() { 
         renderFaltasCocina(); 
         renderRepartosHoy(); 
     }
     
-    // 🎯 FIX 4 CONTINUACIÓN: Función encargada de renderizar la distribución del calendario
     function renderRepartosHoy() {
         const hoy = new Date().getDay();
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -688,7 +707,6 @@
         renderVisorPasivo(); renderCesta();
     }
 
-    // 🎯 MEJORA EXTRA: Nombres de backup fechados dinámicamente con año y hora actual
     function exportarPedidosJson() {
         const ahora = new Date();
         const pad = (n) => n.toString().padStart(2, '0');
@@ -701,8 +719,10 @@
         a.click();
     }
 
+    // Inicialización de arranque unificada
     initDaysGrids();
     cargarDatosDeOficina();
+    cargarProveedoresDesdeSupabase(); // Lanzamiento inicial a la nube
     setInterval(cargarDatosDeOficina, 25000); 
 </script>
 </body>
