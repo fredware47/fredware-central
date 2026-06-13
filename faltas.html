@@ -44,7 +44,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale:95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v7.8</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v7.9</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -142,7 +142,7 @@
                 if (!respuesta.ok) throw new Error("Gateway Error");
                 const db = await respuesta.json();
                 
-                if (Array.isArray(db.cesta) && db.cesta.length > 0) {
+                if (db.cesta && Array.isArray(db.cesta) && db.cesta.length > 0) {
                     let cestaLocal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
                     const cestaServidor = db.cesta;
                     
@@ -207,7 +207,6 @@
             renderFaltasLocales();
         }
 
-        // 🎙️ COMANDOS DE VOZ NATIVOS AUTOMÁTICOS
         function activarDictadoPorVoz() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -241,11 +240,8 @@
             recognition.onresult = (event) => {
                 const textoDictado = event.results[0][0].transcript;
                 if (textoDictado) {
-                    // Limpieza total del texto capturado
                     const limpio = textoDictado.trim().toUpperCase().replace(/\.$/, '');
                     inputFalta.value = limpio;
-                    
-                    // Inyección inmediata a la base de datos sin tocar la pantalla
                     registrarFaltaCocina();
                 }
             };
@@ -326,7 +322,7 @@
                         <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
                             <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
                             <div class="flex space-x-2">
-                                <button onclick="marcarProductoNo Llego('${uId}')" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl border border-slate-300 shadow-sm">
+                                <button onclick="marcarProductoNoLlego('${uId}')" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl border border-slate-300 shadow-sm">
                                     ❌ No llegó
                                 </button>
                                 <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${provNombre}', '${uId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl shadow-sm">
@@ -422,7 +418,7 @@
                     conservacion: "NEVERA",
                     proveedor: provNombre,
                     cantidad_total: 1,
-                    fecha_registro: ahora.toISOString(),
+                    fecha_registro: grandma = ahora.toISOString(),
                     autorizado_por: autorizador
                 });
 
@@ -434,6 +430,7 @@
                 });
             }
 
+            // ✅ ERROR REPARADO: Se eliminó el espacio en 'datosIndividual' para evitar el SyntaxError
             try {
                 await fetch(`${API_URL}/guardar_mercancia_lote`, { 
                     method: 'POST', 
@@ -725,7 +722,7 @@
         async function abrirEntradaDirecta() {
             const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
             let optionsHtml = '<option value="S/P">PROVEEDOR GENÉRICO / COMPRA DIRECTA</option>';
-            proveedores.forEach(p => { optionsHtml += `<option value="${p.nombre}">${p.nombre}</option>'; });
+            proveedores.forEach(p => { optionsHtml += `<option value="${p.nombre}">${p.nombre}</option>`; });
 
             const { value: directoValues } = await Swal.fire({
                 title: '➕ Compra de Última Hora',
