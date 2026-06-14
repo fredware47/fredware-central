@@ -43,8 +43,13 @@
 
         .item-list { width: 100%; border-collapse: collapse; margin-top: 0px; }
         .item-list th { background: #e2e8f0; text-align: left; padding: 8px 6px; font-size: 11px; color: #475569; }
-        .item-list td { padding: 8px 6px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
+        .item-list td { padding: 8px 6px; font-size: 13px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
         .btn-del-row { background: #fee2e2; color: #ef4444; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
+
+        /* Estilos específicos para la edición en cesta */
+        .cesta-cant { width: 65px; padding: 5px; text-align: center; margin-top: 0; font-weight: bold; }
+        .cesta-uni { width: 90px; padding: 5px; margin-top: 0; font-size: 12px; }
+        .cesta-item-flex { display: flex; align-items: center; gap: 6px; }
 
         .whatsapp-provider-card { background: #e8f5e9; border: 1px solid #a5d6a7; padding: 12px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .whatsapp-provider-card strong { color: #2e7d32; font-size: 13px; }
@@ -62,7 +67,6 @@
         .accordion-icon { font-size: 12px; transition: transform 0.2s; color: #64748b; }
         .accordion-header.active .accordion-icon { transform: rotate(180deg); }
 
-        /* 🎨 CONTENEDOR PARA LAS NOTIFICACIONES TOAST (FLOTANTES) */
         #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
         .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast.show { transform: translateY(0); opacity: 1; }
@@ -70,7 +74,6 @@
         .toast-error { border-left: 4px solid #ef4444; }
         .toast-warning { border-left: 4px solid #f59e0b; }
 
-        /* 🔄 CSS SPINNER (GIRADOR DE CARGA) */
         .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -213,7 +216,6 @@
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     let proveedorSeleccionadoId = null;
 
-    // 🎨 SISTEMA NATIVO DE NOTIFICACIONES TOAST (REEMPLAZA LOS ALERT)
     function lanzarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toast-container');
         if (!container) return;
@@ -228,10 +230,8 @@
         toast.innerHTML = `<span>${icono}</span> <span>${mensaje}</span>`;
         container.appendChild(toast);
 
-        // Disparar animación
         setTimeout(() => toast.classList.add('show'), 50);
 
-        // Auto-eliminar a los 3.5 segundos
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
@@ -310,7 +310,6 @@
         }
     }
 
-    // 🔄 REFACTOREADA: Inyecta Spinner de carga y usa el sistema Toast
     function subirCestaAlServidor() {
         const cestaLocal = localStorage.getItem('fredware_cesta_compras');
         if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
@@ -406,7 +405,6 @@
 
         if(!producto) return;
         
-        // 🛡️ VALIDACIÓN DE ENTRADA: Evita cantidades absurdas o negativas
         if(cantidad <= 0) {
             lanzarToast("La cantidad debe ser mayor que 0.", "warning");
             return;
@@ -518,6 +516,27 @@
         window.open('https://wa.me/' + telefonoLimpio + '?text=' + encodeURIComponent(textoMensaje), '_blank');
     }
 
+    // --- NUEVAS FUNCIONES DE APOYO PARA PARSEAR Y MODIFICAR LA CESTA ---
+    function descomponerDetalleCesta(detalleString) {
+        const match = detalleString.match(/^\[(\d+)\s+([^\]]+)\]\s*(.*)$/);
+        if (match) {
+            return { cantidad: parseInt(match[1]), unidad: match[2], articulo: match[3] };
+        }
+        return { cantidad: 1, unidad: 'UNIDADES', articulo: detalleString };
+    }
+
+    function actualizarLineaCesta(idxReal, nuevaCantidad, nuevaUnidad, nombreArticulo) {
+        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        if (nuevaCantidad <= 0) nuevaCantidad = 1;
+        
+        cesta[idxReal].detalle = `[${nuevaCantidad} ${nuevaUnidad}] ${nombreArticulo}`;
+        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
+        sincronizarConOficina('cesta', cesta);
+        // Volvemos a renderizar los bloques de WhatsApp por si cambiaron los textos de salida
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        renderBloquesWhatsApp(cesta, proveedores);
+    }
+
     function renderCesta() {
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -553,13 +572,30 @@
                 </div>
                 <div id="acord-content-${safeId}" class="accordion-content ${esColapsado ? 'collapsed' : ''}">
                     <table class="item-list">
-                        <thead><tr><th>Artículo</th><th>Distribuidor</th><th>Acción</th></tr></thead>
+                        <thead><tr><th>Artículo / Cantidad</th><th>Distribuidor</th><th>Acción</th></tr></thead>
                         <tbody>
                             ${listaItems.map(pack => {
                                 let selectOptions = `<option value="S/P">Asignar...</option>`;
                                 proveedores.forEach(p => { selectOptions += `<option value="${p.nombre}" ${pack.item.proveedor_id.trim().toUpperCase() === p.nombre.trim().toUpperCase() ? 'selected' : ''}>${p.nombre}</option>`; });
+                                
+                                // Extraemos datos para montar los inputs interactivos
+                                const datosLinea = descomponerDetalleCesta(pack.item.detalle);
+                                const unidadesDisponibles = ['KG', 'L', 'CAJAS', 'BOTES', 'UNIDADES'];
+                                
+                                let selectUnidadesCesta = `<select class="select-uni cesta-uni" onchange="actualizarLineaCesta(${pack.idxReal}, document.getElementById('cesta-cant-${pack.idxReal}').value, this.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">`;
+                                unidadesDisponibles.forEach(u => {
+                                    selectUnidadesCesta += `<option value="${u}" ${datosLinea.unidad === u ? 'selected' : ''}>${u.toLowerCase()}</option>`;
+                                });
+                                selectUnidadesCesta += `</select>`;
+
                                 return `<tr>
-                                    <td><strong>${pack.item.detalle}</strong></td>
+                                    <td>
+                                        <div class="cesta-item-flex">
+                                            <input type="number" id="cesta-cant-${pack.idxReal}" class="input-cant cesta-cant" value="${datosLinea.cantidad}" min="1" onchange="actualizarLineaCesta(${pack.idxReal}, this.value, this.nextElementSibling.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">
+                                            ${selectUnidadesCesta}
+                                            <span style="margin-left: 5px;"><strong>${datosLinea.articulo}</strong></span>
+                                        </div>
+                                    </td>
                                     <td><select onchange="cambiarProveedorItem(${pack.idxReal}, this.value)">${selectOptions}</select></td>
                                     <td><button class="btn-del-row" onclick="quitarItemCesta(${pack.idxReal})">❌</button></td>
                                 </tr>`;
@@ -719,7 +755,6 @@
         renderCesta();
     }
 
-    // --- SISTEMA PLANTILLAS RELACIONALES ---
     async function cargarPlantillaProveedor(idProv) {
         proveedorSeleccionadoId = idProv;
         const panel = document.getElementById('panel-plantilla-habituales');
@@ -909,3 +944,4 @@
 </script>
 </body>
 </html>
+
