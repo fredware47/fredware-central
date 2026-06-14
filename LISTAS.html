@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>👨‍🍳 Fredware - Hojas de Pedido Dinámicas</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        /* 🎨 NOTIFICACIONES TOAST FLOTANTES */
+        #toast-container { position: fixed; bottom: 25px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: #334155; color: white; padding: 14px 22px; border-radius: 12px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { border-left: 5px solid #10b981; }
+        .toast-warning { border-left: 5px solid #f59e0b; }
+        .toast-error { border-left: 5px solid #ef4444; }
+        
+        /* 🔄 SPINNER DE CARGA */
+        .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-12 select-none">
+
+    <header class="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🛒</span>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-slate-900">FREDWARE PEDIDOS</h1>
+                    <p class="text-xs text-blue-600 font-bold tracking-widest uppercase">Hojas de Almacén Conectadas a Supabase</p>
+                </div>
+            </div>
+            <span id="reloj-sincro" class="bg-slate-200 text-slate-700 text-xs px-2.5 py-1.5 rounded-xl border border-slate-300 font-mono font-bold">NUBE CONECTADA</span>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="md:col-span-1 space-y-4">
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">🏢 Distribuidores Activos</h2>
+                    <button onclick="cargarProveedoresDesdeSupabase()" class="text-blue-600 text-xs font-bold hover:underline">🔄 Refrescar</button>
+                </div>
+                <div id="lista-proveedores" class="space-y-1.5 max-h-[65vh] overflow-y-auto pr-1">
+                    <div class="text-xs text-slate-400 p-2">⏳ Leyendo agenda de Supabase...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="md:col-span-2 space-y-4">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <div>
+                        <h2 id="nombre-proveedor-activo" class="text-lg font-black text-slate-900">Selecciona un proveedor</h2>
+                        <p id="info-proveedor-activo" class="text-xs text-slate-400 font-medium">Lista de insumos en tiempo real</p>
+                    </div>
+                    <button onclick="enviarPedidoCentral()" id="btn-enviar-pedido" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-5 py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2 hidden">
+                        <span id="btn-text">⚡ Enviar a Compras</span>
+                    </button>
+                </div>
+
+                <div id="form-nuevo-articulo" class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex gap-2 items-center hidden">
+                    <input type="text" id="nuevo-nombre-articulo" placeholder="Añadir nuevo ingrediente a su plantilla..." class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 uppercase">
+                    <select id="nueva-unidad-articulo" class="bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm font-semibold focus:outline-none text-slate-600">
+                        <option value="UNIDADES">Ud</option>
+                        <option value="KG">Kg</option>
+                        <option value="L">Litros</option>
+                        <option value="CAJAS">Cajas</option>
+                        <option value="BOTES">Botes</option>
+                    </select>
+                    <button onclick="agregarIngredienteASupabase()" class="bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm active:scale-95 transition-all">➕ Añadir</button>
+                </div>
+
+                <div id="contenedor-ingredientes" class="divide-y divide-slate-100 max-h-[55vh] overflow-y-auto pr-1">
+                    <div class="text-center italic text-slate-400 text-sm py-12">Haz clic en un distribuidor de la izquierda para desplegar su hoja de pedido interactiva conectada a la nube.</div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="toast-container"></div>
+
+    <script>
+        // 🛰️ PUENTE CONECTADO A TU INSTANCIA DE NUBE Y TU BACKEND CENTRAL
+        const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+        const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+        
+        let proveedorActivo = null;
+        let articulosCargados = [];
+
+        function lanzarToast(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${tipo}`;
+            let icono = '✅';
+            if (tipo === 'error') icono = '❌';
+            if (tipo === 'warning') icono = '⚠️';
+            toast.innerHTML = `<span>${icono}</span> <span>${mensaje}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 50);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // 🏢 LECTURA MAESTRA DE PROVEEDORES DESDE SUPABASE
+        async function cargarProveedoresDesdeSupabase() {
+            const container = document.getElementById('lista-proveedores');
+            container.innerHTML = '<div class="text-xs text-slate-400 p-2">⏳ Sincronizando con Supabase...</div>';
+
+            const { data: proveedores, error } = await db_nube
+                .from('proveedores')
+                .select('nombre')
+                .order('nombre', { ascending: true });
+
+            if (error) {
+                console.error(error);
+                container.innerHTML = '<div class="text-xs text-red-500 p-2">❌ Error al conectar con Supabase.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            proveedores.forEach(p => {
+                container.innerHTML += `
+                    <button onclick="cargarHojaInteractiva('${p.nombre}')" id="btn-prov-${p.nombre.replace(/[^a-zA-Z0-9]/g, '_')}" class="w-full text-left px-4 py-3.5 rounded-xl font-bold text-sm transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 flex justify-between items-center">
+                        <span>🏢 ${p.nombre}</span>
+                        <span class="text-xs text-slate-400">➔</span>
+                    </button>
+                `;
+            });
+        }
+
+        // 📋 DESPLEGAR LA HOJA DE INGREDIENTES DE LA TABLA RELACIONAL DE LA NUBE
+        async function cargarHojaInteractiva(provNombre) {
+            proveedorActivo = provNombre;
+            
+            // Efecto visual de botón seleccionado
+            document.querySelectorAll('#lista-proveedores button').forEach(b => {
+                b.className = "w-full text-left px-4 py-3.5 rounded-xl font-bold text-sm transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 flex justify-between items-center";
+            });
+            const safeBtnId = `btn-prov-${provNombre.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            if(document.getElementById(safeBtnId)) {
+                document.getElementById(safeBtnId).className = "w-full text-left px-4 py-3.5 rounded-xl font-black text-sm transition-all border border-blue-300 bg-blue-50 text-blue-700 flex justify-between items-center shadow-inner";
+            }
+
+            document.getElementById('nombre-proveedor-activo').innerText = `🏢 Hoja de Pedido: ${provNombre}`;
+            document.getElementById('info-proveedor-activo').innerText = "Cargando catálogo habitual de la nube...";
+
+            const contenedor = document.getElementById('contenedor-ingredientes');
+            contenedor.innerHTML = '<div class="text-center italic text-slate-400 text-sm py-12">⏳ Descargando artículos de Supabase...</div>';
+
+            // Consultar tabla relacional filtrando por este distribuidor
+            const { data: articulos, error } = await db_nube
+                .from('articulos_habituales')
+                .select('*')
+                .eq('proveedor_id', provNombre)
+                .order('nombre_articulo', { ascending: true });
+
+            if (error) {
+                contenedor.innerHTML = '<div class="text-center text-red-500 py-12">❌ Error al leer la plantilla.</div>';
+                return;
+            }
+
+            articulosCargados = articulos || [];
+            document.getElementById('info-proveedor-activo').innerText = `${articulosCargados.length} artículos guardados en plantilla`;
+            
+            document.getElementById('btn-enviar-pedido').classList.remove('hidden');
+            document.getElementById('form-nuevo-articulo').classList.remove('hidden');
+
+            renderIngredientes();
+        }
+
+        function renderIngredientes() {
+            const container = document.getElementById('contenedor-ingredientes');
+            container.innerHTML = '';
+
+            if (articulosCargados.length === 0) {
+                container.innerHTML = '<div class="text-center italic text-slate-400 text-xs py-12">Esta plantilla está vacía en Supabase. Añade ingredientes con el cuadro de arriba.</div>';
+                return;
+            }
+
+            articulosCargados.forEach((art, index) => {
+                container.innerHTML += `
+                    <div class="flex justify-between items-center py-3.5 border-b border-slate-100 last:border-none text-slate-700">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold tracking-tight uppercase">${art.nombre_articulo}</span>
+                            <span class="text-[10px] text-slate-400 font-bold tracking-wider uppercase font-mono">Formato: ${art.unidad_defecto}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="input-cant-${index}" min="0" placeholder="0" class="w-20 text-center font-black bg-slate-50 border border-slate-300 rounded-xl py-2 px-1 focus:outline-none focus:border-blue-500 text-slate-800 text-base shadow-inner">
+                            <span class="text-xs font-bold text-slate-400 w-12 text-left">${art.unidad_defecto.substring(0,5)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // ➕ ALTA DE INGREDIENTE DIRECTA EN LA HOJA DE SUPABASE
+        async function agregarIngredienteASupabase() {
+            const input = document.getElementById('nuevo-nombre-articulo');
+            const select = document.getElementById('nueva-unidad-articulo');
+            const nombre = input.value.trim().toUpperCase();
+            const unidad = select.value;
+
+            if (!nombre) return;
+
+            if (articulosCargados.some(i => i.nombre_articulo === nombre)) {
+                lanzarToast("El ingrediente ya existe en esta hoja.", "warning");
+                input.value = '';
+                return;
+            }
+
+            // Insertamos la fila relacional directamente en Supabase conectado al proveedor activo
+            const { error } = await db_nube
+                .from('articulos_habituales')
+                .insert([{ proveedor_id: proveedorActivo, nombre_articulo: nombre, unidad_defecto: unidad }]);
+
+            if (error) {
+                lanzarToast("No se pudo salvar en Supabase.", "error");
+                return;
+            }
+
+            input.value = '';
+            lanzarToast(`Guardado en nube: ${nombre}`);
+            
+            // Forzar recarga pasiva de la hoja
+            cargarHojaInteractiva(proveedorActivo);
+        }
+
+        // ⚡ PAQUETIZAR CANTIDADES Y MANDAR POR NGROK AL PC DE LA OFICINA
+        function enviarPedidoCentral() {
+            let lineasInyectar = [];
+
+            articulosCargados.forEach((art, index) => {
+                const input = document.getElementById(`input-cant-${index}`);
+                const cant = parseFloat(input.value) || 0;
+
+                if (cant > 0) {
+                    lineasInyectar.push({
+                        detalle: `[${cant} ${art.unidad_defecto}] ${art.nombre_articulo}`,
+                        proveedor_id: proveedorActivo,
+                        estado: "PENDIENTE",
+                        fecha_registro: new Date().toISOString()
+                    });
+                }
+            });
+
+            if (lineasInyectar.length === 0) {
+                lanzarToast("Introduce cantidad al menos en 1 artículo.", "warning");
+                return;
+            }
+
+            const btn = document.getElementById('btn-enviar-pedido');
+            const btnText = document.getElementById('btn-text');
+            if (btn && btnText) {
+                btn.disabled = true;
+                btnText.innerHTML = `<span class="spinner"></span> Transmitiendo lote...`;
+            }
+
+            // Descargar cesta local de la tablet, fusionar y mandar
+            let cestaActual = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+            
+            lineasInyectar.forEach(nuevo => {
+                if (!cestaActual.some(c => c.detalle === nuevo.detalle && c.estado !== "RECIBIDO")) {
+                    cestaActual.push(nuevo);
+                }
+            });
+
+            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaActual));
+
+            // Envío por Ngrok al backend local
+            fetch(`${API_URL}/api/cesta`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify(cestaActual)
+            })
+            .then(res => {
+                if (res.ok) {
+                    lanzarToast(`🛒 ¡Lote enviado! +${lineasInyectar.length} líneas cargadas en compras.`);
+                    articulosCargados.forEach((_, index) => { document.getElementById(`input-cant-${index}`).value = ''; });
+                } else {
+                    lanzarToast(`Fallo HTTP en central: ${res.status}`, "error");
+                }
+            })
+            .catch(err => {
+                lanzarToast("Guardado en memoria de tablet (Servidor Offline).", "warning");
+            })
+            .finally(() => {
+                if (btn && btnText) {
+                    btn.disabled = false;
+                    btnText.innerText = "⚡ Enviar a Compras";
+                }
+            });
+        }
+
+        // Carga inicial al arrancar
+        cargarProveedoresDesdeSupabase();
+    </script>
+</body>
+</html>
