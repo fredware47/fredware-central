@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚚 Fredware - Cocina Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .accordion-header { padding: 12px; font-size: 13px; font-weight: bold; border-radius: 12px; margin-top: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; }
+        .accordion-content { display: block; padding: 4px 0; }
+        .accordion-content.collapsed { display: none; }
+        /* Ajuste de diseño para el botón de voz para que no descuadre en móviles */
+        .input-wrapper { display: flex; gap: 8px; align-items: stretch; }
+        .btn-voz { width: 50px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-8">
+
+    <header class="bg-white border-b border-slate-300 py-3 px-4 shadow-sm sticky top-0 z-50">
+        <div class="max-w-2xl mx-auto flex justify-between items-center">
+            <h1 class="font-black tracking-tight text-slate-800">FREDWARE <span class="text-emerald-600 font-bold">COCINA</span></h1>
+            <span id="badge-red" class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-1 rounded-lg border border-emerald-300 font-bold">ONLINE</span>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto w-full px-4 mt-4 space-y-4">
+        
+        <!-- 📝 CONTROL DE FALTAS CON ACORDEÓN DE MEMORIA LOCAL -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">📝 Registrar Falta</h2>
+            <div class="input-wrapper">
+                <input type="text" id="insumo-falta" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-3 uppercase text-sm" placeholder="Dictar o escribir...">
+                <button onclick="activarDictadoPorVoz()" class="btn-voz bg-slate-100 border border-slate-300 rounded-xl">🎙️</button>
+                <button onclick="registrarFaltaCocina()" class="bg-sky-600 text-white font-bold px-4 rounded-xl shadow-sm">➕</button>
+            </div>
+
+            <!-- Acordeón de faltas pendientes -->
+            <div id="accordion-faltas" class="mt-4">
+                <div class="accordion-header bg-slate-50 border-slate-200" onclick="toggleAccordion('content-faltas')">
+                    <span>📋 Faltas Pendientes (Memoria Cocina)</span>
+                    <span id="counter-faltas" class="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full text-[10px]">0</span>
+                </div>
+                <div id="content-faltas" class="accordion-content collapsed pt-2 space-y-2">
+                    <div id="contenedor-faltas-list" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <h2 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3">🚛 Repartos de Hoy</h2>
+            <div id="visor-repartos-hoy" class="space-y-2"></div>
+        </div>
+    </main>
+
+    <script>
+        // --- LÓGICA DE FALTAS PERSISTENTES ---
+        function registrarFaltaCocina() {
+            const input = document.getElementById('insumo-falta');
+            const valor = input.value.trim().toUpperCase();
+            if(!valor) return;
+
+            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            if(!faltas.includes(valor)) {
+                faltas.push(valor);
+                localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+                input.value = '';
+                renderFaltasLocales();
+            }
+        }
+
+        function renderFaltasLocales() {
+            const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            const container = document.getElementById('contenedor-faltas-list');
+            document.getElementById('counter-faltas').innerText = faltas.length;
+            container.innerHTML = '';
+            
+            faltas.forEach((item, idx) => {
+                container.innerHTML += `
+                    <div class="flex justify-between items-center bg-white border border-slate-100 p-2 rounded-lg text-sm">
+                        <span class="font-medium">⚠️ ${item}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleAccordion(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('collapsed');
+        }
+
+        // --- MANTENIMIENTO DEL BOTÓN DE VOZ ---
+        function activarDictadoPorVoz() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { alert("Voz no soportada."); return; }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'es-ES';
+            recognition.onresult = (e) => {
+                document.getElementById('insumo-falta').value = e.results[0][0].transcript.toUpperCase();
+                registrarFaltaCocina();
+            };
+            recognition.start();
+        }
+        
+        // Inicialización
+        renderFaltasLocales();
+    </script>
+</body>
+</html>
