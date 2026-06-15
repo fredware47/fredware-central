@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🚚 Fredware - Terminal Unificada de Cocina</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #333; padding: 16px; }
@@ -11,7 +12,6 @@
         
         .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         h2 { font-size: 18px; margin-bottom: 16px; color: #1e293b; display: flex; align-items: center; gap: 8px; border-left: 4px solid #3b82f6; padding-left: 12px; }
-        h3 { font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 10px; }
         
         .flex { display: flex; gap: 10px; flex-wrap: wrap; }
         input { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 16px; outline: none; }
@@ -25,8 +25,6 @@
         .btn-success:hover { background: #059669; }
         .btn-danger { background: #ef4444; color: white; }
         .btn-danger:hover { background: #dc2626; }
-        .btn-warning { background: #f59e0b; color: white; }
-        .btn-warning:hover { background: #d97706; }
         
         .status { font-size: 12px; padding: 4px 12px; border-radius: 20px; display: inline-block; }
         .online { background: #10b981; color: white; }
@@ -34,7 +32,6 @@
         
         .falta-item { background: #fef3c7; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #f59e0b; }
         
-        /* Acordeón */
         .accordion-header { background: #f1f5f9; padding: 14px; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; user-select: none; transition: background 0.2s; }
         .accordion-header:hover { background: #e2e8f0; }
         .accordion-content { display: block; padding: 8px 0; }
@@ -52,30 +49,30 @@
         .text-xs { font-size: 12px; }
         .text-slate { color: #64748b; }
         .mt-4 { margin-top: 16px; }
-        .mb-2 { margin-bottom: 8px; }
         
         #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
-        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s; }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast-success { border-left: 4px solid #10b981; }
         .toast-error { border-left: 4px solid #ef4444; }
         .toast-warning { border-left: 4px solid #f59e0b; }
+        
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 <div class="container">
-    <!-- Header -->
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
                 <h2 style="border-left-color: #10b981;">🚚 FREDWARE - COCINA</h2>
-                <p class="text-xs text-slate">Recepción, control de faltas y trazabilidad</p>
+                <p class="text-xs text-slate">Recepción, control de faltas, QR y trazabilidad</p>
             </div>
             <span id="status-badge" class="status offline">🔴 OFFLINE</span>
         </div>
     </div>
 
-    <!-- Faltas -->
     <div class="card">
         <h2>📝 Registrar Falta</h2>
         <div class="flex">
@@ -85,7 +82,6 @@
         <div id="faltasList" class="mt-4"></div>
     </div>
 
-    <!-- Pendientes de Recepción (Agrupado por Proveedor) -->
     <div class="card">
         <h2>🚛 Pendientes de Recepción</h2>
         <div id="pendientesList" class="mt-4"></div>
@@ -101,6 +97,12 @@
     const API_URL = "https://untried-january-thinning.ngrok-free.dev";
     let cestaActual = [];
     let faltasActuales = [];
+
+    const CONFIG_APPCC = {
+        CONGELADOR: { min: -30, max: -12, defecto: -18, alerta: "🚨 RECHAZO CRÍTICO: ¡CONGELADO FUERA DE MARGEN! (MÁX -12°C)" },
+        NEVERA:     { min: 0,   max: 8,   defecto: 4,   alerta: "⚠️ ALERTA: REFRIGERADO ALTO. VALORAR DEVOLUCIÓN (MÁX 8°C)" },
+        SECO:       { min: 5,   max: 25,  defecto: 20,  alerta: "⚠️ ADVERTENCIA: AMBIENTE MUY ALTO (MÁX RECOMENDADO 25°C)" }
+    };
 
     // ============================================
     // UTILIDADES
@@ -197,7 +199,274 @@
     }
 
     // ============================================
-    // GESTIÓN DE FALTAS
+    // IMPRESIÓN QR (como el original)
+    // ============================================
+    async function imprimirEtiquetas(loteEtiquetas) {
+        if (!loteEtiquetas || loteEtiquetas.length === 0) return;
+        
+        try {
+            const response = await fetch(`${API_URL}/imprimir_lote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ etiquetas: loteEtiquetas })
+            });
+            if (response.ok) {
+                lanzarToast(`🖨️ Enviadas ${loteEtiquetas.length} etiquetas a la impresora`);
+            } else {
+                throw new Error("Error en impresión");
+            }
+        } catch (error) {
+            console.error("Error imprimiendo:", error);
+            lanzarToast("⚠️ Impresora no disponible, pero producto guardado", "warning");
+        }
+    }
+
+    // ============================================
+    // FLUJO DE RECEPCIÓN CON QR (como el original)
+    // ============================================
+    async function abrirFlujoRecepcion(item) {
+        const productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+        const proveedor = (item.proveedor_id || "S/P").trim().toUpperCase();
+        const itemId = item.id;
+        
+        let cantidadEsperada = 1;
+        const matchCant = item.detalle.match(/^\[(\d+)\s*\w+\]/);
+        if (matchCant) cantidadEsperada = parseInt(matchCant[1]);
+        
+        let conservacionInicial = "NEVERA";
+        if (productoLimpio.includes("CONGELADO") || productoLimpio.includes("CONGE") || productoLimpio.includes("HELADO")) {
+            conservacionInicial = "CONGELADOR";
+        } else if (productoLimpio.includes("HARINA") || productoLimpio.includes("SECO") || productoLimpio.includes("ACEITE")) {
+            conservacionInicial = "SECO";
+        }
+        
+        const { value: formValues } = await Swal.fire({
+            title: `📥 Recibir: ${productoLimpio.substring(0, 50)}`,
+            background: '#ffffff',
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#64748b',
+            showCancelButton: true,
+            confirmButtonText: 'Procesar Entrada',
+            cancelButtonText: 'Cancelar',
+            html: `
+                <div class="text-left space-y-3">
+                    <div id="swal-alerta-temp" style="display:none; background:#fee2e2; color:#dc2626; padding:10px; border-radius:8px; margin-bottom:10px; font-size:12px;"></div>
+                    
+                    <div>
+                        <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">Tipo de Conservación:</label>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" id="btn-nevera" style="flex:1; padding:10px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; cursor:pointer;">❄️ Nevera</button>
+                            <button type="button" id="btn-conge" style="flex:1; padding:10px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; cursor:pointer;">🥶 Congelador</button>
+                            <button type="button" id="btn-seco" style="flex:1; padding:10px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; cursor:pointer;">📦 Ambiente</button>
+                        </div>
+                        <input id="swal-modo" type="hidden" value="${conservacionInicial}">
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">Temperatura Real (°C):</label>
+                        <input id="swal-temp" type="number" step="0.1" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:1">
+                            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">Cantidad Real:</label>
+                            <input id="swal-cantidad" type="number" min="1" value="${cantidadEsperada}" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                        </div>
+                        <div style="flex:1">
+                            <label style="display:block; font-size:12px; font-weight:bold; margin-bottom:4px;">Nº Etiquetas (QR):</label>
+                            <input id="swal-stickers" type="number" min="0" value="1" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                        </div>
+                    </div>
+                </div>
+            `,
+            didOpen: () => {
+                const tempInput = document.getElementById('swal-temp');
+                const modoInput = document.getElementById('swal-modo');
+                const alertaDiv = document.getElementById('swal-alerta-temp');
+                
+                const setTempPorModo = (modo) => {
+                    if (modo === 'CONGELADOR') tempInput.value = CONFIG_APPCC.CONGELADOR.defecto;
+                    else if (modo === 'SECO') tempInput.value = CONFIG_APPCC.SECO.defecto;
+                    else tempInput.value = CONFIG_APPCC.NEVERA.defecto;
+                };
+                
+                const evaluarAlerta = () => {
+                    const temp = parseFloat(tempInput.value);
+                    const modo = modoInput.value;
+                    if (isNaN(temp)) return;
+                    const limites = CONFIG_APPCC[modo];
+                    if (temp > limites.max) {
+                        alertaDiv.style.display = 'block';
+                        alertaDiv.innerHTML = limites.alerta;
+                    } else {
+                        alertaDiv.style.display = 'none';
+                    }
+                };
+                
+                document.getElementById('btn-nevera').onclick = () => { modoInput.value = 'NEVERA'; setTempPorModo('NEVERA'); evaluarAlerta(); };
+                document.getElementById('btn-conge').onclick = () => { modoInput.value = 'CONGELADOR'; setTempPorModo('CONGELADOR'); evaluarAlerta(); };
+                document.getElementById('btn-seco').onclick = () => { modoInput.value = 'SECO'; setTempPorModo('SECO'); evaluarAlerta(); };
+                
+                tempInput.oninput = evaluarAlerta;
+                setTempPorModo(conservacionInicial);
+                evaluarAlerta();
+            },
+            preConfirm: () => {
+                const cantidad = parseInt(document.getElementById('swal-cantidad').value);
+                if (isNaN(cantidad) || cantidad <= 0) {
+                    Swal.showValidationMessage('⚠️ La cantidad debe ser mayor que cero');
+                    return false;
+                }
+                return {
+                    temperatura: parseFloat(document.getElementById('swal-temp').value),
+                    cantidad: cantidad,
+                    stickers: parseInt(document.getElementById('swal-stickers').value) || 0,
+                    conservacion: document.getElementById('swal-modo').value
+                };
+            }
+        });
+        
+        if (!formValues) return;
+        
+        let autorizador = "SISTEMA";
+        const limites = CONFIG_APPCC[formValues.conservacion];
+        
+        if (formValues.temperatura > limites.max) {
+            const { value: nombre } = await Swal.fire({
+                title: '🚨 FUERA DE RANGO APPCC',
+                text: `Temperatura ${formValues.temperatura}°C excede el máximo (${limites.max}°C). Introduce tu nombre para autorizar:`,
+                input: 'text',
+                inputPlaceholder: 'Ej: Carlos, Daniela...',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Firmar y Forzar',
+                cancelButtonText: 'Rechazar',
+                preConfirm: (val) => { if (!val) Swal.showValidationMessage('Nombre requerido'); return val?.trim().toUpperCase(); }
+            });
+            if (!nombre) return;
+            autorizador = nombre;
+        }
+        
+        // Marcar como recibido
+        const idxGlobal = cestaActual.findIndex(c => c.id === itemId);
+        if (idxGlobal !== -1) cestaActual[idxGlobal].estado = "RECIBIDO";
+        
+        const nuevosPendientes = cestaActual.filter(i => i.estado !== "RECIBIDO");
+        
+        // Guardar en base de datos del servidor
+        const ahora = new Date();
+        const pad = (n) => n.toString().padStart(2, '0');
+        const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
+        
+        const datosMercancia = {
+            producto: productoLimpio,
+            temperatura: formValues.temperatura,
+            conservacion: formValues.conservacion,
+            proveedor: proveedor,
+            cantidad_total: formValues.cantidad,
+            fecha_registro: ahora.toISOString(),
+            autorizado_por: autorizador
+        };
+        
+        // Generar etiquetas QR
+        let loteEtiquetas = [];
+        if (formValues.stickers > 0) {
+            for (let i = 1; i <= formValues.stickers; i++) {
+                const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
+                loteEtiquetas.push({
+                    producto: productoLimpio,
+                    unidad: formValues.conservacion === "CONGELADOR" ? `🥶 CÁMARA CONGE (${i}/${formValues.stickers})` : `${i} DE ${formValues.stickers}`,
+                    fecha: formValues.conservacion === "CONGELADOR" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
+                    texto_qr: `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}|FIRMA:${autorizador}`
+                });
+            }
+        }
+        
+        Swal.fire({ title: '📡 Procesando...', allowOutsideClick: false, showConfirmButton: false });
+        
+        try {
+            // Guardar en base de datos
+            await fetch(`${API_URL}/guardar_mercancia`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosMercancia)
+            });
+            
+            // Imprimir etiquetas
+            await imprimirEtiquetas(loteEtiquetas);
+            
+            // Sincronizar cesta
+            const exito = await sincronizarConOficina('cesta', nuevosPendientes);
+            
+            if (exito) {
+                cestaActual = nuevosPendientes;
+                localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
+                lanzarToast(`✅ Producto recibido y etiquetas enviadas a impresora`);
+            } else {
+                cestaActual = nuevosPendientes;
+                localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
+                lanzarToast(`⚠️ Producto guardado LOCALMENTE`, "warning");
+            }
+            
+            Swal.close();
+            renderizarTodo();
+        } catch (error) {
+            console.error("Error:", error);
+            Swal.close();
+            lanzarToast(`❌ Error al procesar: ${error.message}`, "error");
+        }
+    }
+    
+    // ============================================
+    // MARCAR COMO NO LLEGÓ
+    // ============================================
+    async function marcarNoLlego(item) {
+        const productoNombre = item.detalle.replace(/^\[.*?\]\s*/, '').trim();
+        const proveedor = (item.proveedor_id || "S/P").trim().toUpperCase();
+        const itemId = item.id;
+        
+        const confirmacion = await Swal.fire({
+            title: '¿Confirmar incidencia?',
+            text: `Marcar "${productoNombre}" como NO ENTREGADO. Se añadirá a la lista de faltas.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Sí, registrar',
+            cancelButtonText: 'Volver'
+        });
+        
+        if (!confirmacion.isConfirmed) return;
+        
+        const idxGlobal = cestaActual.findIndex(c => c.id === itemId);
+        if (idxGlobal === -1) return;
+        
+        cestaActual[idxGlobal].estado = "AUSENTE";
+        const nuevosPendientes = cestaActual.filter(i => i.estado !== "RECIBIDO" && i.estado !== "AUSENTE");
+        
+        const nuevaFalta = `${productoNombre} (PROVEEDOR ${proveedor} NO ENTREGÓ)`;
+        const nuevasFaltas = [...faltasActuales, nuevaFalta];
+        
+        const exitoCesta = await sincronizarConOficina('cesta', nuevosPendientes);
+        const exitoFaltas = await sincronizarConOficina('faltas', nuevasFaltas);
+        
+        if (exitoCesta && exitoFaltas) {
+            cestaActual = nuevosPendientes;
+            faltasActuales = nuevasFaltas;
+            localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
+            localStorage.setItem('fredware_faltas_backup', JSON.stringify(faltasActuales));
+            lanzarToast(`❌ Incidencia registrada: ${productoNombre}`, "error");
+        } else {
+            cestaActual = nuevosPendientes;
+            faltasActuales = nuevasFaltas;
+            localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
+            localStorage.setItem('fredware_faltas_backup', JSON.stringify(faltasActuales));
+            lanzarToast(`⚠️ Incidencia guardada LOCALMENTE`, "warning");
+        }
+        
+        renderizarTodo();
+    }
+
+    // ============================================
+    // GESTIÓN DE FALTAS SIMPLES
     // ============================================
     async function registrarFalta() {
         const input = document.getElementById('faltaInput');
@@ -250,71 +519,7 @@
     }
 
     // ============================================
-    // GESTIÓN DE PRODUCTOS
-    // ============================================
-    async function marcarNoLlego(itemId, productoNombre, proveedor) {
-        const confirmacion = confirm(`¿Marcar "${productoNombre}" como NO ENTREGADO?\nSe añadirá automáticamente a la lista de faltas.`);
-        if (!confirmacion) return;
-        
-        const idxGlobal = cestaActual.findIndex(c => c.id === itemId);
-        if (idxGlobal === -1) return;
-        
-        cestaActual[idxGlobal].estado = "AUSENTE";
-        const nuevosPendientes = cestaActual.filter(i => i.estado !== "RECIBIDO" && i.estado !== "AUSENTE");
-        
-        const nuevaFalta = `${productoNombre} (PROVEEDOR ${proveedor} NO ENTREGÓ)`;
-        const nuevasFaltas = [...faltasActuales, nuevaFalta];
-        
-        const exitoCesta = await sincronizarConOficina('cesta', nuevosPendientes);
-        const exitoFaltas = await sincronizarConOficina('faltas', nuevasFaltas);
-        
-        if (exitoCesta && exitoFaltas) {
-            cestaActual = nuevosPendientes;
-            faltasActuales = nuevasFaltas;
-            localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
-            localStorage.setItem('fredware_faltas_backup', JSON.stringify(faltasActuales));
-            lanzarToast(`❌ Incidencia registrada: ${productoNombre}`, "error");
-        } else {
-            cestaActual = nuevosPendientes;
-            faltasActuales = nuevasFaltas;
-            localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
-            localStorage.setItem('fredware_faltas_backup', JSON.stringify(faltasActuales));
-            lanzarToast(`⚠️ Incidencia guardada LOCALMENTE`, "warning");
-        }
-        
-        renderizarTodo();
-    }
-
-    async function recibirProducto(itemId) {
-        const idxGlobal = cestaActual.findIndex(c => c.id === itemId);
-        if (idxGlobal === -1) return;
-        
-        const item = cestaActual[idxGlobal];
-        const productoNombre = item.detalle.replace(/^\[.*?\]\s*/, '').trim();
-        
-        const confirmacion = confirm(`¿Confirmar recepción de "${productoNombre}"?`);
-        if (!confirmacion) return;
-        
-        cestaActual[idxGlobal].estado = "RECIBIDO";
-        const nuevosPendientes = cestaActual.filter(i => i.estado !== "RECIBIDO");
-        
-        const exito = await sincronizarConOficina('cesta', nuevosPendientes);
-        
-        if (exito) {
-            cestaActual = nuevosPendientes;
-            localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
-            lanzarToast(`✅ Producto recibido: ${productoNombre}`);
-        } else {
-            cestaActual = nuevosPendientes;
-            localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
-            lanzarToast(`✅ Producto recibido LOCALMENTE`, "warning");
-        }
-        
-        renderizarPendientes();
-    }
-
-    // ============================================
-    // RENDERIZADO CON AGRUPACIÓN POR PROVEEDOR
+    // RENDERIZADO
     // ============================================
     function renderizarTodo() {
         renderizarFaltas();
@@ -349,7 +554,6 @@
             return;
         }
         
-        // Agrupar por proveedor
         const grupos = {};
         pendientes.forEach(item => {
             const proveedor = (item.proveedor_id || "S/P").trim().toUpperCase();
@@ -366,14 +570,13 @@
             const safeId = proveedor.replace(/[^a-zA-Z0-9]/g, '_');
             
             html += `
-                <div class="accordion-header ${esColapsado ? '' : 'active'}" onclick="toggleAcordeon('${escapeHtml(proveedor)}')">
+                <div class="accordion-header ${esColapsado ? '' : 'active'}" onclick="window.toggleAcordeon('${escapeHtml(proveedor)}')">
                     <span>🏢 <strong>${escapeHtml(proveedor)}</strong> <span style="font-size: 12px; color: #64748b;">(${items.length} productos)</span></span>
                     <span class="accordion-icon">▼</span>
                 </div>
                 <div id="acordeon-${safeId}" class="accordion-content ${esColapsado ? 'collapsed' : ''}">
                     ${items.map(item => {
                         const productoNombre = item.detalle || item;
-                        const itemId = item.id || `temp_${Math.random()}`;
                         return `
                             <div class="producto-item">
                                 <div>
@@ -381,8 +584,8 @@
                                     <div class="producto-proveedor">Proveedor: ${escapeHtml(item.proveedor_id || "S/P")}</div>
                                 </div>
                                 <div class="botones">
-                                    <button onclick="window.marcarNoLlego('${itemId}', '${escapeHtml(productoNombre)}', '${escapeHtml(proveedor)}')" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px;">❌ No llegó</button>
-                                    <button onclick="window.recibirProducto('${itemId}')" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px;">📥 Recibir</button>
+                                    <button onclick='window.marcarNoLlego(${JSON.stringify(item)})' style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px;">❌ No llegó</button>
+                                    <button onclick='window.abrirFlujoRecepcion(${JSON.stringify(item)})' style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px;">📥 Recibir con QR</button>
                                 </div>
                             </div>
                         `;
@@ -427,31 +630,20 @@
     // ============================================
     window.eliminarFalta = eliminarFalta;
     window.marcarNoLlego = marcarNoLlego;
-    window.recibirProducto = recibirProducto;
+    window.abrirFlujoRecepcion = abrirFlujoRecepcion;
     window.toggleAcordeon = toggleAcordeon;
 
     // ============================================
     // INICIALIZACIÓN
     // ============================================
     document.addEventListener('DOMContentLoaded', () => {
-        // Botón añadir falta
         const addBtn = document.getElementById('addFaltaBtn');
         const faltaInput = document.getElementById('faltaInput');
         
-        if (addBtn) {
-            addBtn.addEventListener('click', registrarFalta);
-        }
+        if (addBtn) addBtn.addEventListener('click', registrarFalta);
+        if (faltaInput) faltaInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') registrarFalta(); });
         
-        if (faltaInput) {
-            faltaInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') registrarFalta();
-            });
-        }
-        
-        // Cargar datos
         cargarDatosDeOficina();
-        
-        // Auto-refrescar cada 15 segundos
         setInterval(() => cargarDatosDeOficina(), 15000);
     });
 </script>
