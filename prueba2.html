@@ -2,633 +2,425 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🚚 Fredware - Terminal Unificada de Cocina</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚚 Fredware - Terminal Cocina</title>
     <style>
-        .accordion-header { padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s, transform 0.1s; }
-        .accordion-header:active { transform: scale(0.99); }
-        .accordion-content { display: block; padding: 4px 0; }
-        .accordion-content.collapsed { display: none; }
-        .accordion-icon { font-size: 12px; transition: transform 0.2s; color: inherit; }
-        .accordion-header.active .accordion-icon { transform: rotate(180deg); }
-
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
-        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast-success { border-left: 4px solid #10b981; }
-        .toast-error { border-left: 4px solid #ef4444; }
-        .toast-warning { border-left: 4px solid #f59e0b; }
-
-        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .btn-recibir-todo { background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; margin-left: 8px; }
-        .btn-recibir-todo:hover { background: #059669; }
-        
-        .test-connection-btn { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 8px; }
-        .test-connection-btn:hover { background: #2563eb; }
-        
-        .connection-status { font-size: 11px; padding: 4px 8px; border-radius: 6px; margin-left: 8px; }
-        .status-online { background: #10b981; color: white; }
-        .status-offline { background: #ef4444; color: white; }
-        .status-checking { background: #f59e0b; color: white; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; padding: 16px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { font-size: 18px; margin-bottom: 12px; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+        .flex { display: flex; gap: 10px; flex-wrap: wrap; }
+        input { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 16px; outline: none; }
+        input:focus { border-color: #3b82f6; }
+        button { padding: 12px 20px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        button:active { transform: scale(0.98); }
+        .btn-primary { background: #1e293b; color: white; }
+        .btn-primary:hover { background: #0f172a; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-secondary { background: #64748b; color: white; }
+        .falta-item { background: #fef3c7; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #f59e0b; }
+        .pendiente-item { background: #f8fafc; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; border-left: 4px solid #3b82f6; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .status { font-size: 12px; padding: 4px 12px; border-radius: 20px; display: inline-block; }
+        .online { background: #10b981; color: white; }
+        .offline { background: #ef4444; color: white; }
+        .text-center { text-align: center; }
+        .text-sm { font-size: 14px; }
+        .text-xs { font-size: 12px; }
+        .text-slate { color: #64748b; }
+        .mt-4 { margin-top: 16px; }
+        .mb-2 { margin-bottom: 8px; }
+        .url-box { background: #f1f5f9; padding: 12px; border-radius: 12px; margin-top: 12px; }
+        .url-row { display: flex; gap: 8px; margin-top: 8px; }
+        .url-row input { flex: 1; font-family: monospace; font-size: 12px; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
-
-    <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-2xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <span class="text-3xl">🚚</span>
-                <div>
-                    <h1 class="text-lg font-black tracking-tight text-slate-900">FREDWARE CENTRAL</h1>
-                    <p class="text-xs text-emerald-600 font-bold tracking-widest uppercase">Cocina, Recepción & Congelación</p>
-                </div>
-            </div>
-            <div class="flex flex-col items-end space-y-1">
-                <div class="flex items-center space-x-2">
-                    <span id="badge-red" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold">🟢 ONLINE</span>
-                    <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale:95">
-                        ➕ ENTRADA DIRECTA
-                    </button>
-                    <button onclick="testServerConnection()" class="test-connection-btn">
-                        🔌 Probar Conexión
-                    </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v8.0</span>
-                </div>
-                <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h2 style="margin: 0;">🚚 FREDWARE - TERMINAL COCINA</h2>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span id="status-badge" class="status offline">🔴 OFFLINE</span>
+                <button id="testBtn" class="btn-warning" style="padding: 8px 16px;">🔌 Probar Conexión</button>
             </div>
         </div>
-    </header>
-
-    <main class="max-w-2xl mx-auto w-full px-4 mt-6 space-y-6">
         
-        <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
-            <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <span>📝</span> Control de Faltas Diarias
-            </h2>
-            <div class="flex gap-2 items-center">
-                <input type="text" id="insumo-falta" placeholder="Ej: MAYONESA, CEBOLLAS..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 uppercase text-base shadow-inner">
-                
-                <button id="btn-micro-voz" onclick="activarDictadoPorVoz()" class="bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center h-[50px] w-[50px]">
-                    🎙️
-                </button>
-
-                <button onclick="registrarFaltaCocina()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
-                    ➕ Añadir
-                </button>
+        <div class="url-box">
+            <label class="text-sm" style="font-weight: bold;">🌐 URL del Servidor:</label>
+            <div class="url-row">
+                <input type="text" id="serverUrl" value="https://untried-january-thinning.ngrok-free.dev" style="font-family: monospace;">
+                <button id="saveUrlBtn" class="btn-secondary" style="padding: 8px 16px;">💾 Guardar</button>
             </div>
-            <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto"></div>
+            <p class="text-xs text-slate" style="margin-top: 8px;">⚠️ El servidor debe estar corriendo en esta dirección</p>
         </div>
+    </div>
 
-        <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
-            <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
-                <span>🚛</span> Entradas Esperadas Hoy (Check & Trazabilidad)
-            </h2>
-            <div id="visor-repartos-hoy" class="space-y-4"></div>
+    <!-- Faltas -->
+    <div class="card">
+        <h2>📝 Registrar Falta</h2>
+        <div class="flex">
+            <input type="text" id="faltaInput" placeholder="Ej: TOMATES, CEBOLLA, LECHE..." autocomplete="off">
+            <button id="addFaltaBtn" class="btn-primary">➕ Añadir</button>
         </div>
-    </main>
+        <div id="faltasList" class="mt-4"></div>
+    </div>
 
-    <div id="toast-container"></div>
+    <!-- Pendientes -->
+    <div class="card">
+        <h2>🚛 Pendientes de Recepción</h2>
+        <div id="pendientesList" class="mt-4"></div>
+    </div>
+    
+    <!-- Info -->
+    <div class="card">
+        <div class="text-center text-xs text-slate">
+            ℹ️ Los datos se guardan localmente como respaldo<br>
+            La sincronización ocurre automáticamente cada 15 segundos
+        </div>
+    </div>
+</div>
 
-    <script>
-        // CONFIGURACIÓN - Asegúrate que esta URL es correcta
-        const API_URL = "https://untried-january-thinning.ngrok-free.dev";
-        let cestaGlobal = [];
-        let ultimoEstadoConexion = false;
+<script>
+    // ============================================
+    // VARIABLES GLOBALES
+    // ============================================
+    let API_URL = localStorage.getItem('fredware_server_url') || "https://untried-january-thinning.ngrok-free.dev";
+    let cestaActual = [];
+    let faltasActuales = [];
+    let syncInterval = null;
 
-        const CONFIG_APPCC = {
-            CONGELADOR: { min: -30, max: -12, defecto: -18, alerta: "🚨 RECHAZO CRÍTICO: ¡CONGELADO FUERA DE MARGEN! (MÁX -12°C)" },
-            NEVERA:     { min: 0,   max: 8,   defecto: 4,   alerta: "⚠️ ALERTA: REFRIGERADO ALTO. VALORAR DEVOLUCIÓN (MÁX 8°C)" },
-            SECO:       { min: 5,   max: 25,  defecto: 20,  alerta: "⚠️ ADVERTENCIA: AMBIENTE MUY ALTO (MÁX RECOMENDADO 25°C)" }
-        };
-
-        function lanzarToast(mensaje, tipo = 'success') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${tipo}`;
-            let icono = '✅';
-            if (tipo === 'error') icono = '❌';
-            if (tipo === 'warning') icono = '⚠️';
-            toast.innerHTML = `<span>${icono}</span> <span>${mensaje}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 50);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
+    // ============================================
+    // FUNCIONES PRINCIPALES
+    // ============================================
+    
+    function updateStatus(online, message = "") {
+        const badge = document.getElementById('status-badge');
+        if (!badge) return;
+        
+        if (online) {
+            badge.className = "status online";
+            badge.innerHTML = "🟢 ONLINE";
+        } else {
+            badge.className = "status offline";
+            badge.innerHTML = "🔴 OFFLINE";
         }
+        if (message) console.log(`[STATUS] ${message}`);
+    }
 
-        function actualizarEstadoRed(online, mensaje = null) {
-            const badge = document.getElementById('badge-red');
-            if (!badge) return;
-            ultimoEstadoConexion = online;
-            if (online) {
-                badge.innerHTML = "🟢 ONLINE";
-                badge.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold";
-                const ahora = new Date();
-                document.getElementById('timestamp-sincro').innerText = `Última actualización: ${ahora.toTimeString().split(' ')[0]}`;
-                if (mensaje) lanzarToast(mensaje, "success");
-            } else {
-                badge.innerHTML = "📡 OFFLINE";
-                badge.className = "bg-amber-500 text-white text-xs px-2.5 py-2 rounded-xl border border-amber-600 font-black animate-pulse shadow-sm";
-                if (mensaje) lanzarToast(mensaje, "error");
-            }
-        }
-
-        // Función para probar la conexión al servidor
-        async function testServerConnection() {
-            lanzarToast("🔍 Probando conexión con el servidor...", "warning");
-            actualizarEstadoRed(false, null);
+    async function testConnection() {
+        updateStatus(false, "Probando conexión...");
+        
+        try {
+            console.log(`🔍 Probando: ${API_URL}/api/datos`);
             
-            try {
-                // Probar primero la raíz del servidor
-                const testUrl = `${API_URL}/`;
-                console.log(`Probando conexión a: ${testUrl}`);
-                const response = await fetch(testUrl, { 
-                    method: 'HEAD',
-                    mode: 'cors',
-                    headers: { 'ngrok-skip-browser-warning': 'true' }
-                });
-                
-                if (response.ok) {
-                    console.log("✅ Servidor responde correctamente");
-                    // Probar ahora el endpoint de datos
-                    const datosUrl = `${API_URL}/api/datos`;
-                    const datosResponse = await fetch(datosUrl, { 
-                        headers: { 'ngrok-skip-browser-warning': 'true' } 
-                    });
-                    
-                    if (datosResponse.ok) {
-                        const data = await datosResponse.json();
-                        console.log("✅ Endpoint /api/datos funciona:", data);
-                        actualizarEstadoRed(true);
-                        lanzarToast("✅ Conexión exitosa con el servidor", "success");
-                        await cargarDatosDeOficina(); // Recargar datos
-                    } else {
-                        throw new Error(`/api/datos respondió con ${datosResponse.status}`);
-                    }
-                } else {
-                    throw new Error(`Servidor respondió con ${response.status}`);
-                }
-            } catch (error) {
-                console.error("❌ Error de conexión:", error);
-                actualizarEstadoRed(false);
-                lanzarToast(`❌ No se pudo conectar: ${error.message}`, "error");
-                
-                // Mostrar diálogo con información detallada
-                Swal.fire({
-                    title: 'Error de Conexión',
-                    html: `
-                        <div class="text-left">
-                            <p class="font-bold text-red-600">No se puede conectar al servidor</p>
-                            <p class="text-sm mt-2">URL: <code class="bg-slate-100 p-1 rounded">${API_URL}</code></p>
-                            <p class="text-sm mt-2">Error: ${error.message}</p>
-                            <hr class="my-3">
-                            <p class="text-sm">Posibles causas:</p>
-                            <ul class="list-disc pl-5 text-sm">
-                                <li>El servidor ngrok no está corriendo</li>
-                                <li>La URL del servidor ha cambiado</li>
-                                <li>El servidor está bloqueando CORS</li>
-                                <li>Problemas de red local</li>
-                            </ul>
-                        </div>
-                    `,
-                    icon: 'error',
-                    confirmButtonColor: '#ef4444'
-                });
-            }
-        }
-
-        async function sincronizarConOficina(endpoint, datos) {
-            try {
-                const url = `${API_URL}/api/${endpoint}`;
-                console.log(`📡 Enviando a ${url}`, datos);
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'ngrok-skip-browser-warning': 'true' 
-                    },
-                    body: JSON.stringify(datos)
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                const result = await response.json();
-                console.log(`✅ Sincronizado ${endpoint}:`, result);
-                actualizarEstadoRed(true);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            const response = await fetch(`${API_URL}/api/datos`, {
+                method: 'GET',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log("✅ Conexión exitosa!", data);
+                updateStatus(true, "Conectado");
+                alert("✅ ¡Conexión exitosa con el servidor!");
+                await cargarDatos();
                 return true;
-            } catch (error) { 
-                console.error(`❌ Error en sincronización ${endpoint}:`, error); 
-                actualizarEstadoRed(false, `Error: ${error.message}`);
-                return false;
+            } else {
+                throw new Error(`HTTP ${response.status}`);
             }
+        } catch (error) {
+            console.error("❌ Error:", error);
+            if (error.name === 'AbortError') {
+                updateStatus(false, "Timeout - El servidor no responde");
+                alert("❌ Timeout: El servidor no responde.\nVerifica que esté corriendo.");
+            } else {
+                updateStatus(false, error.message);
+                alert(`❌ Error de conexión:\n${error.message}\n\nURL: ${API_URL}\n\nVerifica que el servidor esté corriendo.`);
+            }
+            return false;
         }
+    }
 
-        async function cargarDatosDeOficina() {
-            try {
-                const url = `${API_URL}/api/datos`;
-                console.log(`📡 Cargando datos desde: ${url}`);
-                const respuesta = await fetch(url, { 
-                    headers: { 'ngrok-skip-browser-warning': 'true' } 
-                });
-                if (!respuesta.ok) {
-                    throw new Error(`HTTP ${respuesta.status}: ${respuesta.statusText}`);
-                }
-                const db = await respuesta.json();
-                console.log("✅ Datos recibidos:", db);
-                
-                if (db.cesta && Array.isArray(db.cesta)) {
-                    let cestaLocal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-                    const cestaServidor = db.cesta;
-                    
-                    cestaServidor.forEach(item => {
-                        if (!item.id) item.id = "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
-                    });
+    async function cargarDatos() {
+        try {
+            console.log("📡 Cargando datos...");
+            
+            const response = await fetch(`${API_URL}/api/datos`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            });
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const data = await response.json();
+            console.log("📦 Datos recibidos:", data);
+            
+            if (data.cesta && Array.isArray(data.cesta)) {
+                cestaActual = data.cesta;
+                localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
+            } else if (localStorage.getItem('fredware_cesta_backup')) {
+                cestaActual = JSON.parse(localStorage.getItem('fredware_cesta_backup'));
+            }
+            
+            if (data.faltas && Array.isArray(data.faltas)) {
+                faltasActuales = data.faltas;
+                localStorage.setItem('fredware_faltas_backup', JSON.stringify(faltasActuales));
+            } else if (localStorage.getItem('fredware_faltas_backup')) {
+                faltasActuales = JSON.parse(localStorage.getItem('fredware_faltas_backup'));
+            }
+            
+            updateStatus(true);
+            renderizarTodo();
+            return true;
+        } catch (error) {
+            console.error("❌ Error cargando:", error);
+            updateStatus(false, error.message);
+            
+            const cestaBackup = localStorage.getItem('fredware_cesta_backup');
+            const faltasBackup = localStorage.getItem('fredware_faltas_backup');
+            if (cestaBackup) cestaActual = JSON.parse(cestaBackup);
+            if (faltasBackup) faltasActuales = JSON.parse(faltasBackup);
+            
+            renderizarTodo();
+            return false;
+        }
+    }
 
-                    const cestaCombinada = [...cestaServidor];
-                    cestaLocal.forEach(itemLocal => {
-                        if (itemLocal.estado === "RECIBIDO" || itemLocal.estado === "AUSENTE") {
-                            if (!cestaServidor.some(s => s.id === itemLocal.id || s.detalle === itemLocal.detalle)) {
-                                cestaCombinada.push(itemLocal);
-                            }
-                        }
-                    });
-
-                    cestaGlobal = cestaCombinada;
-                    localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaCombinada));
-                }
-                
-                if (db.faltas && Array.isArray(db.faltas)) {
-                    localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
-                }
-                
-                if (db.proveedores && Array.isArray(db.proveedores)) {
-                    localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
-                }
-                
-                renderFaltasLocales();
-                renderCheckMercancia(cestaGlobal);
-                actualizarEstadoRed(true, "Datos sincronizados");
+    async function enviarFalta(falta) {
+        const nuevasFaltas = [...faltasActuales, falta];
+        
+        try {
+            const response = await fetch(`${API_URL}/api/faltas`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify(nuevasFaltas)
+            });
+            
+            if (response.ok) {
+                faltasActuales = nuevasFaltas;
+                localStorage.setItem('fredware_faltas_backup', JSON.stringify(faltasActuales));
+                renderizarFaltas();
                 return true;
-            } catch (error) {
-                console.error("❌ Error cargando datos:", error);
-                actualizarEstadoRed(false, `Error: ${error.message}`);
-                
-                // Usar datos locales como respaldo
-                cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-                renderCheckMercancia(cestaGlobal);
-                renderFaltasLocales();
-                return false;
             }
+        } catch (error) {
+            console.error("Error enviando falta:", error);
+            faltasActuales = nuevasFaltas;
+            localStorage.setItem('fredware_faltas_backup', JSON.stringify(faltasActuales));
+            renderizarFaltas();
+            return false;
         }
+        return false;
+    }
 
-        function registrarFaltaCocina() {
-            const input = document.getElementById('insumo-falta');
-            const valor = input.value.trim().toUpperCase();
-            if(!valor) return;
-
-            if(valor.length < 3) {
-                Swal.fire({ icon: 'warning', title: 'Texto muy corto', text: 'Escribe al menos 3 letras para registrar la falta.', confirmButtonColor: '#0284c7' });
-                return;
+    async function eliminarFalta(index) {
+        const nuevasFaltas = faltasActuales.filter((_, i) => i !== index);
+        
+        try {
+            const response = await fetch(`${API_URL}/api/faltas`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify(nuevasFaltas)
+            });
+            
+            if (response.ok) {
+                faltasActuales = nuevasFaltas;
+                localStorage.setItem('fredware_faltas_backup', JSON.stringify(faltasActuales));
+                renderizarFaltas();
+                return true;
             }
-
-            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            if(faltas.includes(valor)) {
-                lanzarToast("Insumo ya anotado anteriormente.", "warning");
-                input.value = '';
-                return;
-            }
-
-            faltas.push(valor);
-            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
-            sincronizarConOficina('faltas', faltas);
-            input.value = '';
-            lanzarToast(`⚠️ Falta añadida: ${valor}`);
-            renderFaltasLocales();
+        } catch (error) {
+            console.error("Error eliminando falta:", error);
+            faltasActuales = nuevasFaltas;
+            localStorage.setItem('fredware_faltas_backup', JSON.stringify(faltasActuales));
+            renderizarFaltas();
+            return false;
         }
+        return false;
+    }
 
-        function activarDictadoPorVoz() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                lanzarToast("Este navegador no soporta dictado por voz.", "error");
-                return;
+    async function recibirProducto(index) {
+        const item = cestaActual[index];
+        if (!item) return;
+        
+        item.estado = "RECIBIDO";
+        const nuevosPendientes = cestaActual.filter(i => i.estado !== "RECIBIDO");
+        
+        try {
+            const response = await fetch(`${API_URL}/api/cesta`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify(nuevosPendientes)
+            });
+            
+            if (response.ok) {
+                cestaActual = nuevosPendientes;
+                localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
+                renderizarPendientes();
+                return true;
             }
+        } catch (error) {
+            console.error("Error recibiendo producto:", error);
+            cestaActual = nuevosPendientes;
+            localStorage.setItem('fredware_cesta_backup', JSON.stringify(cestaActual));
+            renderizarPendientes();
+            return false;
+        }
+        return false;
+    }
 
-            const recognition = new SpeechRecognition();
-            const btnMicro = document.getElementById('btn-micro-voz');
-            const inputFalta = document.getElementById('insumo-falta');
+    // ============================================
+    // RENDERIZADO
+    // ============================================
+    
+    function renderizarTodo() {
+        renderizarFaltas();
+        renderizarPendientes();
+    }
 
-            recognition.lang = 'es-ES';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
+    function renderizarFaltas() {
+        const container = document.getElementById('faltasList');
+        if (!container) return;
+        
+        if (!faltasActuales || faltasActuales.length === 0) {
+            container.innerHTML = '<div class="text-center text-sm" style="color: #94a3b8; padding: 20px;">✓ No hay faltas registradas</div>';
+            return;
+        }
+        
+        container.innerHTML = faltasActuales.map((falta, idx) => `
+            <div class="falta-item">
+                <span>⚠️ <strong>${escapeHtml(falta)}</strong></span>
+                <button class="delete-falta-btn" data-index="${idx}" class="btn-danger" style="padding: 6px 16px; font-size: 13px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">✗ Eliminar</button>
+            </div>
+        `).join('');
+        
+        // Asignar eventos a los botones de eliminar
+        document.querySelectorAll('.delete-falta-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(btn.dataset.index);
+                eliminarFalta(idx);
+            });
+        });
+    }
 
-            recognition.onstart = () => {
-                btnMicro.className = "bg-red-500 border border-red-700 text-xl p-3 rounded-xl shadow-sm animate-pulse flex items-center justify-center h-[50px] w-[50px]";
-                lanzarToast("🎙️ Escuchando...", "warning");
-            };
+    function renderizarPendientes() {
+        const container = document.getElementById('pendientesList');
+        if (!container) return;
+        
+        const pendientes = (cestaActual || []).filter(i => i.estado === "PENDIENTE" || i.estado === "PREPARADO");
+        
+        if (pendientes.length === 0) {
+            container.innerHTML = '<div class="text-center text-sm" style="color: #94a3b8; padding: 20px;">✓ No hay productos pendientes de recibir</div>';
+            return;
+        }
+        
+        container.innerHTML = pendientes.map((item, idx) => {
+            const idxReal = cestaActual.findIndex(i => i.id === item.id);
+            return `
+                <div class="pendiente-item">
+                    <div><strong>📦 ${escapeHtml(item.detalle || item)}</strong><div class="text-xs text-slate" style="margin-top: 4px;">Proveedor: ${escapeHtml(item.proveedor_id || "S/P")}</div></div>
+                    <button class="recibir-producto-btn" data-index="${idxReal}" style="padding: 8px 20px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">📥 Recibir</button>
+                </div>
+            `;
+        }).join('');
+        
+        // Asignar eventos a los botones de recibir
+        document.querySelectorAll('.recibir-producto-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(btn.dataset.index);
+                recibirProducto(idx);
+            });
+        });
+    }
 
-            recognition.onerror = (event) => {
-                console.error(event.error);
-                lanzarToast("Error con el micrófono.", "error");
-                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
-            };
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
-            recognition.onend = () => {
-                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
-            };
+    function saveServerUrl() {
+        const input = document.getElementById('serverUrl');
+        if (input) {
+            let newUrl = input.value.trim();
+            if (newUrl.endsWith('/')) newUrl = newUrl.slice(0, -1);
+            API_URL = newUrl;
+            localStorage.setItem('fredware_server_url', API_URL);
+            updateStatus(false, "URL guardada. Probando...");
+            setTimeout(() => testConnection(), 500);
+        }
+    }
 
-            recognition.onresult = (event) => {
-                const textoDictado = event.results[0][0].transcript;
-                if (textoDictado) {
-                    const limpio = textoDictado.trim().toUpperCase().replace(/\.$/, '');
-                    inputFalta.value = limpio;
-                    registrarFaltaCocina();
+    // ============================================
+    // INICIALIZACIÓN
+    // ============================================
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        // Cargar URL guardada
+        const urlInput = document.getElementById('serverUrl');
+        if (urlInput) urlInput.value = API_URL;
+        
+        // Botón añadir falta
+        const addBtn = document.getElementById('addFaltaBtn');
+        const faltaInput = document.getElementById('faltaInput');
+        
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                const valor = faltaInput?.value.trim().toUpperCase();
+                if (valor && valor.length >= 3) {
+                    enviarFalta(valor);
+                    if (faltaInput) faltaInput.value = '';
+                } else if (valor) {
+                    alert("El texto debe tener al menos 3 caracteres");
                 }
-            };
-
-            recognition.start();
-        }
-
-        function renderFaltasLocales() {
-            const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            const container = document.getElementById('contenedor-faltas-local');
-            if(!container) return; container.innerHTML = '';
-            if(faltas.length === 0) {
-                container.innerHTML = `<div class="text-center italic text-slate-400 text-xs py-2">No hay faltas apuntadas hoy.</div>`;
-                return;
-            }
-            faltas.forEach((item, idx) => {
-                container.innerHTML += `
-                    <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
-                        <span class="text-sm font-bold text-amber-600">⚠️ ${item}</span>
-                        <button onclick="borrarFaltaLocal(${idx})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
-                    </div>
-                `;
             });
         }
-
-        function borrarFaltaLocal(idx) {
-            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            if (idx >= 0 && idx < faltas.length) {
-                faltas.splice(idx, 1);
-                localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
-                sincronizarConOficina('faltas', faltas);
-            }
-            renderFaltasLocales();
-        }
-
-        function renderCheckMercancia(cesta) {
-            const container = document.getElementById('visor-repartos-hoy');
-            if(!container) return; container.innerHTML = '';
-
-            if(!cesta || !Array.isArray(cesta) || cesta.length === 0) {
-                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">La cesta central está vacía.</div>`;
-                return;
-            }
-
-            const estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
-            const ahora = new Date();
-
-            let gruposCesta = {};
-            cesta.forEach(item => {
-                if(item.estado === "PENDIENTE" || item.estado === "PREPARADO") {
-                    let prov = (item.proveedor_id || "S/P").trim().toUpperCase();
-                    if(!gruposCesta[prov]) gruposCesta[prov] = [];
-                    gruposCesta[prov].push(item);
-                }
-            });
-
-            let deClaves = Object.keys(gruposCesta);
-            if(deClaves.length === 0) {
-                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">No quedan artículos pendientes de verificar hoy.</div>`;
-                return;
-            }
-
-            deClaves.sort().forEach(provNombre => {
-                let articulosDelProveedor = gruposCesta[provNombre];
-                let maxDiasRetraso = 0;
-                let htmlArticulos = '';
-                
-                articulosDelProveedor.forEach(item => {
-                    let uId = item.id || "FALLBACK_" + Math.random().toString(36).substring(2, 9);
-                    if (item.fecha_registro) {
-                        let fechaRegistro = new Date(item.fecha_registro);
-                        let diferenciaTiempo = ahora - fechaRegistro;
-                        let diasDiferencia = Math.floor(diferenciaTiempo / (1000 * 60 * 60 * 24));
-                        if (diasDiferencia > maxDiasRetraso) maxDiasRetraso = diasDiferencia;
-                    }
-
-                    htmlArticulos += `
-                        <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
-                            <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
-                            <div class="flex space-x-2">
-                                <button onclick="marcarProductoNoLlego('${uId}')" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl border border-slate-300 shadow-sm">
-                                    ❌ No llegó
-                                </button>
-                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${provNombre}', '${uId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl shadow-sm">
-                                    📥 Recibir
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                let estiloCabeceraUrgencia = "bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100";
-                if (maxDiasRetraso === 1) estiloCabeceraUrgencia = "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100";
-                else if (maxDiasRetraso >= 2) estiloCabeceraUrgencia = "bg-red-50 border-red-300 text-red-900 hover:bg-red-100 animate-pulse";
-
-                let esColapsado = estadosColapsados[provNombre] === true;
-                const safeId = provNombre.replace(/[^a-z0-9]/gi, '_'); 
-
-                let cardHtml = document.createElement('div');
-                cardHtml.className = "mb-2";
-                cardHtml.innerHTML = `
-                    <div class="accordion-header ${esColapsado ? '' : 'active'} ${estiloCabeceraUrgencia}" onclick="conmutarAcordeonCocina('${provNombre.replace(/'/g, "\\'")}')">
-                        <span>🏢 DISTRIBUIDOR: <span class="font-black tracking-wide">${provNombre}</span> <span class="ml-1 text-xs opacity-70 font-normal">(${articulosDelProveedor.length} pendientes)</span></span>
-                        <div class="flex items-center space-x-2" onclick="event.stopPropagation();">
-                            <button class="btn-recibir-todo" onclick="recibirTodoElProveedor('${provNombre.replace(/'/g, "\\'")}')">⚡ RECIBIR TODO</button>
-                            <span class="accordion-icon ml-2">▼</span>
-                        </div>
-                    </div>
-                    <div id="acord-cocina-${safeId}" class="accordion-content ${esColapsado ? 'collapsed' : ''} bg-white border-x border-b border-slate-200 px-4 pb-2 rounded-b-xl shadow-sm">
-                        <div class="divide-y divide-slate-100">${htmlArticulos}</div>
-                    </div>
-                `;
-                container.appendChild(cardHtml);
+        
+        if (faltaInput) {
+            faltaInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addBtn?.click();
             });
         }
-
-        async function recibirTodoElProveedor(provNombre) {
-            let bultosPendientes = cestaGlobal.filter(item => (item.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && (item.estado === "PENDIENTE" || item.estado === "PREPARADO"));
-            if(bultosPendientes.length === 0) return;
-
-            const { value: tempMasiva } = await Swal.fire({
-                title: `⚡ Recepción Rápida: ${provNombre}`,
-                text: `Introduce la temperatura general del camión (°C) para procesar las ${bultosPendientes.length} líneas juntas:`,
-                input: 'number',
-                inputAttributes: { step: '0.1' },
-                inputValue: 4.0,
-                showCancelButton: true,
-                confirmButtonColor: '#10b981',
-                confirmButtonText: 'Validar Camión',
-                cancelButtonText: 'Cancelar'
-            });
-
-            if (tempMasiva === undefined || tempMasiva === "") return;
-            const tFloat = parseFloat(tempMasiva);
-
-            let autorizador = "SISTEMA";
-            if(tFloat > 8.0) {
-                const confCritica = await Swal.fire({
-                    title: '🚨 CRÍTICO: FUERA DE RANGO',
-                    text: `La temperatura de ${tFloat}°C rompe el APPCC. Introduce el NOMBRE de la persona que autoriza la descarga:`,
-                    input: 'text',
-                    placeholder: 'Ej: Carlos, Daniela...',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    confirmButtonText: 'Forzar entrada',
-                    cancelButtonText: 'Rechazar',
-                    preConfirm: (value) => {
-                        if (!value.trim()) { Swal.showValidationMessage('⚠️ Debes introducir un nombre'); }
-                        return value.trim().toUpperCase();
-                    }
-                });
-                if(!confCritica.isConfirmed) return;
-                autorizador = confCritica.value;
-            }
-
-            Swal.fire({ title: '📡 Procesando...', showConfirmButton: false });
-
-            const ahora = new Date();
-            const pad = (n) => n.toString().padStart(2, '0');
-            const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
-
-            for (let item of bultosPendientes) {
-                let idx = cestaGlobal.findIndex(c => c.id === item.id);
-                if (idx !== -1) cestaGlobal[idx].estado = "RECIBIDO";
-            }
-
-            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
-            await sincronizarConOficina('cesta', cestaGlobal);
-
-            lanzarToast(`✅ ${bultosPendientes.length} productos recibidos de ${provNombre}`);
-            Swal.close();
-            renderCheckMercancia(cestaGlobal);
-        }
-
-        async function marcarProductoNoLlego(uIdUnique) {
-            let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
-            if(idxGlobal === -1) return;
-            
-            const item = cestaGlobal[idxGlobal];
-            let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
-
-            const confirmacion = await Swal.fire({
-                title: '¿Confirmas incidencia?',
-                text: `Marcar "${productoLimpio}" como no entregado.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Sí, registrar',
-                cancelButtonText: 'Volver'
-            });
-
-            if (!confirmacion.isConfirmed) return;
-
-            cestaGlobal[idxGlobal].estado = "AUSENTE";
-            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
-
-            let faltasLocales = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            faltasLocales.push(`${productoLimpio} (PROVEEDOR NO ENTREGÓ)`);
-            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltasLocales));
-
-            await sincronizarConOficina('cesta', cestaGlobal);
-            await sincronizarConOficina('faltas', faltasLocales);
-
-            lanzarToast("Incidencia registrada", "error");
-            renderFaltasLocales();
-            renderCheckMercancia(cestaGlobal);
-        }
-
-        function conmutarAcordeonCocina(provNombre) {
-            const safeId = provNombre.replace(/[^a-z0-9]/gi, '_');
-            const content = document.getElementById(`acord-cocina-${safeId}`);
-            if(!content) return;
-
-            let estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
-            
-            if(content.classList.contains('collapsed')) {
-                content.classList.remove('collapsed');
-                estadosColapsados[provNombre] = false;
-                if(content.previousElementSibling) content.previousElementSibling.classList.add('active');
-            } else {
-                content.classList.add('collapsed');
-                estadosColapsados[provNombre] = true;
-                if(content.previousElementSibling) content.previousElementSibling.classList.remove('active');
-            }
-            localStorage.setItem('fredware_cocina_acordeon_estados', JSON.stringify(estadosColapsados));
-        }
-
-        function evaluarAlertaTemperatura() {
-            const temp = parseFloat(document.getElementById('swal-temp')?.value);
-            const alertaBox = document.getElementById('swal-alerta-temp');
-            const modo = document.getElementById('swal-modo-conservacion')?.value;
-            
-            if (isNaN(temp) || !alertaBox || !modo) return;
-            const limites = CONFIG_APPCC[modo];
-
-            if (temp > limites.max) {
-                alertaBox.innerHTML = limites.alerta;
-                alertaBox.className = "p-2.5 bg-red-100 text-red-700 border border-red-300 rounded-xl text-xs font-black text-center animate-pulse shadow-sm";
-                alertaBox.style.display = 'block';
-            } else {
-                alertaBox.style.display = 'none';
-            }
-        }
-
-        function cambiarTipoConservacion(tipo) {
-            const inputTemp = document.getElementById('swal-temp');
-            const inputModo = document.getElementById('swal-modo-conservacion');
-            if(inputModo) inputModo.value = tipo;
-
-            if(tipo === 'CONGELADOR') {
-                if(inputTemp) inputTemp.value = CONFIG_APPCC.CONGELADOR.defecto;
-            } else if(tipo === 'SECO') {
-                if(inputTemp) inputTemp.value = CONFIG_APPCC.SECO.defecto;
-            } else {
-                if(inputTemp) inputTemp.value = CONFIG_APPCC.NEVERA.defecto;
-            }
-            evaluarAlertaTemperatura();
-        }
-
-        async function abrirFlujoRecepcion(detalleCompleto, proveedor, uIdUnique) {
-            let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
-            let productoLimpio = detalleCompleto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
-            let cantidadEsperada = 1;
-            let matchCant = detalleCompleto.match(/^\[(\d+)\s*\w+\]/);
-            if(matchCant) { cantidadEsperada = parseInt(matchCant[1]); }
-
-            let conservacionInicial = "NEVERA";
-            if (productoLimpio.includes("CONGELADO") || productoLimpio.includes("CONGE") || productoLimpio.includes("HELADO")) {
-                conservacionInicial = "CONGELADOR";
-            } else if (productoLimpio.includes("HARINA") || productoLimpio.includes("SECO") || productoLimpio.includes("ACEITE")) {
-                conservacionInicial = "SECO";
-            }
-
-            const { value: formValues } = await Swal.fire({
-                title: `📥 Recibir: ${productoLimpio.substring(0, 50)}`,
-                confirmButtonColor: '#10b981',
-                showCancelButton: true,
-                confirmButtonText: 'Procesar',
-                cancelButtonText: 'Cancelar',
-                html: `
-                    <div class="text-left space-y-3">
-                        <div id="swal-alerta-temp" style="display:none;"></div>
-                        <div>
-                            <label class="block text-xs font-bold">Tipo de Conservación:</label>
-                           
+        
+        // Botón probar conexión
+        const testBtn = document.getElementById('testBtn');
+        if (testBtn) testBtn.addEventListener('click', testConnection);
+        
+        // Botón guardar URL
+        const saveBtn = document.getElementById('saveUrlBtn');
+        if (saveBtn) saveBtn.addEventListener('click', saveServerUrl);
+        
+        // Inicializar
+        cargarDatos();
+        
+        // Auto-refrescar cada 15 segundos
+        if (syncInterval) clearInterval(syncInterval);
+        syncInterval = setInterval(() => cargarDatos(), 15000);
+    });
+</script>
+</body>
+</html>
