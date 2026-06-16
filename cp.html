@@ -167,7 +167,7 @@
             <label for="prov-telefono">📞 Teléfono de Contacto (Prefijo sin +, Ej: 34600123456):</label>
             <input type="text" id="prov-telefono" placeholder="Ej: 34600123456">
 
-            <label for="prov-hora">Hora Límite de Pedido:</label>
+            <label wealthier for="prov-hora">Hora Límite de Pedido:</label>
             <input type="time" id="prov-hora" value="13:00">
 
             <label>Días que hay que hacer el PEDIDO:</label>
@@ -318,7 +318,6 @@
 
             if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
             
-            // Garantizar la lectura de proveedores antes del render de la cesta para evitar selectores vacíos
             if (localStorage.getItem('fredware_proveedores')) {
                 if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
             }
@@ -570,7 +569,7 @@
         if (match) {
             return { cantidad: parseInt(match[1]), unidad: match[2], articulo: match[3] };
         }
-        return { parseInt(1), unidad: 'UNIDADES', articulo: detalleString };
+        return { cantidad: 1, unidad: 'UNIDADES', articulo: detalleString };
     }
 
     function actualizarLineaCesta(idxReal, nuevaCantidad, nuevaUnidad, nombreArticulo) {
@@ -628,16 +627,18 @@
                                 const datosLinea = descomponerDetalleCesta(pack.item.detalle);
                                 const unidadesDisponibles = ['KG', 'L', 'CAJAS', 'BOTES', 'UNIDADES'];
                                 
-                                let selectUnidadesCesta = `<select class="select-uni cesta-uni" onchange="actualizarLineaCesta(${pack.idxReal}, document.getElementById('cesta-cant-${pack.idxReal}').value, this.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">`;
+                                let selectUnidadesCesta = `<select class="select-uni cesta-uni" onchange="actualizarLineaCesta(${pack.idxReal}, document.getElementById('cesta-cant-${pack.item.id ? pack.item.id : pack.idxReal}').value, this.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">`;
                                 unidadesDisponibles.forEach(u => {
                                     selectUnidadesCesta += `<option value="${u}" ${datosLinea.unidad === u ? 'selected' : ''}>${u.toLowerCase()}</option>`;
                                 });
                                 selectUnidadesCesta += `</select>`;
 
+                                const uniqueId = pack.item.id ? pack.item.id : pack.idxReal;
+
                                 return `<tr>
                                     <td>
                                         <div class="cesta-item-flex">
-                                            <input type="number" id="cesta-cant-${pack.idxReal}" class="input-cant cesta-cant" value="${datosLinea.cantidad}" min="1" onchange="actualizarLineaCesta(${pack.idxReal}, this.value, this.nextElementSibling.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">
+                                            <input type="number" id="cesta-cant-${uniqueId}" class="input-cant cesta-cant" value="${datosLinea.cantidad}" min="1" onchange="actualizarLineaCesta(${pack.idxReal}, this.value, this.nextElementSibling.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">
                                             ${selectUnidadesCesta}
                                             <span style="margin-left: 5px;"><strong>${datosLinea.articulo}</strong></span>
                                         </div>
@@ -1024,7 +1025,6 @@
         a.click();
     }
 
-    // Inicialización asíncrona controlada para evitar desincronización de selectores
     async function initApp() {
         initDaysGrids();
         await cargarProveedoresDesdeSupabase();
