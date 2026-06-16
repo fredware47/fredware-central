@@ -42,7 +42,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale:95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v8.0</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v8.1</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -141,7 +141,6 @@
                 const db = await respuesta.json();
                 
                 if (db.cesta && Array.isArray(db.cesta)) {
-                    // Filtramos directamente los elementos RECIBIDOS para sacarlos de la vista pasiva de la cocina
                     cestaGlobal = db.cesta.filter(item => item.estado !== "RECIBIDO");
                     localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
                 }
@@ -269,6 +268,11 @@
 
             const estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
             const ahora = new Date();
+            const hoyString = ahora.toISOString().split('T')[0];
+            
+            const mananaObj = new Date(ahora);
+            mananaObj.setDate(ahora.getDate() + 1);
+            const mananaString = mananaObj.toISOString().split('T')[0];
 
             let gruposCesta = {};
             cesta.forEach(item => {
@@ -299,9 +303,28 @@
                         if (diasDiferencia > maxDiasRetraso) maxDiasRetraso = diasDiferencia;
                     }
 
+                    // Marcador de fecha de entrega
+                    let etiquetaFecha = "";
+                    if (item.fecha_entrega_esperada) {
+                        if (item.fecha_entrega_esperada === hoyString) {
+                            etiquetaFecha = `<span class="ml-2 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-md font-bold">🚚 HOY</span>`;
+                        } else if (item.fecha_entrega_esperada === mananaString) {
+                            etiquetaFecha = `<span class="ml-2 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-md font-bold">⏳ PARA MAÑANA</span>`;
+                        } else {
+                            const partes = item.fecha_entrega_esperada.split('-');
+                            const fechaFormateada = partes.length === 3 ? `${partes[2]}/${partes[1]}` : item.fecha_entrega_esperada;
+                            etiquetaFecha = `<span class="ml-2 bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-md font-bold">📅 REPARTO: ${fechaFormateada}</span>`;
+                        }
+                    } else {
+                        etiquetaFecha = `<span class="ml-2 bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-md">S/F</span>`;
+                    }
+
                     htmlArticulos += `
                         <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
-                            <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
+                            <div class="flex flex-col">
+                                <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
+                                <div>${etiquetaFecha}</div>
+                            </div>
                             <div class="flex space-x-2">
                                 <button onclick="marcarProductoNoLlego('${uId}')" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl border border-slate-300 shadow-sm">
                                     ❌ No llegó
@@ -339,12 +362,9 @@
             });
         }
 
-        // FUNCIÓN AUXILIAR: LIMPIA ARTÍCULOS DE LA LISTA DE FALTAS CUANDO SE RECIBEN
         function limpiarFaltaAsociadaAlRecibir(detalleProducto) {
             let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
             let productoLimpio = detalleProducto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
-            
-            // Elimina cualquier coincidencia exacta o parcial en la lista de notas de cocina
             faltas = faltas.filter(f => f.trim().toUpperCase() !== productoLimpio);
             localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
             return faltas;
@@ -440,7 +460,6 @@
                 fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: loteCompletoEtiquetas }) }).catch(() => {});
             }
 
-            // Remoción de los elementos de la cesta (Inyectamos al servidor su eliminación de pendientes)
             localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
             await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
             await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(ultimasFaltas) });
@@ -652,11 +671,10 @@
                     huboRotura = true;
                     amountFaltante = cantidadEsperada - formValues.cantidad;
                 }
-                cestaGlobal.splice(idxGlobal, 1); // Lo removemos inmediatamente de la memoria de pendientes
+                cestaGlobal.splice(idxGlobal, 1);
                 localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
             }
 
-            // Ejecutamos limpieza de faltas en concordancia
             let faltasLocales = limpiarFaltaAsociadaAlRecibir(detalleCompleto);
             if(huboRotura) {
                 faltasLocales.push(`${productoLimpio} (FALTARON ${amountFaltante} UNID DEL PEDIDO)`);
@@ -700,9 +718,11 @@
                     }
                 }
 
-                // Inyección coordinada inmediata
                 await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
-                await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(faltasLocales) });
+
+                if(huboRotura) {
+                    await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(faltasLocales) });
+                }
 
                 lanzarToast("Albarán procesado y faltas actualizadas.");
                 Swal.close();
