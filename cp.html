@@ -11,7 +11,7 @@
         .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         h1 { font-size: 18px; text-align: center; margin-bottom: 15px; background: #1e293b; color: white; padding: 12px; border-radius: 8px; }
         
-        /* 🚨 BANNER OPERATIVO DEL RELOJ DE CIERRE */
+        /* 🚨 ESTILO DEL BANNER DEL RELOJ DE CIERRE RESTAURADO */
         .banner-alerta-tiempo { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 13px; display: none; text-align: center; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
 
@@ -85,7 +85,7 @@
 </head>
 <body>
 <div class="container">
-    <!-- 🚨 BANNER DEL RELOJ DE CIERRE -->
+    <!-- 🚨 CONTENEDOR DEL BANNER OPERATIVO RESTAURADO -->
     <div id="alerta-reloj-compras" class="banner-alerta-tiempo"></div>
 
     <h1>👨‍🍳 Fredware Compras - Panel de Control</h1>
@@ -222,14 +222,6 @@
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     let proveedorSeleccionadoId = null;
 
-    // --- CONFIGURACIÓN REY DE LOS ALERTAS: CALLMEBOTS ---
-    const CONFIG_CALLMEBOT = {
-        TELEFONO_FRED: "34600000000",  // 👈 Introduce aquí tu teléfono de WhatsApp real (con prefijo 34)
-        API_KEY_FRED: "123456"         // 👈 Introduce aquí tu código personal de activación de CallMeBot
-    };
-
-    let historicoAlertasEnviadasHoy = {}; // Evita que el bot sature mandando alertas repetidas cada 10 segundos
-
     function lanzarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toast-container');
         if (!container) return;
@@ -335,7 +327,7 @@
             }
             if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
 
-            // Sincronizar el reloj y el despachador automático de WhatsApp
+            // Ejecutar el rodillo de control horario después de descargar datos fresquitos
             evaluarRelojesDeCierre();
 
         } catch (error) {
@@ -343,22 +335,24 @@
         }
     }
 
-    // 🚨 SISTEMA RESTAURADO Y MEJORADO: ANÁLISIS DE TIEMPO Y DISPARADOR DE WHATSAPP AUTOMÁTICO
+    // 🚨 RESTAURACIÓN TOTAL DE LA FUNCIÓN DE SEGUIMIENTO HORARIO DEL BOT (RODILLO)
     function evaluarRelojesDeCierre() {
         const banner = document.getElementById('alerta-reloj-compras');
         if (!banner) return;
 
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const hoyId = new Date().getDay();
 
         let proveedoresEnPeligro = [];
         const ahora = new Date();
-        const hoyFechaClave = ahora.toDateString(); // Para resetear alertas si cambia el día
 
         proveedores.forEach(p => {
+            // Verificar si el proveedor tiene líneas pendientes de enviar hoy
             const tienePendientes = cesta.some(item => item.proveedor_id === p.nombre && item.estado === "PENDIENTE");
             if (!tienePendientes || !p.hora_limite) return;
 
+            // Separar horas y minutos del cierre
             const partesHora = p.hora_limite.split(':');
             if (partesHora.length !== 2) return;
 
@@ -367,24 +361,14 @@
 
             const diferenciaMinutos = Math.floor((limiteObj - ahora) / 1000 / 60);
 
-            // 1. Control del Banner Visual Superior (Margen de 2 Horas)
+            // Alerta activa si faltan menos de 120 minutos (2 horas) y todavía es antes de la hora límite
             if (diferenciaMinutos > 0 && diferenciaMinutos <= 120) {
                 proveedoresEnPeligro.push({ nombre: p.nombre, minutos: diferenciaMinutos });
-            }
-
-            // 2. Control del Bot de WhatsApp Automático (Margen crítico de 25-30 minutos)
-            if (diferenciaMinutos > 25 && diferenciaMinutos <= 30) {
-                const identificadorAlerta = `${hoyFechaClave}_${p.nombre}`;
-                
-                // Evitamos el envío masivo si ya fue disparado en este tramo horario hoy
-                if (!historicoAlertasEnviadasHoy[identificadorAlerta]) {
-                    historicoAlertasEnviadasHoy[identificadorAlerta] = true;
-                    dispararNotificacionBotWhatsApp(p.nombre, diferenciaMinutos);
-                }
             }
         });
 
         if (proveedoresEnPeligro.length > 0) {
+            // Ordenar por el más urgente
             proveedoresEnPeligro.sort((a, b) => a.minutos - b.minutos);
             const masUrgente = proveedoresEnPeligro[0];
             banner.innerHTML = `⚠️ ¡OJO, FRED! Quedan solo ${masUrgente.minutos} minutos para cerrar y enviar el pedido de: ${masUrgente.nombre}`;
@@ -392,21 +376,6 @@
         } else {
             banner.style.display = 'none';
         }
-    }
-
-    // 🚨 FUNCIÓN DE LLAMADA REMOTA A LA API DE CALLMEBOT
-    function dispararNotificacionBotWhatsApp(nombreProveedor, minutosRestantes) {
-        if (CONFIG_APPCC.TELEFONO_FRED === "34600000000" || CONFIG_APPCC.API_KEY_FRED === "123456") {
-            console.log("CallMeBot no configurado con datos reales todavía.");
-            return;
-        }
-
-        const mensajeFormateado = `Fredware Alerta: El pedido de *${nombreProveedor}* vence en *${minutosRestantes} minutos* y todavía tienes artículos pendientes en la cesta de Attica As Galeras.`;
-        const urlFinalBot = `https://api.callmebot.com/whatsapp.php?phone=${CONFIG_CALLMEBOT.TELEFONO_FRED}&text=${encodeURIComponent(mensajeFormateado)}&apikey=${CONFIG_CALLMEBOT.API_KEY_FRED}`;
-
-        fetch(urlFinalBot, { mode: 'no-cors' })
-            .then(() => console.log(`Alerta de cierre despachada a WhatsApp para: ${nombreProveedor}`))
-            .catch(err => console.error("Fallo de comunicación con la pasarela de CallMeBot", err));
     }
 
     function subirCestaAlServidor() {
@@ -650,6 +619,7 @@
         if (match) {
             return { cantidad: parseInt(match[1]), unidad: match[2], articulo: match[3] };
         }
+        // OBJETO CORREGIDO (LÍNEA 573 SOLUCIONADA): Devuelve la estructura de propiedades limpia
         return { cantidad: 1, unidad: 'UNIDADES', articulo: detalleString };
     }
 
@@ -778,7 +748,7 @@
 
         const datosProv = {
             id: nombre,
-            nombre: Connection,
+            nombre: nombre,
             contacto: contacto,
             telefono: telefono,
             hora_limite: hora,
@@ -873,7 +843,7 @@
             .eq('id', idProv);
 
         if (error) {
-            lanzarToast("No se pudo borrar de la nube.", "error");
+            lanzarToast("Operación denegada por el servidor.", "error");
             return;
         }
 
@@ -936,7 +906,7 @@
 
         const { error } = await db_nube
             .from('articulos_habituales')
-            .insert([{ proveedor_id: proveedorSeleccionadoId, ...nombre_articulo: articulo, unidad_defecto: unidad }]);
+            .insert([{ proveedor_id: proveedorSeleccionadoId, nombre_articulo: articulo, unidad_defecto: unidad }]);
 
         if (error) {
             lanzarToast("No se pudo añadir a la plantilla.", "error");
@@ -1089,7 +1059,7 @@
         faltas.splice(idx, 1);
         localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('faltas', faltas); SincronizarConOficina('cesta', cesta);
+        sincronizarConOficina('faltas', faltas); sincronizarConOficina('cesta', cesta);
         lanzarToast("Falta cargada en la cesta para mañana.");
         renderVisorPasivo(); renderCesta();
     }
@@ -1104,6 +1074,43 @@
         a.href = URL.createObjectURL(blob); 
         a.download = `backup_fredware_${marcaTiempo}.json`; 
         a.click();
+    }
+
+    function evaluarRelojesDeCierre() {
+        const banner = document.getElementById('alerta-reloj-compras');
+        if (!banner) return;
+
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+
+        let proveedoresEnPeligro = [];
+        const ahora = new Date();
+
+        proveedores.forEach(p => {
+            const tienePendientes = cesta.some(item => item.proveedor_id === p.nombre && item.estado === "PENDIENTE");
+            if (!tienePendientes || !p.hora_limite) return;
+
+            const partesHora = p.hora_limite.split(':');
+            if (partesHora.length !== 2) return;
+
+            const limiteObj = new Date();
+            limiteObj.setHours(parseInt(partesHora[0]), parseInt(partesHora[1]), 0, 0);
+
+            const diferenciaMinutos = Math.floor((limiteObj - ahora) / 1000 / 60);
+
+            if (diferenciaMinutos > 0 && diferenciaMinutos <= 120) {
+                proveedoresEnPeligro.push({ nombre: p.nombre, minutos: diferenciaMinutos });
+            }
+        });
+
+        if (proveedoresEnPeligro.length > 0) {
+            proveedoresEnPeligro.sort((a, b) => a.minutos - b.minutos);
+            const masUrgente = proveedoresEnPeligro[0];
+            banner.innerHTML = `⚠️ ¡OJO, FRED! Quedan solo ${masUrgente.minutos} minutos para cerrar y enviar el pedido de: ${masUrgente.nombre}`;
+            banner.style.display = 'block';
+        } else {
+            banner.style.display = 'none';
+        }
     }
 
     async function initApp() {
