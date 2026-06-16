@@ -209,7 +209,7 @@
 
 <div id="toast-container"></div>
 
-<script>
+<script {nonce}>
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
     const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -281,6 +281,13 @@
         }
     }
 
+    function calcularFechaManana() {
+        const hoy = new Date();
+        const manana = new Date(hoy);
+        manana.setDate(hoy.getDate() + 1);
+        return manana.toISOString().split('T')[0];
+    }
+
     async function cargarDatosDeOficina() {
         try {
             const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
@@ -290,7 +297,6 @@
             let cestaLocal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
             let cestaServidor = Array.isArray(db.cesta) ? db.cesta : [];
 
-            // Filtrar elementos que fueron marcados como RECIBIDOS en el servidor/cocina para eliminarlos también localmente
             cestaLocal = cestaLocal.filter(itemLocal => {
                 const itemServ = cestaServidor.find(s => s.detalle === itemLocal.detalle || (s.id && s.id === itemLocal.id));
                 return !(itemServ && itemServ.estado === "RECIBIDO");
@@ -312,7 +318,10 @@
 
             if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
             
-            if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
+            // Garantizar la lectura de proveedores antes del render de la cesta para evitar selectores vacíos
+            if (localStorage.getItem('fredware_proveedores')) {
+                if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
+            }
             if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
 
         } catch (error) {
@@ -430,12 +439,21 @@
         }
 
         let provAsignado = inputArt.dataset.sugerido || "S/P";
-        cesta.push({ id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), detalle: detalleFormateado, proveedor_id: provAsignado, estado: "PENDIENTE", fecha_registro: new Date().toISOString() });
+        const fechaEntrega = calcularFechaManana();
+
+        cesta.push({ 
+            id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), 
+            detalle: detalleFormateado, 
+            proveedor_id: provAsignado, 
+            estado: "PENDIENTE", 
+            fecha_registro: new Date().toISOString(),
+            fecha_entrega_esperada: fechaEntrega 
+        });
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         
         sincronizarConOficina('cesta', cesta);
         inputArt.value = ''; inputCant.value = '1'; delete inputArt.dataset.sugerido;
-        lanzarToast("Insumo añadido manual.");
+        lanzarToast("Insumo añadido manual para mañana.");
         renderCesta();
     }
 
@@ -447,6 +465,7 @@
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         let itemsAnadidos = 0;
+        const fechaEntrega = calcularFechaManana();
         
         lineas.forEach(linea => {
             let desc = linea.trim().toUpperCase();
@@ -468,7 +487,14 @@
                 }
             }
 
-            cesta.push({ id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), detalle: detalleFinal, proveedor_id: provSugerido, estado: "PENDIENTE", fecha_registro: new Date().toISOString() });
+            cesta.push({ 
+                id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), 
+                detalle: detalleFinal, 
+                proveedor_id: provSugerido, 
+                estado: "PENDIENTE", 
+                fecha_registro: new Date().toISOString(),
+                fecha_entrega_esperada: fechaEntrega
+            });
             itemsAnadidos++;
         });
         
@@ -492,12 +518,11 @@
             const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado === "PENDIENTE");
             if (articulos.length === 0) return;
 
-            // --- SISTEMA DE CÁLCULO DE REPARTO DIFERIDO ---
             let mensajeAlertaDia = "";
             if (datosProv.dias_reparto && Array.isArray(datosProv.dias_reparto)) {
                 if (!datosProv.dias_reparto.includes(hoy)) {
                     let proximosDias = datosProv.dias_reparto.filter(d => d > hoy);
-                    if(proximosDias.length === 0) proximosDias = datosProv.dias_reparto; // Da la vuelta a la semana
+                    if(proximosDias.length === 0) proximosDias = datosProv.dias_reparto;
                     let proximoDiaIndex = proximosDias[0];
                     mensajeAlertaDia = `<br><span class="delay-warning">⚠️ Llega el ${DIAS_SEMANA[proximoDiaIndex]}</span>`;
                 }
@@ -535,7 +560,6 @@
         const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const articulos = cesta.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && i.estado !== "RECIBIDO");
         
-        // ENCABEZADO ACTUALIZADO SEGÚN SOLICITUD
         let textoMensaje = `Buenos dias este es el pedido de hoy para Attica As Galeras y:\n\n`;
         articulos.forEach(item => { textoMensaje += `• ${item.detalle}\n`; });
         window.open('https://wa.me/' + telefonoLimpio + '?text=' + encodeURIComponent(textoMensaje), '_blank');
@@ -546,7 +570,7 @@
         if (match) {
             return { cantidad: parseInt(match[1]), unidad: match[2], articulo: match[3] };
         }
-        return { cantidad: 1, unidad: 'UNIDADES', articulo: detalleString };
+        return { parseInt(1), unidad: 'UNIDADES', articulo: detalleString };
     }
 
     function actualizarLineaCesta(idxReal, nuevaCantidad, nuevaUnidad, nombreArticulo) {
@@ -697,7 +721,7 @@
         initDaysGrids();
         document.getElementById('panel-plantilla-habituales').style.display = 'none';
         lanzarToast(`Ficha de ${nombre} blindada en la nube.`);
-        cargarProveedoresDesdeSupabase();
+        await cargarProveedoresDesdeSupabase();
         renderCesta();
     }
 
@@ -773,7 +797,7 @@
 
         document.getElementById('panel-plantilla-habituales').style.display = 'none';
         lanzarToast("Distribuidor eliminado.");
-        cargarProveedoresDesdeSupabase();
+        await cargarProveedoresDesdeSupabase();
         renderCesta();
     }
 
@@ -865,6 +889,7 @@
 
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         let contador = 0;
+        const fechaEntrega = calcularFechaManana();
 
         checkboxes.forEach(chk => {
             const producto = chk.value;
@@ -873,7 +898,14 @@
 
             const existe = cesta.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
             if(!existe) {
-                cesta.push({ id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), detalle: detalleFormateado, proveedor_id: proveedorSeleccionadoId, estado: "PENDIENTE", fecha_registro: new Date().toISOString() });
+                cesta.push({ 
+                    id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), 
+                    detalle: detalleFormateado, 
+                    proveedor_id: proveedorSeleccionadoId, 
+                    estado: "PENDIENTE", 
+                    fecha_registro: new Date().toISOString(),
+                    fecha_entrega_esperada: fechaEntrega
+                });
                 contador++;
             }
             chk.checked = false; 
@@ -942,7 +974,6 @@
         });
     }
 
-    // NUEVA FUNCIÓN SOLICITADA PARA ELIMINAR DIRECTAMENTE DESDE LA VISTA DE CONTROL
     function eliminarFaltaDirecta(idx) {
         let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
         const productoEliminado = faltas[idx];
@@ -963,12 +994,21 @@
         let cantidadIngresada = prompt(`Falta de cocina: ${desc}\n\nIntroduce cantidad y formato:`, "1 UNIDADES");
         if (cantidadIngresada === null) return;
 
-        cesta.push({ id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), detalle: `[${cantidadIngresada.toUpperCase()}] ${desc}`, proveedor_id: "S/P", estado: "PENDIENTE", fecha_registro: new Date().toISOString() });
+        const fechaEntrega = calcularFechaManana();
+
+        cesta.push({ 
+            id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), 
+            detalle: `[${cantidadIngresada.toUpperCase()}] ${desc}`, 
+            proveedor_id: "S/P", 
+            estado: "PENDIENTE", 
+            fecha_registro: new Date().toISOString(),
+            fecha_entrega_esperada: fechaEntrega
+        });
         faltas.splice(idx, 1);
         localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('faltas', faltas); sincronizarConOficina('cesta', cesta);
-        lanzarToast("Falta cargada en la cesta.");
+        lanzarToast("Falta cargada en la cesta para mañana.");
         renderVisorPasivo(); renderCesta();
     }
 
@@ -984,10 +1024,15 @@
         a.click();
     }
 
-    initDaysGrids();
-    cargarDatosDeOficina();
-    cargarProveedoresDesdeSupabase(); 
-    setInterval(cargarDatosDeOficina, 10000); // Frecuencia de refresco aumentada a 10s para agilizar oficina
+    // Inicialización asíncrona controlada para evitar desincronización de selectores
+    async function initApp() {
+        initDaysGrids();
+        await cargarProveedoresDesdeSupabase();
+        await cargarDatosDeOficina();
+    }
+
+    initApp();
+    setInterval(cargarDatosDeOficina, 10000); 
 </script>
 </body>
 </html>
