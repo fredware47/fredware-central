@@ -11,6 +11,10 @@
         .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         h1 { font-size: 18px; text-align: center; margin-bottom: 15px; background: #1e293b; color: white; padding: 12px; border-radius: 8px; }
         
+        /* 🚨 BANNER OPERATIVO DEL RELOJ DE CIERRE */
+        .banner-alerta-tiempo { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 13px; display: none; text-align: center; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+
         .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; }
         .tab-btn.active { background: #2563eb; color: white; }
@@ -47,7 +51,6 @@
         .btn-del-row { background: #fee2e2; color: #ef4444; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
         .btn-clear-row { background: #fef3c7; color: #d97706; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; margin-right: 4px; }
 
-        /* Estilos específicos para la edición en cesta */
         .cesta-cant { width: 65px; padding: 5px; text-align: center; margin-top: 0; font-weight: bold; }
         .cesta-uni { width: 90px; padding: 5px; margin-top: 0; font-size: 12px; }
         .cesta-item-flex { display: flex; align-items: center; gap: 6px; }
@@ -82,6 +85,7 @@
 </head>
 <body>
 <div class="container">
+    <!-- 🚨 BANNER DEL RELOJ DE CIERRE -->
     <div id="alerta-reloj-compras" class="banner-alerta-tiempo"></div>
 
     <h1>👨‍🍳 Fredware Compras - Panel de Control</h1>
@@ -167,7 +171,7 @@
             <label for="prov-telefono">📞 Teléfono de Contacto (Prefijo sin +, Ej: 34600123456):</label>
             <input type="text" id="prov-telefono" placeholder="Ej: 34600123456">
 
-            <label wealthier for="prov-hora">Hora Límite de Pedido:</label>
+            <label for="prov-hora">Hora Límite de Pedido:</label>
             <input type="time" id="prov-hora" value="13:00">
 
             <label>Días que hay que hacer el PEDIDO:</label>
@@ -217,6 +221,14 @@
     const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     let proveedorSeleccionadoId = null;
+
+    // --- CONFIGURACIÓN REY DE LOS ALERTAS: CALLMEBOTS ---
+    const CONFIG_CALLMEBOT = {
+        TELEFONO_FRED: "34600000000",  // 👈 Introduce aquí tu teléfono de WhatsApp real (con prefijo 34)
+        API_KEY_FRED: "123456"         // 👈 Introduce aquí tu código personal de activación de CallMeBot
+    };
+
+    let historicoAlertasEnviadasHoy = {}; // Evita que el bot sature mandando alertas repetidas cada 10 segundos
 
     function lanzarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toast-container');
@@ -323,9 +335,78 @@
             }
             if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
 
+            // Sincronizar el reloj y el despachador automático de WhatsApp
+            evaluarRelojesDeCierre();
+
         } catch (error) {
             console.log("Offline mode activo para terminal de cocina.");
         }
+    }
+
+    // 🚨 SISTEMA RESTAURADO Y MEJORADO: ANÁLISIS DE TIEMPO Y DISPARADOR DE WHATSAPP AUTOMÁTICO
+    function evaluarRelojesDeCierre() {
+        const banner = document.getElementById('alerta-reloj-compras');
+        if (!banner) return;
+
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+
+        let proveedoresEnPeligro = [];
+        const ahora = new Date();
+        const hoyFechaClave = ahora.toDateString(); // Para resetear alertas si cambia el día
+
+        proveedores.forEach(p => {
+            const tienePendientes = cesta.some(item => item.proveedor_id === p.nombre && item.estado === "PENDIENTE");
+            if (!tienePendientes || !p.hora_limite) return;
+
+            const partesHora = p.hora_limite.split(':');
+            if (partesHora.length !== 2) return;
+
+            const limiteObj = new Date();
+            limiteObj.setHours(parseInt(partesHora[0]), parseInt(partesHora[1]), 0, 0);
+
+            const diferenciaMinutos = Math.floor((limiteObj - ahora) / 1000 / 60);
+
+            // 1. Control del Banner Visual Superior (Margen de 2 Horas)
+            if (diferenciaMinutos > 0 && diferenciaMinutos <= 120) {
+                proveedoresEnPeligro.push({ nombre: p.nombre, minutos: diferenciaMinutos });
+            }
+
+            // 2. Control del Bot de WhatsApp Automático (Margen crítico de 25-30 minutos)
+            if (diferenciaMinutos > 25 && diferenciaMinutos <= 30) {
+                const identificadorAlerta = `${hoyFechaClave}_${p.nombre}`;
+                
+                // Evitamos el envío masivo si ya fue disparado en este tramo horario hoy
+                if (!historicoAlertasEnviadasHoy[identificadorAlerta]) {
+                    historicoAlertasEnviadasHoy[identificadorAlerta] = true;
+                    dispararNotificacionBotWhatsApp(p.nombre, diferenciaMinutos);
+                }
+            }
+        });
+
+        if (proveedoresEnPeligro.length > 0) {
+            proveedoresEnPeligro.sort((a, b) => a.minutos - b.minutos);
+            const masUrgente = proveedoresEnPeligro[0];
+            banner.innerHTML = `⚠️ ¡OJO, FRED! Quedan solo ${masUrgente.minutos} minutos para cerrar y enviar el pedido de: ${masUrgente.nombre}`;
+            banner.style.display = 'block';
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    // 🚨 FUNCIÓN DE LLAMADA REMOTA A LA API DE CALLMEBOT
+    function dispararNotificacionBotWhatsApp(nombreProveedor, minutosRestantes) {
+        if (CONFIG_APPCC.TELEFONO_FRED === "34600000000" || CONFIG_APPCC.API_KEY_FRED === "123456") {
+            console.log("CallMeBot no configurado con datos reales todavía.");
+            return;
+        }
+
+        const mensajeFormateado = `Fredware Alerta: El pedido de *${nombreProveedor}* vence en *${minutosRestantes} minutos* y todavía tienes artículos pendientes en la cesta de Attica As Galeras.`;
+        const urlFinalBot = `https://api.callmebot.com/whatsapp.php?phone=${CONFIG_CALLMEBOT.TELEFONO_FRED}&text=${encodeURIComponent(mensajeFormateado)}&apikey=${CONFIG_CALLMEBOT.API_KEY_FRED}`;
+
+        fetch(urlFinalBot, { mode: 'no-cors' })
+            .then(() => console.log(`Alerta de cierre despachada a WhatsApp para: ${nombreProveedor}`))
+            .catch(err => console.error("Fallo de comunicación con la pasarela de CallMeBot", err));
     }
 
     function subirCestaAlServidor() {
@@ -697,7 +778,7 @@
 
         const datosProv = {
             id: nombre,
-            nombre: nombre,
+            nombre: Connection,
             contacto: contacto,
             telefono: telefono,
             hora_limite: hora,
@@ -792,7 +873,7 @@
             .eq('id', idProv);
 
         if (error) {
-            lanzarToast("Operación denegada por el servidor.", "error");
+            lanzarToast("No se pudo borrar de la nube.", "error");
             return;
         }
 
@@ -855,7 +936,7 @@
 
         const { error } = await db_nube
             .from('articulos_habituales')
-            .insert([{ proveedor_id: proveedorSeleccionadoId, nombre_articulo: articulo, unidad_defecto: unidad }]);
+            .insert([{ proveedor_id: proveedorSeleccionadoId, ...nombre_articulo: articulo, unidad_defecto: unidad }]);
 
         if (error) {
             lanzarToast("No se pudo añadir a la plantilla.", "error");
@@ -1008,7 +1089,7 @@
         faltas.splice(idx, 1);
         localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('faltas', faltas); sincronizarConOficina('cesta', cesta);
+        sincronizarConOficina('faltas', faltas); SincronizarConOficina('cesta', cesta);
         lanzarToast("Falta cargada en la cesta para mañana.");
         renderVisorPasivo(); renderCesta();
     }
