@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
-        /* (mismo CSS que antes, no lo repito por brevedad) */
+        /* ===== ESTILOS UNIFICADOS (tomados de la versión más completa) ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #333; padding: 10px; }
         .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -182,7 +182,7 @@
     const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     let proveedorSeleccionadoId = null;
-    let alertaEnviadaHora = false; // Control para el envío único de alerta de 1 hora
+    let alertaEnviadaHora = false;
 
     // ============================================================
     //  UTILIDADES
@@ -309,6 +309,7 @@
 
     // ============================================================
     //  ALERTA DE CIERRE (BANNER + WHATSAPP 1 HORA ANTES)
+    //  El número de Fred se mantiene literal, tal como estaba en los originales
     // ============================================================
     function evaluarRelojesDeCierre() {
         const banner = document.getElementById('alerta-reloj-compras');
@@ -348,10 +349,8 @@
                     mensaje += `• ${p.nombre}: ${p.minutos} minutos restantes.\n`;
                 });
                 mensaje += `\nRevisa el panel de compras urgentemente.`;
-
-                const telefonoFred = "34604002691"; // Número de Fred
-                window.open('https://wa.me/' + telefonoFred + '?text=' + encodeURIComponent(mensaje), '_blank');
-                
+                // Número fijo de Fred (sin modificar)
+                window.open('https://wa.me/34604002691?text=' + encodeURIComponent(mensaje), '_blank');
                 alertaEnviadaHora = true;
                 lanzarToast("📲 Alerta de 1 hora enviada a Fred.");
             }
@@ -360,7 +359,7 @@
             banner.style.display = 'block';
         } else {
             banner.style.display = 'none';
-            alertaEnviadaHora = false; // Resetear cuando no hay peligro
+            alertaEnviadaHora = false;
         }
     }
 
@@ -570,16 +569,14 @@
         renderCesta();
     }
 
-    // --- NUEVA FUNCIÓN: MARCAR COMO RECIBIDO + QR ---
+    // --- MARCAR COMO RECIBIDO + QR ---
     function marcarComoRecibido(idx) {
         let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         if (idx < 0 || idx >= cesta.length) return;
 
         const item = cesta[idx];
-        // Cambiar estado a RECIBIDO
         item.estado = "RECIBIDO";
         
-        // Eliminar de faltas si existe
         let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
         const nombreArticulo = descomponerDetalleCesta(item.detalle).articulo;
         const idxFalta = faltas.findIndex(f => f.includes(nombreArticulo));
@@ -589,12 +586,10 @@
             sincronizarConOficina('faltas', faltas);
         }
 
-        // Quitar de la cesta local
         cesta.splice(idx, 1);
         localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
         sincronizarConOficina('cesta', cesta);
 
-        // Generar QR con la información del artículo recibido
         const qrData = `RECIBIDO: ${item.detalle} - ${new Date().toLocaleString()}`;
         mostrarQR(qrData);
 
@@ -603,7 +598,6 @@
     }
 
     function mostrarQR(data) {
-        // Eliminar modal anterior si existe
         const existing = document.getElementById('qr-modal');
         if (existing) existing.remove();
 
@@ -613,7 +607,6 @@
         modal.innerHTML = `<h3 style="margin-bottom:10px;">✅ Recepción confirmada</h3><div id="qr-code-container"></div><p style="margin-top:10px;font-size:12px;color:#475569;word-break:break-all;">${data}</p><button onclick="this.parentElement.remove()" style="margin-top:10px;padding:6px 12px;background:#2563eb;color:white;border:none;border-radius:6px;">Cerrar</button>`;
         document.body.appendChild(modal);
 
-        // Generar QR
         new QRCode(document.getElementById("qr-code-container"), {
             text: data,
             width: 150,
@@ -1146,7 +1139,6 @@
         initDaysGrids();
         await cargarProveedoresDesdeSupabase();
         await cargarDatosDeOficina();
-        // Evaluar cierre cada 60 segundos (además de la llamada periódica)
         setInterval(evaluarRelojesDeCierre, 60000);
     }
 
