@@ -88,11 +88,12 @@
     <div id="toast-container"></div>
 
     <script>
-        // 🛰️ PUENTE CONECTADO A TU INSTANCIA DE NUBE Y TU BACKEND CENTRAL
+        // 🛰️ CONFIGURACIÓN SUPABASE
         const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
         const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
         const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // 🌐 NGROK (OPCIONAL) - Solo para notificar a la oficina
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
         
         let proveedorActivo = null;
@@ -113,6 +114,17 @@
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3500);
+        }
+
+        function calcularFechaManana() {
+            const hoy = new Date();
+            const manana = new Date(hoy);
+            manana.setDate(hoy.getDate() + 1);
+            return manana.toISOString().split('T')[0];
+        }
+
+        function generarIdUnico() {
+            return "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
         }
 
         // 🏢 LECTURA MAESTRA DE PROVEEDORES DESDE SUPABASE
@@ -214,7 +226,10 @@
             const nombre = input.value.trim().toUpperCase();
             const unidad = select.value;
 
-            if (!nombre) return;
+            if (!nombre) {
+                lanzarToast("Escribe un nombre para el ingrediente.", "warning");
+                return;
+            }
 
             if (articulosCargados.some(i => i.nombre_articulo === nombre)) {
                 lanzarToast("El ingrediente ya existe en esta hoja.", "warning");
@@ -239,8 +254,8 @@
             cargarHojaInteractiva(proveedorActivo);
         }
 
-        // ⚡ PAQUETIZAR CANTIDADES Y MANDAR POR NGROK AL PC DE LA OFICINA
-        function enviarPedidoCentral() {
+        // ⚡ PAQUETIZAR CANTIDADES Y GUARDAR DIRECTAMENTE EN SUPABASE
+        async function enviarPedidoCentral() {
             let lineasInyectar = [];
 
             articulosCargados.forEach((art, index) => {
@@ -249,10 +264,12 @@
 
                 if (cant > 0) {
                     lineasInyectar.push({
+                        id: generarIdUnico(),
                         detalle: `[${cant} ${art.unidad_defecto}] ${art.nombre_articulo}`,
                         proveedor_id: proveedorActivo,
                         estado: "PENDIENTE",
-                        fecha_registro: new Date().toISOString()
+                        fecha_registro: new Date().toISOString(),
+                        fecha_entrega_esperada: calcularFechaManana()
                     });
                 }
             });
@@ -266,43 +283,54 @@
             const btnText = document.getElementById('btn-text');
             if (btn && btnText) {
                 btn.disabled = true;
-                btnText.innerHTML = `<span class="spinner"></span> Transmitiendo lote...`;
+                btnText.innerHTML = `<span class="spinner"></span> Guardando en Supabase...`;
             }
 
-            // Descargar cesta local de la tablet, fusionar y mandar
-            let cestaActual = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-            
-            lineasInyectar.forEach(nuevo => {
-                if (!cestaActual.some(c => c.detalle === nuevo.detalle && c.estado !== "RECIBIDO")) {
-                    cestaActual.push(nuevo);
+            try {
+                // 🔵 GUARDAR DIRECTAMENTE EN SUPABASE (cesta_pedidos)
+                for (const item of lineasInyectar) {
+                    const { error } = await db_nube
+                        .from('cesta_pedidos')
+                        .insert([item]);
+                    if (error) throw error;
                 }
-            });
 
-            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaActual));
+                // ✅ También guardar en localStorage por si acaso (fallback)
+                let cestaActual = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+                lineasInyectar.forEach(nuevo => {
+                    if (!cestaActual.some(c => c.detalle === nuevo.detalle && c.estado !== "RECIBIDO")) {
+                        cestaActual.push(nuevo);
+                    }
+                });
+                localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaActual));
 
-            // Envío por Ngrok al backend local
-            fetch(`${API_URL}/api/cesta`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                body: JSON.stringify(cestaActual)
-            })
-            .then(res => {
-                if (res.ok) {
-                    lanzarToast(`🛒 ¡Lote enviado! +${lineasInyectar.length} líneas cargadas en compras.`);
-                    articulosCargados.forEach((_, index) => { document.getElementById(`input-cant-${index}`).value = ''; });
-                } else {
-                    lanzarToast(`Fallo HTTP en central: ${res.status}`, "error");
+                lanzarToast(`🛒 ¡Lote enviado! +${lineasInyectar.length} líneas cargadas en compras.`);
+                
+                // Limpiar inputs
+                articulosCargados.forEach((_, index) => { 
+                    document.getElementById(`input-cant-${index}`).value = ''; 
+                });
+
+                // 🌐 NOTIFICAR A NGROK (OPCIONAL) - Si quieres mantener la sincronización con la oficina
+                try {
+                    await fetch(`${API_URL}/api/cesta`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                        body: JSON.stringify(cestaActual)
+                    });
+                    console.log("✅ Notificación a oficina enviada vía ngrok.");
+                } catch (e) {
+                    console.log("ℹ️ Ngrok no disponible, pero los datos ya están en Supabase.");
                 }
-            })
-            .catch(err => {
-                lanzarToast("Guardado en memoria de tablet (Servidor Offline).", "warning");
-            })
-            .finally(() => {
+
+            } catch (error) {
+                lanzarToast("❌ Error al guardar en Supabase: " + error.message, "error");
+            } finally {
                 if (btn && btnText) {
                     btn.disabled = false;
                     btnText.innerText = "⚡ Enviar a Compras";
                 }
-            });
+            }
         }
 
         // Carga inicial al arrancar
