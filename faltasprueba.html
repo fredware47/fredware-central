@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚚 Fredware - Terminal Unificada de Cocina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .accordion-header { padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s, transform 0.1s; }
+        .accordion-header:active { transform: scale(0.99); }
+        .accordion-content { display: block; padding: 4px 0; }
+        .accordion-content.collapsed { display: none; }
+        .accordion-icon { font-size: 12px; transition: transform 0.2s; color: inherit; }
+        .accordion-header.active .accordion-icon { transform: rotate(180deg); }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { border-left: 4px solid #10b981; }
+        .toast-error { border-left: 4px solid #ef4444; }
+        .toast-warning { border-left: 4px solid #f59e0b; }
+
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Semáforo de días */
+        .tag-hoy { background: #10b981; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
+        .tag-manana { background: #f59e0b; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
+        .tag-pasado { background: #ef4444; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
+        .tag-no-reparto { background: #94a3b8; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
+
+    <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-2xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🚚</span>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-slate-900">FREDWARE CENTRAL</h1>
+                    <p class="text-xs text-emerald-600 font-bold tracking-widest uppercase">Cocina, Recepción & Trazabilidad</p>
+                </div>
+            </div>
+            <div class="flex flex-col items-end space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span id="badge-red" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold">🟢 ONLINE</span>
+                    <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale:95">
+                        ➕ ENTRADA DIRECTA
+                    </button>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v9.0</span>
+                </div>
+                <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto w-full px-4 mt-6 space-y-6">
+        
+        <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <span>📝</span> Control de Faltas Diarias
+            </h2>
+            <div class="flex gap-2 items-center">
+                <input type="text" id="insumo-falta" placeholder="Ej: MAYONESA, CEBOLLAS..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 uppercase text-base shadow-inner">
+                
+                <button id="btn-micro-voz" onclick="activarDictadoPorVoz()" class="bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center h-[50px] w-[50px]">
+                    🎙️
+                </button>
+
+                <button onclick="registrarFaltaCocina()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
+                    ➕ Añadir
+                </button>
+            </div>
+            <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto"></div>
+        </div>
+
+        <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
+                <span>🚛</span> Entradas Esperadas (Check & Trazabilidad)
+            </h2>
+            <div id="visor-repartos-hoy" class="space-y-4"></div>
+        </div>
+    </main>
+
+    <div id="toast-container"></div>
+
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN
+        // ============================================================
+        const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+        let cestaGlobal = [];
+        const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+        const CONFIG_APPCC = {
+            CONGELADOR: { min: -30, max: -12, defecto: -18, alerta: "🚨 RECHAZO CRÍTICO: ¡CONGELADO FUERA DE MARGEN! (MÁX -12°C)" },
+            NEVERA:     { min: 0,   max: 8,   defecto: 4,   alerta: "⚠️ ALERTA: REFRIGERADO ALTO. VALORAR DEVOLUCIÓN (MÁX 8°C)" },
+            SECO:       { min: 5,   max: 25,  defecto: 20,  alerta: "⚠️ ADVERTENCIA: AMBIENTE MUY ALTO (MÁX RECOMENDADO 25°C)" }
+        };
+
+        // ============================================================
+        // UTILIDADES
+        // ============================================================
+        function lanzarToast(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${tipo}`;
+            let icono = '✅';
+            if (tipo === 'error') icono = '❌';
+            if (tipo === 'warning') icono = '⚠️';
+            toast.innerHTML = `<span>${icono}</span> <span>${mensaje}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 50);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function actualizarEstadoRed(online) {
+            const badge = document.getElementById('badge-red');
+            if (!badge) return;
+            if (online) {
+                badge.innerHTML = "🟢 ONLINE";
+                badge.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold";
+                const ahora = new Date();
+                document.getElementById('timestamp-sincro').innerText = `Última actualización: ${ahora.toTimeString().split(' ')[0]}`;
+            } else {
+                badge.innerHTML = "📡 OFFLINE";
+                badge.className = "bg-amber-500 text-white text-xs px-2.5 py-2 rounded-xl border border-amber-600 font-black animate-pulse shadow-sm";
+            }
+        }
+
+        function obtenerDiasReparto(proveedorNombre) {
+            const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+            const prov = proveedores.find(p => p.nombre === proveedorNombre);
+            if (prov && prov.dias_reparto && Array.isArray(prov.dias_reparto)) {
+                return prov.dias_reparto; // array de números 0=Domingo...6=Sábado
+            }
+            return [];
+        }
+
+        function obtenerEstadoDiaReparto(diasReparto) {
+            const hoy = new Date().getDay(); // 0=Domingo, 6=Sábado
+            if (diasReparto.length === 0) return { estado: 'no-reparto', mensaje: 'Sin días asignados' };
+            if (diasReparto.includes(hoy)) return { estado: 'hoy', mensaje: 'Reparte hoy 🚚' };
+            // Buscar el próximo día de reparto
+            const proximos = diasReparto.filter(d => d > hoy);
+            let proximoDia = proximos.length > 0 ? Math.min(...proximos) : Math.min(...diasReparto);
+            const diff = (proximoDia - hoy + 7) % 7;
+            if (diff === 1) return { estado: 'manana', mensaje: `Reparte mañana (${DIAS_SEMANA[proximoDia]})` };
+            else if (diff === 0) return { estado: 'hoy', mensaje: 'Reparte hoy' };
+            else return { estado: 'pasado', mensaje: `Próximo: ${DIAS_SEMANA[proximoDia]} (en ${diff} días)` };
+        }
+
+        // ============================================================
+        // SINCRONIZACIÓN CON SERVIDOR
+        // ============================================================
+        async function sincronizarConOficina(endpoint, datos) {
+            try {
+                await fetch(`${API_URL}/api/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify(datos)
+                });
+                actualizarEstadoRed(true);
+            } catch (error) { 
+                console.error("Error pasivo en red local:", error); 
+                actualizarEstadoRed(false);
+            }
+        }
+
+        async function cargarDatosDeOficina() {
+            try {
+                const respuesta = await fetch(`${API_URL}/api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+                if (!respuesta.ok) throw new Error("Gateway Error");
+                const db = await respuesta.json();
+                
+                if (db.cesta && Array.isArray(db.cesta)) {
+                    cestaGlobal = db.cesta.filter(item => item.estado !== "RECIBIDO" && item.estado !== "AUSENTE");
+                    localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
+                }
+                
+                if (db.faltas && Array.isArray(db.faltas)) {
+                    localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
+                }
+                
+                if (db.proveedores && Array.isArray(db.proveedores)) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
+                
+                renderFaltasLocales();
+                renderCheckMercancia(cestaGlobal);
+                actualizarEstadoRed(true);
+            } catch (error) {
+                actualizarEstadoRed(false);
+                renderFaltasLocales();
+                cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+                renderCheckMercancia(cestaGlobal);
+            }
+        }
+
+        // ============================================================
+        // GESTIÓN DE FALTAS
+        // ============================================================
+        function registrarFaltaCocina() {
+            const input = document.getElementById('insumo-falta');
+            const valor = input.value.trim().toUpperCase();
+            if(!valor) return;
+
+            if(valor.length < 3) {
+                Swal.fire({ icon: 'warning', title: 'Texto muy corto', text: 'Escribe al menos 3 letras para registrar la falta.', confirmButtonColor: '#0284c7' });
+                return;
+            }
+
+            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            if(faltas.includes(valor)) {
+                lanzarToast("Insumo ya anotado anteriormente.", "warning");
+                input.value = '';
+                return;
+            }
+
+            faltas.push(valor);
+            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+            sincronizarConOficina('faltas', faltas);
+            input.value = '';
+            lanzarToast(`⚠️ Falta añadida: ${valor}`);
+            renderFaltasLocales();
+        }
+
+        function activarDictadoPorVoz() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                lanzarToast("Este navegador o dispositivo no soporta dictado por voz.", "error");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            const btnMicro = document.getElementById('btn-micro-voz');
+            const inputFalta = document.getElementById('insumo-falta');
+
+            recognition.lang = 'es-ES';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                btnMicro.className = "bg-red-500 border border-red-700 text-xl p-3 rounded-xl shadow-sm animate-pulse flex items-center justify-center h-[50px] w-[50px]";
+                lanzarToast("🎙️ Escuchando... Habla ahora", "warning");
+            };
+
+            recognition.onerror = (event) => {
+                console.error(event.error);
+                lanzarToast("No se pudo abrir el micro. Revisa permisos.", "error");
+                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
+            };
+
+            recognition.onend = () => {
+                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
+            };
+
+            recognition.onresult = (event) => {
+                const textoDictado = event.results[0][0].transcript;
+                if (textoDictado) {
+                    const limpio = textoDictado.trim().toUpperCase().replace(/\.$/, '');
+                    inputFalta.value = limpio;
+                    registrarFaltaCocina();
+                }
+            };
+
+            recognition.start();
+        }
+
+        function renderFaltasLocales() {
+            const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            const container = document.getElementById('contenedor-faltas-local');
+            if(!container) return; container.innerHTML = '';
+            if(faltas.length === 0) {
+                container.innerHTML = `<div class="text-center italic text-slate-400 text-xs py-2">No hay faltas apuntadas hoy.</div>`;
+                return;
+            }
+            faltas.forEach((item, idx) => {
+                container.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
+                        <span class="text-sm font-bold text-amber-600">⚠️ ${item}</span>
+                        <button onclick="borrarFaltaLocal(${idx})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
+                    </div>
+                `;
+            });
+        }
+
+        function borrarFaltaLocal(idx) {
+            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            if (idx >= 0 && idx < faltas.length) {
+                faltas.splice(idx, 1);
+                localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+                sincronizarConOficina('faltas', faltas);
+            }
+            renderFaltasLocales();
+        }
+
+        function limpiarFaltaAsociadaAlRecibir(detalleProducto) {
+            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            let productoLimpio = detalleProducto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+            // Eliminar si existe exactamente
+            faltas = faltas.filter(f => f.trim().toUpperCase() !== productoLimpio);
+            // También eliminar si empieza con el producto (caso de rotura)
+            faltas = faltas.filter(f => !f.trim().toUpperCase().startsWith(productoLimpio + ' (FALTARON'));
+            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
+            return faltas;
+        }
+
+        // ============================================================
+        // RECEPCIÓN Y TRAZABILIDAD
+        // ============================================================
+        function evaluarAlertaTemperatura() {
+            const temp = parseFloat(document.getElementById('swal-temp').value);
+            const alertaBox = document.getElementById('swal-alerta-temp');
+            const modo = document.getElementById('swal-modo-conservacion').value;
+            if (isNaN(temp)) { alertaBox.style.display = 'none'; return; }
+            const limites = CONFIG_APPCC[modo];
+            if (temp > limites.max) {
+                alertaBox.innerHTML = limites.alerta;
+                alertaBox.className = "p-2.5 bg-red-100 text-red-700 border border-red-300 rounded-xl text-xs font-black text-center animate-pulse shadow-sm";
+                alertaBox.style.display = 'block';
+            } else {
+                alertaBox.style.display = 'none';
+            }
+        }
+
+        function cambiarTipoConservacion(tipo) {
+            const btnNevera = document.getElementById('btn-cons-nevera');
+            const btnConge = document.getElementById('btn-cons-conge');
+            const btnSeco = document.getElementById('btn-cons-seco');
+            const inputModo = document.getElementById('swal-modo-conservacion');
+            const inputTemp = document.getElementById('swal-temp');
+
+            inputModo.value = tipo;
+            [btnNevera, btnConge, btnSeco].forEach(b => b.className = "py-2 rounded-xl font-bold text-xs border bg-slate-50 text-slate-500 border-slate-200 transition-all");
+
+            if(tipo === 'CONGELADOR') {
+                btnConge.className = "py-2 rounded-xl font-black text-xs bg-sky-600 text-white shadow-sm";
+                inputTemp.value = CONFIG_APPCC.CONGELADOR.defecto;
+            } else if(tipo === 'SECO') {
+                btnSeco.className = "py-2 rounded-xl font-black text-xs bg-amber-500 text-white shadow-sm";
+                inputTemp.value = CONFIG_APPCC.SECO.defecto;
+            } else {
+                btnNevera.className = "py-2 rounded-xl font-black text-xs bg-emerald-600 text-white shadow-sm";
+                inputTemp.value = CONFIG_APPCC.NEVERA.defecto;
+            }
+            evaluarAlertaTemperatura();
+        }
+
+        async function abrirFlujoRecepcion(detalleCompleto, proveedor, uIdUnique) {
+            let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
+            let productoLimpio = detalleCompleto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+            let cantidadEsperada = 1;
+            let matchCant = detalleCompleto.match(/^\[(\d+)\s*\w+\]/);
+            if(matchCant) { cantidadEsperada = parseInt(matchCant[1]); }
+
+            let conservacionInicial = "NEVERA";
+            if (productoLimpio.includes("CONGELADO") || productoLimpio.includes("CONGE") || productoLimpio.includes("HELADO")) {
+                conservacionInicial = "CONGELADOR";
+            } else if (productoLimpio.includes("HARINA") || productoLimpio.includes("SECO") || productoLimpio.includes("ACEITE") || productoLimpio.includes("LATA") || productoLimpio.includes("BOTE")) {
+                conservacionInicial = "SECO";
+            }
+
+            const { value: formValues } = await Swal.fire({
+                title: `📥 Recibir: ${productoLimpio}`,
+                background: '#ffffff', color: '#0f172a', confirmButtonColor: '#10b981', cancelButtonColor: '#64748b', showCancelButton: true, confirmButtonText: 'Procesar Entrada', cancelButtonText: 'Cancelar',
+                html: `
+                    <div class="text-left space-y-3 font-sans px-1">
+                        <div id="swal-alerta-temp" style="display:none;"></div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de Conservación:</label>
+                            <div class="grid grid-cols-3 gap-1.5 mt-1">
+                                <button type="button" id="btn-cons-nevera" onclick="cambiarTipoConservacion('NEVERA')">❄️ Nevera</button>
+                                <button type="button" id="btn-cons-conge" onclick="cambiarTipoConservacion('CONGELADOR')">🥶 Conge</button>
+                                <button type="button" id="btn-cons-seco" onclick="cambiarTipoConservacion('SECO')">📦 Ambiente</button>
+                            </div>
+                            <input id="swal-modo-conservacion" type="hidden" value="${conservacionInicial}">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Temperatura Real (°C):</label>
+                            <input id="swal-temp" type="number" step="0.1" oninput="evaluarAlertaTemperatura()" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-lg shadow-inner">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Kilos/Unidades Reales:</label>
+                                <input id="swal-cantidad" type="number" min="1" step="1" value="${cantidadEsperada}" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-base shadow-inner">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-sky-600 uppercase tracking-wider mb-1">Nº Pegatinas (Brother):</label>
+                                <input id="swal-stickers" type="number" min="0" value="1" class="w-full bg-sky-50 text-slate-900 font-bold text-center border border-sky-300 rounded-xl py-2.5 text-base shadow-inner">
+                            </div>
+                        </div>
+                    </div>
+                `,
+                didOpen: () => { cambiarTipoConservacion(conservacionInicial); },
+                preConfirm: () => {
+                    const cantReal = parseInt(document.getElementById('swal-cantidad').value) || 0;
+                    if(cantReal <= 0) {
+                        Swal.showValidationMessage('⚠️ Error: La cantidad ingresada debe ser mayor que cero.');
+                        return false;
+                    }
+                    return {
+                        temperatura: parseFloat(document.getElementById('swal-temp').value),
+                        cantidad: cantReal,
+                        stickers: parseInt(document.getElementById('swal-stickers').value) || 0,
+                        conservacion: document.getElementById('swal-modo-conservacion').value
+                    }
+                }
+            });
+
+            if (!formValues) return;
+
+            let autorizador = "SISTEMA";
+            const limitesRef = CONFIG_APPCC[formValues.conservacion];
+            if (formValues.temperatura > limitesRef.max) {
+                const confirmacionCritica = await Swal.fire({
+                    title: '🚨 ADVERTENCIA APPCC',
+                    text: `Mercancía fuera de rango térmico para ${formValues.conservacion}. Introduce tu NOMBRE para firmar la autorización:`,
+                    input: 'text',
+                    placeholder: 'Ej: Carlos, Daniela...',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Firmar y Forzar Entrada',
+                    cancelButtonText: 'Rechazar bulto',
+                    preConfirm: (value) => {
+                        if (!value.trim()) { Swal.showValidationMessage('⚠️ Es obligatorio firmar con tu nombre para forzar la entrada.'); }
+                        return value.trim().toUpperCase();
+                    }
+                });
+                if (!confirmacionCritica.isConfirmed) return;
+                autorizador = confirmacionCritica.value;
+            }
+
+            const ahora = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
+
+            let huboRotura = false;
+            let cantidadFaltante = 0;
+            
+            if(idxGlobal !== -1) {
+                if(formValues.cantidad < cantidadEsperada) {
+                    huboRotura = true;
+                    cantidadFaltante = cantidadEsperada - formValues.cantidad;
+                }
+                // Eliminar de la cesta
+                cestaGlobal.splice(idxGlobal, 1);
+                localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
+            }
+
+            // Limpiar faltas asociadas
+            let faltasLocales = limpiarFaltaAsociadaAlRecibir(detalleCompleto);
+            if(huboRotura) {
+                faltasLocales.push(`${productoLimpio} (FALTARON ${cantidadFaltante} UNID DEL PEDIDO)`);
+            }
+            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltasLocales));
+
+            const datosBaseDatos = {
+                producto: productoLimpio,
+                temperatura: formValues.temperatura,
+                conservacion: formValues.conservacion,
+                proveedor: proveedor,
+                cantidad_total: formValues.cantidad,
+                fecha_registro: ahora.toISOString(),
+                autorizado_por: autorizador
+            };
+
+            let loteEtiquetas = [];
+            if (formValues.stickers > 0) {
+                for (let i = 1; i <= formValues.stickers; i++) {
+                    const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
+                    loteEtiquetas.push({
+                        producto: productoLimpio,
+                        unidad: formValues.conservacion === "CONGELADOR" ? `🥶 CÁMARA CONGE (${i}/${formValues.stickers})` : `${i} DE ${formValues.stickers}`,
+                        fecha: formValues.conservacion === "CONGELADOR" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
+                        texto_qr: `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}|FIRMA:${autorizador}`
+                    });
+                }
+            }
+
+            Swal.fire({ title: '📡 Sincronizando albarán...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
+
+            try {
+                const resBD = await fetch(`${API_URL}/guardar_mercancia`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosBaseDatos) });
+                if (!resBD.ok) throw new Error("Error en grabación SQL.");
+
+                if (loteEtiquetas.length > 0) {
+                    try {
+                        await fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: loteEtiquetas }) });
+                    } catch (e) {
+                        lanzarToast("Bulto guardado. Impresora Brother desconectada.", "warning");
+                    }
+                }
+
+                // Sincronizar cesta y faltas
+                await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
+                await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(faltasLocales) });
+
+                lanzarToast("Albarán procesado y faltas actualizadas.");
+                Swal.close();
+                renderFaltasLocales();
+                renderCheckMercancia(cestaGlobal);
+
+            } catch (error) {
+                Swal.fire({ title: '❌ ERROR DE RED', text: 'El PC central de la oficina está apagado.', icon: 'error' });
+            }
+        }
+
+        // ============================================================
+        // RECEPCIÓN MASIVA (TODO EL PROVEEDOR)
+        // ============================================================
+        async function recibirTodoElProveedor(provNombre) {
+            let bultosPendientes = cestaGlobal.filter(item => (item.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && (item.estado === "PENDIENTE" || item.estado === "PREPARADO"));
+            if(bultosPendientes.length === 0) return;
+
+            const { value: tempMasiva } = await Swal.fire({
+                title: `⚡ Recepción Rápida: ${provNombre}`,
+                text: `Introduce la temperatura general del camión (°C) para procesar las ${bultosPendientes.length} líneas juntas:`,
+                input: 'number',
+                inputAttributes: { step: '0.1' },
+                inputValue: 4.0,
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                confirmButtonText: 'Validar Camión',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (tempMasiva === undefined || tempMasiva === "") return;
+            const tFloat = parseFloat(tempMasiva);
+
+            let autorizador = "SISTEMA";
+            if(tFloat > 8.0) {
+                const confCritica = await Swal.fire({
+                    title: '🚨 CRÍTICO: FUERA DE RANGO',
+                    text: `La temperatura de ${tFloat}°C rompe el APPCC. Introduce el NOMBRE de la persona que autoriza la descarga de este camión:`,
+                    input: 'text',
+                    placeholder: 'Ej: Carlos, Daniela...',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Forzar entrada y Firmar',
+                    cancelButtonText: 'Rechazar albarán',
+                    preConfirm: (value) => {
+                        if (!value.trim()) { Swal.showValidationMessage('⚠️ Debes introducir un nombre para firmar la excepción.'); }
+                        return value.trim().toUpperCase();
+                    }
+                });
+                if(!confCritica.isConfirmed) return;
+                autorizador = confCritica.value;
+            }
+
+            Swal.fire({ title: '📡 Procesando lote...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
+
+            const ahora = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
+
+            let arrayLoteMercancias = [];
+            let loteCompletoEtiquetas = [];
+            let ultimasFaltas = [];
+
+            for (let item of bultosPendientes) {
+                let idx = cestaGlobal.findIndex(c => c.id === item.id);
+                if (idx !== -1) cestaGlobal.splice(idx, 1);
+
+                let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+                ultimasFaltas = limpiarFaltaAsociadaAlRecibir(item.detalle);
+
+                arrayLoteMercancias.push({
+                    producto: productoLimpio,
+                    temperatura: tFloat,
+                    conservacion: "NEVERA",
+                    proveedor: provNombre,
+                    cantidad_total: 1,
+                    fecha_registro: ahora.toISOString(),
+                    autorizado_por: autorizador
+                });
+
+                loteCompletoEtiquetas.push({
+                    producto: productoLimpio,
+                    unidad: `1 DE 1`,
+                    fecha: `RECP: ${fechaString}`,
+                    texto_qr: `PROD:${productoLimpio}|LOTE:MASIVO|F.ENTRADA:${fechaString}|FIRMA:${autorizador}`
+                });
+            }
+
+            try {
+                await fetch(`${API_URL}/guardar_mercancia_lote`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ lote: arrayLoteMercancias }) 
+                });
+            } catch(e) {
+                for(let datosIndividual of arrayLoteMercancias) {
+                    await fetch(`${API_URL}/guardar_mercancia`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosIndividual) });
+                }
+            }
+
+            if (loteCompletoEtiquetas.length > 0) {
+                fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: loteCompletoEtiquetas }) }).catch(() => {});
+            }
+
+            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
+            await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
+            await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(ultimasFaltas) });
+
+            lanzarToast("Camión procesado por lote y faltas limpiadas.");
+            Swal.close();
+            renderFaltasLocales();
+            renderCheckMercancia(cestaGlobal);
+        }
+
+        // ============================================================
+        // MARCAR COMO NO LLEGÓ
+        // ============================================================
+        async function marcarProductoNoLlego(uIdUnique) {
+            let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
+            if(idxGlobal === -1) return;
+            
+            const item = cestaGlobal[idxGlobal];
+            let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+
+            const confirmacion = await Swal.fire({
+                title: '¿Confirmas incidencia?',
+                text: `¿Quieres marcar "${productoLimpio}" como no entregado? Rebotará automáticamente a la lista de faltas.`,
+                icon: 'warning',
+                background: '#ffffff',
+                color: '#0f172a',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Sí, registrar incidencia',
+                cancelButtonText: 'Volver'
+            });
+
+            if (!confirmacion.isConfirmed) return;
+
+            // Eliminar de cesta
+            cestaGlobal.splice(idxGlobal, 1);
+            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
+
+            let faltasLocales = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+            faltasLocales.push(`${productoLimpio} (PROVEEDOR NO ENTREGÓ EN REPARTO)`);
+            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltasLocales));
+
+            Swal.fire({ title: '📡 Notificando a la oficina...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
+
+            try {
+                await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
+                await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(faltasLocales) });
+
+                lanzarToast("Incidencia comunicada a oficina.", "error");
+                Swal.close();
+                renderFaltasLocales();
+                renderCheckMercancia(cestaGlobal);
+            } catch (error) {
+                Swal.fire({ title: '❌ ERROR DE RED', text: 'Guardado en local. No se pudo conectar con el PC central.', icon: 'error' });
+            }
+        }
+
+        // ============================================================
+        // RENDERIZADO DE MERCANCÍA CON SEMÁFORO
+        // ============================================================
+        function renderCheckMercancia(cesta) {
+            const container = document.getElementById('visor-repartos-hoy');
+            if(!container) return; container.innerHTML = '';
+
+            if(!cesta || !Array.isArray(cesta) || cesta.length === 0) {
+                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">No hay productos pendientes de recibir.</div>`;
+                return;
+            }
+
+            const estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
+            const ahora = new Date();
+            const hoyString = ahora.toISOString().split('T')[0];
+            const mananaObj = new Date(ahora);
+            mananaObj.setDate(ahora.getDate() + 1);
+            const mananaString = mananaObj.toISOString().split('T')[0];
+
+            let gruposCesta = {};
+            cesta.forEach(item => {
+                if(item.estado === "PENDIENTE" || item.estado === "PREPARADO") {
+                    let prov = (item.proveedor_id || "S/P").trim().toUpperCase();
+                    if(!gruposCesta[prov]) gruposCesta[prov] = [];
+                    gruposCesta[prov].push(item);
+                }
+            });
+
+            let deClaves = Object.keys(gruposCesta);
+            if(deClaves.length === 0) {
+                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">No quedan artículos pendientes de verificar.</div>`;
+                return;
+            }
+
+            deClaves.sort().forEach(provNombre => {
+                let articulosDelProveedor = gruposCesta[provNombre];
+                let maxDiasRetraso = 0;
+                let htmlArticulos = '';
+
+                // Obtener días de reparto para el semáforo
+                const diasReparto = obtenerDiasReparto(provNombre);
+                const estadoDia = obtenerEstadoDiaReparto(diasReparto);
+                let tagColor = '';
+                let tagTexto = '';
+                switch(estadoDia.estado) {
+                    case 'hoy':
+                        tagColor = 'tag-hoy';
+                        tagTexto = '🟢 Reparte hoy';
+                        break;
+                    case 'manana':
+                        tagColor = 'tag-manana';
+                        tagTexto = '🟡 Reparte mañana';
+                        break;
+                    case 'pasado':
+                        tagColor = 'tag-pasado';
+                        tagTexto = '🔴 Próximo reparto en ' + estadoDia.mensaje.replace('Próximo: ', '');
+                        break;
+                    default:
+                        tagColor = 'tag-no-reparto';
+                        tagTexto = '⚪ Sin días asignados';
+                }
+
+                articulosDelProveedor.forEach(item => {
+                    let uId = item.id || "FALLBACK";
+                    if (item.fecha_registro) {
+                        let fechaRegistro = new Date(item.fecha_registro);
+                        let diferenciaTiempo = ahora - fechaRegistro;
+                        let diasDiferencia = Math.floor(diferenciaTiempo / (1000 * 60 * 60 * 24));
+                        if (diasDiferencia > maxDiasRetraso) maxDiasRetraso = diasDiferencia;
+                    }
+
+                    let etiquetaFecha = "";
+                    if (item.fecha_entrega_esperada) {
+                        if (item.fecha_entrega_esperada === hoyString) {
+                            etiquetaFecha = `<span class="ml-2 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-md font-bold">🚚 HOY</span>`;
+                        } else if (item.fecha_entrega_esperada === mananaString) {
+                            etiquetaFecha = `<span class="ml-2 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-md font-bold">⏳ PARA MAÑANA</span>`;
+                        } else {
+                            const partes = item.fecha_entrega_esperada.split('-');
+                            const fechaFormateada = partes.length === 3 ? `${partes[2]}/${partes[1]}` : item.fecha_entrega_esperada;
+                            etiquetaFecha = `<span class="ml-2 bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-md font-bold">📅 ${fechaFormateada}</span>`;
+                        }
+                    } else {
+                        etiquetaFecha = `<span class="ml-2 bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-md">S/F</span>`;
+                    }
+
+                    htmlArticulos += `
+                        <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle}</span>
+                                <div class="flex flex-wrap items-center gap-1">${etiquetaFecha}</div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="marcarProductoNoLlego('${uId}')" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl border border-slate-300 shadow-sm">
+                                    ❌ No llegó
+                                </button>
+                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${provNombre}', '${uId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl shadow-sm">
+                                    📥 Recibir
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                let estiloCabecera = "bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100";
+                if (maxDiasRetraso === 1) estiloCabecera = "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100";
+                else if (maxDiasRetraso >= 2) estiloCabecera = "bg-red-50 border-red-300 text-red-900 hover:bg-red-100 animate-pulse";
+
+                let esColapsado = estadosColapsados[provNombre] === true;
+                const safeId = provNombre.replace(/[^a-z0-9]/gi, '_');
+
+                let cardHtml = document.createElement('div');
+                cardHtml.className = "mb-2";
+                cardHtml.innerHTML = `
+                    <div class="accordion-header ${esColapsado ? '' : 'active'} ${estiloCabecera}" onclick="conmutarAcordeonCocina('${provNombre}')">
+                        <span>
+                            <span class="font-black tracking-wide">${provNombre}</span>
+                            <span class="ml-1 text-xs opacity-70 font-normal">(${articulosDelProveedor.length} pendientes)</span>
+                            <span class="ml-2 ${tagColor}">${tagTexto}</span>
+                        </span>
+                        <div class="flex items-center space-x-2" onclick="event.stopPropagation();">
+                            <button onclick="recibirTodoElProveedor('${provNombre}')" class="bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg border border-sky-700 shadow-sm">⚡ RECIBIR TODO</button>
+                            <span class="accordion-icon ml-2">▼</span>
+                        </div>
+                    </div>
+                    <div id="acord-cocina-${safeId}" class="accordion-content ${esColapsado ? 'collapsed' : ''} bg-white border-x border-b border-slate-200 px-4 pb-2 rounded-b-xl shadow-sm">
+                        <div class="divide-y divide-slate-100">${htmlArticulos}</div>
+                    </div>
+                `;
+                container.appendChild(cardHtml);
+            });
+        }
+
+        function conmutarAcordeonCocina(provNombre) {
+            const safeId = provNombre.replace(/[^a-z0-9]/gi, '_');
+            const content = document.getElementById(`acord-cocina-${safeId}`);
+            if(!content) return;
+
+            let estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
+            
+            if(content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                estadosColapsados[provNombre] = false;
+                content.previousElementSibling.classList.add('active');
+            } else {
+                content.classList.add('collapsed');
+                estadosColapsados[provNombre] = true;
+                content.previousElementSibling.classList.remove('active');
+            }
+            localStorage.setItem('fredware_cocina_acordeon_estados', JSON.stringify(estadosColapsados));
+        }
+
+        // ============================================================
+        // ENTRADA DIRECTA (COMPRA DE ÚLTIMA HORA)
+        // ============================================================
+        async function abrirEntradaDirecta() {
+            const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+            let optionsHtml = '<option value="S/P">PROVEEDOR GENÉRICO / COMPRA DIRECTA</option>';
+            proveedores.forEach(p => { optionsHtml += `<option value="${p.nombre}">${p.nombre}</option>`; });
+
+            const { value: directoValues } = await Swal.fire({
+                title: '➕ Compra de Última Hora',
+                background: '#ffffff', color: '#0f172a', confirmButtonColor: '#d97706', showCancelButton: true, confirmButtonText: 'Siguiente paso', cancelButtonText: 'Volver',
+                html: `
+                    <div class="text-left space-y-3 font-sans px-1">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre de la Mercancía:</label>
+                            <input id="dir-producto" type="text" placeholder="Ej: HARINA DE TRIGO..." class="w-full bg-slate-50 text-slate-900 font-bold border border-slate-300 rounded-xl py-2.5 px-3 uppercase focus:outline-none focus:border-amber-500 shadow-inner">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Origen / Distribuidor:</label>
+                            <select id="dir-proveedor" class="w-full bg-slate-50 text-slate-900 border border-slate-300 rounded-xl py-2.5 px-3 focus:outline-none focus:border-amber-500 font-bold">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                `,
+                preConfirm: () => {
+                    return {
+                        producto: document.getElementById('dir-producto').value.trim().toUpperCase(),
+                        proveedor: document.getElementById('dir-proveedor').value
+                    }
+                }
+            });
+
+            if (!directoValues || !directoValues.producto) return;
+            const tempId = "DIR_" + Math.random().toString(36).substring(2, 7) + "_" + Date.now();
+            abrirFlujoRecepcion(directoValues.producto, directoValues.proveedor, tempId);
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        function init() {
+            renderFaltasLocales();
+            cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+            renderCheckMercancia(cestaGlobal);
+            cargarDatosDeOficina();
+            setInterval(cargarDatosDeOficina, 15000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
