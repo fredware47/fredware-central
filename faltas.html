@@ -6,6 +6,7 @@
     <title>🚚 Fredware - Terminal Unificada de Cocina</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .accordion-header { padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s, transform 0.1s; }
         .accordion-header:active { transform: scale(0.99); }
@@ -24,7 +25,6 @@
         .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Semáforo de días */
         .tag-hoy { background: #10b981; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
         .tag-manana { background: #f59e0b; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
         .tag-pasado { background: #ef4444; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
@@ -48,7 +48,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale:95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v9.0</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v10.0</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -89,8 +89,10 @@
         // ============================================================
         // CONFIGURACIÓN
         // ============================================================
-        const API_URL = "https://untried-january-thinning.ngrok-free.dev";
-        let cestaGlobal = [];
+        const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+        const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const API_URL = "https://untried-january-thinning.ngrok-free.dev"; // Opcional, para notificar a la oficina
         const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
         const CONFIG_APPCC = {
@@ -98,6 +100,9 @@
             NEVERA:     { min: 0,   max: 8,   defecto: 4,   alerta: "⚠️ ALERTA: REFRIGERADO ALTO. VALORAR DEVOLUCIÓN (MÁX 8°C)" },
             SECO:       { min: 5,   max: 25,  defecto: 20,  alerta: "⚠️ ADVERTENCIA: AMBIENTE MUY ALTO (MÁX RECOMENDADO 25°C)" }
         };
+
+        let cestaGlobal = [];
+        let alertaEnviadaHora = false;
 
         // ============================================================
         // UTILIDADES
@@ -137,16 +142,15 @@
             const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
             const prov = proveedores.find(p => p.nombre === proveedorNombre);
             if (prov && prov.dias_reparto && Array.isArray(prov.dias_reparto)) {
-                return prov.dias_reparto; // array de números 0=Domingo...6=Sábado
+                return prov.dias_reparto;
             }
             return [];
         }
 
         function obtenerEstadoDiaReparto(diasReparto) {
-            const hoy = new Date().getDay(); // 0=Domingo, 6=Sábado
+            const hoy = new Date().getDay();
             if (diasReparto.length === 0) return { estado: 'no-reparto', mensaje: 'Sin días asignados' };
             if (diasReparto.includes(hoy)) return { estado: 'hoy', mensaje: 'Reparte hoy 🚚' };
-            // Buscar el próximo día de reparto
             const proximos = diasReparto.filter(d => d > hoy);
             let proximoDia = proximos.length > 0 ? Math.min(...proximos) : Math.min(...diasReparto);
             const diff = (proximoDia - hoy + 7) % 7;
@@ -156,54 +160,132 @@
         }
 
         // ============================================================
-        // SINCRONIZACIÓN CON SERVIDOR
+        // FUNCIONES DE ACCESO A SUPABASE (usando columna 'insumo')
         // ============================================================
-        async function sincronizarConOficina(endpoint, datos) {
-            try {
-                await fetch(`${API_URL}/api/${endpoint}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                    body: JSON.stringify(datos)
-                });
-                actualizarEstadoRed(true);
-            } catch (error) { 
-                console.error("Error pasivo en red local:", error); 
-                actualizarEstadoRed(false);
-            }
+
+        // --- FALTAS ---
+        async function obtenerFaltas() {
+            const { data, error } = await db_nube
+                .from('faltas_cocina')
+                .select('*')
+                .order('fecha_anotado', { ascending: false });
+            if (error) throw error;
+            return data;
         }
 
-        async function cargarDatosDeOficina() {
+        async function agregarFalta(insumo) {
+            const { error } = await db_nube
+                .from('faltas_cocina')
+                .insert({ insumo: insumo });
+            if (error) throw error;
+        }
+
+        async function eliminarFalta(id) {
+            const { error } = await db_nube
+                .from('faltas_cocina')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+        }
+
+        // --- CESTA ---
+        async function obtenerCesta() {
+            const { data, error } = await db_nube
+                .from('cesta_pedidos')
+                .select('*')
+                .neq('estado', 'RECIBIDO')
+                .neq('estado', 'AUSENTE')
+                .order('fecha_registro', { ascending: true });
+            if (error) throw error;
+            return data;
+        }
+
+        async function actualizarItemCesta(id, cambios) {
+            const { error } = await db_nube
+                .from('cesta_pedidos')
+                .update(cambios)
+                .eq('id', id);
+            if (error) throw error;
+        }
+
+        async function eliminarItemCesta(id) {
+            const { error } = await db_nube
+                .from('cesta_pedidos')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+        }
+
+        // --- PROVEEDORES ---
+        async function obtenerProveedores() {
+            const { data, error } = await db_nube
+                .from('proveedores')
+                .select('*')
+                .order('nombre', { ascending: true });
+            if (error) throw error;
+            return data;
+        }
+
+        // ============================================================
+        // CARGA INICIAL Y SUSCRIPCIONES EN TIEMPO REAL
+        // ============================================================
+
+        async function cargarDatosIniciales() {
             try {
-                const respuesta = await fetch(`${API_URL}/api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-                if (!respuesta.ok) throw new Error("Gateway Error");
-                const db = await respuesta.json();
-                
-                if (db.cesta && Array.isArray(db.cesta)) {
-                    cestaGlobal = db.cesta.filter(item => item.estado !== "RECIBIDO" && item.estado !== "AUSENTE");
-                    localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
-                }
-                
-                if (db.faltas && Array.isArray(db.faltas)) {
-                    localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
-                }
-                
-                if (db.proveedores && Array.isArray(db.proveedores)) localStorage.setItem('fredware_proveedores', JSON.stringify(db.proveedores));
-                
+                const [cesta, faltas, proveedores] = await Promise.all([
+                    obtenerCesta(),
+                    obtenerFaltas(),
+                    obtenerProveedores()
+                ]);
+                cestaGlobal = cesta;
+                localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
                 renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
                 actualizarEstadoRed(true);
             } catch (error) {
+                console.error("Error cargando datos iniciales:", error);
                 actualizarEstadoRed(false);
-                renderFaltasLocales();
+                // Fallback a localStorage si es posible
                 cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+                renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
+                lanzarToast("Error al cargar datos de la nube.", "error");
             }
         }
 
+        function suscribirseCambios() {
+            // Suscripción a faltas
+            db_nube
+                .channel('faltas-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'faltas_cocina' }, () => {
+                    renderFaltasLocales();
+                })
+                .subscribe();
+
+            // Suscripción a cesta
+            db_nube
+                .channel('cesta-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'cesta_pedidos' }, async () => {
+                    cestaGlobal = await obtenerCesta();
+                    renderCheckMercancia(cestaGlobal);
+                })
+                .subscribe();
+
+            // Suscripción a proveedores
+            db_nube
+                .channel('proveedores-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'proveedores' }, async () => {
+                    const proveedores = await obtenerProveedores();
+                    localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
+                    renderCheckMercancia(cestaGlobal);
+                })
+                .subscribe();
+        }
+
         // ============================================================
-        // GESTIÓN DE FALTAS
+        // GESTIÓN DE FALTAS (ahora con Supabase)
         // ============================================================
-        function registrarFaltaCocina() {
+        async function registrarFaltaCocina() {
             const input = document.getElementById('insumo-falta');
             const valor = input.value.trim().toUpperCase();
             if(!valor) return;
@@ -213,19 +295,23 @@
                 return;
             }
 
-            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            if(faltas.includes(valor)) {
-                lanzarToast("Insumo ya anotado anteriormente.", "warning");
-                input.value = '';
-                return;
-            }
+            try {
+                // Verificar si ya existe (opcional, pero podemos hacerlo localmente)
+                const faltas = await obtenerFaltas();
+                if(faltas.some(f => f.insumo === valor)) {
+                    lanzarToast("Insumo ya anotado anteriormente.", "warning");
+                    input.value = '';
+                    return;
+                }
 
-            faltas.push(valor);
-            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
-            sincronizarConOficina('faltas', faltas);
-            input.value = '';
-            lanzarToast(`⚠️ Falta añadida: ${valor}`);
-            renderFaltasLocales();
+                await agregarFalta(valor);
+                input.value = '';
+                lanzarToast(`⚠️ Falta añadida: ${valor}`);
+                // La suscripción refrescará la UI
+                sincronizarConOficina('faltas', await obtenerFaltas());
+            } catch (error) {
+                lanzarToast("Error al registrar falta en la nube.", "error");
+            }
         }
 
         function activarDictadoPorVoz() {
@@ -270,47 +356,57 @@
             recognition.start();
         }
 
-        function renderFaltasLocales() {
-            const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            const container = document.getElementById('contenedor-faltas-local');
-            if(!container) return; container.innerHTML = '';
-            if(faltas.length === 0) {
-                container.innerHTML = `<div class="text-center italic text-slate-400 text-xs py-2">No hay faltas apuntadas hoy.</div>`;
-                return;
+        async function renderFaltasLocales() {
+            try {
+                const faltas = await obtenerFaltas();
+                const container = document.getElementById('contenedor-faltas-local');
+                if(!container) return; container.innerHTML = '';
+                if(faltas.length === 0) {
+                    container.innerHTML = `<div class="text-center italic text-slate-400 text-xs py-2">No hay faltas apuntadas hoy.</div>`;
+                    return;
+                }
+                faltas.forEach((item) => {
+                    container.innerHTML += `
+                        <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
+                            <span class="text-sm font-bold text-amber-600">⚠️ ${item.insumo}</span>
+                            <button onclick="borrarFaltaLocal(${item.id})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Error renderizando faltas:", error);
             }
-            faltas.forEach((item, idx) => {
-                container.innerHTML += `
-                    <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
-                        <span class="text-sm font-bold text-amber-600">⚠️ ${item}</span>
-                        <button onclick="borrarFaltaLocal(${idx})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
-                    </div>
-                `;
-            });
         }
 
-        function borrarFaltaLocal(idx) {
-            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            if (idx >= 0 && idx < faltas.length) {
-                faltas.splice(idx, 1);
-                localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
-                sincronizarConOficina('faltas', faltas);
+        async function borrarFaltaLocal(id) {
+            try {
+                await eliminarFalta(id);
+                lanzarToast("Falta eliminada.");
+                sincronizarConOficina('faltas', await obtenerFaltas());
+            } catch (error) {
+                lanzarToast("Error al eliminar falta.", "error");
             }
-            renderFaltasLocales();
-        }
-
-        function limpiarFaltaAsociadaAlRecibir(detalleProducto) {
-            let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            let productoLimpio = detalleProducto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
-            // Eliminar si existe exactamente
-            faltas = faltas.filter(f => f.trim().toUpperCase() !== productoLimpio);
-            // También eliminar si empieza con el producto (caso de rotura)
-            faltas = faltas.filter(f => !f.trim().toUpperCase().startsWith(productoLimpio + ' (FALTARON'));
-            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
-            return faltas;
         }
 
         // ============================================================
-        // RECEPCIÓN Y TRAZABILIDAD
+        // SINCRONIZACIÓN CON NGROK (OPCIONAL)
+        // ============================================================
+        async function sincronizarConOficina(endpoint, datos) {
+            try {
+                await fetch(`${API_URL}/api/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify(datos)
+                });
+                actualizarEstadoRed(true);
+            } catch (error) { 
+                console.error("Error pasivo en red local:", error); 
+                actualizarEstadoRed(false);
+            }
+        }
+
+        // ============================================================
+        // RECEPCIÓN Y TRAZABILIDAD (casi igual, pero usando Supabase)
         // ============================================================
         function evaluarAlertaTemperatura() {
             const temp = parseFloat(document.getElementById('swal-temp').value);
@@ -443,23 +539,44 @@
 
             let huboRotura = false;
             let cantidadFaltante = 0;
+            let faltasLocales = await obtenerFaltas();
             
             if(idxGlobal !== -1) {
                 if(formValues.cantidad < cantidadEsperada) {
                     huboRotura = true;
                     cantidadFaltante = cantidadEsperada - formValues.cantidad;
                 }
-                // Eliminar de la cesta
+                // Eliminar de la cesta en Supabase
+                await eliminarItemCesta(cestaGlobal[idxGlobal].id);
                 cestaGlobal.splice(idxGlobal, 1);
-                localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
             }
 
             // Limpiar faltas asociadas
-            let faltasLocales = limpiarFaltaAsociadaAlRecibir(detalleCompleto);
+            faltasLocales = faltasLocales.filter(f => f.insumo !== productoLimpio);
             if(huboRotura) {
-                faltasLocales.push(`${productoLimpio} (FALTARON ${cantidadFaltante} UNID DEL PEDIDO)`);
+                faltasLocales.push({ insumo: `${productoLimpio} (FALTARON ${cantidadFaltante} UNID DEL PEDIDO)` });
             }
-            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltasLocales));
+            // Guardar faltas actualizadas en Supabase
+            for (const falta of faltasLocales) {
+                if (falta.id) {
+                    // Actualizar existente (no lo hacemos, solo insertamos nuevas)
+                }
+            }
+            // Como hemos filtrado y añadido, reemplazamos toda la lista (limpiar e insertar todas)
+            // Para simplificar, eliminamos todas las faltas existentes y las volvemos a insertar
+            // Pero mejor: usamos upsert o borramos e insertamos
+            // Como no tenemos upsert en la tabla, hacemos:
+            const todasFaltas = await obtenerFaltas();
+            for (const f of todasFaltas) {
+                await eliminarFalta(f.id);
+            }
+            for (const f of faltasLocales) {
+                if (typeof f === 'string') {
+                    await agregarFalta(f);
+                } else {
+                    await agregarFalta(f.insumo);
+                }
+            }
 
             const datosBaseDatos = {
                 producto: productoLimpio,
@@ -498,9 +615,9 @@
                     }
                 }
 
-                // Sincronizar cesta y faltas
-                await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
-                await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(faltasLocales) });
+                // Sincronizar cesta y faltas con ngrok (opcional)
+                await sincronizarConOficina('cesta', cestaGlobal);
+                await sincronizarConOficina('faltas', await obtenerFaltas());
 
                 lanzarToast("Albarán procesado y faltas actualizadas.");
                 Swal.close();
@@ -562,14 +679,17 @@
 
             let arrayLoteMercancias = [];
             let loteCompletoEtiquetas = [];
-            let ultimasFaltas = [];
+            let todasFaltas = await obtenerFaltas();
 
             for (let item of bultosPendientes) {
                 let idx = cestaGlobal.findIndex(c => c.id === item.id);
-                if (idx !== -1) cestaGlobal.splice(idx, 1);
+                if (idx !== -1) {
+                    await eliminarItemCesta(item.id);
+                    cestaGlobal.splice(idx, 1);
+                }
 
                 let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
-                ultimasFaltas = limpiarFaltaAsociadaAlRecibir(item.detalle);
+                todasFaltas = todasFaltas.filter(f => f.insumo !== productoLimpio);
 
                 arrayLoteMercancias.push({
                     producto: productoLimpio,
@@ -589,6 +709,15 @@
                 });
             }
 
+            // Limpiar y reinsertar faltas
+            const todasActuales = await obtenerFaltas();
+            for (const f of todasActuales) {
+                await eliminarFalta(f.id);
+            }
+            for (const f of todasFaltas) {
+                await agregarFalta(f.insumo);
+            }
+
             try {
                 await fetch(`${API_URL}/guardar_mercancia_lote`, { 
                     method: 'POST', 
@@ -605,9 +734,8 @@
                 fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: loteCompletoEtiquetas }) }).catch(() => {});
             }
 
-            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
-            await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
-            await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(ultimasFaltas) });
+            await sincronizarConOficina('cesta', cestaGlobal);
+            await sincronizarConOficina('faltas', await obtenerFaltas());
 
             lanzarToast("Camión procesado por lote y faltas limpiadas.");
             Swal.close();
@@ -639,19 +767,18 @@
 
             if (!confirmacion.isConfirmed) return;
 
-            // Eliminar de cesta
+            // Eliminar de cesta en Supabase
+            await eliminarItemCesta(item.id);
             cestaGlobal.splice(idxGlobal, 1);
-            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaGlobal));
 
-            let faltasLocales = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-            faltasLocales.push(`${productoLimpio} (PROVEEDOR NO ENTREGÓ EN REPARTO)`);
-            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltasLocales));
+            // Añadir a faltas
+            await agregarFalta(`${productoLimpio} (PROVEEDOR NO ENTREGÓ EN REPARTO)`);
 
             Swal.fire({ title: '📡 Notificando a la oficina...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
 
             try {
-                await fetch(`${API_URL}/api/cesta`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(cestaGlobal) });
-                await fetch(`${API_URL}/api/faltas`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(faltasLocales) });
+                await sincronizarConOficina('cesta', cestaGlobal);
+                await sincronizarConOficina('faltas', await obtenerFaltas());
 
                 lanzarToast("Incidencia comunicada a oficina.", "error");
                 Swal.close();
@@ -663,7 +790,7 @@
         }
 
         // ============================================================
-        // RENDERIZADO DE MERCANCÍA CON SEMÁFORO
+        // RENDERIZADO DE MERCANCÍA
         // ============================================================
         function renderCheckMercancia(cesta) {
             const container = document.getElementById('visor-repartos-hoy');
@@ -701,7 +828,6 @@
                 let maxDiasRetraso = 0;
                 let htmlArticulos = '';
 
-                // Obtener días de reparto para el semáforo
                 const diasReparto = obtenerDiasReparto(provNombre);
                 const estadoDia = obtenerEstadoDiaReparto(diasReparto);
                 let tagColor = '';
@@ -815,7 +941,7 @@
         }
 
         // ============================================================
-        // ENTRADA DIRECTA (COMPRA DE ÚLTIMA HORA)
+        // ENTRADA DIRECTA
         // ============================================================
         async function abrirEntradaDirecta() {
             const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -855,12 +981,11 @@
         // ============================================================
         // INICIALIZACIÓN
         // ============================================================
-        function init() {
-            renderFaltasLocales();
-            cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-            renderCheckMercancia(cestaGlobal);
-            cargarDatosDeOficina();
-            setInterval(cargarDatosDeOficina, 15000);
+        async function init() {
+            await cargarDatosIniciales();
+            suscribirseCambios();
+            // También seguimos refrescando cada 15s por si acaso (pero las suscripciones ya lo hacen)
+            setInterval(cargarDatosIniciales, 15000);
         }
 
         init();
