@@ -9,6 +9,8 @@
     <link rel="icon" type="image/png" href="https://img.icons8.com/fluent/96/chef-hat.png">
 
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- SDK de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0f172a; margin: 0; padding: 15px; color: #f8fafc; }
         .container { max-width: 500px; margin: 0 auto; background: #1e293b; padding: 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 1px solid #334155; }
@@ -19,6 +21,8 @@
         .dato-linea { margin-bottom: 10px; font-size: 15px; line-height: 1.4; }
         .dato-linea strong { color: #475569; display: inline-block; width: 120px; }
         .valor { font-weight: bold; color: #0f172a; }
+        .info-extra { background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 12px; font-size: 14px; border-left: 4px solid #3b82f6; }
+        .info-extra strong { color: #1e293b; }
     </style>
 </head>
 <body>
@@ -33,34 +37,108 @@
     <div id="tarjeta-resultado" class="ficha-oficial">
         <h3>🔍 DATOS DE TRAZABILIDAD CONTROLADOS</h3>
         <div id="bloque-datos"></div>
+        <div id="bloque-extra" class="info-extra" style="display:none;"></div>
     </div>
 </div>
 
 <script>
-    function lecturaExitosa(textoOriginal) {
+    // ============================================================
+    // CONFIGURACIÓN SUPABASE (usamos un nombre único para evitar conflictos)
+    // ============================================================
+    const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+    const clienteSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ============================================================
+    // FUNCIÓN PARA GUARDAR LECTURA EN SUPABASE
+    // ============================================================
+    async function guardarLectura(textoOriginal, datosParseados) {
+        try {
+            const { error } = await clienteSupabase
+                .from('auditoria_lecturas')
+                .insert([{
+                    qr_text: textoOriginal,
+                    datos_parseados: datosParseados
+                }]);
+            if (error) throw error;
+            console.log('✅ Lectura guardada en auditoría');
+        } catch (error) {
+            console.error('❌ Error guardando lectura:', error);
+        }
+    }
+
+    // ============================================================
+    // FUNCIÓN PARA BUSCAR EN TRAZABILIDAD (opcional)
+    // ============================================================
+    async function buscarEnTrazabilidad(producto, tipo) {
+        try {
+            let query = clienteSupabase
+                .from('trazabilidad_etiquetas')
+                .select('*')
+                .eq('producto', producto);
+            
+            if (tipo) {
+                query = query.eq('tipo', tipo);
+            }
+            
+            const { data, error } = await query.order('fecha_registro', { ascending: false }).limit(1);
+            if (error) throw error;
+            
+            if (data && data.length > 0) {
+                return data[0];
+            }
+            return null;
+        } catch (error) {
+            console.error('Error buscando en trazabilidad:', error);
+            return null;
+        }
+    }
+
+    // ============================================================
+    // FUNCIÓN DEL ESCÁNER (sin cambios en el flujo)
+    // ============================================================
+    async function lecturaExitosa(textoOriginal) {
         if (navigator.vibrate) navigator.vibrate(150);
         
         const contenedorDatos = document.getElementById('bloque-datos');
+        const contenedorExtra = document.getElementById('bloque-extra');
         contenedorDatos.innerHTML = '';
+        contenedorExtra.style.display = 'none';
+        contenedorExtra.innerHTML = '';
         
+        // Parsear el texto del QR
         const trozos = textoOriginal.split('|');
+        let datosParseados = {};
+        let producto = null;
+        let tipo = null;
         
         trozos.forEach(par => {
             const campos = par.split(':');
             if(campos.length >= 2) {
                 let etiqueta = campos[0].trim().toUpperCase();
                 let valor = campos.slice(1).join(':').trim().toUpperCase();
+                datosParseados[etiqueta] = valor;
                 
-                if(etiqueta === 'PROD') etiqueta = 'PRODUCTO';
-                if(etiqueta === 'TEMP') etiqueta = 'TEMP. ENTRADA';
-                if(etiqueta === 'ZONA') etiqueta = 'CONSERVACIÓN';
-                if(etiqueta === 'PROV') etiqueta = 'PROVEEDOR';
-                if(etiqueta === 'OPER') etiqueta = 'OPERACIÓN';
-                if(etiqueta === 'CAD') etiqueta = 'CADUCIDAD VTO';
+                if(etiqueta === 'PROD') {
+                    producto = valor;
+                }
+                if(etiqueta === 'TIPO') {
+                    tipo = valor;
+                }
+                
+                // Traducir etiquetas para mostrar
+                let etiquetaMostrar = etiqueta;
+                if(etiqueta === 'PROD') etiquetaMostrar = 'PRODUCTO';
+                if(etiqueta === 'TEMP') etiquetaMostrar = 'TEMP. ENTRADA';
+                if(etiqueta === 'ZONA') etiquetaMostrar = 'CONSERVACIÓN';
+                if(etiqueta === 'PROV') etiquetaMostrar = 'PROVEEDOR';
+                if(etiqueta === 'OPER') etiquetaMostrar = 'OPERACIÓN';
+                if(etiqueta === 'CAD') etiquetaMostrar = 'CADUCIDAD VTO';
+                if(etiqueta === 'LOTE') etiquetaMostrar = 'LOTE';
                 
                 contenedorDatos.innerHTML += `
                     <div class="dato-linea">
-                        <strong>${etiqueta}:</strong>
+                        <strong>${etiquetaMostrar}:</strong>
                         <span class="valor">${valor}</span>
                     </div>`;
             }
@@ -68,11 +146,39 @@
 
         if(contenedorDatos.innerHTML === '') {
             contenedorDatos.innerHTML = `<div class="dato-linea"><span class="valor">${textoOriginal.toUpperCase()}</span></div>`;
+            datosParseados = { raw: textoOriginal };
         }
 
+        // Mostrar la tarjeta
         document.getElementById('tarjeta-resultado').style.display = 'block';
+
+        // Guardar en Supabase (en segundo plano, sin bloquear)
+        guardarLectura(textoOriginal, datosParseados);
+
+        // Si tenemos producto, buscar en trazabilidad para mostrar info adicional
+        if (producto) {
+            const registro = await buscarEnTrazabilidad(producto, tipo);
+            if (registro) {
+                contenedorExtra.style.display = 'block';
+                contenedorExtra.innerHTML = `
+                    <strong>📦 Registro en trazabilidad:</strong><br>
+                    📅 Fecha registro: ${new Date(registro.fecha_registro).toLocaleString()}<br>
+                    🏷️ Lote: ${registro.lote || 'N/A'}<br>
+                    ❄️ Conservación: ${registro.conservacion || 'N/A'}<br>
+                    🔄 Proceso: ${registro.proceso || 'N/A'}<br>
+                    ⏳ Caducidad: ${registro.fecha_caducidad || 'N/A'}
+                `;
+            } else {
+                // Si no existe en trazabilidad, mostrar mensaje
+                contenedorExtra.style.display = 'block';
+                contenedorExtra.innerHTML = `<strong>ℹ️ Producto no encontrado en trazabilidad.</strong>`;
+            }
+        }
     }
 
+    // ============================================================
+    // ESCÁNER ORIGINAL (NO TOCAR)
+    // ============================================================
     let escanerWeb = new Html5QrcodeScanner("lector-cam", { fps: 20, qrbox: 240 }, false);
     escanerWeb.render(lecturaExitosa, (err) => {});
 </script>
