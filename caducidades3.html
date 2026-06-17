@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fredware Kitchen System</title>
     <style>
+        /* ... (mismo CSS que antes) ... */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f0f4f8; margin: 0; padding: 10px; color: #333; }
         .app-container { max-width: 600px; margin: 0 auto; background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h2 { text-align: center; background: #1e293b; color: white; padding: 12px; border-radius: 8px; font-size: 18px; margin-bottom: 15px; }
@@ -28,7 +29,6 @@
     </style>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- NUEVO: SDK de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -103,10 +103,10 @@
 </div>
 
 <script>
-    // NUEVO: CONFIGURACIÓN SUPABASE
+    // 🔵 Configuración de Supabase (con nombre de variable único)
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // 🌐 TU ENLACE SEGURO DE NGROK
     const IP_SERVIDOR_CENTRAL = "https://untried-january-thinning.ngrok-free.dev";
@@ -120,7 +120,7 @@
             method: 'GET', 
             headers: { 
                 'Accept': 'application/json',
-                'ngrok-skip-browser-warning': 'true' // 👈 Parche para saltar la pantalla de aviso
+                'ngrok-skip-browser-warning': 'true'
             } 
         })
         .then(res => res.json())
@@ -144,7 +144,7 @@
         }
     }
 
-    // ⚠️ ESTA ES LA FUNCIÓN DE CÁMARA ORIGINAL: NO TOCAR
+    // ⚠️ FUNCIÓN DE CÁMARA ORIGINAL - NO TOCAR
     function onScanSuccess(decodedText) {
         if (navigator.vibrate) navigator.vibrate(100);
         
@@ -191,7 +191,7 @@
         document.getElementById('p1-fecha-elab').value = fecha;
     }
 
-    // ⚠️ ESCÁNER ORIGINAL: NO TOCAR
+    // ⚠️ ESCÁNER ORIGINAL - NO TOCAR
     let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 }, false);
     html5QrcodeScanner.render(onScanSuccess, (err) => {});
 
@@ -235,12 +235,17 @@
         });
     }
 
-    // NUEVO: Función para guardar en Supabase
+    // 🔵 Función para guardar en Supabase
     async function guardarTrazabilidad(datos) {
-        const { error } = await supabase
-            .from('trazabilidad_etiquetas')
-            .insert([datos]);
-        if (error) throw error;
+        try {
+            const { error } = await supabaseClient
+                .from('trazabilidad_etiquetas')
+                .insert([datos]);
+            if (error) throw error;
+            console.log('✅ Trazabilidad guardada en Supabase');
+        } catch (error) {
+            console.error('❌ Error guardando en Supabase:', error);
+        }
     }
 
     function enviarEtiquetaElaborado() {
@@ -271,7 +276,7 @@
         document.getElementById('etiqueta-datos').innerHTML = `PRODUCTO: ${nombre}<br>LOTE DE ORIGEN: ${lote}<br>PROCESO: ${opcionActiva.toUpperCase()}<br>VENCE: ${datoDinamico}`;
         document.getElementById('vista-previa').style.display = 'block';
         
-        // NUEVO: Guardar en Supabase (sin bloquear el flujo de ngrok)
+        // Guardar en Supabase (sin esperar a que termine para no bloquear)
         const datosTrazabilidad = {
             tipo: 'ELABORADO',
             producto: nombre,
@@ -282,11 +287,9 @@
             qr_data: cadenaQr,
             fecha_registro: new Date().toISOString()
         };
-        guardarTrazabilidad(datosTrazabilidad)
-            .then(() => console.log('✅ Trazabilidad guardada en Supabase'))
-            .catch(err => console.error('❌ Error guardando en Supabase:', err));
+        guardarTrazabilidad(datosTrazabilidad);
 
-        // Llamada original a ngrok (se mantiene igual)
+        // Llamada original a ngrok
         dispararServidorDual(paqueteImpresion, datosBD);
     }
 
@@ -318,7 +321,7 @@
         document.getElementById('etiqueta-datos').innerHTML = `PRODUCTO SECO: ${nombre}<br>LOTE FABRICANTE: ${lote}<br>CADUCIDAD: ${fechaCadFormateada}`;
         document.getElementById('vista-previa').style.display = 'block';
         
-        // NUEVO: Guardar en Supabase (sin bloquear el flujo de ngrok)
+        // Guardar en Supabase
         const datosTrazabilidad = {
             tipo: 'SECO',
             producto: nombre,
@@ -329,23 +332,20 @@
             qr_data: cadenaQr,
             fecha_registro: new Date().toISOString()
         };
-        guardarTrazabilidad(datosTrazabilidad)
-            .then(() => console.log('✅ Trazabilidad guardada en Supabase'))
-            .catch(err => console.error('❌ Error guardando en Supabase:', err));
+        guardarTrazabilidad(datosTrazabilidad);
 
-        // Llamada original a ngrok (se mantiene igual)
+        // Llamada original a ngrok
         dispararServidorDual(paqueteImpresion, datosBD);
     }
 
-    // ⚠️ FUNCIÓN ORIGINAL: NO TOCAR
+    // ⚠️ FUNCIÓN ORIGINAL - NO TOCAR
     function dispararServidorDual(paqueteImpresion, datosBD) {
-        // Enviar con cabeceras anti-advertencia para saltarse el muro de ngrok de forma silenciosa
         Promise.all([
             fetch(`${IP_SERVIDOR_CENTRAL}/imprimir_lote`, { 
                 method: 'POST', 
                 headers: { 
                     'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true' // 👈 Parche de bypass
+                    'ngrok-skip-browser-warning': 'true'
                 }, 
                 body: JSON.stringify(paqueteImpresion) 
             }),
@@ -353,7 +353,7 @@
                 method: 'POST', 
                 headers: { 
                     'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true' // 👈 Parche de bypass
+                    'ngrok-skip-browser-warning': 'true'
                 }, 
                 body: JSON.stringify(datosBD) 
             })
