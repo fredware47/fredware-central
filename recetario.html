@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🍽️ Fredware - Recetario Digital y Alérgenos UE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; padding: 15px; }
+        .container { max-width: 1250px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        h1 { font-size: 20px; text-align: center; margin-bottom: 15px; background: #0f172a; color: white; padding: 14px; border-radius: 8px; font-weight: 800; text-transform: uppercase; }
+        
+        .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; transition: all 0.2s; }
+        .tab-btn.active { background: #10b981; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .app-section { display: none; }
+        .app-section.active { display: block; }
+
+        .box { background: #ffffff; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; margin-bottom: 15px; }
+        h3 { font-size: 14px; margin-bottom: 12px; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; font-weight: 700; text-transform: uppercase; }
+        label { display: block; font-size: 12px; font-weight: bold; margin-top: 10px; color: #475569; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; outline: none; background-color: #f8fafc; }
+        input:focus, select:focus { border-color: #10b981; background-color: #fff; }
+        
+        .btn-action { background: #10b981; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-action:active { transform: scale(0.99); }
+        .btn-danger { background: #ef4444; }
+
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        .item-list { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .item-list th { background: #f1f5f9; text-align: left; padding: 10px 4px; font-size: 10px; color: #475569; font-weight: 700; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; }
+        .item-list td { padding: 10px 4px; font-size: 12px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+        
+        .chk-alergeno { width: 16px; height: 16px; cursor: pointer; }
+        .badge-categoria { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { border-left: 4px solid #10b981; }
+        .toast-error { border-left: 4px solid #ef4444; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🍽️ Fredware Central - Recetario Digital</h1>
+    
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">🍽️ Mi Carta y Alérgenos UE</button>
+        <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">📋 Composición de Escandallos</button>
+    </div>
+
+    <!-- PESTAÑA 1: GESTIÓN DE CARTA Y ALÉRGENOS -->
+    <div id="sec1" class="app-section active">
+        <div class="box" style="border-left: 4px solid #10b981;">
+            <h3>Añadir Nuevo Plato a la Carta</h3>
+            <div class="grid-inputs">
+                <div>
+                    <label for="plato-id">ID Único (Para TPV, Ej: CACHOPO_IND):</label>
+                    <input type="text" id="plato-id" placeholder="Ej: CACHOPO_IND" style="text-transform: uppercase;">
+                </div>
+                <div>
+                    <label for="plato-nombre">Nombre Comercial del Plato:</label>
+                    <input type="text" id="plato-nombre" placeholder="Ej: Cachopo Individual">
+                </div>
+                <div>
+                    <label for="plato-categoria">Categoría de la Carta:</label>
+                    <select id="plato-categoria">
+                        <option value="ENTRANTES">Entrantes</option>
+                        <option value="CARNES">Carnes</option>
+                        <option value="PESCADOS">Pescados</option>
+                        <option value="POSTRES">Postres</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="plato-precio">Precio de Venta (€):</label>
+                    <input type="number" id="plato-precio" value="0.00" step="0.05">
+                </div>
+            </div>
+            <button class="btn-action" onclick="guardarPlatoCarta()">      Registrar Plato en Carta</button>
+        </div>
+
+        <div class="box">
+            <h3>Declaración Oficial de Alérgenos (Reglamento UE 1169/2011)</h3>
+            <div style="overflow-x: auto;">
+                <table class="item-list">
+                    <thead>
+                        <tr>
+                            <th>Plato</th>
+                            <th>Categoría</th>
+                            <th>P. Venta</th>
+                            <th style="text-align:center;">GLU</th>
+                            <th style="text-align:center;">CRU</th>
+                            <th style="text-align:center;">HUE</th>
+                            <th style="text-align:center;">PES</th>
+                            <th style="text-align:center;">CAC</th>
+                            <th style="text-align:center;">SOJ</th>
+                            <th style="text-align:center;">LAC</th>
+                            <th style="text-align:center;">FRU</th>
+                            <th style="text-align:center;">API</th>
+                            <th style="text-align:center;">MOS</th>
+                            <th style="text-align:center;">SES</th>
+                            <th style="text-align:center;">SUL</th>
+                            <th style="text-align:center;">ALT</th>
+                            <th style="text-align:center;">MOL</th>
+                            <th style="text-align:center;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-carta-alergenos"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑA 2: ESCANDALLOS DE COMPOSICIÓN -->
+    <div id="sec2" class="app-section">
+        <div class="box" style="border-left: 4px solid #0284c7;">
+            <h3>Asignar Ingrediente a Plato</h3>
+            <div class="grid-inputs" style="align-items: flex-end;">
+                <div>
+                    <label for="select-receta-plato">Selecciona Plato:</label>
+                    <select id="select-receta-plato" onchange="cargarIngredientesPlatoActual()"></select>
+                </div>
+                <div>
+                    <label for="select-insumo-maestro">Selecciona Insumo Inventario:</label>
+                    <select id="select-insumo-maestro"></select>
+                </div>
+                <div>
+                    <label for="insumo-cantidad">Cantidad Necesaria (Kilos/Unidades):</label>
+                    <input type="number" id="insumo-cantidad" value="0.100" step="0.001" min="0.001">
+                </div>
+                <div>
+                    <button class="btn-action" style="background:#0284c7; margin-top: 0;" onclick="anadirIngredienteAPlato()">   Añadir Insumo</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>Ficha Técnica y Desglose del Plato Seleccionado</h3>
+            <table class="item-list">
+                <thead>
+                    <tr>
+                        <th>Ingrediente del Almacén</th>
+                        <th>Cantidad Escandallada</th>
+                        <th>Unidad Conteo</th>
+                        <th style="text-align: center; width: 100px;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-desglose-ingredientes"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+    const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+    const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
+    let listadoEscandallosGlobal = [];
+
+    function lanzarToast(mensaje, tipo = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${tipo}`;
+        toast.innerHTML = `<span>${tipo === 'success' ? '✅' : '❌'}</span> <span>${mensaje}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 50);
+        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
+    }
+
+    function switchTab(num) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`btn-t${num}`).classList.add('active');
+        document.getElementById(`sec${num}`).classList.add('active');
+        
+        if (num === 1) cargarCartaAlergenos();
+        if (num === 2) inicializarPestanaRecetas();
+    }
+
+    // ========================================================
+    // LOGICA PESTAÑA 1: CARTA Y ALÉRGENOS INTERACTIVOS
+    // ========================================================
+    async function cargarCartaAlergenos() {
+        const cuerpo = document.getElementById('tabla-carta-alergenos');
+        if(!cuerpo) return;
+        cuerpo.innerHTML = '<tr><td colspan="18">⏳ Leyendo la carta de Attica As Galeras...</td></tr>';
+
+        const { data: platos, error } = await db_nube
+            .from('recetas_platos')
+            .select('*')
+            .order('nombre_plato', { ascending: true });
+
+        if (error) { cuerpo.innerHTML = '<tr><td colspan="18">❌ Error de lectura en Supabase.</td></tr>'; return; }
+        cuerpo.innerHTML = '';
+
+        if(!platos || platos.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="18" style="text-align:center;color:#94a3b8;font-style:italic;">La carta está vacía. Registra el primer plato arriba.</td></tr>';
+            return;
+        }
+
+        platos.forEach(p => {
+            cuerpo.innerHTML += `
+                <tr>
+                    <td><strong>${p.nombre_plato}</strong></td>
+                    <td><span class="badge-categoria">${p.categoria}</span></td>
+                    <td><strong>${p.precio || '0.00'}€</strong></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_gluten ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_gluten', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_crustaceos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_crustaceos', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_huevos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_huevos', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_pescado ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_pescado', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_cacahuetes ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_cacahuetes', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_soja ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_soja', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_lacteos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_lacteos', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_frutos_cascara ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_frutos_cascara', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_apio ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_apio', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_mostaza ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_mostaza', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_sesamo ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_sesamo', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_sulfitos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_sulfitos', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_altramuces ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_altramuces', this.checked)"></td>
+                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_moluscos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_moluscos', this.checked)"></td>
+                    <td style="text-align:center;"><button class="btn-clear-row" style="background:#fee2e2;color:#ef4444;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;" onclick="eliminarPlatoCarta('${p.id}')">❌</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    async function guardarPlatoCarta() {
+        const id = document.getElementById('plato-id').value.trim().toUpperCase().replace(/\s+/g, '_');
+        const nombre = document.getElementById('plato-nombre').value.trim();
+        const categoria = document.getElementById('plato-categoria').value;
+        const precio = parseFloat(document.getElementById('plato-precio').value) || 0.00;
+
+        if(!id || !nombre) { lanzarToast("El ID y el Nombre son obligatorios.", "error"); return; }
+
+        const { error } = await db_nube
+            .from('recetas_platos')
+            .insert([{ id: id, nombre_plato: nombre, categoria: categoria, precio: precio }]);
+
+        if(error) { lanzarToast("Error al guardar plato (ID duplicado).", "error"); return; }
+        
+        document.getElementById('plato-id').value = '';
+        document.getElementById('plato-nombre').value = '';
+        document.getElementById('plato-precio').value = '0.00';
+        lanzarToast("Plato inyectado en la carta digital.");
+        cargarCartaAlergenos();
+    }
+
+    async function conmutarAlergenoNube(platoId, columna, valor) {
+        let updateData = {};
+        updateData[columna] = valor;
+        const { error } = await db_nube.from('recetas_platos').update(updateData).eq('id', platoId);
+        if(error) lanzarToast("Error de sincronización.", "error");
+        else lanzarToast("Alérgeno actualizado por Ley Europea.");
+    }
+
+    async function eliminarPlatoCarta(id) {
+        if(!confirm("¿Eliminar este plato y todo su escandallo asociado?")) return;
+        await db_nube.from('recetas_platos').delete().eq('id', id);
+        lanzarToast("Plato descatalogado.");
+        cargarCartaAlergenos();
+    }
+
+    // ========================================================
+    // LOGICA PESTAÑA 2: ESCANDALLOS DE COMPOSICIÓN
+    // ========================================================
+    async function inicializarPestanaRecetas() {
+        const selectPlatos = document.getElementById('select-receta-plato');
+        const selectInsumos = document.getElementById('select-insumo-maestro');
+        if(!selectPlatos || !selectInsumos) return;
+
+        selectPlatos.innerHTML = '';
+        selectInsumos.innerHTML = '';
+
+        // Cargar Platos
+        const { data: platos } = await db_nube.from('recetas_platos').select('id, nombre_plato').order('nombre_plato');
+        platos.forEach(p => { selectPlatos.innerHTML += `<option value="${p.id}">${p.nombre_plato}</option>`; });
+
+        // Cargar Insumos del Maestro
+        const { data: insumos } = await db_nube.from('maestro_escandallos').select('id, nombre_articulo').order('nombre_articulo');
+        insumos.forEach(i => { selectInsumos.innerHTML += `<option value="${i.id}">${i.nombre_articulo}</option>`; });
+
+        cargarIngredientesPlatoActual();
+    }
+
+    async function cargarIngredientesPlatoActual() {
+        const platoId = document.getElementById('select-receta-plato').value;
+        const cuerpo = document.getElementById('tabla-desglose-ingredientes');
+        if(!platoId || !cerpo) return;
+        cuerpo.innerHTML = '<tr><td colspan="4">⏳ Leyendo ficha técnica...</td></tr>';
+
+        const { data: lineas, error } = await db_nube
+            .from('ingredientes_receta')
+            .select('*, maestro_escandallos(unidad_recuento)')
+            .eq('plato_id', platoId);
+
+        cuerpo.innerHTML = '';
+        if(!lineas || lineas.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;font-style:italic;">Este plato no tiene ingredientes asignados.</td></tr>';
+            return;
+        }
+
+        lineas.forEach(l => {
+            const uM = l.maestro_escandallos ? l.maestro_escandallos.unidad_recuento : 'UNIDADES';
+            cuerpo.innerHTML += `
+                <tr>
+                    <td><strong>${l.insumo_inventario_id}</strong></td>
+                    <td style="font-weight:bold;color:#0284c7;">${l.cantidad_por_porcion}</td>
+                    <td><span style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">${uM}</span></td>
+                    <td style="text-align:center;"><button class="btn-del-row" style="padding:4px 8px;" onclick="quitarIngredienteReceta(${l.id})">❌ Quitar</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    async function anadirIngredienteAPlato() {
+        const platoId = document.getElementById('select-receta-plato').value;
+        const insumoId = document.getElementById('select-insumo-maestro').value;
+        const cantidad = parseFloat(document.getElementById('insumo-cantidad').value) || 0;
+
+        if(!platoId || !insumoId || cantidad <= 0) { lanzarToast("Revisa los campos y la cantidad.", "error"); return; }
+
+        await db_nube.from('ingredientes_receta').insert([{
+            plato_id: platoId,
+            insumo_inventario_id: insumoId,
+            cantidad_por_porcion: cantidad
+        }]);
+
+        lanzarToast("Ingrediente integrado en el escandallo.");
+        cargarIngredientesPlatoActual();
+    }
+
+    async function quitarIngredienteReceta(lineaId) {
+        await db_nube.from('ingredientes_receta').delete().eq('id', lineaId);
+        lanzarToast("Línea eliminada.");
+        cargarIngredientesPlatoActual();
+    }
+
+    // Carga inicial pasiva
+    cargarCartaAlergenos();
+</script>
+</body>
+</html>

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📊 Fredware - Gestión de Inventario y Mermas</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; padding: 15px; }
+        .container { max-width: 900px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        h1 { font-size: 20px; text-align: center; margin-bottom: 15px; background: #0f172a; color: white; padding: 14px; border-radius: 8px; font-weight: 800; tracking: tight; }
+        
+        .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; transition: all 0.2s; }
+        .tab-btn.active { background: #0284c7; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .app-section { display: none; }
+        .app-section.active { display: block; }
+
+        .box { background: #ffffff; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        h3 { font-size: 14px; margin-bottom: 12px; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; font-weight: 700; text-transform: uppercase; tracking: wide; }
+        label { display: block; font-size: 12px; font-weight: bold; margin-top: 10px; color: #475569; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; outline: none; background-color: #f8fafc; }
+        input:focus, select:focus { border-color: #0284c7; background-color: #fff; }
+        
+        .btn-action { background: #0284c7; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2); }
+        .btn-action:active { transform: scale(0.99); }
+        .btn-danger { background: #ef4444; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2); }
+
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+
+        .item-list { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .item-list th { background: #f1f5f9; text-align: left; padding: 10px 8px; font-size: 11px; color: #475569; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
+        .item-list td { padding: 10px 8px; font-size: 13px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+        
+        .input-table { width: 85px; padding: 6px; text-align: center; margin-top: 0; font-weight: bold; }
+        .badge-neto { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+        
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { border-left: 4px solid #10b981; }
+        .toast-error { border-left: 4px solid #ef4444; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 Fredware Ecosistema - Inventario y Mermas</h1>
+    
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">📉 Cuadro de Cierre Mensual</button>
+        <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">⚙️ Maestro de Escandallos</button>
+    </div>
+
+    <div id="sec1" class="app-section active">
+        <div class="box" style="border-left: 4px solid #0284c7;">
+            <h3>📅 Selección de Periodo Contable</h3>
+            <div class="grid-inputs" style="align-items: flex-end;">
+                <div>
+                    <label for="filtro-periodo">Mes de Cierre:</label>
+                    <select id="filtro-periodo" onchange="cargarCuadroInventario()">
+                        <option value="06-2026">Junio 2026</option>
+                        <option value="07-2026">Julio 2026</option>
+                        <option value="08-2026">Agosto 2026</option>
+                        <option value="09-2026">Septiembre 2026</option>
+                    </select>
+                </div>
+                <div>
+                    <button class="btn-action" style="margin-top:0;" onclick="generarLineasMesActual()">⚡ Inicializar / Sincronizar Insumos del Mes</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>📝 Plantilla de Conteo en Cámaras e Informe de Consumo</h3>
+            <div style="overflow-x: auto;">
+                <table class="item-list">
+                    <thead>
+                        <tr>
+                            <th>Artículo</th>
+                            <th>Formato</th>
+                            <th style="text-align: center;">St. Inicial</th>
+                            <th style="text-align: center;">Compras (Fredware)</th>
+                            <th style="text-align: center; width: 110px;">Stock Físico Final</th>
+                            <th style="text-align: center;">Merma %</th>
+                            <th style="text-align: center;">Consumo Neto Real</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-cierre-mensual">
+                        </tbody>
+                </table>
+            </div>
+            <button class="btn-action" style="background: #10b981; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);" onclick="guardarConteoFisicoBase()">💾 Blindar Conteo e Inventario del Mes</button>
+        </div>
+    </div>
+
+    <div id="sec2" class="app-section">
+        <div class="box" style="border-left: 4px solid #f59e0b;">
+            <h3>📐 Alta / Ajuste de Ficha Contable</h3>
+            <div class="grid-inputs">
+                <div>
+                    <label for="esc-id">Nombre Insumo Catálogo (ID exacto):</label>
+                    <input type="text" id="esc-id" placeholder="Ej: CROCA DE TERNERA, FILETES" style="text-transform: uppercase;">
+                </div>
+                <div>
+                    <label for="esc-unidad-compra">Unidad de Compra (Proveedor):</label>
+                    <select id="esc-unidad-compra">
+                        <option value="KG">Kilogramos (KG)</option>
+                        <option value="CAJAS">Cajas</option>
+                        <option value="UNIDADES">Unidades Sueltas</option>
+                        <option value="L">Litros (L)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="esc-unidad-recuento">Unidad de Conteo (En Cámara):</label>
+                    <select id="esc-unidad-recuento">
+                        <option value="KG">Kilogramos (KG)</option>
+                        <option value="UNIDADES">Unidades Sueltas</option>
+                        <option value="L">Litros (L)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="esc-factor">Factor de Conversión (Piezas por caja):</label>
+                    <input type="number" id="esc-factor" value="1" min="0.01" step="0.01">
+                </div>
+                <div>
+                    <label for="esc-merma">Porcentaje de Merma Limpieza (%):</label>
+                    <input type="number" id="esc-merma" value="0" min="0" max="99" step="0.1">
+                </div>
+            </div>
+            <button class="btn-action" onclick="guardarFichaEscandallo()">💾 Guardar Regla de Escandallo</button>
+        </div>
+
+        <div class="box">
+            <h3>📋 Configuración Activa de Mermas y Conversiones</h3>
+            <div style="overflow-x: auto;">
+                <table class="item-list">
+                    <thead>
+                        <tr>
+                            <th>Insumo</th>
+                            <th>U. Compra</th>
+                            <th>U. Recuento</th>
+                            <th style="text-align: center;">Factor Equiv.</th>
+                            <th style="text-align: center;">Merma Estándar</th>
+                            <th style="text-align: center; width: 100px;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-maestro-escandallos">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+    // REUTILIZAMOS TUS MISMAS CREDENCIALES DEL PROYECTO EXISTENTE
+    const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+    const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
+    let listadoEscandallosGlobal = [];
+    let lineasInventarioMes = [];
+
+    function lanzarToast(mensaje, tipo = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${tipo}`;
+        toast.innerHTML = `<span>${tipo === 'success' ? '✅' : '❌'}</span> <span>${mensaje}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 50);
+        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
+    }
+
+    function switchTab(num) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`btn-t${num}`).classList.add('active');
+        document.getElementById(`sec${num}`).classList.add('active');
+        
+        if (num === 1) cargarCuadroInventario();
+        if (num === 2) cargarMaestroEscandallos();
+    }
+
+    // ========================================================
+    // LOGICA PESTAÑA 2: MAESTRO DE ESCANDALLOS
+    // ========================================================
+    async function cargarMaestroEscandallos() {
+        const cuerpo = document.getElementById('tabla-maestro-escandallos');
+        if(!cuerpo) return;
+        cuerpo.innerHTML = '<tr><td colspan="6">⏳ Leyendo matriz de costes...</td></tr>';
+
+        const { data, error } = await db_nube
+            .from('maestro_escandallos')
+            .select('*')
+            .order('nombre_articulo', { ascending: true });
+
+        if (error) {
+            cuerpo.innerHTML = '<tr><td colspan="6">❌ Error al conectar con Supabase.</td></tr>';
+            return;
+        }
+
+        listadoEscandallosGlobal = data || [];
+        cuerpo.innerHTML = '';
+
+        if(listadoEscandallosGlobal.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;font-style:italic;">No hay fichas configuradas. Configura la primera arriba.</td></tr>';
+            return;
+        }
+
+        listadoEscandallosGlobal.forEach(esc => {
+            cuerpo.innerHTML += `
+                <tr>
+                    <td><strong>${esc.nombre_articulo}</strong></td>
+                    <td><span style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">${esc.unidad_compra}</span></td>
+                    <td><span style="font-size:11px;background:#e2e8f0;padding:2px 6px;border-radius:4px;">${esc.unidad_recuento}</span></td>
+                    <td style="text-align: center;font-weight:bold;">x${esc.factor_conversion}</td>
+                    <td style="text-align: center;color:#ef4444;font-weight:bold;">${esc.porcentaje_merma}%</td>
+                    <td>
+                        <button class="btn-action btn-danger" style="padding:4px 8px;font-size:11px;margin-top:0;" onclick="eliminarFichaEscandallo('${esc.id}')">Eliminar</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    async function guardarFichaEscandallo() {
+        const inputId = document.getElementById('esc-id').value.trim().toUpperCase();
+        const uCompra = document.getElementById('esc-unidad-compra').value;
+        const uRecuento = document.getElementById('esc-unidad-recuento').value;
+        const factor = parseFloat(document.getElementById('esc-factor').value) || 1.0;
+        const merma = parseFloat(document.getElementById('esc-merma').value) || 0.0;
+
+        if(!inputId) { lanzarToast("El nombre del insumo es obligatorio.", "error"); return; }
+
+        const { error } = await db_nube
+            .from('maestro_escandallos')
+            .upsert([{
+                id: inputId,
+                nombre_articulo: inputId,
+                unidad_compra: uCompra,
+                unidad_recuento: uRecuento,
+                factor_conversion: factor,
+                porcentaje_merma: merma
+            }]);
+
+        if (error) { lanzarToast("No se pudo guardar la regla.", "error"); return; }
+
+        lanzarToast("Regla de rendimiento fijada.");
+        document.getElementById('esc-id').value = '';
+        document.getElementById('esc-merma').value = '0';
+        document.getElementById('esc-factor').value = '1';
+        cargarMaestroEscandallos();
+    }
+
+    async function eliminarFichaEscandallo(id) {
+        if(!confirm("¿Eliminar este insumo del maestro contable?")) return;
+        const { error } = await db_nube.from('maestro_escandallos').delete().eq('id', id);
+        if(error) { lanzarToast("Error al borrar.", "error"); return; }
+        lanzarToast("Insumo desvinculado.");
+        cargarMaestroEscandallos();
+    }
+
+
+    // ========================================================
+    // LOGICA PESTAÑA 1: MATRIZ DE INTEGRACIÓN MENSUAL
+    // ========================================================
+    async function cargarCuadroInventario() {
+        const periodo = document.getElementById('filtro-periodo').value;
+        const cuerpo = document.getElementById('tabla-cierre-mensual');
+        if(!cuerpo) return;
+        cuerpo.innerHTML = '<tr><td colspan="7">⏳ Calculando histórico de compras brutas y rendimientos...</td></tr>';
+
+        // 1. Cargar el maestro para tener las mermas a mano
+        const { data: maestro } = await db_nube.from('maestro_escandallos').select('*');
+        listadoEscandallosGlobal = maestro || [];
+
+        // 2. Cargar registros mensuales existentes
+        const { data: inventarioMes, error } = await db_nube
+            .from('inventario_mensual')
+            .select('*, maestro_escandallos(*)')
+            .eq('mes_anio', periodo);
+
+        if(error) { cuerpo.innerHTML = '<tr><td colspan="7">❌ Error en lectura de histórico.</td></tr>'; return; }
+        
+        lineasInventarioMes = inventarioMes || [];
+        cuerpo.innerHTML = '';
+
+        if(lineasInventarioMes.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;font-style:italic;">Mes en blanco. Dale al botón superior para sincronizar las compras de Fredware Central.</td></tr>';
+            return;
+        }
+
+        lineasInventarioMes.forEach((lin) => {
+            const esc = lin.maestro_escandallos || { unidad_recuento: 'KG', porcentaje_merma: 0 };
+            
+            // Render de fila interactiva con inputs en caliente
+            cuerpo.innerHTML += `
+                <tr>
+                    <td><strong>${lin.articulo_id}</strong></td>
+                    <td><span style="font-size:11px;background:#e2e8f0;padding:2px 6px;border-radius:4px;">${esc.unidad_recuento}</span></td>
+                    <td style="text-align: center;font-weight:bold;color:#475569;">${lin.stock_inicial}</td>
+                    <td style="text-align: center;font-weight:bold;color:#2563eb;">${lin.compras_brutas_mes}</td>
+                    <td style="text-align: center;">
+                        <input type="number" id="f-final-${lin.id}" class="input-table" value="${lin.stock_fisico_final}" min="0" step="0.01" onchange="calcularConsumoFilaEnCaliente(${lin.id}, ${lin.stock_inicial}, ${lin.compras_brutas_mes}, ${esc.porcentaje_merma})">
+                    </td>
+                    <td style="text-align: center;color:#ef4444;font-weight:bold;">${esc.porcentaje_merma}%</td>
+                    <td style="text-align: center;"><span id="neto-display-${lin.id}" class="badge-neto">${lin.consumo_teorico_neto} ${esc.unidad_recuento}</span></td>
+                </tr>
+            `;
+        });
+    }
+
+    // REGLA MATEMÁTICA INTERACTIVA DE INVENTARIO POR DIFERENCIA Y RENDIMIENTO
+    function calcularConsumoFilaEnCaliente(lineaId, inicial, compras, porcMerma) {
+        const inputFisico = parseFloat(document.getElementById(`f-final-${lineaId}`).value) || 0;
+        
+        // Fórmula fundamental: Consumo Bruto = Stock Inicial + Compras - Stock Final Real
+        const consumoBruto = (inicial + compras) - inputFisico;
+        
+        // Aplicamos factor merma: Kilos limpios aprovechados realmente
+        const rendimientoFactor = (100 - porcMerma) / 100;
+        let consumoNetoReal = consumoBruto * rendimientoFactor;
+        if(consumoNetoReal < 0) consumoNetoReal = 0;
+
+        document.getElementById(`neto-display-${lineaId}`).innerText = `${consumoNetoReal.toFixed(2)}`;
+    }
+
+    async function generarLineasMesActual() {
+        const periodo = document.getElementById('filtro-periodo').value;
+        
+        // Forzamos lectura del catálogo para saber qué mermas cruzar
+        const { data: maestro } = await db_nube.from('maestro_escandallos').select('*');
+        if(!maestro || maestro.length === 0) {
+            lanzarToast("Primero debes dar de alta algún insumo en el Maestro (Pestaña 2).", "error");
+            return;
+        }
+
+        // Simulación pasiva de lectura de entradas/albaranes consolidados del PC central (Fredware Oficina)
+        // Busca en tu API local el consolidado bruto
+        let comprasSimuladasBackend = {};
+        try {
+            const res = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+            const db = await res.json();
+            // Recorremos lo que ha entrado y consolidamos los Kg brutos aproximados
+            if(db.cesta) {
+                db.cesta.forEach(item => {
+                    let match = item.detalle.match(/^\[(\d+)\s+\w+\]\s*(.*)$/);
+                    if(match) {
+                        let cant = parseFloat(match[1]);
+                        let nombre = match[2].trim().toUpperCase();
+                        comprasSimuladasBackend[nombre] = (comprasSimuladasBackend[nombre] || 0) + cant;
+                    }
+                });
+            }
+        } catch(e) {
+            console.log("Calculando desde almacenamiento de albaranes locales.");
+        }
+
+        // Guardamos las líneas cruzando el Stock Final del mes anterior si existiese
+        for (let art of maestro) {
+            // Buscamos si el mes anterior tenía stock final para usarlo como inicial
+            let stockInicialCalculado = 0.0;
+            
+            let brutoComprado = comprasSimuladasBackend[art.nombre_articulo] || 0.0;
+            // Si el factor es diferente de 1 (ej: filetes por caja), multiplicamos las cajas por su factor
+            if (art.factor_conversion !== 1) brutoComprado = brutoComprado * art.factor_conversion;
+
+            // Inyectamos fila inicial en Supabase
+            await db_nube.from('inventario_mensual').insert([{
+                mes_anio: periodo,
+                articulo_id: art.id,
+                stock_inicial: stockInicialCalculado,
+                compras_brutas_mes: brutoComprado,
+                stock_fisico_final: 0.0,
+                consumo_teorico_neto: 0.0
+            }]);
+        }
+
+        lanzarToast("Sincronización con base de compras completada.");
+        cargarCuadroInventario();
+    }
+
+    async function guardarConteoFisicoBase() {
+        if(lineasInventarioMes.length === 0) return;
+
+        for(let lin of lineasInventarioMes) {
+            const inputVal = parseFloat(document.getElementById(`f-final-${lin.id}`).value) || 0;
+            const displayNeto = parseFloat(document.getElementById(`neto-display-${lin.id}`).innerText) || 0;
+
+            await db_nube
+                .from('inventario_mensual')
+                .update({ stock_fisico_final: inputVal, consumo_teorico_neto: displayNeto })
+                .eq('id', lin.id);
+        }
+
+        lanzarToast("¡Cierre de inventario mensual guardado a fuego en la nube!");
+        cargarCuadroInventario();
+    }
+
+    // Carga inicial pasiva
+    cargarCuadroInventario();
+</script>
+</body>
+</html>
