@@ -156,15 +156,19 @@
 <div id="toast-container"></div>
 
 <script>
-    // REUTILIZAMOS TUS MISMAS CREDENCIALES DEL PROYECTO EXISTENTE
+    // ============================================================
+    // CONFIGURACIÓN SUPABASE (reutiliza las mismas credenciales)
+    // ============================================================
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
     const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
     let listadoEscandallosGlobal = [];
     let lineasInventarioMes = [];
 
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
     function lanzarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toast-container');
         if (!container) return;
@@ -186,9 +190,9 @@
         if (num === 2) cargarMaestroEscandallos();
     }
 
-    // ========================================================
-    // LOGICA PESTAÑA 2: MAESTRO DE ESCANDALLOS
-    // ========================================================
+    // ============================================================
+    // PESTAÑA 2: MAESTRO DE ESCANDALLOS (sin cambios)
+    // ============================================================
     async function cargarMaestroEscandallos() {
         const cuerpo = document.getElementById('tabla-maestro-escandallos');
         if(!cuerpo) return;
@@ -265,21 +269,121 @@
         cargarMaestroEscandallos();
     }
 
+    // ============================================================
+    // PESTAÑA 1: INVENTARIO MENSUAL (con datos reales de Supabase)
+    // ============================================================
 
-    // ========================================================
-    // LOGICA PESTAÑA 1: MATRIZ DE INTEGRACIÓN MENSUAL
-    // ========================================================
+    // 🔵 Obtener compras brutas del mes desde cesta_pedidos
+    async function obtenerComprasBrutas(periodo) {
+        // El periodo viene como "MM-YYYY", lo convertimos a rango de fechas
+        const [mes, año] = periodo.split('-');
+        const inicio = new Date(parseInt(año), parseInt(mes) - 1, 1);
+        const fin = new Date(parseInt(año), parseInt(mes), 1); // primer día del mes siguiente
+
+        const { data, error } = await db_nube
+            .from('cesta_pedidos')
+            .select('detalle, fecha_entrega_esperada, fecha_registro')
+            .eq('estado', 'RECIBIDO') // Solo lo que ha entrado
+            .gte('fecha_entrega_esperada', inicio.toISOString().split('T')[0])
+            .lt('fecha_entrega_esperada', fin.toISOString().split('T')[0]);
+
+        if (error) {
+            console.error("Error obteniendo compras:", error);
+            return {};
+        }
+
+        // Consolidar por nombre de artículo (extraer del detalle)
+        const compras = {};
+        data.forEach(item => {
+            // Extraer cantidad y nombre del detalle: "[5 KG] MERLUZA"
+            const match = item.detalle.match(/^\[(\d+)\s+\w+\]\s*(.*)$/);
+            if (match) {
+                const cantidad = parseFloat(match[1]);
+                const nombre = match[2].trim().toUpperCase();
+                compras[nombre] = (compras[nombre] || 0) + cantidad;
+            }
+        });
+
+        return compras;
+    }
+
+    // 🔵 Obtener stock final del mes anterior (para usarlo como inicial)
+    async function obtenerStockMesAnterior(periodo, articuloId) {
+        const [mes, año] = periodo.split('-');
+        let mesAnterior = parseInt(mes) - 1;
+        let añoAnterior = parseInt(año);
+        if (mesAnterior === 0) { mesAnterior = 12; añoAnterior--; }
+        const periodoAnterior = `${String(mesAnterior).padStart(2, '0')}-${añoAnterior}`;
+
+        const { data, error } = await db_nube
+            .from('inventario_mensual')
+            .select('stock_fisico_final')
+            .eq('mes_anio', periodoAnterior)
+            .eq('articulo_id', articuloId)
+            .maybeSingle();
+
+        if (error || !data) return 0;
+        return data.stock_fisico_final || 0;
+    }
+
+    // 🔵 Generar líneas para el mes actual (sincronizar con maestro y compras)
+    async function generarLineasMesActual() {
+        const periodo = document.getElementById('filtro-periodo').value;
+
+        // 1. Obtener todos los artículos del maestro
+        const { data: maestro, error: errMaestro } = await db_nube
+            .from('maestro_escandallos')
+            .select('*');
+        if (errMaestro || !maestro || maestro.length === 0) {
+            lanzarToast("Primero debes dar de alta algún insumo en el Maestro (Pestaña 2).", "error");
+            return;
+        }
+
+        // 2. Obtener compras brutas del mes desde la cesta
+        const comprasBrutas = await obtenerComprasBrutas(periodo);
+
+        // 3. Para cada artículo, calcular stock inicial y compras, e insertar/actualizar
+        for (const art of maestro) {
+            const stockInicial = await obtenerStockMesAnterior(periodo, art.id);
+            const compras = comprasBrutas[art.nombre_articulo] || 0;
+
+            // Aplicar factor de conversión si corresponde
+            let comprasAjustadas = compras;
+            if (art.factor_conversion !== 1 && art.unidad_compra === 'CAJAS') {
+                comprasAjustadas = compras * art.factor_conversion;
+            }
+
+            // Insertar o actualizar la línea del mes
+            const { error } = await db_nube
+                .from('inventario_mensual')
+                .upsert([{
+                    mes_anio: periodo,
+                    articulo_id: art.id,
+                    stock_inicial: stockInicial,
+                    compras_brutas_mes: comprasAjustadas,
+                    stock_fisico_final: 0.0,
+                    consumo_teorico_neto: 0.0
+                }], { onConflict: 'mes_anio, articulo_id' });
+
+            if (error) console.error("Error al guardar línea:", error);
+        }
+
+        lanzarToast("Sincronización con compras de Fredware completada.");
+        cargarCuadroInventario();
+    }
+
+    // 🔵 Cargar el cuadro de inventario para el mes seleccionado
     async function cargarCuadroInventario() {
         const periodo = document.getElementById('filtro-periodo').value;
         const cuerpo = document.getElementById('tabla-cierre-mensual');
         if(!cuerpo) return;
         cuerpo.innerHTML = '<tr><td colspan="7">⏳ Calculando histórico de compras brutas y rendimientos...</td></tr>';
 
-        // 1. Cargar el maestro para tener las mermas a mano
+        // 1. Obtener maestro (para mermas y unidad)
         const { data: maestro } = await db_nube.from('maestro_escandallos').select('*');
         listadoEscandallosGlobal = maestro || [];
 
-        // 2. Cargar registros mensuales existentes
+        // 2. Obtener líneas de inventario del mes
         const { data: inventarioMes, error } = await db_nube
             .from('inventario_mensual')
             .select('*, maestro_escandallos(*)')
@@ -298,7 +402,6 @@
         lineasInventarioMes.forEach((lin) => {
             const esc = lin.maestro_escandallos || { unidad_recuento: 'KG', porcentaje_merma: 0 };
             
-            // Render de fila interactiva con inputs en caliente
             cuerpo.innerHTML += `
                 <tr>
                     <td><strong>${lin.articulo_id}</strong></td>
@@ -315,76 +418,17 @@
         });
     }
 
-    // REGLA MATEMÁTICA INTERACTIVA DE INVENTARIO POR DIFERENCIA Y RENDIMIENTO
+    // 🔵 Cálculo interactivo en caliente
     function calcularConsumoFilaEnCaliente(lineaId, inicial, compras, porcMerma) {
         const inputFisico = parseFloat(document.getElementById(`f-final-${lineaId}`).value) || 0;
-        
-        // Fórmula fundamental: Consumo Bruto = Stock Inicial + Compras - Stock Final Real
         const consumoBruto = (inicial + compras) - inputFisico;
-        
-        // Aplicamos factor merma: Kilos limpios aprovechados realmente
         const rendimientoFactor = (100 - porcMerma) / 100;
         let consumoNetoReal = consumoBruto * rendimientoFactor;
         if(consumoNetoReal < 0) consumoNetoReal = 0;
-
         document.getElementById(`neto-display-${lineaId}`).innerText = `${consumoNetoReal.toFixed(2)}`;
     }
 
-    async function generarLineasMesActual() {
-        const periodo = document.getElementById('filtro-periodo').value;
-        
-        // Forzamos lectura del catálogo para saber qué mermas cruzar
-        const { data: maestro } = await db_nube.from('maestro_escandallos').select('*');
-        if(!maestro || maestro.length === 0) {
-            lanzarToast("Primero debes dar de alta algún insumo en el Maestro (Pestaña 2).", "error");
-            return;
-        }
-
-        // Simulación pasiva de lectura de entradas/albaranes consolidados del PC central (Fredware Oficina)
-        // Busca en tu API local el consolidado bruto
-        let comprasSimuladasBackend = {};
-        try {
-            const res = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-            const db = await res.json();
-            // Recorremos lo que ha entrado y consolidamos los Kg brutos aproximados
-            if(db.cesta) {
-                db.cesta.forEach(item => {
-                    let match = item.detalle.match(/^\[(\d+)\s+\w+\]\s*(.*)$/);
-                    if(match) {
-                        let cant = parseFloat(match[1]);
-                        let nombre = match[2].trim().toUpperCase();
-                        comprasSimuladasBackend[nombre] = (comprasSimuladasBackend[nombre] || 0) + cant;
-                    }
-                });
-            }
-        } catch(e) {
-            console.log("Calculando desde almacenamiento de albaranes locales.");
-        }
-
-        // Guardamos las líneas cruzando el Stock Final del mes anterior si existiese
-        for (let art of maestro) {
-            // Buscamos si el mes anterior tenía stock final para usarlo como inicial
-            let stockInicialCalculado = 0.0;
-            
-            let brutoComprado = comprasSimuladasBackend[art.nombre_articulo] || 0.0;
-            // Si el factor es diferente de 1 (ej: filetes por caja), multiplicamos las cajas por su factor
-            if (art.factor_conversion !== 1) brutoComprado = brutoComprado * art.factor_conversion;
-
-            // Inyectamos fila inicial en Supabase
-            await db_nube.from('inventario_mensual').insert([{
-                mes_anio: periodo,
-                articulo_id: art.id,
-                stock_inicial: stockInicialCalculado,
-                compras_brutas_mes: brutoComprado,
-                stock_fisico_final: 0.0,
-                consumo_teorico_neto: 0.0
-            }]);
-        }
-
-        lanzarToast("Sincronización con base de compras completada.");
-        cargarCuadroInventario();
-    }
-
+    // 🔵 Guardar el conteo físico final y el consumo neto calculado
     async function guardarConteoFisicoBase() {
         if(lineasInventarioMes.length === 0) return;
 
@@ -394,7 +438,11 @@
 
             await db_nube
                 .from('inventario_mensual')
-                .update({ stock_fisico_final: inputVal, consumo_teorico_neto: displayNeto })
+                .update({ 
+                    stock_fisico_final: inputVal, 
+                    consumo_teorico_neto: displayNeto,
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', lin.id);
         }
 
@@ -402,7 +450,9 @@
         cargarCuadroInventario();
     }
 
-    // Carga inicial pasiva
+    // ============================================================
+    // CARGA INICIAL
+    // ============================================================
     cargarCuadroInventario();
 </script>
 </body>
