@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
-        /* ===== ESTILOS UNIFICADOS (tomados de la versión más completa) ===== */
+        /* (mismos estilos que antes, no los repito para ahorrar) */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #333; padding: 10px; }
         .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -179,10 +179,11 @@
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
     const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
+    const API_URL = "https://untried-january-thinning.ngrok-free.dev/"; // Opcional
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     let proveedorSeleccionadoId = null;
     let alertaEnviadaHora = false;
+    let cestaLocal = [];
 
     // ============================================================
     //  UTILIDADES
@@ -215,6 +216,10 @@
             return { cantidad: parseInt(match[1]), unidad: match[2], articulo: match[3] };
         }
         return { cantidad: 1, unidad: 'UNIDADES', articulo: detalleString };
+    }
+
+    function generarIdUnico() {
+        return "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
     }
 
     // ============================================================
@@ -253,76 +258,141 @@
     }
 
     // ============================================================
-    //  SINCRONIZACIÓN CON OFICINA
+    //  FUNCIONES DE ACCESO A SUPABASE (con nombres de columna reales)
     // ============================================================
-    async function sincronizarConOficina(endpoint, datos) {
-        try {
-            await fetch(`${API_URL}api/${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                body: JSON.stringify(datos)
-            });
-        } catch (error) {
-            console.error("Error en sincronización con backend central:", error);
-        }
+
+    // --- CESTA ---
+    async function obtenerCesta() {
+        const { data, error } = await db_nube
+            .from('cesta_pedidos')
+            .select('*')
+            .neq('estado', 'RECIBIDO')
+            .order('fecha_registro', { ascending: true });
+        if (error) throw error;
+        return data;
     }
 
-    async function cargarDatosDeOficina() {
+    async function agregarItemCesta(item) {
+        const { error } = await db_nube.from('cesta_pedidos').insert(item);
+        if (error) throw error;
+    }
+
+    async function actualizarItemCesta(id, cambios) {
+        const { error } = await db_nube
+            .from('cesta_pedidos')
+            .update(cambios)
+            .eq('id', id);
+        if (error) throw error;
+    }
+
+    async function eliminarItemCesta(id) {
+        const { error } = await db_nube
+            .from('cesta_pedidos')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    }
+
+    // --- FALTAS (usando columna 'insumo' en lugar de 'descripcion') ---
+    async function obtenerFaltas() {
+        const { data, error } = await db_nube
+            .from('faltas_cocina')
+            .select('*')
+            .order('fecha_anotado', { ascending: false });
+        if (error) throw error;
+        return data;
+    }
+
+    async function agregarFalta(insumo) {
+        const { error } = await db_nube
+            .from('faltas_cocina')
+            .insert({ insumo: insumo });
+        if (error) throw error;
+    }
+
+    async function eliminarFalta(id) {
+        const { error } = await db_nube
+            .from('faltas_cocina')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    }
+
+    // --- PROVEEDORES ---
+    async function obtenerProveedores() {
+        const { data, error } = await db_nube
+            .from('proveedores')
+            .select('*')
+            .order('nombre', { ascending: true });
+        if (error) throw error;
+        return data;
+    }
+
+    // ============================================================
+    //  CARGA INICIAL Y SUSCRIPCIONES EN TIEMPO REAL
+    // ============================================================
+
+    async function cargarDatosIniciales() {
         try {
-            const respuesta = await fetch(`${API_URL}api/datos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-            if (!respuesta.ok) throw new Error("Ngrok Gateway Error");
-            const db = await respuesta.json();
-            
-            let cestaLocal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-            let cestaServidor = Array.isArray(db.cesta) ? db.cesta : [];
-
-            cestaLocal = cestaLocal.filter(itemLocal => {
-                const itemServ = cestaServidor.find(s => s.detalle === itemLocal.detalle || (s.id && s.id === itemLocal.id));
-                return !(itemServ && itemServ.estado === "RECIBIDO");
-            });
-
-            if (cestaServidor.length > 0) {
-                cestaServidor.forEach(itemServ => {
-                    if (itemServ.estado !== "RECIBIDO") {
-                        let idxExistente = cestaLocal.findIndex(l => l.detalle === itemServ.detalle);
-                        if (idxExistente !== -1) {
-                            cestaLocal[idxExistente].estado = itemServ.estado;
-                        } else {
-                            cestaLocal.push(itemServ);
-                        }
-                    }
-                });
-            }
-            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cestaLocal));
-
-            if (db.faltas) localStorage.setItem('fredware_faltas_cocina', JSON.stringify(db.faltas));
-            
-            if (document.getElementById('btn-t1').classList.contains('active')) renderCesta();
-            if (document.getElementById('btn-t2').classList.contains('active')) renderVisorPasivo();
-
+            const [cesta, faltas, proveedores] = await Promise.all([
+                obtenerCesta(),
+                obtenerFaltas(),
+                obtenerProveedores()
+            ]);
+            cestaLocal = cesta;
+            localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
+            renderCesta();
+            renderVisorPasivo();
             evaluarRelojesDeCierre();
-
         } catch (error) {
-            console.log("Offline mode activo para terminal de cocina.");
+            console.error("Error cargando datos iniciales:", error);
+            lanzarToast("Error al cargar datos de la nube.", "error");
         }
     }
 
+    function suscribirseCambios() {
+        db_nube
+            .channel('cesta-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'cesta_pedidos' }, async () => {
+                cestaLocal = await obtenerCesta();
+                renderCesta();
+                evaluarRelojesDeCierre();
+            })
+            .subscribe();
+
+        db_nube
+            .channel('faltas-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'faltas_cocina' }, () => {
+                renderVisorPasivo();
+            })
+            .subscribe();
+
+        db_nube
+            .channel('proveedores-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'proveedores' }, async () => {
+                const proveedores = await obtenerProveedores();
+                localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
+                renderCesta();
+                renderVisorPasivo();
+            })
+            .subscribe();
+    }
+
     // ============================================================
-    //  ALERTA DE CIERRE (BANNER + WHATSAPP 1 HORA ANTES)
-    //  El número de Fred se mantiene literal, tal como estaba en los originales
+    //  ALERTA DE CIERRE
     // ============================================================
     function evaluarRelojesDeCierre() {
         const banner = document.getElementById('alerta-reloj-compras');
         if (!banner) return;
 
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-        const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const cesta = cestaLocal.filter(item => item.estado === 'PENDIENTE');
         const ahora = new Date();
 
         let proveedoresEnPeligro = [];
 
         proveedores.forEach(p => {
-            const tienePendientes = cesta.some(item => item.proveedor_id === p.nombre && item.estado === "PENDIENTE");
+            const tienePendientes = cesta.some(item => item.proveedor_id === p.nombre);
             if (!tienePendientes || !p.hora_limite) return;
 
             const partesHora = p.hora_limite.split(':');
@@ -342,14 +412,12 @@
             proveedoresEnPeligro.sort((a, b) => a.minutos - b.minutos);
             const masUrgente = proveedoresEnPeligro[0];
 
-            // Enviar alerta WhatsApp si faltan 60 minutos o menos y no se ha enviado aún
             if (masUrgente.minutos <= 60 && !alertaEnviadaHora) {
                 let mensaje = `⚠️ ALERTA FRED: Pedidos a punto de cerrar en 1 hora.\n\n`;
                 proveedoresEnPeligro.forEach(p => {
                     mensaje += `• ${p.nombre}: ${p.minutos} minutos restantes.\n`;
                 });
                 mensaje += `\nRevisa el panel de compras urgentemente.`;
-                // Número fijo de Fred (sin modificar)
                 window.open('https://wa.me/34604002691?text=' + encodeURIComponent(mensaje), '_blank');
                 alertaEnviadaHora = true;
                 lanzarToast("📲 Alerta de 1 hora enviada a Fred.");
@@ -364,93 +432,10 @@
     }
 
     // ============================================================
-    //  CESTA (CRUD + RENDER)
+    //  FUNCIONES DE LA CESTA
     // ============================================================
-    function subirCestaAlServidor() {
-        const cestaLocal = localStorage.getItem('fredware_cesta_compras');
-        if (!cestaLocal || JSON.parse(cestaLocal).length === 0) {
-            lanzarToast("La cesta está vacía.", "warning");
-            return;
-        }
 
-        const btn = document.querySelector("button[onclick='subirCestaAlServidor()']");
-        const btnText = document.getElementById('btn-sync-text');
-        
-        if (btn && btnText) { 
-            btn.disabled = true; 
-            btnText.innerHTML = `<span class="spinner"></span> Sincronizando con Oficina...`; 
-        }
-
-        fetch(`${API_URL}api/cesta`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-            body: JSON.stringify(JSON.parse(cestaLocal))
-        })
-        .then(res => {
-            if (res.ok) lanzarToast("¡Pedidos inyectados en la terminal de cocina!");
-            else lanzarToast(`Error en central. Respuesta HTTP: ${res.status}`, "error");
-        })
-        .catch(err => lanzarToast("Conexión fallida con el PC central.", "error"))
-        .finally(() => {
-            if (btn && btnText) { 
-                btn.disabled = false; 
-                btnText.innerHTML = `⚡ Sincronizar Pedidos con la Oficina`; 
-            }
-        });
-    }
-
-    function buscarAutocompletado(busqueda) {
-        const box = document.getElementById('sugerencias-box');
-        if (!busqueda.trim()) { box.style.display = 'none'; return; }
-        
-        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-        box.innerHTML = '';
-        let coincidencias = [];
-        const busquedaLimpia = busqueda.toUpperCase();
-
-        proveedores.forEach(p => {
-            let catalogo = p.catalogo || [];
-            if (typeof catalogo === 'string') catalogo = catalogo.split(',').map(c => c.trim());
-
-            catalogo.forEach(prod => {
-                if (prod.toUpperCase().includes(busquedaLimpia)) {
-                    coincidencias.push({ producto: prod, proveedor: p.nombre });
-                }
-            });
-        });
-
-        coincidencias = coincidencias.filter((item, index, self) =>
-            index === self.findIndex(t => t.producto === item.producto && t.proveedor === item.proveedor)
-        );
-
-        coincidencias.sort((a, b) => {
-            const aStarts = a.producto.toUpperCase().startsWith(busquedaLimpia);
-            const bStarts = b.producto.toUpperCase().startsWith(busquedaLimpia);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
-            return a.producto.localeCompare(b.producto);
-        });
-
-        const finalCinco = coincidencias.slice(0, 5);
-
-        finalCinco.forEach(c => {
-            const item = document.createElement('div');
-            item.className = 'suggestion-item';
-            item.innerHTML = `📦 <strong>${c.producto}</strong> <span style="color:#64748b;font-size:11px;">(${c.proveedor})</span>`;
-            item.onclick = () => seleccionarSugerencia(c.producto, c.proveedor);
-            box.appendChild(item);
-        });
-
-        box.style.display = finalCinco.length > 0 ? 'block' : 'none';
-    }
-
-    function seleccionarSugerencia(producto, proveedorSugerido) {
-        document.getElementById('manual-articulo').value = producto;
-        document.getElementById('sugerencias-box').style.display = 'none';
-        document.getElementById('manual-articulo').dataset.sugerido = proveedorSugerido;
-    }
-
-    function agregarArticuloManual() {
+    async function agregarArticuloManual() {
         const inputArt = document.getElementById('manual-articulo');
         const inputCant = document.getElementById('manual-cantidad');
         const selectUni = document.getElementById('manual-unidad');
@@ -466,10 +451,8 @@
         }
 
         const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        
-        const existeYa = cesta.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
-        if (existeYa) {
+        const existe = cestaLocal.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
+        if (existe) {
             lanzarToast("Este artículo ya está activo en tu cesta.", "warning");
             return;
         }
@@ -477,41 +460,46 @@
         let provAsignado = inputArt.dataset.sugerido || "S/P";
         const fechaEntrega = calcularFechaManana();
 
-        cesta.push({ 
-            id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), 
-            detalle: detalleFormateado, 
-            proveedor_id: provAsignado, 
-            estado: "PENDIENTE", 
+        const nuevoItem = {
+            id: generarIdUnico(),
+            detalle: detalleFormateado,
+            proveedor_id: provAsignado,
+            estado: "PENDIENTE",
             fecha_registro: new Date().toISOString(),
-            fecha_entrega_esperada: fechaEntrega 
-        });
-        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        
-        sincronizarConOficina('cesta', cesta);
-        inputArt.value = ''; inputCant.value = '1'; delete inputArt.dataset.sugerido;
-        lanzarToast("Insumo añadido manual para mañana.");
-        renderCesta();
+            fecha_entrega_esperada: fechaEntrega
+        };
+
+        try {
+            await agregarItemCesta(nuevoItem);
+            cestaLocal.push(nuevoItem);
+            inputArt.value = ''; inputCant.value = '1'; delete inputArt.dataset.sugerido;
+            lanzarToast("Insumo añadido manual para mañana.");
+            renderCesta();
+            sincronizarConOficina('cesta', cestaLocal);
+        } catch (error) {
+            lanzarToast("Error al guardar en la nube.", "error");
+        }
     }
 
-    function parsearTextoWhatsApp() {
+    async function parsearTextoWhatsApp() {
         const txt = document.getElementById('raw-whatsapp').value.trim();
         if (!txt) return;
         
         let lineas = txt.split('\n');
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         let itemsAnadidos = 0;
         const fechaEntrega = calcularFechaManana();
+        const itemsAAgregar = [];
         
-        lineas.forEach(linea => {
+        for (const linea of lineas) {
             let desc = linea.trim().toUpperCase();
-            if (desc === '') return;
+            if (desc === '') continue;
             
             let descLimpia = desc.replace(/^\[.*?\]\s*/, '');
             let detalleFinal = `[1 UNIDADES] ${descLimpia}`;
             
-            const existeYa = cesta.some(item => item.detalle === detalleFinal && item.estado !== "RECIBIDO");
-            if (existeYa) return;
+            const existe = cestaLocal.some(item => item.detalle === detalleFinal && item.estado !== "RECIBIDO");
+            if (existe) continue;
 
             let provSugerido = "S/P";
             for (let p of proveedores) {
@@ -523,78 +511,104 @@
                 }
             }
 
-            cesta.push({ 
-                id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), 
-                detalle: detalleFinal, 
-                proveedor_id: provSugerido, 
-                estado: "PENDIENTE", 
+            itemsAAgregar.push({
+                id: generarIdUnico(),
+                detalle: detalleFinal,
+                proveedor_id: provSugerido,
+                estado: "PENDIENTE",
                 fecha_registro: new Date().toISOString(),
                 fecha_entrega_esperada: fechaEntrega
             });
             itemsAnadidos++;
-        });
-        
-        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('cesta', cesta);
-        document.getElementById('raw-whatsapp').value = '';
-        renderCesta();
-        if (itemsAnadidos > 0) lanzarToast(`Volcado completado. +${itemsAnadidos} artículos.`);
-    }
-
-    function actualizarLineaCesta(idxReal, nuevaCantidad, nuevaUnidad, nombreArticulo) {
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        if (nuevaCantidad <= 0) nuevaCantidad = 1;
-        
-        cesta[idxReal].detalle = `[${nuevaCantidad} ${nuevaUnidad}] ${nombreArticulo}`;
-        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('cesta', cesta);
-        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
-        renderBloquesWhatsApp(cesta, proveedores);
-        renderCesta();
-    }
-
-    function cambiarProveedorItem(idx, provNombre) {
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        cesta[idx].proveedor_id = provNombre;
-        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('cesta', cesta);
-        renderCesta();
-    }
-
-    function quitarItemCesta(idx) {
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        cesta.splice(idx, 1);
-        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('cesta', cesta);
-        renderCesta();
-    }
-
-    // --- MARCAR COMO RECIBIDO + QR ---
-    function marcarComoRecibido(idx) {
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        if (idx < 0 || idx >= cesta.length) return;
-
-        const item = cesta[idx];
-        item.estado = "RECIBIDO";
-        
-        let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-        const nombreArticulo = descomponerDetalleCesta(item.detalle).articulo;
-        const idxFalta = faltas.findIndex(f => f.includes(nombreArticulo));
-        if (idxFalta !== -1) {
-            faltas.splice(idxFalta, 1);
-            localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
-            sincronizarConOficina('faltas', faltas);
         }
 
-        cesta.splice(idx, 1);
-        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('cesta', cesta);
+        if (itemsAAgregar.length > 0) {
+            try {
+                for (const item of itemsAAgregar) {
+                    await agregarItemCesta(item);
+                    cestaLocal.push(item);
+                }
+                document.getElementById('raw-whatsapp').value = '';
+                lanzarToast(`Volcado completado. +${itemsAnadidos} artículos.`);
+                renderCesta();
+                sincronizarConOficina('cesta', cestaLocal);
+            } catch (error) {
+                lanzarToast("Error al guardar en la nube.", "error");
+            }
+        } else {
+            lanzarToast("No se añadió ningún artículo nuevo.", "warning");
+        }
+    }
 
-        const qrData = `RECIBIDO: ${item.detalle} - ${new Date().toLocaleString()}`;
-        mostrarQR(qrData);
+    async function actualizarLineaCesta(idxReal, nuevaCantidad, nuevaUnidad, nombreArticulo) {
+        if (nuevaCantidad <= 0) nuevaCantidad = 1;
+        const item = cestaLocal[idxReal];
+        if (!item) return;
+        
+        const nuevoDetalle = `[${nuevaCantidad} ${nuevaUnidad}] ${nombreArticulo}`;
+        try {
+            await actualizarItemCesta(item.id, { detalle: nuevoDetalle });
+            item.detalle = nuevoDetalle;
+            renderCesta();
+            sincronizarConOficina('cesta', cestaLocal);
+        } catch (error) {
+            lanzarToast("Error al actualizar.", "error");
+        }
+    }
 
-        lanzarToast(`✅ ${item.detalle} marcado como recibido.`);
-        renderCesta();
+    async function cambiarProveedorItem(idx, provNombre) {
+        const item = cestaLocal[idx];
+        if (!item) return;
+        try {
+            await actualizarItemCesta(item.id, { proveedor_id: provNombre });
+            item.proveedor_id = provNombre;
+            renderCesta();
+            sincronizarConOficina('cesta', cestaLocal);
+        } catch (error) {
+            lanzarToast("Error al cambiar proveedor.", "error");
+        }
+    }
+
+    async function quitarItemCesta(idx) {
+        const item = cestaLocal[idx];
+        if (!item) return;
+        if (!confirm(`¿Eliminar "${item.detalle}" de la cesta?`)) return;
+        try {
+            await eliminarItemCesta(item.id);
+            cestaLocal.splice(idx, 1);
+            renderCesta();
+            sincronizarConOficina('cesta', cestaLocal);
+        } catch (error) {
+            lanzarToast("Error al eliminar.", "error");
+        }
+    }
+
+    async function marcarComoRecibido(idx) {
+        const item = cestaLocal[idx];
+        if (!item) return;
+
+        try {
+            await actualizarItemCesta(item.id, { estado: 'RECIBIDO' });
+            
+            // Buscar en faltas usando 'insumo'
+            const nombreArticulo = descomponerDetalleCesta(item.detalle).articulo;
+            const faltas = await obtenerFaltas();
+            const faltaEncontrada = faltas.find(f => f.insumo && f.insumo.includes(nombreArticulo));
+            if (faltaEncontrada) {
+                await eliminarFalta(faltaEncontrada.id);
+            }
+
+            cestaLocal.splice(idx, 1);
+            
+            const qrData = `RECIBIDO: ${item.detalle} - ${new Date().toLocaleString()}`;
+            mostrarQR(qrData);
+
+            lanzarToast(`✅ ${item.detalle} marcado como recibido.`);
+            renderCesta();
+            sincronizarConOficina('cesta', cestaLocal);
+        } catch (error) {
+            lanzarToast("Error al marcar como recibido.", "error");
+        }
     }
 
     function mostrarQR(data) {
@@ -618,21 +632,20 @@
     }
 
     function renderCesta() {
-        const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
         const contenedorAcordeon = document.getElementById('contenedor-acordeon-cesta');
         if (!contenedorAcordeon) return;
         contenedorAcordeon.innerHTML = '';
 
-        renderBloquesWhatsApp(cesta, proveedores);
-        if (cesta.length === 0) {
+        renderBloquesWhatsApp(cestaLocal, proveedores);
+        if (cestaLocal.length === 0) {
             contenedorAcordeon.innerHTML = `<div class="text-center text-slate-400 py-6 italic text-sm">La cesta está vacía.</div>`;
             return;
         }
 
         const estadosColapsados = JSON.parse(localStorage.getItem('fredware_acordeon_estados')) || {};
         let grupos = {};
-        cesta.forEach((item, idx) => {
+        cestaLocal.forEach((item, idx) => {
             if (item.estado !== "RECIBIDO") {
                 let pId = (item.proveedor_id || "S/P").trim().toUpperCase();
                 if (!grupos[pId]) grupos[pId] = [];
@@ -663,18 +676,16 @@
                                 const datosLinea = descomponerDetalleCesta(pack.item.detalle);
                                 const unidadesDisponibles = ['KG', 'L', 'CAJAS', 'BOTES', 'UNIDADES'];
                                 
-                                let selectUnidadesCesta = `<select class="select-uni cesta-uni" onchange="actualizarLineaCesta(${pack.idxReal}, document.getElementById('cesta-cant-${pack.item.id ? pack.item.id : pack.idxReal}').value, this.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">`;
+                                let selectUnidadesCesta = `<select class="select-uni cesta-uni" onchange="actualizarLineaCesta(${pack.idxReal}, document.getElementById('cesta-cant-${pack.item.id}').value, this.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">`;
                                 unidadesDisponibles.forEach(u => {
                                     selectUnidadesCesta += `<option value="${u}" ${datosLinea.unidad === u ? 'selected' : ''}>${u.toLowerCase()}</option>`;
                                 });
                                 selectUnidadesCesta += `</select>`;
 
-                                const uniqueId = pack.item.id ? pack.item.id : pack.idxReal;
-
                                 return `<tr>
                                     <td>
                                         <div class="cesta-item-flex">
-                                            <input type="number" id="cesta-cant-${uniqueId}" class="input-cant cesta-cant" value="${datosLinea.cantidad}" min="1" onchange="actualizarLineaCesta(${pack.idxReal}, this.value, this.nextElementSibling.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">
+                                            <input type="number" id="cesta-cant-${pack.item.id}" class="input-cant cesta-cant" value="${datosLinea.cantidad}" min="1" onchange="actualizarLineaCesta(${pack.idxReal}, this.value, this.nextElementSibling.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">
                                             ${selectUnidadesCesta}
                                             <span style="margin-left: 5px;"><strong>${datosLinea.articulo}</strong></span>
                                         </div>
@@ -744,14 +755,23 @@
         });
     }
 
-    function limpiarBloqueProveedor(provNombre) {
+    async function limpiarBloqueProveedor(provNombre) {
         if (!confirm(`¿Vaciar bloque de ${provNombre}?`)) return;
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        cesta = cesta.filter(item => !(item.proveedor_id === provNombre && item.estado === "PENDIENTE"));
-        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('cesta', cesta);
-        lanzarToast(`Bloque de ${provNombre} vaciado.`);
-        renderCesta();
+        const itemsAEliminar = cestaLocal.filter(item => item.proveedor_id === provNombre && item.estado === "PENDIENTE");
+        if (itemsAEliminar.length === 0) return;
+
+        try {
+            for (const item of itemsAEliminar) {
+                await eliminarItemCesta(item.id);
+                const idx = cestaLocal.indexOf(item);
+                if (idx !== -1) cestaLocal.splice(idx, 1);
+            }
+            lanzarToast(`Bloque de ${provNombre} vaciado.`);
+            renderCesta();
+            sincronizarConOficina('cesta', cestaLocal);
+        } catch (error) {
+            lanzarToast("Error al vaciar bloque.", "error");
+        }
     }
 
     function dispararWhatsAppProveedor(provNombre, telefono) {
@@ -760,8 +780,7 @@
             lanzarToast("Teléfono de proveedor inválido.", "error");
             return;
         }
-        const cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-        const articulos = cesta.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && i.estado !== "RECIBIDO");
+        const articulos = cestaLocal.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && i.estado !== "RECIBIDO");
         
         let textoMensaje = `Buenos dias este es el pedido de hoy para Attica As Galeras y:\n\n`;
         articulos.forEach(item => { textoMensaje += `• ${item.detalle}\n`; });
@@ -769,8 +788,9 @@
     }
 
     // ============================================================
-    //  PROVEEDORES (CRUD + SUPABASE)
+    //  PROVEEDORES
     // ============================================================
+
     async function guardarProveedor() {
         const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
         const contacto = document.getElementById('prov-contacto').value.trim();
@@ -795,25 +815,26 @@
             dias_reparto: diasRepartir
         };
 
-        const { error } = await db_nube
-            .from('proveedores')
-            .upsert([datosProv], { onConflict: 'id' });
+        try {
+            const { error } = await db_nube
+                .from('proveedores')
+                .upsert([datosProv], { onConflict: 'id' });
 
-        if (error) {
-            console.error(error);
-            lanzarToast("No se pudo salvar la ficha en la nube.", "error");
-            return;
+            if (error) throw error;
+
+            document.getElementById('prov-nombre').value = '';
+            document.getElementById('prov-contacto').value = '';
+            document.getElementById('prov-telefono').value = '';
+            
+            initDaysGrids();
+            document.getElementById('panel-plantilla-habituales').style.display = 'none';
+            lanzarToast(`Ficha de ${nombre} blindada en la nube.`);
+            const proveedores = await obtenerProveedores();
+            localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
+            renderCesta();
+        } catch (error) {
+            lanzarToast("Error al guardar proveedor.", "error");
         }
-
-        document.getElementById('prov-nombre').value = '';
-        document.getElementById('prov-contacto').value = '';
-        document.getElementById('prov-telefono').value = '';
-        
-        initDaysGrids();
-        document.getElementById('panel-plantilla-habituales').style.display = 'none';
-        lanzarToast(`Ficha de ${nombre} blindada en la nube.`);
-        await cargarProveedoresDesdeSupabase();
-        renderCesta();
     }
 
     async function cargarProveedoresDesdeSupabase() {
@@ -821,44 +842,39 @@
         if (!div) return;
         div.innerHTML = '<div style="font-size:12px;color:#64748b;padding:5px;">⏳ Sincronizando con Supabase...</div>';
         
-        const { data: listaProveedores, error } = await db_nube
-            .from('proveedores')
-            .select('*')
-            .order('nombre', { ascending: true });
+        try {
+            const listaProveedores = await obtenerProveedores();
+            localStorage.setItem('fredware_proveedores', JSON.stringify(listaProveedores || []));
 
-        if (error) {
+            if (!listaProveedores || listaProveedores.length === 0) {
+                div.innerHTML = '<div style="font-size:12px;color:#94a3b8;text-align:center;padding:12px;">Agenda en blanco en la nube.</div>';
+                return;
+            }
+
+            div.innerHTML = '';
+            listaProveedores.forEach((p) => {
+                let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
+                let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono";
+                let contactoStr = p.contacto ? `👤 Contacto: ${p.contacto}` : "👤 Sin gestor";
+                
+                const tarjeta = document.createElement('div');
+                tarjeta.style.cssText = "background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1; cursor:pointer;";
+                tarjeta.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>🏢 ${p.nombre}</strong>
+                        <button class="btn-del-row" onclick="event.stopPropagation(); eliminarProveedorSupabase('${p.id}')">Eliminar</button>
+                    </div>
+                    <div style="margin-top:4px; color:#475569;">
+                        <span>${contactoStr}</span> | <span>${tel}</span><br>
+                        <span style="color:#64748b; font-size:11px;">Reparte: ${listado} | Límite: ${p.hora_limite || '13:00'}</span>
+                    </div>
+                `;
+                tarjeta.onclick = () => verProveedorEnFormularioDirecto(p);
+                div.appendChild(tarjeta);
+            });
+        } catch (error) {
             div.innerHTML = '<div style="font-size:12px;color:#ef4444;">❌ Error de conexión remota.</div>';
-            return;
         }
-
-        localStorage.setItem('fredware_proveedores', JSON.stringify(listaProveedores || []));
-
-        if (!listaProveedores || listaProveedores.length === 0) {
-            div.innerHTML = '<div style="font-size:12px;color:#94a3b8;text-align:center;padding:12px;">Agenda en blanco en la nube.</div>';
-            return;
-        }
-
-        div.innerHTML = '';
-        listaProveedores.forEach((p) => {
-            let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
-            let tel = p.telefono ? `📞 Tel: ${p.telefono}` : "❌ Sin Teléfono";
-            let contactoStr = p.contacto ? `👤 Contacto: ${p.contacto}` : "👤 Sin gestor";
-            
-            const tarjeta = document.createElement('div');
-            tarjeta.style.cssText = "background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1; cursor:pointer;";
-            tarjeta.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong>🏢 ${p.nombre}</strong>
-                    <button class="btn-del-row" onclick="event.stopPropagation(); eliminarProveedorSupabase('${p.id}')">Eliminar</button>
-                </div>
-                <div style="margin-top:4px; color:#475569;">
-                    <span>${contactoStr}</span> | <span>${tel}</span><br>
-                    <span style="color:#64748b; font-size:11px;">Reparte: ${listado} | Límite: ${p.hora_limite || '13:00'}</span>
-                </div>
-            `;
-            tarjeta.onclick = () => verProveedorEnFormularioDirecto(p);
-            div.appendChild(tarjeta);
-        });
     }
 
     function verProveedorEnFormularioDirecto(p) {
@@ -877,25 +893,27 @@
     async function eliminarProveedorSupabase(idProv) {
         if (!confirm(`¿Eliminar permanentemente a ${idProv}?`)) return;
 
-        const { error } = await db_nube
-            .from('proveedores')
-            .delete()
-            .eq('id', idProv);
+        try {
+            const { error } = await db_nube
+                .from('proveedores')
+                .delete()
+                .eq('id', idProv);
 
-        if (error) {
-            lanzarToast("Operación denegada por el servidor.", "error");
-            return;
+            if (error) throw error;
+
+            document.getElementById('panel-plantilla-habituales').style.display = 'none';
+            lanzarToast("Distribuidor eliminado.");
+            await cargarProveedoresDesdeSupabase();
+            renderCesta();
+        } catch (error) {
+            lanzarToast("Error al eliminar proveedor.", "error");
         }
-
-        document.getElementById('panel-plantilla-habituales').style.display = 'none';
-        lanzarToast("Distribuidor eliminado.");
-        await cargarProveedoresDesdeSupabase();
-        renderCesta();
     }
 
     // ============================================================
     //  PLANTILLA DE ARTÍCULOS HABITUALES
     // ============================================================
+
     async function cargarPlantillaProveedor(idProv) {
         proveedorSeleccionadoId = idProv;
         const panel = document.getElementById('panel-plantilla-habituales');
@@ -908,35 +926,36 @@
         panel.style.display = 'block'; 
         contenedorLista.innerHTML = '<div style="font-size:12px;color:#64748b;padding:5px;">⏳ Cargando habituales...</div>';
 
-        const { data: articulos, error } = await db_nube
-            .from('articulos_habituales')
-            .select('*')
-            .eq('proveedor_id', idProv)
-            .order('nombre_articulo', { ascending: true });
+        try {
+            const { data: articulos, error } = await db_nube
+                .from('articulos_habituales')
+                .select('*')
+                .eq('proveedor_id', idProv)
+                .order('nombre_articulo', { ascending: true });
 
-        if (error) {
+            if (error) throw error;
+
+            if (!articulos || articulos.length === 0) {
+                contenedorLista.innerHTML = '<div style="font-size:12px;color:#94a3b8;font-style:italic;padding:5px;">Esta plantilla no tiene artículos guardados todavía.</div>';
+                return;
+            }
+
+            contenedorLista.innerHTML = '';
+            articulos.forEach(art => {
+                const fila = document.createElement('div');
+                fila.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:6px; border-bottom:1px solid #f1f5f9;";
+                fila.innerHTML = `
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:normal; margin-top:0;">
+                        <input type="checkbox" class="chk-plantilla-item" value="${art.nombre_articulo}" data-unidad="${art.unidad_defecto}" style="width:auto; margin-top:0;">
+                        <span><strong>${art.nombre_articulo}</strong> <span style="color:#64748b; font-size:11px;">(${art.unidad_defecto})</span></span>
+                    </label>
+                    <button class="btn-del-row" style="padding:2px 6px;" onclick="eliminarArticuloPlantilla(${art.id})">❌</button>
+                `;
+                contenedorLista.appendChild(fila);
+            });
+        } catch (error) {
             contenedorLista.innerHTML = '<div style="font-size:12px;color:#ef4444;padding:5px;">❌ Error al leer Supabase.</div>';
-            return;
         }
-
-        if (!articulos || articulos.length === 0) {
-            contenedorLista.innerHTML = '<div style="font-size:12px;color:#94a3b8;font-style:italic;padding:5px;">Esta plantilla no tiene artículos guardados todavía.</div>';
-            return;
-        }
-
-        contenedorLista.innerHTML = '';
-        articulos.forEach(art => {
-            const fila = document.createElement('div');
-            fila.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:6px; border-bottom:1px solid #f1f5f9;";
-            fila.innerHTML = `
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:normal; margin-top:0;">
-                    <input type="checkbox" class="chk-plantilla-item" value="${art.nombre_articulo}" data-unidad="${art.unidad_defecto}" style="width:auto; margin-top:0;">
-                    <span><strong>${art.nombre_articulo}</strong> <span style="color:#64748b; font-size:11px;">(${art.unidad_defecto})</span></span>
-                </label>
-                <button class="btn-del-row" style="padding:2px 6px;" onclick="eliminarArticuloPlantilla(${art.id})">❌</button>
-            `;
-            contenedorLista.appendChild(fila);
-        });
     }
 
     async function agregarArticuloAPlantilla() {
@@ -945,59 +964,64 @@
         const articulo = inputArt.value.trim().toUpperCase();
         const unidad = selectUni.value;
 
-        if (!articulo || !proveedorSeleccionadoId) return;
-
-        const { error } = await db_nube
-            .from('articulos_habituales')
-            .insert([{ proveedor_id: proveedorSeleccionadoId, nombre_articulo: articulo, unidad_defecto: unidad }]);
-
-        if (error) {
-            lanzarToast("No se pudo añadir a la plantilla.", "error");
+        if (!articulo || !proveedorSeleccionadoId) {
+            lanzarToast("Selecciona un proveedor y escribe un artículo.", "warning");
             return;
         }
 
-        inputArt.value = '';
-        lanzarToast("Añadido a la lista de habituales.");
-        cargarPlantillaProveedor(proveedorSeleccionadoId);
+        try {
+            const { error } = await db_nube
+                .from('articulos_habituales')
+                .insert([{ proveedor_id: proveedorSeleccionadoId, nombre_articulo: articulo, unidad_defecto: unidad }]);
+
+            if (error) throw error;
+
+            inputArt.value = '';
+            lanzarToast("Añadido a la lista de habituales.");
+            cargarPlantillaProveedor(proveedorSeleccionadoId);
+        } catch (error) {
+            lanzarToast("Error al añadir a la plantilla.", "error");
+        }
     }
 
     async function eliminarArticuloPlantilla(idArticulo) {
         if (!confirm("¿Quitar de la lista de habituales?")) return;
 
-        const { error } = await db_nube
-            .from('articulos_habituales')
-            .delete()
-            .eq('id', idArticulo);
+        try {
+            const { error } = await db_nube
+                .from('articulos_habituales')
+                .delete()
+                .eq('id', idArticulo);
 
-        if (error) {
-            lanzarToast("No se pudo borrar de la nube.", "error");
-            return;
+            if (error) throw error;
+
+            lanzarToast("Artículo removido.");
+            cargarPlantillaProveedor(proveedorSeleccionadoId);
+        } catch (error) {
+            lanzarToast("Error al eliminar de la plantilla.", "error");
         }
-
-        lanzarToast("Artículo removido.");
-        cargarPlantillaProveedor(proveedorSeleccionadoId);
     }
 
-    function volcarPlantillaACesta() {
+    async function volcarPlantillaACesta() {
         const checkboxes = document.querySelectorAll('.chk-plantilla-item:checked');
         if (checkboxes.length === 0) { lanzarToast("No has seleccionado ningún artículo.", "warning"); return; }
 
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
         let contador = 0;
         const fechaEntrega = calcularFechaManana();
+        const itemsAAgregar = [];
 
         checkboxes.forEach(chk => {
             const producto = chk.value;
             const unidad = chk.dataset.unidad;
             const detalleFormateado = `[1 ${unidad}] ${producto}`;
 
-            const existe = cesta.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
+            const existe = cestaLocal.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
             if (!existe) {
-                cesta.push({ 
-                    id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), 
-                    detalle: detalleFormateado, 
-                    proveedor_id: proveedorSeleccionadoId, 
-                    estado: "PENDIENTE", 
+                itemsAAgregar.push({
+                    id: generarIdUnico(),
+                    detalle: detalleFormateado,
+                    proveedor_id: proveedorSeleccionadoId,
+                    estado: "PENDIENTE",
                     fecha_registro: new Date().toISOString(),
                     fecha_entrega_esperada: fechaEntrega
                 });
@@ -1006,11 +1030,18 @@
             chk.checked = false; 
         });
 
-        if (contador > 0) {
-            localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-            sincronizarConOficina('cesta', cesta);
-            lanzarToast(`¡Volcados +${contador} bultos a tu cesta!`);
-            renderCesta();
+        if (itemsAAgregar.length > 0) {
+            try {
+                for (const item of itemsAAgregar) {
+                    await agregarItemCesta(item);
+                    cestaLocal.push(item);
+                }
+                lanzarToast(`¡Volcados +${contador} bultos a tu cesta!`);
+                renderCesta();
+                sincronizarConOficina('cesta', cestaLocal);
+            } catch (error) {
+                lanzarToast("Error al volcar a la cesta.", "error");
+            }
         } else {
             lanzarToast("Los artículos ya estaban activos en la cesta.", "warning");
         }
@@ -1019,6 +1050,7 @@
     // ============================================================
     //  VISTA DE CONTROL
     // ============================================================
+
     function renderVisorPasivo() { 
         renderFaltasCocina(); 
         renderRepartosHoy(); 
@@ -1044,77 +1076,130 @@
         }
     }
     
-    function renderFaltasCocina() {
-        const faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
+    async function renderFaltasCocina() {
         const cuerpo = document.getElementById('tabla-faltas-cocina');
         if (!cuerpo) return;
-        cuerpo.innerHTML = '';
         
-        if (faltas.length === 0) {
-            cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#94a3b8; font-style:italic;">No hay faltas registradas.</td></tr>`;
+        try {
+            const faltas = await obtenerFaltas();
+            cuerpo.innerHTML = '';
+            
+            if (faltas.length === 0) {
+                cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#94a3b8; font-style:italic;">No hay faltas registradas.</td></tr>`;
+                return;
+            }
+
+            faltas.forEach((item) => {
+                cuerpo.innerHTML += `<tr>
+                    <td>⚠️ <strong>${item.insumo}</strong></td>
+                    <td style="text-align: center;">
+                        <button class="btn-clear-row" onclick="eliminarFaltaDirecta(${item.id})">❌ Eliminar</button>
+                        <button class="btn-del-row" style="background:#2563eb; color:white;" onclick="pasarFaltaACesta(${item.id})">🛒 Cargar</button>
+                    </td>
+                </tr>`;
+            });
+        } catch (error) {
+            cuerpo.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#ef4444;">Error al cargar faltas.</td></tr>`;
+        }
+    }
+
+    async function eliminarFaltaDirecta(id) {
+        try {
+            const faltas = await obtenerFaltas();
+            const falta = faltas.find(f => f.id === id);
+            if (!falta) return;
+            if (!confirm(`¿Deseas descartar la falta "${falta.insumo}" sin comprar?`)) return;
+
+            await eliminarFalta(id);
+            lanzarToast("Falta eliminada de la lista.");
+            renderVisorPasivo();
+        } catch (error) {
+            lanzarToast("Error al eliminar falta.", "error");
+        }
+    }
+
+    async function pasarFaltaACesta(id) {
+        try {
+            const faltas = await obtenerFaltas();
+            const falta = faltas.find(f => f.id === id);
+            if (!falta) return;
+
+            let cantidadIngresada = prompt(`Falta de cocina: ${falta.insumo}\n\nIntroduce cantidad y formato:`, "1 UNIDADES");
+            if (cantidadIngresada === null) return;
+
+            const fechaEntrega = calcularFechaManana();
+            const nuevoItem = {
+                id: generarIdUnico(),
+                detalle: `[${cantidadIngresada.toUpperCase()}] ${falta.insumo}`,
+                proveedor_id: "S/P",
+                estado: "PENDIENTE",
+                fecha_registro: new Date().toISOString(),
+                fecha_entrega_esperada: fechaEntrega
+            };
+
+            await agregarItemCesta(nuevoItem);
+            cestaLocal.push(nuevoItem);
+            await eliminarFalta(id);
+            lanzarToast("Falta cargada en la cesta para mañana.");
+            renderVisorPasivo();
+            renderCesta();
+            sincronizarConOficina('cesta', cestaLocal);
+        } catch (error) {
+            lanzarToast("Error al cargar falta a la cesta.", "error");
+        }
+    }
+
+    // ============================================================
+    //  SINCRONIZACIÓN CON NGROK (OPCIONAL)
+    // ============================================================
+
+    async function sincronizarConOficina(endpoint, datos) {
+        try {
+            await fetch(`${API_URL}api/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify(datos)
+            });
+        } catch (error) {
+            console.error("Error en sincronización con backend central (ngrok):", error);
+        }
+    }
+
+    function subirCestaAlServidor() {
+        if (cestaLocal.length === 0) {
+            lanzarToast("La cesta está vacía.", "warning");
             return;
         }
 
-        faltas.forEach((item, idx) => {
-            cuerpo.innerHTML += `<tr>
-                <td>⚠️ <strong>${item}</strong></td>
-                <td style="text-align: center;">
-                    <button class="btn-clear-row" onclick="eliminarFaltaDirecta(${idx})">❌ Eliminar</button>
-                    <button class="btn-del-row" style="background:#2563eb; color:white;" onclick="pasarFaltaACesta(${idx})">🛒 Cargar</button>
-                </td>
-            </tr>`;
-        });
-    }
-
-    function eliminarFaltaDirecta(idx) {
-        let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-        const productoEliminado = faltas[idx];
-        if (!confirm(`¿Deseas descartar la falta "${productoEliminado}" sin comprar?`)) return;
-
-        faltas.splice(idx, 1);
-        localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
-        sincronizarConOficina('faltas', faltas);
-        lanzarToast("Falta eliminada de la lista.");
-        renderVisorPasivo();
-    }
-
-    function pasarFaltaACesta(idx) {
-        let faltas = JSON.parse(localStorage.getItem('fredware_faltas_cocina')) || [];
-        let cesta = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+        const btn = document.querySelector("button[onclick='subirCestaAlServidor()']");
+        const btnText = document.getElementById('btn-sync-text');
         
-        let desc = faltas[idx];
-        let cantidadIngresada = prompt(`Falta de cocina: ${desc}\n\nIntroduce cantidad y formato:`, "1 UNIDADES");
-        if (cantidadIngresada === null) return;
+        if (btn && btnText) { 
+            btn.disabled = true; 
+            btnText.innerHTML = `<span class="spinner"></span> Sincronizando con Oficina...`; 
+        }
 
-        const fechaEntrega = calcularFechaManana();
-
-        cesta.push({ 
-            id: "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(), 
-            detalle: `[${cantidadIngresada.toUpperCase()}] ${desc}`, 
-            proveedor_id: "S/P", 
-            estado: "PENDIENTE", 
-            fecha_registro: new Date().toISOString(),
-            fecha_entrega_esperada: fechaEntrega
-        });
-        faltas.splice(idx, 1);
-        localStorage.setItem('fredware_faltas_cocina', JSON.stringify(faltas));
-        localStorage.setItem('fredware_cesta_compras', JSON.stringify(cesta));
-        sincronizarConOficina('faltas', faltas);
-        sincronizarConOficina('cesta', cesta);
-        lanzarToast("Falta cargada en la cesta para mañana.");
-        renderVisorPasivo();
-        renderCesta();
+        sincronizarConOficina('cesta', cestaLocal)
+            .then(() => lanzarToast("¡Pedidos enviados a la oficina!"))
+            .catch(err => lanzarToast("Error al sincronizar con oficina.", "error"))
+            .finally(() => {
+                if (btn && btnText) { 
+                    btn.disabled = false; 
+                    btnText.innerHTML = `⚡ Sincronizar Pedidos con la Oficina`; 
+                }
+            });
     }
 
     // ============================================================
     //  EXPORTAR JSON
     // ============================================================
+
     function exportarPedidosJson() {
         const ahora = new Date();
         const pad = (n) => n.toString().padStart(2, '0');
         const marcaTiempo = `${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}`;
         
-        const blob = new Blob([localStorage.getItem('fredware_cesta_compras')], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(cestaLocal)], { type: 'application/json' });
         const a = document.createElement('a'); 
         a.href = URL.createObjectURL(blob); 
         a.download = `backup_fredware_${marcaTiempo}.json`; 
@@ -1122,8 +1207,64 @@
     }
 
     // ============================================================
-    //  EVENTO AUTOCOMPLETADO
+    //  AUTOCOMPLETADO
     // ============================================================
+
+    function buscarAutocompletado(busqueda) {
+        const box = document.getElementById('sugerencias-box');
+        if (!busqueda.trim()) { box.style.display = 'none'; return; }
+        
+        const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        box.innerHTML = '';
+        let coincidencias = [];
+        const busquedaLimpia = busqueda.toUpperCase();
+
+        proveedores.forEach(p => {
+            let catalogo = p.catalogo || [];
+            if (typeof catalogo === 'string') catalogo = catalogo.split(',').map(c => c.trim());
+
+            catalogo.forEach(prod => {
+                if (prod.toUpperCase().includes(busquedaLimpia)) {
+                    coincidencias.push({ producto: prod, proveedor: p.nombre });
+                }
+            });
+        });
+
+        coincidencias = coincidencias.filter((item, index, self) =>
+            index === self.findIndex(t => t.producto === item.producto && t.proveedor === item.proveedor)
+        );
+
+        coincidencias.sort((a, b) => {
+            const aStarts = a.producto.toUpperCase().startsWith(busquedaLimpia);
+            const bStarts = b.producto.toUpperCase().startsWith(busquedaLimpia);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+            return a.producto.localeCompare(b.producto);
+        });
+
+        const finalCinco = coincidencias.slice(0, 5);
+
+        finalCinco.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.innerHTML = `📦 <strong>${c.producto}</strong> <span style="color:#64748b;font-size:11px;">(${c.proveedor})</span>`;
+            item.onclick = () => seleccionarSugerencia(c.producto, c.proveedor);
+            box.appendChild(item);
+        });
+
+        box.style.display = finalCinco.length > 0 ? 'block' : 'none';
+    }
+
+    function seleccionarSugerencia(producto, proveedorSugerido) {
+        document.getElementById('manual-articulo').value = producto;
+        document.getElementById('sugerencias-box').style.display = 'none';
+        document.getElementById('manual-articulo').dataset.sugerido = proveedorSugerido;
+    }
+
+    // ============================================================
+    //  EVENTOS GLOBALES
+    // ============================================================
+
     document.addEventListener('click', (e) => {
         const box = document.getElementById('sugerencias-box');
         const input = document.getElementById('manual-articulo');
@@ -1135,15 +1276,16 @@
     // ============================================================
     //  INICIALIZACIÓN
     // ============================================================
+
     async function initApp() {
         initDaysGrids();
-        await cargarProveedoresDesdeSupabase();
-        await cargarDatosDeOficina();
+        await cargarDatosIniciales();
+        suscribirseCambios();
         setInterval(evaluarRelojesDeCierre, 60000);
+        await cargarProveedoresDesdeSupabase();
     }
 
     initApp();
-    setInterval(cargarDatosDeOficina, 10000); 
 </script>
 </body>
 </html>
