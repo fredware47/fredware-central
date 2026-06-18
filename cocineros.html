@@ -6,125 +6,27 @@
     <title>Registro Horas Extras - Cocineros</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            background: #f1f5f9;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 500px;
-            width: 100%;
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        }
-        h1 {
-            color: #0f172a;
-            font-size: 1.8rem;
-            border-bottom: 4px solid #3b82f6;
-            padding-bottom: 8px;
-            margin-bottom: 16px;
-            text-align: center;
-        }
-        .form-group {
-            margin-bottom: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        label {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #334155;
-        }
-        input,
-        select,
-        textarea {
-            padding: 10px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            width: 100%;
-            background: white;
-        }
-        input:focus,
-        select:focus,
-        textarea:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-            outline: none;
-        }
-        textarea {
-            resize: vertical;
-            min-height: 56px;
-        }
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            background: #3b82f6;
-            color: white;
-            width: 100%;
-            transition: 0.2s;
-        }
-        .btn:hover {
-            background: #2563eb;
-            transform: scale(1.02);
-        }
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .mensaje {
-            margin-top: 12px;
-            padding: 10px;
-            border-radius: 10px;
-            display: none;
-        }
-        .mensaje.exito {
-            background: #dcfce7;
-            color: #166534;
-            display: block;
-        }
-        .mensaje.error {
-            background: #fee2e2;
-            color: #991b1b;
-            display: block;
-        }
-        .foto-preview {
-            max-width: 100%;
-            margin-top: 8px;
-            border-radius: 12px;
-            display: none;
-            max-height: 200px;
-            object-fit: cover;
-        }
-        .info {
-            margin-top: 16px;
-            font-size: 0.8rem;
-            color: #94a3b8;
-            text-align: center;
-        }
-        .cargando {
-            color: #64748b;
-            font-size: 0.9rem;
-            padding: 8px 0;
-            text-align: center;
-        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; }
+        body { background: #f1f5f9; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { max-width: 500px; width: 100%; background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        h1 { color: #0f172a; font-size: 1.8rem; border-bottom: 4px solid #3b82f6; padding-bottom: 8px; margin-bottom: 16px; text-align: center; }
+        .form-group { margin-bottom: 14px; display: flex; flex-direction: column; gap: 4px; }
+        label { font-weight: 600; font-size: 0.9rem; color: #334155; }
+        input, select, textarea { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 0.95rem; width: 100%; background: white; }
+        input:focus, select:focus, textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); outline: none; }
+        textarea { resize: vertical; min-height: 56px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; background: #3b82f6; color: white; width: 100%; transition: 0.2s; }
+        .btn:hover { background: #2563eb; transform: scale(1.02); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-recargar { background: #8b5cf6; margin-top: 8px; padding: 8px; font-size: 0.85rem; }
+        .btn-recargar:hover { background: #7c3aed; }
+        .mensaje { margin-top: 12px; padding: 10px; border-radius: 10px; display: none; }
+        .mensaje.exito { background: #dcfce7; color: #166534; display: block; }
+        .mensaje.error { background: #fee2e2; color: #991b1b; display: block; }
+        .mensaje.info { background: #dbeafe; color: #1e40af; display: block; }
+        .foto-preview { max-width: 100%; margin-top: 8px; border-radius: 12px; display: none; max-height: 200px; object-fit: cover; }
+        .info { margin-top: 16px; font-size: 0.8rem; color: #94a3b8; text-align: center; }
+        .badge-count { background: #e2e8f0; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; color: #475569; margin-left: 8px; }
     </style>
 </head>
 <body>
@@ -132,10 +34,11 @@
         <h1>🧑‍🍳 Registrar Horas Extra</h1>
         <form id="formRegistro">
             <div class="form-group">
-                <label>👤 Nombre</label>
+                <label>👤 Nombre <span id="nombreCount" class="badge-count">cargando...</span></label>
                 <select id="nombreCocinero" required>
                     <option value="">Cargando nombres...</option>
                 </select>
+                <button type="button" id="btnRecargar" class="btn btn-recargar">🔄 Recargar lista</button>
             </div>
             <div class="form-group">
                 <label>📅 Fecha</label>
@@ -167,238 +70,297 @@
 
     <script>
         // ------------------------------------------------------------
-        // CONFIGURACIÓN DE SUPABASE
+        // CONFIGURACIÓN DE SUPABASE (SOLO UNA VEZ)
         // ------------------------------------------------------------
-        const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
+        (function() {
+            'use strict';
 
-        console.log('🔍 Conectando a Supabase...');
-        console.log('URL:', SUPABASE_URL);
+            const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('🔍 Conectando a Supabase (cocineros)...');
+            console.log('URL:', SUPABASE_URL);
 
-        // ------------------------------------------------------------
-        // LISTA DE NOMBRES POR DEFECTO (por si la tabla está vacía)
-        // ------------------------------------------------------------
-        const NOMBRES_POR_DEFECTO = [
-            'Antonio', 'Remedios', 'Rafael', 'Andrea', 'Ines',
-            'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
-        ];
+            // ✅ Crear cliente UNA SOLA VEZ
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ------------------------------------------------------------
-        // FUNCIONES
-        // ------------------------------------------------------------
+            // ------------------------------------------------------------
+            // LISTA DE NOMBRES POR DEFECTO (TUS COCINEROS)
+            // ------------------------------------------------------------
+            const NOMBRES_POR_DEFECTO = [
+                'Antonio', 'Remedios', 'Rafael', 'Andrea', 'Ines',
+                'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
+            ];
 
-        // Cargar lista de personal desde la base de datos
-        async function cargarPersonal() {
-            const select = document.getElementById('nombreCocinero');
-            try {
-                console.log('📥 Cargando lista de personal...');
-                const { data, error } = await supabase
-                    .from('horas_personal')
-                    .select('nombre')
-                    .order('nombre');
+            // ------------------------------------------------------------
+            // FUNCIONES
+            // ------------------------------------------------------------
 
-                if (error) {
-                    console.error('❌ Error al cargar personal:', error);
-                    // Si hay error, usar nombres por defecto
-                    usarNombresPorDefecto();
-                    mostrarMensaje('Usando lista de nombres local', 'error');
-                    return;
-                }
+            // Cargar lista de personal desde la base de datos
+            async function cargarPersonal() {
+                const select = document.getElementById('nombreCocinero');
+                const countBadge = document.getElementById('nombreCount');
 
-                console.log('✅ Personal cargado:', data);
+                try {
+                    console.log('📥 Cargando lista de personal...');
+                    select.innerHTML = '<option value="">⏳ Cargando...</option>';
+                    countBadge.textContent = '⏳';
 
-                // Si no hay datos en la tabla, insertar los nombres por defecto
-                if (!data || data.length === 0) {
-                    console.log('📝 Tabla vacía, insertando nombres por defecto...');
-                    await insertarNombresPorDefecto();
-                    // Recargar después de insertar
-                    const { data: newData } = await supabase
+                    const { data, error } = await supabase
                         .from('horas_personal')
                         .select('nombre')
                         .order('nombre');
-                    if (newData && newData.length > 0) {
-                        renderizarSelect(newData);
-                    } else {
-                        usarNombresPorDefecto();
+
+                    if (error) {
+                        console.error('❌ Error al cargar personal:', error);
+                        // Intentar insertar nombres por defecto
+                        await insertarNombresPorDefecto();
+                        await recargarLista();
+                        return;
                     }
-                    return;
+
+                    console.log('✅ Personal cargado:', data);
+
+                    // Si no hay datos, insertar nombres por defecto
+                    if (!data || data.length === 0) {
+                        console.log('📝 Tabla vacía, insertando nombres por defecto...');
+                        await insertarNombresPorDefecto();
+                        await recargarLista();
+                        return;
+                    }
+
+                    // Renderizar los nombres
+                    renderizarSelect(data);
+                    countBadge.textContent = `${data.length} nombres`;
+
+                } catch (error) {
+                    console.error('❌ Error en cargarPersonal:', error);
+                    mostrarMensaje('Error de conexión. Usando lista local.', 'error');
+                    usarNombresPorDefecto();
+                    countBadge.textContent = `${NOMBRES_POR_DEFECTO.length} (local)`;
                 }
-
-                renderizarSelect(data);
-
-            } catch (error) {
-                console.error('❌ Error en cargarPersonal:', error);
-                usarNombresPorDefecto();
-                mostrarMensaje('Error de conexión. Usando lista local.', 'error');
             }
-        }
 
-        // Insertar nombres por defecto en la base de datos
-        async function insertarNombresPorDefecto() {
-            try {
-                const inserts = NOMBRES_POR_DEFECTO.map(nombre => ({ nombre }));
-                const { error } = await supabase
-                    .from('horas_personal')
-                    .insert(inserts);
-                if (error) {
-                    console.error('❌ Error al insertar nombres:', error);
-                    return;
+            // Función para recargar la lista
+            async function recargarLista() {
+                try {
+                    const { data, error } = await supabase
+                        .from('horas_personal')
+                        .select('nombre')
+                        .order('nombre');
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        renderizarSelect(data);
+                        document.getElementById('nombreCount').textContent = `${data.length} nombres`;
+                        mostrarMensaje(`✅ ${data.length} nombres cargados correctamente`, 'exito');
+                    } else {
+                        // Si sigue vacío, insertar y recargar
+                        await insertarNombresPorDefecto();
+                        const { data: newData } = await supabase
+                            .from('horas_personal')
+                            .select('nombre')
+                            .order('nombre');
+                        if (newData && newData.length > 0) {
+                            renderizarSelect(newData);
+                            document.getElementById('nombreCount').textContent = `${newData.length} nombres`;
+                            mostrarMensaje(`✅ ${newData.length} nombres cargados`, 'exito');
+                        } else {
+                            usarNombresPorDefecto();
+                            document.getElementById('nombreCount').textContent = `${NOMBRES_POR_DEFECTO.length} (local)`;
+                            mostrarMensaje('Usando lista local', 'info');
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Error al recargar:', error);
+                    usarNombresPorDefecto();
+                    document.getElementById('nombreCount').textContent = `${NOMBRES_POR_DEFECTO.length} (local)`;
+                    mostrarMensaje('Error al recargar. Usando lista local.', 'error');
                 }
-                console.log('✅ Nombres insertados correctamente');
-            } catch (error) {
-                console.error('❌ Error en insertarNombresPorDefecto:', error);
             }
-        }
 
-        // Usar nombres por defecto localmente (sin base de datos)
-        function usarNombresPorDefecto() {
-            const select = document.getElementById('nombreCocinero');
-            select.innerHTML = '<option value="">-- Seleccionar --</option>';
-            NOMBRES_POR_DEFECTO.forEach(nombre => {
-                const opt = document.createElement('option');
-                opt.value = nombre;
-                opt.textContent = nombre;
-                select.appendChild(opt);
-            });
-        }
+            // Insertar nombres por defecto en la base de datos
+            async function insertarNombresPorDefecto() {
+                try {
+                    console.log('📝 Insertando nombres por defecto...');
+                    const inserts = NOMBRES_POR_DEFECTO.map(nombre => ({ nombre }));
+                    const { error } = await supabase
+                        .from('horas_personal')
+                        .insert(inserts);
+                    if (error) {
+                        console.error('❌ Error al insertar nombres:', error);
+                        return false;
+                    }
+                    console.log('✅ Nombres insertados correctamente');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error en insertarNombresPorDefecto:', error);
+                    return false;
+                }
+            }
 
-        // Renderizar el select con los datos
-        function renderizarSelect(data) {
-            const select = document.getElementById('nombreCocinero');
-            select.innerHTML = '<option value="">-- Seleccionar --</option>';
-            if (data && data.length > 0) {
-                data.forEach(item => {
+            // Usar nombres por defecto localmente (sin base de datos)
+            function usarNombresPorDefecto() {
+                const select = document.getElementById('nombreCocinero');
+                select.innerHTML = '<option value="">-- Seleccionar --</option>';
+                NOMBRES_POR_DEFECTO.forEach(nombre => {
                     const opt = document.createElement('option');
-                    opt.value = item.nombre;
-                    opt.textContent = item.nombre;
+                    opt.value = nombre;
+                    opt.textContent = nombre;
                     select.appendChild(opt);
                 });
-            } else {
-                select.innerHTML = '<option value="">No hay nombres registrados</option>';
+                document.getElementById('nombreCount').textContent = `${NOMBRES_POR_DEFECTO.length} (local)`;
             }
-        }
 
-        // Previsualización de foto
-        document.getElementById('foto').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const preview = document.getElementById('fotoPreview');
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    preview.src = ev.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            } else {
-                preview.style.display = 'none';
-            }
-        });
-
-        // Mostrar mensajes
-        function mostrarMensaje(texto, tipo) {
-            const div = document.getElementById('mensaje');
-            div.textContent = texto;
-            div.className = 'mensaje ' + tipo;
-            setTimeout(() => {
-                div.className = 'mensaje';
-                div.textContent = '';
-            }, 6000);
-        }
-
-        // Enviar formulario
-        document.getElementById('formRegistro').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const nombre = document.getElementById('nombreCocinero').value;
-            const fecha = document.getElementById('fecha').value;
-            const horaInicio = document.getElementById('horaInicio').value;
-            const horaFin = document.getElementById('horaFin').value;
-            const comentarios = document.getElementById('comentarios').value.trim();
-            const fileInput = document.getElementById('foto');
-            const file = fileInput.files[0];
-
-            // Validaciones
-            if (!nombre) { mostrarMensaje('Selecciona un nombre.', 'error'); return; }
-            if (!fecha) { mostrarMensaje('Selecciona una fecha.', 'error'); return; }
-            if (!horaInicio || !horaFin) { mostrarMensaje('Completa las horas de inicio y fin.', 'error'); return; }
-            if (horaInicio >= horaFin) { mostrarMensaje('La hora de fin debe ser posterior a la de inicio.', 'error'); return; }
-
-            const btn = document.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.textContent = '⏳ Guardando...';
-
-            let fotoUrl = null;
-
-            // Subir foto si existe
-            if (file) {
-                try {
-                    console.log('📤 Subiendo foto...');
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `cocina_${Date.now()}.${fileExt}`;
-                    const { data: uploadData, error: uploadError } = await supabase.storage
-                        .from('fotos')
-                        .upload(fileName, file, {
-                            cacheControl: '3600',
-                            upsert: false
-                        });
-                    if (uploadError) throw uploadError;
-
-                    const { data: urlData } = supabase.storage
-                        .from('fotos')
-                        .getPublicUrl(fileName);
-                    fotoUrl = urlData.publicUrl;
-                    console.log('✅ Foto subida:', fotoUrl);
-                } catch (error) {
-                    console.error('❌ Error al subir foto:', error);
-                    mostrarMensaje('Error al subir la foto: ' + error.message, 'error');
-                    btn.disabled = false;
-                    btn.textContent = '➕ Guardar registro';
-                    return;
+            // Renderizar el select con los datos
+            function renderizarSelect(data) {
+                const select = document.getElementById('nombreCocinero');
+                select.innerHTML = '<option value="">-- Seleccionar --</option>';
+                if (data && data.length > 0) {
+                    data.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.nombre;
+                        opt.textContent = item.nombre;
+                        select.appendChild(opt);
+                    });
+                    document.getElementById('nombreCount').textContent = `${data.length} nombres`;
+                } else {
+                    select.innerHTML = '<option value="">No hay nombres registrados</option>';
+                    document.getElementById('nombreCount').textContent = '0 nombres';
                 }
             }
 
-            // Guardar registro
-            try {
-                console.log('💾 Guardando registro...');
-                const { error } = await supabase
-                    .from('horas_registros')
-                    .insert([{
-                        nombre,
-                        fecha,
-                        hora_inicio: horaInicio,
-                        hora_fin: horaFin,
-                        comentarios,
-                        foto_url: fotoUrl
-                    }]);
-                if (error) throw error;
+            // Previsualización de foto
+            document.getElementById('foto').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const preview = document.getElementById('fotoPreview');
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        preview.src = ev.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.style.display = 'none';
+                }
+            });
 
-                console.log('✅ Registro guardado correctamente');
-                mostrarMensaje('✅ Registro guardado correctamente.', 'exito');
-                document.getElementById('formRegistro').reset();
-                document.getElementById('fotoPreview').style.display = 'none';
-                // Establecer fecha actual de nuevo
-                document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
-                btn.disabled = false;
-                btn.textContent = '➕ Guardar registro';
-            } catch (error) {
-                console.error('❌ Error al guardar registro:', error);
-                mostrarMensaje('Error al guardar: ' + error.message, 'error');
-                btn.disabled = false;
-                btn.textContent = '➕ Guardar registro';
+            // Mostrar mensajes
+            function mostrarMensaje(texto, tipo) {
+                const div = document.getElementById('mensaje');
+                div.textContent = texto;
+                div.className = 'mensaje ' + tipo;
+                setTimeout(() => {
+                    div.className = 'mensaje';
+                    div.textContent = '';
+                }, 6000);
             }
-        });
 
-        // ------------------------------------------------------------
-        // INICIALIZAR
-        // ------------------------------------------------------------
+            // Botón recargar
+            document.getElementById('btnRecargar').addEventListener('click', function() {
+                this.textContent = '⏳ Recargando...';
+                this.disabled = true;
+                recargarLista().finally(() => {
+                    this.textContent = '🔄 Recargar lista';
+                    this.disabled = false;
+                });
+            });
 
-        // Establecer fecha actual por defecto
-        document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+            // Enviar formulario
+            document.getElementById('formRegistro').addEventListener('submit', async function(e) {
+                e.preventDefault();
 
-        // Cargar personal
-        cargarPersonal();
+                const nombre = document.getElementById('nombreCocinero').value;
+                const fecha = document.getElementById('fecha').value;
+                const horaInicio = document.getElementById('horaInicio').value;
+                const horaFin = document.getElementById('horaFin').value;
+                const comentarios = document.getElementById('comentarios').value.trim();
+                const fileInput = document.getElementById('foto');
+                const file = fileInput.files[0];
+
+                // Validaciones
+                if (!nombre) { mostrarMensaje('Selecciona un nombre.', 'error'); return; }
+                if (!fecha) { mostrarMensaje('Selecciona una fecha.', 'error'); return; }
+                if (!horaInicio || !horaFin) { mostrarMensaje('Completa las horas de inicio y fin.', 'error'); return; }
+                if (horaInicio >= horaFin) { mostrarMensaje('La hora de fin debe ser posterior a la de inicio.', 'error'); return; }
+
+                const btn = document.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.textContent = '⏳ Guardando...';
+
+                let fotoUrl = null;
+
+                // Subir foto si existe
+                if (file) {
+                    try {
+                        console.log('📤 Subiendo foto...');
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `cocina_${Date.now()}.${fileExt}`;
+                        const { data: uploadData, error: uploadError } = await supabase.storage
+                            .from('fotos')
+                            .upload(fileName, file, {
+                                cacheControl: '3600',
+                                upsert: false
+                            });
+                        if (uploadError) throw uploadError;
+
+                        const { data: urlData } = supabase.storage
+                            .from('fotos')
+                            .getPublicUrl(fileName);
+                        fotoUrl = urlData.publicUrl;
+                        console.log('✅ Foto subida:', fotoUrl);
+                    } catch (error) {
+                        console.error('❌ Error al subir foto:', error);
+                        mostrarMensaje('Error al subir la foto: ' + error.message, 'error');
+                        btn.disabled = false;
+                        btn.textContent = '➕ Guardar registro';
+                        return;
+                    }
+                }
+
+                // Guardar registro
+                try {
+                    console.log('💾 Guardando registro...');
+                    const { error } = await supabase
+                        .from('horas_registros')
+                        .insert([{
+                            nombre,
+                            fecha,
+                            hora_inicio: horaInicio,
+                            hora_fin: horaFin,
+                            comentarios,
+                            foto_url: fotoUrl
+                        }]);
+                    if (error) throw error;
+
+                    console.log('✅ Registro guardado correctamente');
+                    mostrarMensaje('✅ Registro guardado correctamente.', 'exito');
+                    document.getElementById('formRegistro').reset();
+                    document.getElementById('fotoPreview').style.display = 'none';
+                    document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+                    btn.disabled = false;
+                    btn.textContent = '➕ Guardar registro';
+                } catch (error) {
+                    console.error('❌ Error al guardar registro:', error);
+                    mostrarMensaje('Error al guardar: ' + error.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = '➕ Guardar registro';
+                }
+            });
+
+            // ------------------------------------------------------------
+            // INICIALIZAR
+            // ------------------------------------------------------------
+
+            // Establecer fecha actual por defecto
+            document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+
+            // Cargar personal
+            cargarPersonal();
+
+        })(); // Fin del IIFE
     </script>
 </body>
 </html>
