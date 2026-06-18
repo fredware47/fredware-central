@@ -3,53 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🍽️ Fredware - Recetario Digital (Formato Excel)</title>
+    <title>📋 Fredware - Ficha Técnica de Recetas</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #1e293b; padding: 10px; }
-        .container { max-width: 1400px; margin: 0 auto; background: #ffffff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        h1 { font-size: 20px; text-align: center; margin-bottom: 15px; background: #0f172a; color: white; padding: 14px; border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; transition: all 0.2s; }
-        .tab-btn.active { background: #10b981; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .app-section { display: none; }
-        .app-section.active { display: block; }
+        .container { max-width: 1200px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        h1 { font-size: 20px; text-align: center; margin-bottom: 15px; background: #0f172a; color: white; padding: 14px; border-radius: 8px; font-weight: 800; text-transform: uppercase; }
 
-        .box { background: #ffffff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; overflow-x: auto; }
-        h3 { font-size: 14px; margin-bottom: 12px; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; font-weight: 700; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        
-        /* Estilo hoja de cálculo */
-        .hoja-excel { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
-        .hoja-excel th { background: #f1f5f9; text-align: left; padding: 8px 6px; font-size: 10px; color: #475569; font-weight: 700; border: 1px solid #cbd5e1; text-transform: uppercase; position: sticky; top: 0; z-index: 5; }
-        .hoja-excel td { padding: 4px 6px; border: 1px solid #cbd5e1; vertical-align: middle; background-color: #fff; }
-        .hoja-excel tr:nth-child(even) td { background-color: #f8fafc; }
-        .hoja-excel input[type="text"], .hoja-excel input[type="number"], .hoja-excel select {
-            width: 100%;
-            padding: 4px 6px;
-            border: none;
-            background: transparent;
-            font-size: 13px;
-            font-weight: 500;
-            outline: none;
-            border-radius: 0;
-            min-width: 60px;
-            color: #1e293b;
-        }
-        .hoja-excel input:focus, .hoja-excel select:focus {
-            background: #fffbe6;
-            outline: 2px solid #10b981;
-        }
-        .hoja-excel .chk-alergeno { width: 18px; height: 18px; cursor: pointer; margin: 0; }
-        .btn-fila { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px; transition: 0.2s; }
-        .btn-fila:hover { background: #e2e8f0; }
-        .btn-danger-fila { color: #ef4444; }
-        .btn-danger-fila:hover { background: #fee2e2; }
-        .btn-add-fila { color: #10b981; font-weight: bold; }
-        .btn-add-fila:hover { background: #dcfce7; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
 
-        .badge-categoria { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 10px; white-space: nowrap; }
+        .box { background: #ffffff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .box-title { font-size: 14px; font-weight: 700; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        label { display: block; font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 2px; }
+        input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background-color: #f8fafc; }
+        input:focus, select:focus, textarea:focus { border-color: #10b981; background-color: #fff; }
+        textarea { resize: vertical; min-height: 60px; }
+
+        .btn { background: #10b981; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: #059669; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-blue { background: #3b82f6; }
+        .btn-blue:hover { background: #2563eb; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+        .tabla-ingredientes { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .tabla-ingredientes th { background: #f1f5f9; padding: 6px 4px; font-size: 10px; text-transform: uppercase; border: 1px solid #cbd5e1; text-align: center; }
+        .tabla-ingredientes td { padding: 4px; border: 1px solid #cbd5e1; vertical-align: middle; }
+        .tabla-ingredientes input, .tabla-ingredientes select { width: 100%; padding: 4px 6px; border: none; background: transparent; font-size: 12px; text-align: center; }
+        .tabla-ingredientes input:focus, .tabla-ingredientes select:focus { background: #fffbe6; outline: 2px solid #10b981; }
+
+        .resultados { background: #f8fafc; border-radius: 8px; padding: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+        .resultado-item { background: white; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; }
+        .resultado-item .label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; }
+        .resultado-item .value { font-size: 18px; font-weight: 800; color: #0f172a; }
+
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+        .badge-yellow { background: #fef9c3; color: #854d0e; }
 
         #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
         .toast { background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -57,125 +52,91 @@
         .toast-success { border-left: 4px solid #10b981; }
         .toast-error { border-left: 4px solid #ef4444; }
 
-        /* Modal para importar */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 600px; width: 95%; max-height: 80vh; overflow-y: auto; }
-        .modal-content textarea { width: 100%; height: 200px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace; font-size: 13px; }
-        .modal-content .btn-modal { margin-top: 10px; padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .modal-content .btn-modal:hover { background: #059669; }
-        .modal-content .btn-cerrar { background: #94a3b8; margin-left: 8px; }
-        .modal-content .btn-cerrar:hover { background: #64748b; }
-
-        @media (max-width: 768px) {
-            .box { padding: 8px; }
-            .hoja-excel { font-size: 11px; min-width: 700px; }
-            .hoja-excel input, .hoja-excel select { font-size: 11px; padding: 2px 4px; }
-        }
+        @media (max-width: 768px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🍽️ Fredware - Recetario Digital (Formato Excel)</h1>
-    
-    <div class="tabs">
-        <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">🍽️ Carta / Alérgenos UE</button>
-        <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">📋 Escandallos (Composición)</button>
-    </div>
+    <h1>📋 FICHA TÉCNICA DE RECETAS (ESTILO EXCEL)</h1>
 
-    <!-- PESTAÑA 1: CARTA Y ALÉRGENOS (VISTA EXCEL) -->
-    <div id="sec1" class="app-section active">
-        <div class="box">
-            <h3>
-                <span>📋 Lista de Platos (edición directa en celdas)</span>
-                <span style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <button onclick="mostrarModalImportar()" class="btn-fila btn-add-fila" style="font-size:13px;">📥 Importar desde Excel</button>
-                    <button onclick="agregarFilaPlato()" class="btn-fila btn-add-fila" style="font-size:13px;">➕ Añadir Plato</button>
-                </span>
-            </h3>
-            <div style="overflow-x:auto;">
-                <table class="hoja-excel" id="tabla-carta-excel">
-                    <thead>
-                        <tr>
-                            <th style="min-width:120px;">ID Plato</th>
-                            <th style="min-width:150px;">Nombre</th>
-                            <th style="min-width:120px;">Categoría</th>
-                            <th style="min-width:70px;">Precio (€)</th>
-                            <th style="text-align:center; min-width:45px;" title="Gluten">GLU</th>
-                            <th style="text-align:center; min-width:45px;" title="Crustáceos">CRU</th>
-                            <th style="text-align:center; min-width:45px;" title="Huevos">HUE</th>
-                            <th style="text-align:center; min-width:45px;" title="Pescado">PES</th>
-                            <th style="text-align:center; min-width:45px;" title="Cacahuetes">CAC</th>
-                            <th style="text-align:center; min-width:45px;" title="Soja">SOJ</th>
-                            <th style="text-align:center; min-width:45px;" title="Lácteos">LAC</th>
-                            <th style="text-align:center; min-width:45px;" title="Frutos secos">FRU</th>
-                            <th style="text-align:center; min-width:45px;" title="Apio">API</th>
-                            <th style="text-align:center; min-width:45px;" title="Mostaza">MOS</th>
-                            <th style="text-align:center; min-width:45px;" title="Sésamo">SES</th>
-                            <th style="text-align:center; min-width:45px;" title="Sulfitos">SUL</th>
-                            <th style="text-align:center; min-width:45px;" title="Altramuces">ALT</th>
-                            <th style="text-align:center; min-width:45px;" title="Moluscos">MOL</th>
-                            <th style="min-width:60px; text-align:center;">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="cuerpo-carta-excel">
-                        <!-- Cargado dinámicamente -->
-                    </tbody>
-                </table>
+    <div class="box">
+        <div class="box-title">🍽️ Datos Generales del Plato</div>
+        <div class="grid-3">
+            <div><label>Código</label><input type="text" id="plato-codigo" placeholder="Ej: 10001"></div>
+            <div><label>Nombre del Plato</label><input type="text" id="plato-nombre" placeholder="Ej: Ensaladilla"></div>
+            <div>
+                <label>Temporada</label>
+                <select id="plato-temporada">
+                    <option value="Anual">Anual</option>
+                    <option value="Primavera">Primavera</option>
+                    <option value="Verano">Verano</option>
+                    <option value="Otoño">Otoño</option>
+                    <option value="Invierno">Invierno</option>
+                </select>
             </div>
+            <div><label>Nº Raciones (Pax)</label><input type="number" id="plato-pax" value="1" min="1"></div>
+            <div><label>URL de la Foto</label><input type="text" id="plato-foto" placeholder="https://..."></div>
+            <div><label>PVP Actual (€)</label><input type="number" id="plato-pvp" value="0.00" step="0.05"></div>
+        </div>
+        <div class="grid-2" style="margin-top:10px;">
+            <div>
+                <label>Presentación / Emplatado</label>
+                <textarea id="plato-presentacion" rows="2" placeholder="Ej: Emplatar en fuente rectangular pequeña"></textarea>
+            </div>
+            <div>
+                <label>Elaboración (pasos)</label>
+                <textarea id="plato-elaboracion" rows="2" placeholder="1- Cocer las patatas..."></textarea>
+            </div>
+        </div>
+        <div class="grid-3" style="margin-top:10px;">
+            <div><label>✔️ Apto para Celíacos</label><input type="checkbox" id="plato-celiacos"></div>
+            <div><label>✔️ Apto para Vegetarianos</label><input type="checkbox" id="plato-vegetarianos"></div>
+            <div><label>✔️ Apto para Diabéticos</label><input type="checkbox" id="plato-diabeticos"></div>
         </div>
     </div>
 
-    <!-- PESTAÑA 2: ESCANDALLOS (se mantiene igual pero mejorado) -->
-    <div id="sec2" class="app-section">
-        <div class="box" style="border-left: 4px solid #0284c7;">
-            <h3>Asignar Ingrediente a Plato</h3>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:12px; align-items:flex-end;">
-                <div>
-                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569;">Selecciona Plato:</label>
-                    <select id="select-receta-plato" onchange="cargarIngredientesPlatoActual()" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;"></select>
-                </div>
-                <div>
-                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569;">Selecciona Insumo:</label>
-                    <select id="select-insumo-maestro" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;"></select>
-                </div>
-                <div>
-                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569;">Cantidad (kg/unid):</label>
-                    <input type="number" id="insumo-cantidad" value="0.100" step="0.001" min="0.001" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;">
-                </div>
-                <div>
-                    <button class="btn-action" style="background:#0284c7;color:white;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;width:100%;margin-top:0;" onclick="anadirIngredienteAPlato()">➕ Añadir Insumo</button>
-                </div>
-            </div>
+    <div class="box">
+        <div class="box-title">
+            <span>🧾 Ingredientes y Costes</span>
+            <button class="btn btn-blue btn-sm" onclick="agregarFilaIngrediente()">➕ Añadir Ingrediente</button>
         </div>
-
-        <div class="box">
-            <h3>📋 Ficha Técnica del Plato Seleccionado</h3>
-            <table class="hoja-excel" style="min-width:400px;">
+        <div style="overflow-x:auto;">
+            <table class="tabla-ingredientes" id="tabla-ingredientes">
                 <thead>
                     <tr>
-                        <th>Ingrediente</th>
-                        <th>Cantidad</th>
-                        <th>Unidad</th>
-                        <th style="text-align:center;width:80px;">Acción</th>
+                        <th style="min-width:120px;">Ingrediente</th>
+                        <th style="min-width:70px;">Aprov. (%)</th>
+                        <th style="min-width:70px;">Peso Neto</th>
+                        <th style="min-width:70px;">Peso Bruto</th>
+                        <th style="min-width:80px;">Precio Compra</th>
+                        <th style="min-width:70px;">Unidad</th>
+                        <th style="min-width:80px;">Coste CMP</th>
+                        <th style="min-width:50px;">🗑️</th>
                     </tr>
                 </thead>
-                <tbody id="tabla-desglose-ingredientes"></tbody>
+                <tbody id="cuerpo-ingredientes">
+                    <!-- Filas añadidas dinámicamente -->
+                </tbody>
             </table>
         </div>
-    </div>
-</div>
-
-<!-- Modal para importar Excel -->
-<div id="modal-importar" class="modal-overlay" onclick="if(event.target===this) cerrarModalImportar()">
-    <div class="modal-content">
-        <h3 style="margin-top:0;">📥 Importar desde Excel</h3>
-        <p style="font-size:13px;color:#475569;">Copia las columnas de tu Excel (Categoría, Plato, Precio) separadas por tabuladores y pégalas aquí:</p>
-        <textarea id="texto-importar" placeholder="Ej:&#10;ENTRANTES	Croquetas	12&#10;ENTRANTES	Tortilla	10&#10;CARNES	Entrecot	18"></textarea>
-        <div style="margin-top:10px;display:flex;gap:8px;">
-            <button class="btn-modal" onclick="importarDesdeExcel()">📥 Importar</button>
-            <button class="btn-modal btn-cerrar" onclick="cerrarModalImportar()">Cancelar</button>
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn" onclick="calcularResultados()">🧮 Calcular Costes</button>
+            <button class="btn btn-blue" onclick="guardarReceta()">💾 Guardar Receta en Supabase</button>
         </div>
-        <p style="font-size:11px;color:#94a3b8;margin-top:8px;">Formato: <strong>Categoría</strong> (tabulador) <strong>Nombre del plato</strong> (tabulador) <strong>Precio</strong> (opcional)</p>
+    </div>
+
+    <div class="box">
+        <div class="box-title">📊 Resultados Teóricos y Reales</div>
+        <div id="panel-resultados" class="resultados">
+            <div class="resultado-item"><span class="label">Coste Total</span><div class="value" id="res-coste-total">0.00 €</div></div>
+            <div class="resultado-item"><span class="label">Coste / Ración</span><div class="value" id="res-coste-racion">0.00 €</div></div>
+            <div class="resultado-item"><span class="label">% CMP</span><div class="value" id="res-cmp-porc">0.0 %</div></div>
+            <div class="resultado-item"><span class="label">% MBC</span><div class="value" id="res-mbc-porc">0.0 %</div></div>
+            <div class="resultado-item"><span class="label">PVP Ideal</span><div class="value" id="res-pvp-ideal">0.00 €</div></div>
+            <div class="resultado-item"><span class="label">PVP Actual</span><div class="value" id="res-pvp-actual">0.00 €</div></div>
+            <div class="resultado-item"><span class="label">Diferencia %</span><div class="value" id="res-diferencia">0.0 %</div></div>
+            <div class="resultado-item"><span class="label">IVA (%)</span><div class="value" id="res-iva">10.0 %</div></div>
+        </div>
     </div>
 </div>
 
@@ -187,455 +148,280 @@
     // ============================================================
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-    const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let platosGlobal = [];
-    let ingredientesGlobal = [];
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ============================================================
-    // UTILIDADES
+    // TOAST
     // ============================================================
     function lanzarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toast-container');
         if (!container) return;
         const toast = document.createElement('div');
         toast.className = `toast toast-${tipo}`;
-        toast.innerHTML = `<span>${tipo === 'success' ? '✅' : '❌'}</span> <span>${mensaje}`;
+        toast.innerHTML = `<span>${tipo === 'success' ? '✅' : '❌'}</span> ${mensaje}`;
         container.appendChild(toast);
         setTimeout(() => toast.classList.add('show'), 50);
         setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
     }
 
-    function generarIdUnico(base) {
-        const limpio = base.toUpperCase().replace(/[^A-Z0-9]/g, '_');
-        return limpio + '_' + Date.now().toString(36);
+    // ============================================================
+    // MANEJO DE INGREDIENTES
+    // ============================================================
+    let filaIngredienteCount = 0;
+
+    function agregarFilaIngrediente(nombre = '', aprov = 100, neto = 0, bruto = 0, precio = 0, unidad = 'KG', coste = 0) {
+        const tbody = document.getElementById('cuerpo-ingredientes');
+        const row = document.createElement('tr');
+        row.dataset.index = filaIngredienteCount++;
+        row.innerHTML = `
+            <td><input type="text" class="ing-nombre" value="${nombre}" placeholder="Ej: patata" style="text-align:left;"></td>
+            <td><input type="number" class="ing-aprov" value="${aprov}" step="0.1" min="0" max="100" onchange="recalcularFila(this)"></td>
+            <td><input type="number" class="ing-neto" value="${neto}" step="0.001" min="0" onchange="recalcularFila(this)"></td>
+            <td><input type="number" class="ing-bruto" value="${bruto}" step="0.001" min="0" onchange="recalcularFila(this)"></td>
+            <td><input type="number" class="ing-precio" value="${precio}" step="0.001" min="0" onchange="recalcularFila(this)"></td>
+            <td>
+                <select class="ing-unidad">
+                    <option value="KG" ${unidad==='KG'?'selected':''}>Kg</option>
+                    <option value="L" ${unidad==='L'?'selected':''}>Litros</option>
+                    <option value="UNIDADES" ${unidad==='UNIDADES'?'selected':''}>Unidades</option>
+                    <option value="CAJAS" ${unidad==='CAJAS'?'selected':''}>Cajas</option>
+                </select>
+            </td>
+            <td><input type="text" class="ing-coste" value="${coste.toFixed(3)}" readonly style="font-weight:bold;color:#2563eb;"></td>
+            <td><button class="btn-danger btn-sm" onclick="eliminarFila(this)">🗑️</button></td>
+        `;
+        tbody.appendChild(row);
+        // Forzar recalculo
+        recalcularFila(row.querySelector('.ing-neto'));
     }
 
-    function switchTab(num) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
-        document.getElementById(`btn-t${num}`).classList.add('active');
-        document.getElementById(`sec${num}`).classList.add('active');
-        if (num === 1) cargarCarta();
-        if (num === 2) inicializarPestanaRecetas();
+    function eliminarFila(btn) {
+        const row = btn.closest('tr');
+        row.remove();
+        calcularResultados();
+    }
+
+    function recalcularFila(input) {
+        const row = input.closest('tr');
+        const aprov = parseFloat(row.querySelector('.ing-aprov').value) || 100;
+        const neto = parseFloat(row.querySelector('.ing-neto').value) || 0;
+        const brutoInput = row.querySelector('.ing-bruto');
+        const precio = parseFloat(row.querySelector('.ing-precio').value) || 0;
+        const costeInput = row.querySelector('.ing-coste');
+
+        // Si el bruto está vacío o es 0, lo calculamos a partir del neto y aprovechamiento
+        let bruto = parseFloat(brutoInput.value) || 0;
+        if (bruto === 0 && neto > 0 && aprov > 0) {
+            bruto = neto / (aprov / 100);
+            brutoInput.value = bruto.toFixed(3);
+        }
+        const coste = bruto * precio;
+        costeInput.value = coste.toFixed(3);
+        calcularResultados();
     }
 
     // ============================================================
-    // PESTAÑA 1: CARTA (VISTA EXCEL)
+    // CÁLCULO DE RESULTADOS
     // ============================================================
-    async function cargarCarta() {
-        const cuerpo = document.getElementById('cuerpo-carta-excel');
-        if (!cuerpo) return;
-        cuerpo.innerHTML = '<tr><td colspan="19" style="text-align:center;color:#94a3b8;padding:20px;">⏳ Cargando carta...</td></tr>';
+    function calcularResultados() {
+        const filas = document.querySelectorAll('#cuerpo-ingredientes tr');
+        let costeTotal = 0;
+        filas.forEach(row => {
+            const coste = parseFloat(row.querySelector('.ing-coste').value) || 0;
+            costeTotal += coste;
+        });
 
-        const { data: platos, error } = await db_nube
+        const pax = parseInt(document.getElementById('plato-pax').value) || 1;
+        const costeRacion = pax > 0 ? costeTotal / pax : 0;
+        const pvpActual = parseFloat(document.getElementById('plato-pvp').value) || 0;
+        const iva = 10.0; // Fijo, pero se podría añadir input
+
+        let cmpPorc = 0, mbcPorc = 0, pvpIdeal = 0, diferencia = 0;
+        if (pvpActual > 0) {
+            cmpPorc = (costeRacion / pvpActual) * 100;
+            mbcPorc = 100 - cmpPorc;
+        }
+        // PVP Ideal: si asumimos un MBC objetivo (ej. 70%), se calcula PVP = costeRacion / (1 - margen)
+        const margenObjetivo = 0.70; // 70% MBC
+        pvpIdeal = costeRacion / (1 - margenObjetivo);
+        if (pvpActual > 0) diferencia = ((pvpIdeal - pvpActual) / pvpActual) * 100;
+
+        document.getElementById('res-coste-total').textContent = costeTotal.toFixed(2) + ' €';
+        document.getElementById('res-coste-racion').textContent = costeRacion.toFixed(2) + ' €';
+        document.getElementById('res-cmp-porc').textContent = cmpPorc.toFixed(1) + ' %';
+        document.getElementById('res-mbc-porc').textContent = mbcPorc.toFixed(1) + ' %';
+        document.getElementById('res-pvp-ideal').textContent = pvpIdeal.toFixed(2) + ' €';
+        document.getElementById('res-pvp-actual').textContent = pvpActual.toFixed(2) + ' €';
+        document.getElementById('res-diferencia').textContent = diferencia.toFixed(1) + ' %';
+        document.getElementById('res-iva').textContent = iva.toFixed(1) + ' %';
+    }
+
+    // ============================================================
+    // GUARDAR EN SUPABASE
+    // ============================================================
+    async function guardarReceta() {
+        // Recoger datos del plato
+        const platoData = {
+            codigo: document.getElementById('plato-codigo').value.trim() || 'S/C',
+            nombre_plato: document.getElementById('plato-nombre').value.trim(),
+            temporada: document.getElementById('plato-temporada').value,
+            pax: parseInt(document.getElementById('plato-pax').value) || 1,
+            foto_url: document.getElementById('plato-foto').value.trim(),
+            presentacion: document.getElementById('plato-presentacion').value.trim(),
+            elaboracion: document.getElementById('plato-elaboracion').value.trim(),
+            celiacos: document.getElementById('plato-celiacos').checked,
+            vegetarianos: document.getElementById('plato-vegetarianos').checked,
+            diabeticos: document.getElementById('plato-diabeticos').checked,
+            pvp_actual: parseFloat(document.getElementById('plato-pvp').value) || 0,
+            iva: 10.0,
+            categoria: 'GENERAL' // o puedes añadir un selector de categoría
+        };
+
+        if (!platoData.nombre_plato) {
+            lanzarToast('El nombre del plato es obligatorio.', 'error');
+            return;
+        }
+
+        // Generar ID único (usamos código o nombre)
+        const id = platoData.codigo || platoData.nombre_plato.toUpperCase().replace(/\s+/g, '_');
+        platoData.id = id;
+
+        // 1. Guardar/Actualizar plato en recetas_platos
+        const { error: errorPlato } = await supabase
+            .from('recetas_platos')
+            .upsert([platoData], { onConflict: 'id' });
+
+        if (errorPlato) {
+            lanzarToast('Error al guardar plato: ' + errorPlato.message, 'error');
+            return;
+        }
+
+        // 2. Guardar ingredientes (eliminar los existentes y luego insertar)
+        const { error: deleteError } = await supabase
+            .from('ingredientes_receta')
+            .delete()
+            .eq('plato_id', id);
+
+        if (deleteError) {
+            console.warn('No se pudieron eliminar ingredientes viejos:', deleteError);
+        }
+
+        const filas = document.querySelectorAll('#cuerpo-ingredientes tr');
+        const ingredientes = [];
+        filas.forEach(row => {
+            const nombre = row.querySelector('.ing-nombre').value.trim();
+            if (!nombre) return;
+            const aprov = parseFloat(row.querySelector('.ing-aprov').value) || 100;
+            const neto = parseFloat(row.querySelector('.ing-neto').value) || 0;
+            const bruto = parseFloat(row.querySelector('.ing-bruto').value) || 0;
+            const precio = parseFloat(row.querySelector('.ing-precio').value) || 0;
+            const unidad = row.querySelector('.ing-unidad').value;
+            const coste = parseFloat(row.querySelector('.ing-coste').value) || 0;
+
+            ingredientes.push({
+                plato_id: id,
+                insumo_inventario_id: nombre, // Podríamos buscar el ID real, pero simplificamos
+                cantidad_por_porcion: neto, // Usamos neto como cantidad
+                aprovechamiento: aprov,
+                peso_neto: neto,
+                peso_bruto: bruto,
+                precio_compra: precio,
+                unidad_inventario: unidad,
+                coste_cmp: coste
+            });
+        });
+
+        if (ingredientes.length > 0) {
+            const { error: errorIng } = await supabase
+                .from('ingredientes_receta')
+                .insert(ingredientes);
+
+            if (errorIng) {
+                lanzarToast('Error al guardar ingredientes: ' + errorIng.message, 'error');
+                return;
+            }
+        }
+
+        lanzarToast(`✅ Receta "${platoData.nombre_plato}" guardada correctamente.`);
+    }
+
+    // ============================================================
+    // CARGAR RECETA EXISTENTE (por si quieres editar)
+    // ============================================================
+    async function cargarReceta(id) {
+        const { data: plato, error } = await supabase
             .from('recetas_platos')
             .select('*')
-            .order('nombre_plato', { ascending: true });
+            .eq('id', id)
+            .single();
 
-        if (error) {
-            cuerpo.innerHTML = '<tr><td colspan="19" style="text-align:center;color:#ef4444;">❌ Error de lectura</td></tr>';
+        if (error || !plato) {
+            lanzarToast('No se encontró la receta.', 'error');
             return;
         }
 
-        platosGlobal = platos || [];
-        renderizarCarta();
-    }
+        // Rellenar campos del plato
+        document.getElementById('plato-codigo').value = plato.codigo || '';
+        document.getElementById('plato-nombre').value = plato.nombre_plato || '';
+        document.getElementById('plato-temporada').value = plato.temporada || 'Anual';
+        document.getElementById('plato-pax').value = plato.pax || 1;
+        document.getElementById('plato-foto').value = plato.foto_url || '';
+        document.getElementById('plato-pvp').value = plato.pvp_actual || 0;
+        document.getElementById('plato-presentacion').value = plato.presentacion || '';
+        document.getElementById('plato-elaboracion').value = plato.elaboracion || '';
+        document.getElementById('plato-celiacos').checked = plato.celiacos || false;
+        document.getElementById('plato-vegetarianos').checked = plato.vegetarianos || false;
+        document.getElementById('plato-diabeticos').checked = plato.diabeticos || false;
 
-    function renderizarCarta() {
-        const cuerpo = document.getElementById('cuerpo-carta-excel');
-        if (!cuerpo) return;
-        cuerpo.innerHTML = '';
-
-        if (platosGlobal.length === 0) {
-            cuerpo.innerHTML = '<tr><td colspan="19" style="text-align:center;color:#94a3b8;padding:20px;">La carta está vacía. Añade platos con el botón "➕ Añadir Plato" o importa desde Excel.</td></tr>';
-            return;
-        }
-
-        platosGlobal.forEach((p, idx) => {
-            const row = document.createElement('tr');
-            row.dataset.id = p.id;
-
-            // ID (solo texto, no editable)
-            const tdId = document.createElement('td');
-            tdId.textContent = p.id;
-            tdId.style.fontWeight = 'bold';
-            tdId.style.fontSize = '11px';
-            tdId.style.color = '#475569';
-            row.appendChild(tdId);
-
-            // Nombre (editable)
-            const tdNombre = document.createElement('td');
-            const inputNombre = document.createElement('input');
-            inputNombre.type = 'text';
-            inputNombre.value = p.nombre_plato || '';
-            inputNombre.placeholder = 'Nombre del plato';
-            inputNombre.addEventListener('blur', () => {
-                if (inputNombre.value !== p.nombre_plato) {
-                    p.nombre_plato = inputNombre.value.trim();
-                    actualizarCampo(p.id, 'nombre_plato', p.nombre_plato);
-                }
-            });
-            tdNombre.appendChild(inputNombre);
-            row.appendChild(tdNombre);
-
-            // Categoría (editable con select)
-            const tdCategoria = document.createElement('td');
-            const selectCat = document.createElement('select');
-            const categorias = ['ENTRANTES', 'CARNES', 'PESCADOS', 'POSTRES', 'VEGETALES', 'FAST GOOD', 'PARA LOS MÁS PEQUES', 'ARROCES Y PASTAS'];
-            categorias.forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat;
-                opt.textContent = cat;
-                if (p.categoria === cat) opt.selected = true;
-                selectCat.appendChild(opt);
-            });
-            selectCat.addEventListener('change', () => {
-                p.categoria = selectCat.value;
-                actualizarCampo(p.id, 'categoria', p.categoria);
-            });
-            tdCategoria.appendChild(selectCat);
-            row.appendChild(tdCategoria);
-
-            // Precio (editable)
-            const tdPrecio = document.createElement('td');
-            const inputPrecio = document.createElement('input');
-            inputPrecio.type = 'number';
-            inputPrecio.step = '0.05';
-            inputPrecio.min = '0';
-            inputPrecio.value = p.precio || '';
-            inputPrecio.placeholder = '0.00';
-            inputPrecio.addEventListener('blur', () => {
-                const val = parseFloat(inputPrecio.value) || 0;
-                if (val !== p.precio) {
-                    p.precio = val;
-                    actualizarCampo(p.id, 'precio', val);
-                }
-            });
-            tdPrecio.appendChild(inputPrecio);
-            row.appendChild(tdPrecio);
-
-            // Alérgenos (14 checkboxes)
-            const alergenos = [
-                { col: 'a_gluten', label: 'GLU' },
-                { col: 'a_crustaceos', label: 'CRU' },
-                { col: 'a_huevos', label: 'HUE' },
-                { col: 'a_pescado', label: 'PES' },
-                { col: 'a_cacahuetes', label: 'CAC' },
-                { col: 'a_soja', label: 'SOJ' },
-                { col: 'a_lacteos', label: 'LAC' },
-                { col: 'a_frutos_cascara', label: 'FRU' },
-                { col: 'a_apio', label: 'API' },
-                { col: 'a_mostaza', label: 'MOS' },
-                { col: 'a_sesamo', label: 'SES' },
-                { col: 'a_sulfitos', label: 'SUL' },
-                { col: 'a_altramuces', label: 'ALT' },
-                { col: 'a_moluscos', label: 'MOL' }
-            ];
-
-            alergenos.forEach(al => {
-                const td = document.createElement('td');
-                td.style.textAlign = 'center';
-                const chk = document.createElement('input');
-                chk.type = 'checkbox';
-                chk.className = 'chk-alergeno';
-                chk.checked = p[al.col] || false;
-                chk.addEventListener('change', () => {
-                    p[al.col] = chk.checked;
-                    actualizarCampo(p.id, al.col, chk.checked);
-                });
-                td.appendChild(chk);
-                row.appendChild(td);
-            });
-
-            // Acción (eliminar)
-            const tdAccion = document.createElement('td');
-            tdAccion.style.textAlign = 'center';
-            const btnDel = document.createElement('button');
-            btnDel.className = 'btn-fila btn-danger-fila';
-            btnDel.textContent = '🗑️';
-            btnDel.title = 'Eliminar plato';
-            btnDel.addEventListener('click', () => eliminarPlato(p.id));
-            tdAccion.appendChild(btnDel);
-            row.appendChild(tdAccion);
-
-            cuerpo.appendChild(row);
-        });
-    }
-
-    async function actualizarCampo(id, campo, valor) {
-        const updateData = {};
-        updateData[campo] = valor;
-        const { error } = await db_nube.from('recetas_platos').update(updateData).eq('id', id);
-        if (error) {
-            lanzarToast(`Error al actualizar ${campo}`, 'error');
-            console.error(error);
-        }
-    }
-
-    async function eliminarPlato(id) {
-        if (!confirm('¿Eliminar este plato y todos sus ingredientes asociados?')) return;
-        const { error } = await db_nube.from('recetas_platos').delete().eq('id', id);
-        if (error) {
-            lanzarToast('Error al eliminar', 'error');
-            return;
-        }
-        platosGlobal = platosGlobal.filter(p => p.id !== id);
-        renderizarCarta();
-        lanzarToast('Plato eliminado');
-        // Refrescar select de escandallos si está visible
-        if (document.getElementById('sec2').classList.contains('active')) {
-            inicializarPestanaRecetas();
-        }
-    }
-
-    async function agregarFilaPlato() {
-        const nuevoId = generarIdUnico('PLATO');
-        const nuevoPlato = {
-            id: nuevoId,
-            nombre_plato: 'Nuevo plato',
-            categoria: 'ENTRANTES',
-            precio: 0.00,
-            a_gluten: false,
-            a_crustaceos: false,
-            a_huevos: false,
-            a_pescado: false,
-            a_cacahuetes: false,
-            a_soja: false,
-            a_lacteos: false,
-            a_frutos_cascara: false,
-            a_apio: false,
-            a_mostaza: false,
-            a_sesamo: false,
-            a_sulfitos: false,
-            a_altramuces: false,
-            a_moluscos: false
-        };
-        const { error } = await db_nube.from('recetas_platos').insert([nuevoPlato]);
-        if (error) {
-            lanzarToast('Error al añadir plato: ' + error.message, 'error');
-            return;
-        }
-        platosGlobal.push(nuevoPlato);
-        renderizarCarta();
-        lanzarToast('Plato añadido. Edita los datos en las celdas.');
-        // Refrescar select de escandallos
-        if (document.getElementById('sec2').classList.contains('active')) {
-            inicializarPestanaRecetas();
-        }
-    }
-
-    // ============================================================
-    // IMPORTAR DESDE EXCEL
-    // ============================================================
-    function mostrarModalImportar() {
-        document.getElementById('modal-importar').style.display = 'flex';
-        document.getElementById('texto-importar').value = '';
-        document.getElementById('texto-importar').focus();
-    }
-
-    function cerrarModalImportar() {
-        document.getElementById('modal-importar').style.display = 'none';
-    }
-
-    async function importarDesdeExcel() {
-        const texto = document.getElementById('texto-importar').value.trim();
-        if (!texto) {
-            lanzarToast('Pega el texto copiado de Excel.', 'warning');
-            return;
-        }
-
-        const lineas = texto.split('\n').filter(l => l.trim() !== '');
-        let importados = 0;
-        let errores = [];
-
-        for (const linea of lineas) {
-            const partes = linea.split('\t').map(p => p.trim());
-            // Formato: [categoría, nombre, precio?]
-            if (partes.length < 2) continue;
-            const categoria = partes[0].toUpperCase();
-            const nombre = partes[1];
-            const precio = partes.length >= 3 ? parseFloat(partes[2].replace(',', '.')) || 0 : 0;
-
-            if (!nombre) continue;
-
-            const id = generarIdUnico(nombre);
-            const nuevoPlato = {
-                id: id,
-                nombre_plato: nombre,
-                categoria: categoria,
-                precio: precio,
-                a_gluten: false,
-                a_crustaceos: false,
-                a_huevos: false,
-                a_pescado: false,
-                a_cacahuetes: false,
-                a_soja: false,
-                a_lacteos: false,
-                a_frutos_cascara: false,
-                a_apio: false,
-                a_mostaza: false,
-                a_sesamo: false,
-                a_sulfitos: false,
-                a_altramuces: false,
-                a_moluscos: false
-            };
-
-            const { error } = await db_nube.from('recetas_platos').insert([nuevoPlato]);
-            if (error) {
-                errores.push(`${nombre}: ${error.message}`);
-            } else {
-                importados++;
-                platosGlobal.push(nuevoPlato);
-            }
-        }
-
-        cerrarModalImportar();
-        if (importados > 0) {
-            lanzarToast(`✅ ${importados} platos importados correctamente.`);
-            renderizarCarta();
-            // Refrescar select de escandallos
-            if (document.getElementById('sec2').classList.contains('active')) {
-                inicializarPestanaRecetas();
-            }
-        } else {
-            lanzarToast('No se pudo importar ningún plato. Revisa el formato.', 'error');
-        }
-        if (errores.length > 0) {
-            console.error('Errores de importación:', errores);
-        }
-    }
-
-    // ============================================================
-    // PESTAÑA 2: ESCANDALLOS (mejorado)
-    // ============================================================
-    async function inicializarPestanaRecetas() {
-        const selectPlatos = document.getElementById('select-receta-plato');
-        const selectInsumos = document.getElementById('select-insumo-maestro');
-        if (!selectPlatos || !selectInsumos) return;
-
-        // Cargar platos
-        const { data: platos } = await db_nube.from('recetas_platos').select('id, nombre_plato').order('nombre_plato');
-        selectPlatos.innerHTML = '';
-        if (platos) {
-            platos.forEach(p => {
-                selectPlatos.innerHTML += `<option value="${p.id}">${p.nombre_plato}</option>`;
-            });
-        }
-
-        // Cargar insumos del maestro
-        const { data: insumos } = await db_nube.from('maestro_escandallos').select('id, nombre_articulo').order('nombre_articulo');
-        selectInsumos.innerHTML = '';
-        if (insumos) {
-            insumos.forEach(i => {
-                selectInsumos.innerHTML += `<option value="${i.id}">${i.nombre_articulo}</option>`;
-            });
-        }
-
-        cargarIngredientesPlatoActual();
-    }
-
-    async function cargarIngredientesPlatoActual() {
-        const platoId = document.getElementById('select-receta-plato').value;
-        const cuerpo = document.getElementById('tabla-desglose-ingredientes');
-        if (!platoId || !cuerpo) return;
-        cuerpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:10px;">⏳ Cargando...</td></tr>';
-
-        const { data: lineas, error } = await db_nube
+        // Cargar ingredientes
+        const { data: ingredientes, error: errIng } = await supabase
             .from('ingredientes_receta')
-            .select('*, maestro_escandallos(unidad_recuento)')
-            .eq('plato_id', platoId);
+            .select('*')
+            .eq('plato_id', id);
 
-        if (error) {
-            cuerpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#ef4444;">Error de lectura</td></tr>';
+        if (errIng) {
+            lanzarToast('Error al cargar ingredientes.', 'error');
             return;
         }
 
-        ingredientesGlobal = lineas || [];
-        cuerpo.innerHTML = '';
-        if (ingredientesGlobal.length === 0) {
-            cuerpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;font-style:italic;">Este plato no tiene ingredientes asignados.</td></tr>';
-            return;
+        // Limpiar tabla actual
+        document.getElementById('cuerpo-ingredientes').innerHTML = '';
+        filaIngredienteCount = 0;
+
+        if (ingredientes && ingredientes.length > 0) {
+            ingredientes.forEach(ing => {
+                agregarFilaIngrediente(
+                    ing.insumo_inventario_id || '',
+                    ing.aprovechamiento || 100,
+                    ing.peso_neto || 0,
+                    ing.peso_bruto || 0,
+                    ing.precio_compra || 0,
+                    ing.unidad_inventario || 'KG',
+                    ing.coste_cmp || 0
+                );
+            });
         }
-
-        ingredientesGlobal.forEach(l => {
-            const uM = l.maestro_escandallos ? l.maestro_escandallos.unidad_recuento : 'UNIDADES';
-            cuerpo.innerHTML += `
-                <tr>
-                    <td><strong>${l.insumo_inventario_id}</strong></td>
-                    <td style="font-weight:bold;color:#0284c7;">${l.cantidad_por_porcion}</td>
-                    <td><span style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">${uM}</span></td>
-                    <td style="text-align:center;"><button class="btn-fila btn-danger-fila" onclick="quitarIngredienteReceta(${l.id})">🗑️</button></td>
-                </tr>
-            `;
-        });
-    }
-
-    async function anadirIngredienteAPlato() {
-        const platoId = document.getElementById('select-receta-plato').value;
-        const insumoId = document.getElementById('select-insumo-maestro').value;
-        const cantidad = parseFloat(document.getElementById('insumo-cantidad').value) || 0;
-
-        if (!platoId || !insumoId || cantidad <= 0) {
-            lanzarToast('Completa todos los campos y cantidad mayor que 0.', 'warning');
-            return;
-        }
-
-        const { error } = await db_nube.from('ingredientes_receta').insert([{
-            plato_id: platoId,
-            insumo_inventario_id: insumoId,
-            cantidad_por_porcion: cantidad
-        }]);
-
-        if (error) {
-            lanzarToast('Error al añadir ingrediente: ' + error.message, 'error');
-            return;
-        }
-
-        lanzarToast('Ingrediente añadido al escandallo.');
-        cargarIngredientesPlatoActual();
-    }
-
-    async function quitarIngredienteReceta(lineaId) {
-        if (!confirm('¿Quitar este ingrediente del escandallo?')) return;
-        const { error } = await db_nube.from('ingredientes_receta').delete().eq('id', lineaId);
-        if (error) {
-            lanzarToast('Error al eliminar', 'error');
-            return;
-        }
-        lanzarToast('Ingrediente eliminado.');
-        cargarIngredientesPlatoActual();
-    }
-
-    // ============================================================
-    // SUSCRIPCIONES EN TIEMPO REAL (para actualizar automáticamente)
-    // ============================================================
-    function suscribirseCambios() {
-        db_nube
-            .channel('recetas-platos-changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'recetas_platos' }, () => {
-                cargarCarta();
-            })
-            .subscribe();
-
-        db_nube
-            .channel('ingredientes-receta-changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredientes_receta' }, () => {
-                if (document.getElementById('sec2').classList.contains('active')) {
-                    cargarIngredientesPlatoActual();
-                }
-            })
-            .subscribe();
+        calcularResultados();
     }
 
     // ============================================================
     // INICIALIZACIÓN
     // ============================================================
-    cargarCarta();
-    suscribirseCambios();
+    // Agregar una fila de ejemplo al cargar
+    window.onload = function() {
+        // Si quieres cargar una receta por defecto, descomenta:
+        // cargarReceta('TU_ID_AQUI');
+        // O simplemente añadir una fila vacía:
+        agregarFilaIngrediente('', 100, 0, 0, 0, 'KG', 0);
+    };
 
-    // Para que el modal no se cierre al hacer clic dentro
-    document.querySelector('.modal-content')?.addEventListener('click', (e) => e.stopPropagation());
+    // Exponer funciones globales
+    window.agregarFilaIngrediente = agregarFilaIngrediente;
+    window.eliminarFila = eliminarFila;
+    window.recalcularFila = recalcularFila;
+    window.calcularResultados = calcularResultados;
+    window.guardarReceta = guardarReceta;
+    window.cargarReceta = cargarReceta;
 </script>
 </body>
 </html>
