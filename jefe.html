@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Horas Extras - Jefe</title>
+    <!-- Cargar SDK de Supabase UNA sola vez -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* (estilos igual que antes) */
         * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; }
         body { background: #f1f5f9; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { max-width: 1000px; width: 100%; background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
@@ -47,331 +47,343 @@
     </style>
 </head>
 <body>
-    <!-- Login -->
-    <div id="loginContainer" class="container login-box">
-        <h1>🔐 Acceso Jefe</h1>
-        <input type="email" id="email" placeholder="Email" required>
-        <input type="password" id="password" placeholder="Contraseña" required>
-        <button id="btnLogin">Iniciar sesión</button>
-        <div id="loginError" style="color: #dc2626; margin-top: 10px;"></div>
-    </div>
 
-    <!-- Panel principal (oculto hasta login) -->
-    <div id="panelContainer" style="display: none; width: 100%; max-width: 1000px;">
-        <div class="container">
-            <h1>📊 Panel de Horas Extras</h1>
-            <button id="btnLogout" class="btn btn-danger logout">Cerrar sesión</button>
-            <div style="clear: both;"></div>
+<!-- Login -->
+<div id="loginContainer" class="container login-box">
+    <h1>🔐 Acceso Jefe</h1>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Contraseña" required>
+    <button id="btnLogin">Iniciar sesión</button>
+    <div id="loginError" style="color: #dc2626; margin-top: 10px;"></div>
+</div>
 
-            <div class="filtros">
-                <label>Mes: <select id="mesSelector"></select></label>
-                <label>Año: <select id="anioSelector"></select></label>
-                <button id="btnCalcularTotal" class="btn btn-success">Calcular total</button>
-                <button id="btnExportarCSV" class="btn btn-outline">⬇️ CSV</button>
-                <button id="btnEliminarTodos" class="btn btn-danger">🗑️ Eliminar todos</button>
-            </div>
+<!-- Panel principal (oculto hasta login) -->
+<div id="panelContainer" style="display: none; width: 100%; max-width: 1000px;">
+    <div class="container">
+        <h1>📊 Panel de Horas Extras</h1>
+        <button id="btnLogout" class="btn btn-danger logout">Cerrar sesión</button>
+        <div style="clear: both;"></div>
 
-            <div class="resumen-personas">
-                <div style="font-weight: 600; margin-bottom: 6px;">Total por persona</div>
-                <table>
-                    <thead><tr><th>Persona</th><th>Horas extras</th></tr></thead>
-                    <tbody id="cuerpoResumen"></tbody>
-                </table>
-                <div class="total-general" id="totalGeneral">Total general: 0.0 h</div>
-            </div>
+        <div class="filtros">
+            <label>Mes: <select id="mesSelector"></select></label>
+            <label>Año: <select id="anioSelector"></select></label>
+            <button id="btnCalcularTotal" class="btn btn-success">Calcular total</button>
+            <button id="btnExportarCSV" class="btn btn-outline">⬇️ CSV</button>
+            <button id="btnEliminarTodos" class="btn btn-danger">🗑️ Eliminar todos</button>
         </div>
 
-        <div class="container">
-            <h2>📋 Todos los registros</h2>
-            <div id="listaRegistros"></div>
+        <div class="resumen-personas">
+            <div style="font-weight: 600; margin-bottom: 6px;">Total por persona</div>
+            <table>
+                <thead><tr><th>Persona</th><th>Horas extras</th></tr></thead>
+                <tbody id="cuerpoResumen"></tbody>
+            </table>
+            <div class="total-general" id="totalGeneral">Total general: 0.0 h</div>
         </div>
     </div>
 
-    <!-- Modal foto -->
-    <div id="fotoModal" class="foto-modal" onclick="cerrarFoto()">
-        <img id="fotoModalImg" src="" alt="Foto ampliada">
+    <div class="container">
+        <h2>📋 Todos los registros</h2>
+        <div id="listaRegistros"></div>
     </div>
+</div>
 
-    <script>
-        // ---------------------------------------------
-        // 1. CONFIGURACIÓN DE SUPABASE
-        // ---------------------------------------------
-        const SUPABASE_URL = 'https://fredlesg.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
+<!-- Modal foto -->
+<div id="fotoModal" class="foto-modal" onclick="cerrarFoto()">
+    <img id="fotoModalImg" src="" alt="Foto ampliada">
+</div>
 
-        // Inicializar cliente de Supabase
-        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script>
+    // ---------------------------------------------
+    // 1. CONFIGURACIÓN DE SUPABASE (TUS CLAVES)
+    // ---------------------------------------------
+    const SUPABASE_URL = 'https://fredlesg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
 
-        // ---------------------------------------------
-        // 2. ELEMENTOS DEL DOM
-        // ---------------------------------------------
-        const loginContainer = document.getElementById('loginContainer');
-        const panelContainer = document.getElementById('panelContainer');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const btnLogin = document.getElementById('btnLogin');
-        const loginError = document.getElementById('loginError');
-        const btnLogout = document.getElementById('btnLogout');
+    // Inicializar cliente de Supabase de forma segura
+    // Usamos un IIFE para no contaminar el ámbito global innecesariamente
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ---------------------------------------------
-        // 3. FUNCIONES DE AUTENTICACIÓN
-        // ---------------------------------------------
-        // Comprobar sesión actual al cargar
-        supabase.auth.getSession().then(({ data: { session } }) => {
+    // ---------------------------------------------
+    // 2. ELEMENTOS DEL DOM
+    // ---------------------------------------------
+    const loginContainer = document.getElementById('loginContainer');
+    const panelContainer = document.getElementById('panelContainer');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const btnLogin = document.getElementById('btnLogin');
+    const loginError = document.getElementById('loginError');
+    const btnLogout = document.getElementById('btnLogout');
+
+    // ---------------------------------------------
+    // 3. FUNCIONES DE AUTENTICACIÓN
+    // ---------------------------------------------
+    // Comprobar sesión actual al cargar
+    async function verificarSesion() {
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) throw error;
             if (session) {
                 mostrarPanel();
             } else {
                 mostrarLogin();
             }
-        }).catch(err => {
-            console.error('Error al obtener sesión:', err);
+        } catch (error) {
+            console.error('Error al verificar sesión:', error);
             mostrarLogin();
-        });
-
-        // Escuchar cambios de autenticación
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                mostrarPanel();
-            } else {
-                mostrarLogin();
-            }
-        });
-
-        function mostrarLogin() {
-            loginContainer.style.display = 'block';
-            panelContainer.style.display = 'none';
         }
+    }
 
-        function mostrarPanel() {
-            loginContainer.style.display = 'none';
-            panelContainer.style.display = 'block';
-            inicializarSelectores();
-            cargarRegistros();
+    // Escuchar cambios de autenticación
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            mostrarPanel();
+        } else {
+            mostrarLogin();
         }
+    });
 
-        // Login
-        btnLogin.addEventListener('click', async () => {
-            const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
-            if (!email || !password) {
-                loginError.textContent = 'Ingresa email y contraseña.';
-                return;
-            }
-            try {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                loginError.textContent = '';
-            } catch (err) {
-                loginError.textContent = err.message;
-            }
-        });
+    function mostrarLogin() {
+        loginContainer.style.display = 'block';
+        panelContainer.style.display = 'none';
+    }
 
-        // Logout
-        btnLogout.addEventListener('click', async () => {
-            await supabase.auth.signOut();
-        });
+    function mostrarPanel() {
+        loginContainer.style.display = 'none';
+        panelContainer.style.display = 'block';
+        inicializarSelectores();
+        cargarRegistros();
+    }
 
-        // ---------------------------------------------
-        // 4. FUNCIONES DE DATOS (igual que antes)
-        // ---------------------------------------------
-        function inicializarSelectores() {
-            const mesSel = document.getElementById('mesSelector');
-            const anioSel = document.getElementById('anioSelector');
-            mesSel.innerHTML = '';
-            anioSel.innerHTML = '';
-            for (let m = 1; m <= 12; m++) {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = m.toString().padStart(2, '0');
-                mesSel.appendChild(opt);
-            }
-            const actual = new Date();
-            const anioActual = actual.getFullYear();
-            for (let a = 2020; a <= anioActual + 1; a++) {
-                const opt = document.createElement('option');
-                opt.value = a;
-                opt.textContent = a;
-                anioSel.appendChild(opt);
-            }
-            mesSel.value = actual.getMonth() + 1;
-            anioSel.value = anioActual;
+    // Login
+    btnLogin.addEventListener('click', async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!email || !password) {
+            loginError.textContent = 'Ingresa email y contraseña.';
+            return;
         }
-
-        function calcularHoras(inicio, fin) {
-            const [hI, mI] = inicio.split(':').map(Number);
-            const [hF, mF] = fin.split(':').map(Number);
-            const totalMin = (hF * 60 + mF) - (hI * 60 + mI);
-            if (totalMin < 0) return 0;
-            return parseFloat((totalMin / 60).toFixed(2));
+        try {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            loginError.textContent = '';
+        } catch (err) {
+            loginError.textContent = err.message;
         }
+    });
 
-        function formatearFecha(fechaStr) {
-            const d = new Date(fechaStr + 'T00:00:00');
-            return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    // Logout
+    btnLogout.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+    });
+
+    // ---------------------------------------------
+    // 4. FUNCIONES DE DATOS
+    // ---------------------------------------------
+    function inicializarSelectores() {
+        const mesSel = document.getElementById('mesSelector');
+        const anioSel = document.getElementById('anioSelector');
+        mesSel.innerHTML = '';
+        anioSel.innerHTML = '';
+        for (let m = 1; m <= 12; m++) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m.toString().padStart(2, '0');
+            mesSel.appendChild(opt);
         }
-
-        async function cargarRegistros() {
-            const mes = parseInt(document.getElementById('mesSelector').value);
-            const anio = parseInt(document.getElementById('anioSelector').value);
-            const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
-            const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
-
-            try {
-                const { data, error } = await supabase
-                    .from('horas_registros')
-                    .select('*')
-                    .gte('fecha', start)
-                    .lte('fecha', end)
-                    .order('created_at', { ascending: false });
-                if (error) throw error;
-                renderizarLista(data);
-                actualizarResumen(data);
-            } catch (error) {
-                console.error('Error al cargar registros:', error);
-                alert('Error al cargar datos. Revisa tu conexión.');
-            }
+        const actual = new Date();
+        const anioActual = actual.getFullYear();
+        for (let a = 2020; a <= anioActual + 1; a++) {
+            const opt = document.createElement('option');
+            opt.value = a;
+            opt.textContent = a;
+            anioSel.appendChild(opt);
         }
+        mesSel.value = actual.getMonth() + 1;
+        anioSel.value = anioActual;
+    }
 
-        function renderizarLista(registros) {
-            const contenedor = document.getElementById('listaRegistros');
-            if (!registros || registros.length === 0) {
-                contenedor.innerHTML = '<div class="empty-state">No hay registros en este mes.</div>';
-                return;
-            }
-            let html = '';
-            registros.forEach(reg => {
-                const horas = calcularHoras(reg.hora_inicio, reg.hora_fin);
-                const fotoHtml = reg.foto_url ? `<img src="${reg.foto_url}" class="foto-preview" onclick="event.stopPropagation(); abrirFoto('${reg.foto_url}')" alt="foto">` : '<span class="badge">Sin foto</span>';
-                html += `
-                    <div class="registro-item">
-                        <div class="registro-info">
-                            <span class="nombre">${reg.nombre || 'Anónimo'}</span>
-                            <span class="fecha">📅 ${formatearFecha(reg.fecha)}</span>
-                            <span>⏱️ ${reg.hora_inicio} → ${reg.hora_fin}</span>
-                            <span class="horas">${horas.toFixed(2)} h</span>
-                            ${reg.comentarios ? `<span>💬 ${reg.comentarios}</span>` : ''}
-                            ${fotoHtml}
-                        </div>
-                        <div>
-                            <button class="btn btn-danger btn-sm" onclick="eliminarRegistro('${reg.id}')">🗑️</button>
-                        </div>
+    function calcularHoras(inicio, fin) {
+        const [hI, mI] = inicio.split(':').map(Number);
+        const [hF, mF] = fin.split(':').map(Number);
+        const totalMin = (hF * 60 + mF) - (hI * 60 + mI);
+        if (totalMin < 0) return 0;
+        return parseFloat((totalMin / 60).toFixed(2));
+    }
+
+    function formatearFecha(fechaStr) {
+        const d = new Date(fechaStr + 'T00:00:00');
+        return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    async function cargarRegistros() {
+        const mes = parseInt(document.getElementById('mesSelector').value);
+        const anio = parseInt(document.getElementById('anioSelector').value);
+        const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
+        const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
+
+        try {
+            const { data, error } = await supabase
+                .from('horas_registros')
+                .select('*')
+                .gte('fecha', start)
+                .lte('fecha', end)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            renderizarLista(data);
+            actualizarResumen(data);
+        } catch (error) {
+            console.error('Error al cargar registros:', error);
+            alert('Error al cargar datos. Revisa tu conexión.');
+        }
+    }
+
+    function renderizarLista(registros) {
+        const contenedor = document.getElementById('listaRegistros');
+        if (!registros || registros.length === 0) {
+            contenedor.innerHTML = '<div class="empty-state">No hay registros en este mes.</div>';
+            return;
+        }
+        let html = '';
+        registros.forEach(reg => {
+            const horas = calcularHoras(reg.hora_inicio, reg.hora_fin);
+            const fotoHtml = reg.foto_url ? `<img src="${reg.foto_url}" class="foto-preview" onclick="event.stopPropagation(); abrirFoto('${reg.foto_url}')" alt="foto">` : '<span class="badge">Sin foto</span>';
+            html += `
+                <div class="registro-item">
+                    <div class="registro-info">
+                        <span class="nombre">${reg.nombre || 'Anónimo'}</span>
+                        <span class="fecha">📅 ${formatearFecha(reg.fecha)}</span>
+                        <span>⏱️ ${reg.hora_inicio} → ${reg.hora_fin}</span>
+                        <span class="horas">${horas.toFixed(2)} h</span>
+                        ${reg.comentarios ? `<span>💬 ${reg.comentarios}</span>` : ''}
+                        ${fotoHtml}
                     </div>
-                `;
-            });
-            contenedor.innerHTML = html;
-        }
+                    <div>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarRegistro('${reg.id}')">🗑️</button>
+                    </div>
+                </div>
+            `;
+        });
+        contenedor.innerHTML = html;
+    }
 
-        function actualizarResumen(registros) {
-            const mapa = {};
-            registros.forEach(r => {
-                const nom = r.nombre || 'Anónimo';
+    function actualizarResumen(registros) {
+        const mapa = {};
+        registros.forEach(r => {
+            const nom = r.nombre || 'Anónimo';
+            const horas = calcularHoras(r.hora_inicio, r.hora_fin);
+            mapa[nom] = (mapa[nom] || 0) + horas;
+        });
+        const tbody = document.getElementById('cuerpoResumen');
+        let totalGeneral = 0;
+        let html = '';
+        Object.keys(mapa).sort().forEach(nom => {
+            const h = mapa[nom];
+            totalGeneral += h;
+            html += `<tr><td>${nom}</td><td>${h.toFixed(2)} h</td></tr>`;
+        });
+        if (Object.keys(mapa).length === 0) {
+            html = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Sin datos este mes</td></tr>';
+        }
+        tbody.innerHTML = html;
+        document.getElementById('totalGeneral').textContent = `Total general: ${totalGeneral.toFixed(2)} h`;
+    }
+
+    // ---------------------------------------------
+    // 5. ACCIONES (eliminar, exportar, etc.)
+    // ---------------------------------------------
+    async function eliminarRegistro(id) {
+        if (!confirm('¿Eliminar este registro permanentemente?')) return;
+        try {
+            const { error } = await supabase
+                .from('horas_registros')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            cargarRegistros();
+        } catch (error) {
+            console.error('Error al eliminar:', error);
+            alert('No se pudo eliminar. Verifica permisos.');
+        }
+    }
+
+    document.getElementById('btnEliminarTodos').addEventListener('click', async function() {
+        if (!confirm('⚠️ ¿Eliminar TODOS los registros del mes seleccionado? No se puede deshacer.')) return;
+        const mes = parseInt(document.getElementById('mesSelector').value);
+        const anio = parseInt(document.getElementById('anioSelector').value);
+        const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
+        const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
+        try {
+            const { error } = await supabase
+                .from('horas_registros')
+                .delete()
+                .gte('fecha', start)
+                .lte('fecha', end);
+            if (error) throw error;
+            cargarRegistros();
+        } catch (error) {
+            console.error('Error al eliminar todos:', error);
+            alert('Error al eliminar. Revisa permisos.');
+        }
+    });
+
+    document.getElementById('btnExportarCSV').addEventListener('click', async function() {
+        const mes = parseInt(document.getElementById('mesSelector').value);
+        const anio = parseInt(document.getElementById('anioSelector').value);
+        const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
+        const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
+        try {
+            const { data, error } = await supabase
+                .from('horas_registros')
+                .select('*')
+                .gte('fecha', start)
+                .lte('fecha', end);
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                alert('No hay registros para exportar.');
+                return;
+            }
+            let csv = 'Persona,Fecha,Hora Inicio,Hora Fin,Horas Extras,Comentarios\n';
+            data.forEach(r => {
                 const horas = calcularHoras(r.hora_inicio, r.hora_fin);
-                mapa[nom] = (mapa[nom] || 0) + horas;
+                const fecha = formatearFecha(r.fecha);
+                const coment = (r.comentarios || '').replace(/,/g, ';');
+                csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio},${r.hora_fin},${horas.toFixed(2)},${coment}\n`;
             });
-            const tbody = document.getElementById('cuerpoResumen');
-            let totalGeneral = 0;
-            let html = '';
-            Object.keys(mapa).sort().forEach(nom => {
-                const h = mapa[nom];
-                totalGeneral += h;
-                html += `<tr><td>${nom}</td><td>${h.toFixed(2)} h</td></tr>`;
-            });
-            if (Object.keys(mapa).length === 0) {
-                html = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Sin datos este mes</td></tr>';
-            }
-            tbody.innerHTML = html;
-            document.getElementById('totalGeneral').textContent = `Total general: ${totalGeneral.toFixed(2)} h`;
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `horas_extras_${mes}_${anio}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            alert('Error al exportar. Revisa conexión.');
         }
+    });
 
-        // ---------------------------------------------
-        // 5. ACCIONES (eliminar, exportar)
-        // ---------------------------------------------
-        async function eliminarRegistro(id) {
-            if (!confirm('¿Eliminar este registro permanentemente?')) return;
-            try {
-                const { error } = await supabase
-                    .from('horas_registros')
-                    .delete()
-                    .eq('id', id);
-                if (error) throw error;
-                cargarRegistros();
-            } catch (error) {
-                console.error('Error al eliminar:', error);
-                alert('No se pudo eliminar. Verifica permisos.');
-            }
-        }
+    // Eventos de filtro
+    document.getElementById('btnCalcularTotal').addEventListener('click', cargarRegistros);
+    document.getElementById('mesSelector').addEventListener('change', cargarRegistros);
+    document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
 
-        document.getElementById('btnEliminarTodos').addEventListener('click', async function() {
-            if (!confirm('⚠️ ¿Eliminar TODOS los registros del mes seleccionado? No se puede deshacer.')) return;
-            const mes = parseInt(document.getElementById('mesSelector').value);
-            const anio = parseInt(document.getElementById('anioSelector').value);
-            const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
-            const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
-            try {
-                const { error } = await supabase
-                    .from('horas_registros')
-                    .delete()
-                    .gte('fecha', start)
-                    .lte('fecha', end);
-                if (error) throw error;
-                cargarRegistros();
-            } catch (error) {
-                console.error('Error al eliminar todos:', error);
-                alert('Error al eliminar. Revisa permisos.');
-            }
-        });
+    // ---------------------------------------------
+    // 6. MODAL DE FOTO
+    // ---------------------------------------------
+    function abrirFoto(src) {
+        document.getElementById('fotoModalImg').src = src;
+        document.getElementById('fotoModal').classList.add('active');
+    }
+    function cerrarFoto() {
+        document.getElementById('fotoModal').classList.remove('active');
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
 
-        document.getElementById('btnExportarCSV').addEventListener('click', async function() {
-            const mes = parseInt(document.getElementById('mesSelector').value);
-            const anio = parseInt(document.getElementById('anioSelector').value);
-            const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
-            const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
-            try {
-                const { data, error } = await supabase
-                    .from('horas_registros')
-                    .select('*')
-                    .gte('fecha', start)
-                    .lte('fecha', end);
-                if (error) throw error;
-                if (!data || data.length === 0) {
-                    alert('No hay registros para exportar.');
-                    return;
-                }
-                let csv = 'Persona,Fecha,Hora Inicio,Hora Fin,Horas Extras,Comentarios\n';
-                data.forEach(r => {
-                    const horas = calcularHoras(r.hora_inicio, r.hora_fin);
-                    const fecha = formatearFecha(r.fecha);
-                    const coment = (r.comentarios || '').replace(/,/g, ';');
-                    csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio},${r.hora_fin},${horas.toFixed(2)},${coment}\n`;
-                });
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `horas_extras_${mes}_${anio}.csv`;
-                link.click();
-                URL.revokeObjectURL(link.href);
-            } catch (error) {
-                console.error('Error al exportar:', error);
-                alert('Error al exportar. Revisa conexión.');
-            }
-        });
-
-        // Eventos de filtro
-        document.getElementById('btnCalcularTotal').addEventListener('click', cargarRegistros);
-        document.getElementById('mesSelector').addEventListener('change', cargarRegistros);
-        document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
-
-        // ---------------------------------------------
-        // 6. MODAL DE FOTO
-        // ---------------------------------------------
-        function abrirFoto(src) {
-            document.getElementById('fotoModalImg').src = src;
-            document.getElementById('fotoModal').classList.add('active');
-        }
-        function cerrarFoto() {
-            document.getElementById('fotoModal').classList.remove('active');
-        }
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
-    </script>
+    // ---------------------------------------------
+    // 7. INICIALIZAR
+    // ---------------------------------------------
+    // Ejecutar verificación de sesión al cargar
+    verificarSesion();
+</script>
 </body>
 </html>
