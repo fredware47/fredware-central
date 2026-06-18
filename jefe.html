@@ -104,26 +104,14 @@
     (function() {
         'use strict';
 
-        // ✅ URL CORRECTA DE TU PROYECTO
         const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
 
-        console.log('🔍 Conectando a Supabase...');
+        console.log('🔍 Conectando a Supabase (jefe)...');
         console.log('URL:', SUPABASE_URL);
-        console.log('Key:', SUPABASE_ANON_KEY.substring(0, 20) + '...');
 
-        // Inicializar cliente de Supabase
-        let supabase;
-        try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('✅ Cliente de Supabase creado correctamente');
-        } catch (error) {
-            console.error('❌ Error al crear cliente de Supabase:', error);
-            mostrarError('Error al conectar con Supabase: ' + error.message);
-            return;
-        }
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Función para mostrar errores en la interfaz
         function mostrarError(mensaje) {
             const box = document.getElementById('errorBox');
             box.textContent = '❌ ' + mensaje;
@@ -131,7 +119,7 @@
         }
 
         // ---------------------------------------------
-        // 2. FUNCIONES DE PERSONAL
+        // FUNCIONES DE PERSONAL
         // ---------------------------------------------
         async function cargarPersonal() {
             try {
@@ -203,7 +191,6 @@
             }
         });
 
-        // Permitir agregar con Enter
         document.getElementById('inputNuevoNombre').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -212,7 +199,7 @@
         });
 
         // ---------------------------------------------
-        // 3. FUNCIONES DE DATOS (registros)
+        // FUNCIONES DE DATOS (registros) - CORREGIDO
         // ---------------------------------------------
         function inicializarSelectores() {
             const mesSel = document.getElementById('mesSelector');
@@ -250,11 +237,20 @@
             return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
         }
 
+        // ✅ FUNCIÓN CORREGIDA - Calcula correctamente el último día del mes
         async function cargarRegistros() {
             const mes = parseInt(document.getElementById('mesSelector').value);
             const anio = parseInt(document.getElementById('anioSelector').value);
+            
+            // Calcular el último día del mes correctamente
+            const ultimoDia = new Date(anio, mes, 0).getDate(); // mes (1-12) -> new Date(año, mes, 0) da el último día del mes anterior
+            // Pero como mes es 1-12, usamos: new Date(anio, mes, 0)
+            const ultimoDiaReal = new Date(anio, mes, 0).getDate();
+            
             const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
-            const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
+            const end = `${anio}-${String(mes).padStart(2,'0')}-${String(ultimoDiaReal).padStart(2,'0')}`;
+
+            console.log(`📅 Filtrando desde ${start} hasta ${end}`);
 
             try {
                 console.log('📥 Cargando registros del mes:', mes, anio);
@@ -330,7 +326,7 @@
         }
 
         // ---------------------------------------------
-        // 4. ACCIONES (eliminar, exportar)
+        // ACCIONES (eliminar, exportar)
         // ---------------------------------------------
         window.eliminarRegistro = async function(id) {
             if (!confirm('¿Eliminar este registro permanentemente?')) return;
@@ -351,8 +347,9 @@
             if (!confirm('⚠️ ¿Eliminar TODOS los registros del mes seleccionado? No se puede deshacer.')) return;
             const mes = parseInt(document.getElementById('mesSelector').value);
             const anio = parseInt(document.getElementById('anioSelector').value);
+            const ultimoDia = new Date(anio, mes, 0).getDate();
             const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
-            const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
+            const end = `${anio}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
             try {
                 const { error } = await supabase
                     .from('horas_registros')
@@ -370,8 +367,9 @@
         document.getElementById('btnExportarCSV').addEventListener('click', async function() {
             const mes = parseInt(document.getElementById('mesSelector').value);
             const anio = parseInt(document.getElementById('anioSelector').value);
+            const ultimoDia = new Date(anio, mes, 0).getDate();
             const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
-            const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
+            const end = `${anio}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
             try {
                 const { data, error } = await supabase
                     .from('horas_registros')
@@ -408,7 +406,7 @@
         document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
 
         // ---------------------------------------------
-        // 5. MODAL DE FOTO
+        // MODAL DE FOTO
         // ---------------------------------------------
         window.abrirFoto = function(src) {
             document.getElementById('fotoModalImg').src = src;
@@ -420,7 +418,7 @@
         document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
 
         // ---------------------------------------------
-        // 6. INICIALIZAR
+        // INICIALIZAR
         // ---------------------------------------------
         console.log('🚀 Inicializando panel...');
         inicializarSelectores();
