@@ -43,6 +43,8 @@
         .admin-personal .lista-nombres { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
         .admin-personal .lista-nombres .nombre-tag { background: #dbeafe; padding: 2px 12px 2px 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; }
         .admin-personal .lista-nombres .nombre-tag button { background: none; border: none; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 1rem; padding: 0 2px; }
+        .error-box { background: #fee2e2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin: 12px 0; color: #991b1b; display: none; }
+        .error-box.show { display: block; }
     </style>
 </head>
 <body>
@@ -53,6 +55,8 @@
         <span class="badge-jefe">🔒 Acceso restringido - Jefe</span>
     </div>
     <p style="color: #64748b; margin-top: -8px;">Resumen mensual y gestión de registros</p>
+
+    <div id="errorBox" class="error-box"></div>
 
     <div class="filtros">
         <label>Mes: <select id="mesSelector"></select></label>
@@ -103,26 +107,54 @@
         // ---------------------------------------------
         // 1. CONFIGURACIÓN DE SUPABASE
         // ---------------------------------------------
+        // ✅ USAMOS LA CLAVE PÚBLICA (publishable), NO LA SECRETA
         const SUPABASE_URL = 'https://fredlesg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
 
-        // ✅ IMPORTANTE: usamos 'supabase' (NO 'supabaseJs')
-        // La librería se llama 'supabase' cuando se carga con el CDN
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('🔍 Conectando a Supabase...');
+        console.log('URL:', SUPABASE_URL);
+        console.log('Key:', SUPABASE_ANON_KEY.substring(0, 20) + '...');
+
+        // Inicializar cliente de Supabase
+        let supabase;
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Cliente de Supabase creado correctamente');
+        } catch (error) {
+            console.error('❌ Error al crear cliente de Supabase:', error);
+            mostrarError('Error al conectar con Supabase: ' + error.message);
+            return;
+        }
+
+        // Función para mostrar errores en la interfaz
+        function mostrarError(mensaje) {
+            const box = document.getElementById('errorBox');
+            box.textContent = '❌ ' + mensaje;
+            box.className = 'error-box show';
+        }
 
         // ---------------------------------------------
         // 2. FUNCIONES DE PERSONAL
         // ---------------------------------------------
         async function cargarPersonal() {
             try {
+                console.log('📥 Cargando personal...');
                 const { data, error } = await supabase
                     .from('horas_personal')
                     .select('nombre')
                     .order('nombre');
-                if (error) throw error;
+                
+                if (error) {
+                    console.error('❌ Error al cargar personal:', error);
+                    mostrarError('Error al cargar personal: ' + error.message);
+                    return;
+                }
+                
+                console.log('✅ Personal cargado:', data);
                 renderizarListaNombres(data);
             } catch (error) {
-                console.error('Error al cargar personal:', error);
+                console.error('❌ Error en cargarPersonal:', error);
+                mostrarError('Error de conexión: ' + error.message);
             }
         }
 
@@ -228,18 +260,24 @@
             const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
 
             try {
+                console.log('📥 Cargando registros del mes:', mes, anio);
                 const { data, error } = await supabase
                     .from('horas_registros')
                     .select('*')
                     .gte('fecha', start)
                     .lte('fecha', end)
                     .order('created_at', { ascending: false });
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Error al cargar registros:', error);
+                    mostrarError('Error al cargar registros: ' + error.message);
+                    return;
+                }
+                console.log('✅ Registros cargados:', data);
                 renderizarLista(data);
                 actualizarResumen(data);
             } catch (error) {
-                console.error('Error al cargar registros:', error);
-                alert('Error al cargar datos. Revisa tu conexión.');
+                console.error('❌ Error en cargarRegistros:', error);
+                mostrarError('Error de conexión: ' + error.message);
             }
         }
 
@@ -387,6 +425,7 @@
         // ---------------------------------------------
         // 6. INICIALIZAR
         // ---------------------------------------------
+        console.log('🚀 Inicializando panel...');
         inicializarSelectores();
         cargarRegistros();
         cargarPersonal();
