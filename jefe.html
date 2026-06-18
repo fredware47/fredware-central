@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Horas Extras - Jefe</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; }
+        body { background: #f1f5f9; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 1000px; width: 100%; background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h1, h2 { color: #0f172a; font-weight: 700; }
+        h1 { font-size: 1.8rem; border-bottom: 4px solid #3b82f6; padding-bottom: 8px; display: inline-block; }
+        .login-box { max-width: 400px; margin: 40px auto; text-align: center; }
+        .login-box input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 12px; }
+        .login-box button { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; }
+        .login-box button:hover { background: #2563eb; }
+        .filtros { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; }
+        .filtros select, .filtros input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; background: #e2e8f0; color: #1e293b; transition: 0.2s; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-success { background: #22c55e; color: white; }
+        .btn-success:hover { background: #16a34a; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-outline { background: transparent; border: 1px solid #cbd5e1; }
+        .btn-outline:hover { background: #f1f5f9; }
+        .resumen-personas { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 12px; }
+        .resumen-personas table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .resumen-personas th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #cbd5e1; }
+        .resumen-personas td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; }
+        .total-general { font-weight: 700; font-size: 1.1rem; border-top: 2px solid #94a3b8; padding-top: 10px; margin-top: 4px; }
+        .registro-item { background: #f8fafc; border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; border-left: 4px solid #3b82f6; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+        .registro-info { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; flex: 1; }
+        .registro-info .nombre { font-weight: 700; background: #dbeafe; padding: 0 10px; border-radius: 20px; font-size: 0.85rem; }
+        .registro-info .fecha { font-weight: 500; }
+        .registro-info .horas { background: #dbeafe; padding: 0 12px; border-radius: 20px; font-weight: 600; color: #1e40af; }
+        .registro-info .foto-preview { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid #e2e8f0; }
+        .foto-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.75); justify-content: center; align-items: center; z-index: 999; }
+        .foto-modal.active { display: flex; }
+        .foto-modal img { max-width: 90%; max-height: 90%; border-radius: 16px; }
+        .empty-state { color: #94a3b8; text-align: center; padding: 30px 0; font-style: italic; }
+        .logout { float: right; margin-top: -40px; }
+    </style>
+</head>
+<body>
+
+<div id="loginContainer" class="container login-box">
+    <h1>🔐 Acceso Jefe</h1>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Contraseña" required>
+    <button id="btnLogin">Iniciar sesión</button>
+    <div id="loginError" style="color: #dc2626; margin-top: 10px;"></div>
+</div>
+
+<div id="panelContainer" style="display: none; width: 100%; max-width: 1000px;">
+    <div class="container">
+        <h1>📊 Panel de Horas Extras</h1>
+        <button id="btnLogout" class="btn btn-danger logout">Cerrar sesión</button>
+        <div style="clear: both;"></div>
+
+        <div class="filtros">
+            <label>Mes: <select id="mesSelector"></select></label>
+            <label>Año: <select id="anioSelector"></select></label>
+            <button id="btnCalcularTotal" class="btn btn-success">Calcular total</button>
+            <button id="btnExportarCSV" class="btn btn-outline">⬇️ CSV</button>
+            <button id="btnEliminarTodos" class="btn btn-danger">🗑️ Eliminar todos</button>
+        </div>
+
+        <div class="resumen-personas" id="resumenPersonas">
+            <div style="font-weight: 600; margin-bottom: 6px;">Total por persona</div>
+            <table>
+                <thead><tr><th>Persona</th><th>Horas extras</th></tr></thead>
+                <tbody id="cuerpoResumen"></tbody>
+            </table>
+            <div class="total-general" id="totalGeneral">Total general: 0.0 h</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📋 Todos los registros</h2>
+        <div id="listaRegistros"></div>
+    </div>
+</div>
+
+<!-- Modal foto -->
+<div id="fotoModal" class="foto-modal" onclick="cerrarFoto()">
+    <img id="fotoModalImg" src="" alt="Foto ampliada">
+</div>
+
+<script>
+    // -------------------- CONFIGURACIÓN DE SUPABASE (CON TUS CREDENCIALES) --------------------
+    const SUPABASE_URL = 'https://fredlesg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Elementos DOM
+    const loginContainer = document.getElementById('loginContainer');
+    const panelContainer = document.getElementById('panelContainer');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const btnLogin = document.getElementById('btnLogin');
+    const loginError = document.getElementById('loginError');
+    const btnLogout = document.getElementById('btnLogout');
+
+    // -------------------- AUTENTICACIÓN --------------------
+    // Verificar sesión actual
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+            mostrarPanel();
+        } else {
+            mostrarLogin();
+        }
+    });
+
+    // Escuchar cambios de autenticación
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            mostrarPanel();
+        } else {
+            mostrarLogin();
+        }
+    });
+
+    function mostrarLogin() {
+        loginContainer.style.display = 'block';
+        panelContainer.style.display = 'none';
+    }
+
+    function mostrarPanel() {
+        loginContainer.style.display = 'none';
+        panelContainer.style.display = 'block';
+        inicializarSelectores();
+        cargarRegistros();
+    }
+
+    btnLogin.addEventListener('click', async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!email || !password) {
+            loginError.textContent = 'Ingresa email y contraseña.';
+            return;
+        }
+        try {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            loginError.textContent = '';
+        } catch (err) {
+            loginError.textContent = err.message;
+        }
+    });
+
+    btnLogout.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+    });
+
+    // -------------------- FUNCIONES DE CARGA Y CÁLCULO --------------------
+    function inicializarSelectores() {
+        const mesSel = document.getElementById('mesSelector');
+        const anioSel = document.getElementById('anioSelector');
+        mesSel.innerHTML = '';
+        anioSel.innerHTML = '';
+        for (let m = 1; m <= 12; m++) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m.toString().padStart(2, '0');
+            mesSel.appendChild(opt);
+        }
+        const actual = new Date();
+        const anioActual = actual.getFullYear();
+        for (let a = 2020; a <= anioActual + 1; a++) {
+            const opt = document.createElement('option');
+            opt.value = a;
+            opt.textContent = a;
+            anioSel.appendChild(opt);
+        }
+        mesSel.value = actual.getMonth() + 1;
+        anioSel.value = anioActual;
+    }
+
+    function calcularHoras(inicio, fin) {
+        const [hI, mI] = inicio.split(':').map(Number);
+        const [hF, mF] = fin.split(':').map(Number);
+        const totalMin = (hF * 60 + mF) - (hI * 60 + mI);
+        if (totalMin < 0) return 0;
+        return parseFloat((totalMin / 60).toFixed(2));
+    }
+
+    function formatearFecha(fechaStr) {
+        const d = new Date(fechaStr + 'T00:00:00');
+        return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    async function cargarRegistros() {
+        const mes = parseInt(document.getElementById('mesSelector').value);
+        const anio = parseInt(document.getElementById('anioSelector').value);
+        const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
+        const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
+
+        try {
+            const { data, error } = await supabase
+                .from('horas_registros')
+                .select('*')
+                .gte('fecha', start)
+                .lte('fecha', end)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            renderizarLista(data || []);
+            actualizarResumen(data || []);
+        } catch (error) {
+            console.error('Error al cargar registros:', error);
+            alert('Error al cargar datos. Revisa tu conexión.');
+        }
+    }
+
+    function renderizarLista(registros) {
+        const contenedor = document.getElementById('listaRegistros');
+        if (!registros || registros.length === 0) {
+            contenedor.innerHTML = '<div class="empty-state">No hay registros en este mes.</div>';
+            return;
+        }
+        let html = '';
+        registros.forEach(reg => {
+            const horas = calcularHoras(reg.hora_inicio, reg.hora_fin);
+            const fotoHtml = reg.foto_url ? `<img src="${reg.foto_url}" class="foto-preview" onclick="event.stopPropagation(); abrirFoto('${reg.foto_url}')" alt="foto">` : '<span class="badge">Sin foto</span>';
+            html += `
+                <div class="registro-item">
+                    <div class="registro-info">
+                        <span class="nombre">${reg.nombre || 'Anónimo'}</span>
+                        <span class="fecha">📅 ${formatearFecha(reg.fecha)}</span>
+                        <span>⏱️ ${reg.hora_inicio} → ${reg.hora_fin}</span>
+                        <span class="horas">${horas.toFixed(2)} h</span>
+                        ${reg.comentarios ? `<span>💬 ${reg.comentarios}</span>` : ''}
+                        ${fotoHtml}
+                    </div>
+                    <div>
+                        <button class="btn btn-danger btn-sm" onclick="eliminarRegistro('${reg.id}')">🗑️</button>
+                    </div>
+                </div>
+            `;
+        });
+        contenedor.innerHTML = html;
+    }
+
+    function actualizarResumen(registros) {
+        const mapa = {};
+        registros.forEach(r => {
+            const nom = r.nombre || 'Anónimo';
+            const horas = calcularHoras(r.hora_inicio, r.hora_fin);
+            mapa[nom] = (mapa[nom] || 0) + horas;
+        });
+        const tbody = document.getElementById('cuerpoResumen');
+        let totalGeneral = 0;
+        let html = '';
+        Object.keys(mapa).sort().forEach(nom => {
+            const h = mapa[nom];
+            totalGeneral += h;
+            html += `<tr><td>${nom}</td><td>${h.toFixed(2)} h</td></tr>`;
+        });
+        if (Object.keys(mapa).length === 0) {
+            html = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Sin datos este mes</td></tr>';
+        }
+        tbody.innerHTML = html;
+        document.getElementById('totalGeneral').textContent = `Total general: ${totalGeneral.toFixed(2)} h`;
+    }
+
+    // -------------------- ELIMINAR REGISTRO --------------------
+    async function eliminarRegistro(id) {
+        if (!confirm('¿Eliminar este registro permanentemente?')) return;
+        try {
+            const { error } = await supabase
+                .from('horas_registros')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            cargarRegistros();
+        } catch (error) {
+            console.error('Error al eliminar:', error);
+            alert('No se pudo eliminar. Verifica permisos.');
+        }
+    }
+
+    // -------------------- ELIMINAR TODOS (del mes) --------------------
+    document.getElementById('btnEliminarTodos').addEventListener('click', async function() {
+        if (!confirm('⚠️ ¿Eliminar TODOS los registros del mes seleccionado? No se puede deshacer.')) return;
+        const mes = parseInt(document.getElementById('mesSelector').value);
+        const anio = parseInt(document.getElementById('anioSelector').value);
+        const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
+        const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
+        try {
+            const { error } = await supabase
+                .from('horas_registros')
+                .delete()
+                .gte('fecha', start)
+                .lte('fecha', end);
+            if (error) throw error;
+            cargarRegistros();
+        } catch (error) {
+            console.error('Error al eliminar todos:', error);
+            alert('Error al eliminar. Revisa permisos.');
+        }
+    });
+
+    // -------------------- EXPORTAR CSV --------------------
+    document.getElementById('btnExportarCSV').addEventListener('click', async function() {
+        const mes = parseInt(document.getElementById('mesSelector').value);
+        const anio = parseInt(document.getElementById('anioSelector').value);
+        const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
+        const end = `${anio}-${String(mes).padStart(2,'0')}-31`;
+        try {
+            const { data, error } = await supabase
+                .from('horas_registros')
+                .select('*')
+                .gte('fecha', start)
+                .lte('fecha', end);
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                alert('No hay registros para exportar.');
+                return;
+            }
+            let csv = 'Persona,Fecha,Hora Inicio,Hora Fin,Horas Extras,Comentarios\n';
+            data.forEach(r => {
+                const horas = calcularHoras(r.hora_inicio, r.hora_fin);
+                const fecha = formatearFecha(r.fecha);
+                const coment = (r.comentarios || '').replace(/,/g, ';');
+                csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio},${r.hora_fin},${horas.toFixed(2)},${coment}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `horas_extras_${mes}_${anio}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            alert('Error al exportar. Revisa conexión.');
+        }
+    });
+
+    // -------------------- EVENTOS DE FILTRO --------------------
+    document.getElementById('btnCalcularTotal').addEventListener('click', cargarRegistros);
+    document.getElementById('mesSelector').addEventListener('change', cargarRegistros);
+    document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
+
+    // -------------------- MODAL DE FOTO --------------------
+    function abrirFoto(src) {
+        document.getElementById('fotoModalImg').src = src;
+        document.getElementById('fotoModal').classList.add('active');
+    }
+    function cerrarFoto() {
+        document.getElementById('fotoModal').classList.remove('active');
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Registro Horas Extras - Cocineros</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; }
+        body { background: #f1f5f9; padding: 20px; display: flex; justify-content: center; }
+        .container { max-width: 500px; width: 100%; background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        h1 { color: #0f172a; font-size: 1.8rem; border-bottom: 4px solid #3b82f6; padding-bottom: 8px; margin-bottom: 16px; }
+        .form-group { margin-bottom: 14px; display: flex; flex-direction: column; gap: 4px; }
+        label { font-weight: 600; font-size: 0.9rem; color: #334155; }
+        input, select, textarea { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 0.95rem; width: 100%; }
+        input:focus, select:focus, textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); outline: none; }
+        textarea { resize: vertical; min-height: 56px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; background: #3b82f6; color: white; width: 100%; transition: 0.2s; }
+        .btn:hover { background: #2563eb; transform: scale(1.02); }
+        .mensaje { margin-top: 12px; padding: 10px; border-radius: 10px; display: none; }
+        .mensaje.exito { background: #dcfce7; color: #166534; display: block; }
+        .mensaje.error { background: #fee2e2; color: #991b1b; display: block; }
+        .foto-preview { max-width: 100%; margin-top: 8px; border-radius: 12px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧑‍🍳 Registrar Horas Extra</h1>
+        <form id="formRegistro">
+            <div class="form-group">
+                <label>👤 Nombre</label>
+                <select id="nombreCocinero" required>
+                    <option value="">-- Seleccionar --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>📅 Fecha</label>
+                <input type="date" id="fecha" required>
+            </div>
+            <div class="form-group">
+                <label>⏰ Inicio</label>
+                <input type="time" id="horaInicio" required>
+            </div>
+            <div class="form-group">
+                <label>⏰ Fin</label>
+                <input type="time" id="horaFin" required>
+            </div>
+            <div class="form-group">
+                <label>📸 Foto (evidencia)</label>
+                <input type="file" id="foto" accept="image/*" capture="environment">
+                <img id="fotoPreview" class="foto-preview" alt="Vista previa">
+            </div>
+            <div class="form-group">
+                <label>💬 Comentarios (opcional)</label>
+                <textarea id="comentarios" placeholder="Ej: Reposición, limpieza..."></textarea>
+            </div>
+            <button type="submit" class="btn">➕ Guardar registro</button>
+        </form>
+        <div id="mensaje" class="mensaje"></div>
+        <div style="margin-top: 16px; font-size: 0.8rem; color: #94a3b8; text-align: center;">Los datos se guardan en la nube de forma segura.</div>
+    </div>
+
+    <script>
+        // -------------------- CONFIGURACIÓN DE SUPABASE (CON TUS CREDENCIALES) --------------------
+        const SUPABASE_URL = 'https://fredlesg.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
+        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // -------------------- CARGAR LISTA DE PERSONAL --------------------
+        async function cargarPersonal() {
+            try {
+                const { data, error } = await supabase
+                    .from('horas_personal')
+                    .select('nombre')
+                    .order('nombre');
+                if (error) throw error;
+                const select = document.getElementById('nombreCocinero');
+                select.innerHTML = '<option value="">-- Seleccionar --</option>';
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.nombre;
+                    opt.textContent = item.nombre;
+                    select.appendChild(opt);
+                });
+            } catch (error) {
+                console.error('Error al cargar personal:', error);
+                alert('No se pudo cargar la lista de personal. Revisa la conexión.');
+            }
+        }
+
+        // -------------------- PREVISUALIZACIÓN DE FOTO --------------------
+        document.getElementById('foto').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('fotoPreview');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    preview.src = ev.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+
+        // -------------------- ENVÍO DEL FORMULARIO --------------------
+        document.getElementById('formRegistro').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('nombreCocinero').value;
+            const fecha = document.getElementById('fecha').value;
+            const horaInicio = document.getElementById('horaInicio').value;
+            const horaFin = document.getElementById('horaFin').value;
+            const comentarios = document.getElementById('comentarios').value.trim();
+            const fileInput = document.getElementById('foto');
+            const file = fileInput.files[0];
+
+            if (!nombre) { mostrarMensaje('Selecciona un nombre.', 'error'); return; }
+            if (!fecha || !horaInicio || !horaFin) { mostrarMensaje('Completa todos los campos obligatorios.', 'error'); return; }
+            if (horaInicio >= horaFin) { mostrarMensaje('La hora de fin debe ser posterior a la de inicio.', 'error'); return; }
+
+            const btn = document.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = '⏳ Guardando...';
+
+            let fotoUrl = null;
+            if (file) {
+                try {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}.${fileExt}`;
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('fotos')
+                        .upload(fileName, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    if (uploadError) throw uploadError;
+                    // Obtener URL pública
+                    const { data: urlData } = supabase.storage
+                        .from('fotos')
+                        .getPublicUrl(fileName);
+                    fotoUrl = urlData.publicUrl;
+                } catch (error) {
+                    console.error('Error al subir foto:', error);
+                    mostrarMensaje('Error al subir la foto. Intenta de nuevo.', 'error');
+                    btn.disabled = false;
+                    btn.textContent = '➕ Guardar registro';
+                    return;
+                }
+            }
+
+            // Guardar en la tabla registros
+            try {
+                const { error } = await supabase
+                    .from('horas_registros')
+                    .insert([
+                        { nombre, fecha, hora_inicio: horaInicio, hora_fin: horaFin, comentarios, foto_url: fotoUrl }
+                    ]);
+                if (error) throw error;
+                mostrarMensaje('✅ Registro guardado correctamente.', 'exito');
+                document.getElementById('formRegistro').reset();
+                document.getElementById('fotoPreview').style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = '➕ Guardar registro';
+            } catch (error) {
+                console.error('Error al guardar registro:', error);
+                mostrarMensaje('Error al guardar. Revisa tu conexión.', 'error');
+                btn.disabled = false;
+                btn.textContent = '➕ Guardar registro';
+            }
+        });
+
+        function mostrarMensaje(texto, tipo) {
+            const div = document.getElementById('mensaje');
+            div.textContent = texto;
+            div.className = 'mensaje ' + tipo;
+            setTimeout(() => {
+                div.className = 'mensaje';
+                div.textContent = '';
+            }, 5000);
+        }
+
+        // Inicializar
+        cargarPersonal();
+    </script>
+</body>
+</html>
