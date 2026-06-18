@@ -22,8 +22,6 @@
         .btn-outline:hover { background: #f1f5f9; }
         .btn-primary { background: #3b82f6; color: white; }
         .btn-primary:hover { background: #2563eb; }
-        .btn-warning { background: #f59e0b; color: white; }
-        .btn-warning:hover { background: #d97706; }
         .resumen-personas { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 12px; }
         .resumen-personas table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         .resumen-personas th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #cbd5e1; }
@@ -56,11 +54,12 @@
         .mensaje-flotante.exito { background: #22c55e; display: block; }
         .mensaje-flotante.error { background: #ef4444; display: block; }
         .mensaje-flotante.info { background: #3b82f6; display: block; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
     </style>
 </head>
 <body>
 
-    <!-- Mensaje flotante -->
     <div id="mensajeFlotante" class="mensaje-flotante"></div>
 
     <div class="container" style="max-width: 1000px;">
@@ -89,7 +88,6 @@
             <div class="total-general" id="totalGeneral">Total general: 0.0 h</div>
         </div>
 
-        <!-- Administración de personal (solo para el jefe) -->
         <div class="admin-personal">
             <div style="font-weight: 600; margin-bottom: 8px;">👥 Gestionar personal (cocineros y picas)</div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
@@ -113,27 +111,22 @@
         <div id="listaRegistros"></div>
     </div>
 
-    <!-- Modal foto -->
     <div id="fotoModal" class="foto-modal" onclick="cerrarFoto()">
         <img id="fotoModalImg" src="" alt="Foto ampliada">
     </div>
 
     <script>
-        // ------------------------------------------------------------
-        // CONFIGURACIÓN DE SUPABASE (SOLO UNA VEZ)
-        // ------------------------------------------------------------
         (function() {
             'use strict';
 
             const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
 
-            console.log('🔍 Conectando a Supabase (jefe)...');
+            console.log('🔍 Conectando a Supabase...');
             console.log('URL:', SUPABASE_URL);
 
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Lista de nombres por defecto
             const NOMBRES_POR_DEFECTO = [
                 'Antonio', 'Remedios', 'Rafael', 'Andrea', 'Ines',
                 'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
@@ -148,7 +141,7 @@
                 div.className = 'mensaje-flotante ' + tipo;
                 setTimeout(() => {
                     div.className = 'mensaje-flotante';
-                }, 4000);
+                }, 5000);
             }
 
             function mostrarError(mensaje) {
@@ -158,10 +151,6 @@
                 setTimeout(() => {
                     box.className = 'error-box';
                 }, 8000);
-            }
-
-            function ocultarError() {
-                document.getElementById('errorBox').className = 'error-box';
             }
 
             // ------------------------------------------------------------
@@ -176,10 +165,8 @@
                         .order('nombre');
 
                     if (error) {
-                        console.error('❌ Error al cargar personal:', error);
+                        console.error('❌ Error:', error);
                         mostrarError('Error al cargar personal: ' + error.message);
-                        document.getElementById('listaNombres').innerHTML =
-                            '<span style="color:#94a3b8; font-size:0.9rem;">Error al cargar</span>';
                         return;
                     }
 
@@ -187,50 +174,60 @@
 
                     if (!data || data.length === 0) {
                         document.getElementById('listaNombres').innerHTML =
-                            '<span style="color:#94a3b8; font-size:0.9rem;">No hay nombres. Usa "Insertar lista"</span>';
+                            '<span style="color:#94a3b8; font-size:0.9rem;">No hay nombres.</span>';
                         return;
                     }
 
-                    renderizarListaNombres(data);
-                    ocultarError();
+                    const contenedor = document.getElementById('listaNombres');
+                    let html = '';
+                    data.forEach(item => {
+                        html += `<span class="nombre-tag">${item.nombre} <button onclick="eliminarNombre('${item.nombre}')" title="Eliminar">✕</button></span>`;
+                    });
+                    html += `<span class="badge-count" style="margin-left:8px;">${data.length} nombres</span>`;
+                    contenedor.innerHTML = html;
+
                 } catch (error) {
                     console.error('❌ Error en cargarPersonal:', error);
                     mostrarError('Error de conexión: ' + error.message);
                 }
             }
 
-            function renderizarListaNombres(data) {
-                const contenedor = document.getElementById('listaNombres');
-                if (!data || data.length === 0) {
-                    contenedor.innerHTML = '<span style="color:#94a3b8; font-size:0.9rem;">No hay nombres agregados.</span>';
-                    return;
-                }
-                let html = '';
-                data.forEach(item => {
-                    html += `<span class="nombre-tag">${item.nombre} <button onclick="eliminarNombre('${item.nombre}')" title="Eliminar">✕</button></span>`;
-                });
-                html += `<span class="badge-count" style="margin-left:8px;">${data.length} nombres</span>`;
-                contenedor.innerHTML = html;
-            }
-
-            // Función global para eliminar nombres (se llama desde el HTML)
+            // ELIMINAR NOMBRE - con manejo de errores detallado
             window.eliminarNombre = async function(nombre) {
                 if (!confirm(`¿Eliminar a "${nombre}" de la lista?`)) return;
+
                 try {
-                    const { error } = await supabase
+                    console.log(`🗑️ Eliminando "${nombre}"...`);
+
+                    const { data, error } = await supabase
                         .from('horas_personal')
                         .delete()
-                        .eq('nombre', nombre);
-                    if (error) throw error;
+                        .eq('nombre', nombre)
+                        .select();
+
+                    if (error) {
+                        console.error('❌ Error de Supabase:', error);
+                        // Si el error es de RLS, mostrar mensaje claro
+                        if (error.code === '42501') {
+                            mostrarMensaje('❌ Error de permisos. Configura políticas RLS en Supabase.', 'error');
+                            mostrarError('ERROR: No tienes permisos para eliminar. Ve a Authentication > Policies y crea una política DELETE para horas_personal.');
+                        } else {
+                            mostrarMensaje('❌ Error al eliminar: ' + error.message, 'error');
+                        }
+                        return;
+                    }
+
+                    console.log('✅ Eliminado correctamente:', data);
                     await cargarPersonal();
-                    mostrarMensaje(`✅ "${nombre}" eliminado correctamente`, 'exito');
+                    mostrarMensaje(`✅ "${nombre}" eliminado`, 'exito');
+
                 } catch (error) {
-                    console.error('Error al eliminar nombre:', error);
-                    mostrarMensaje('❌ Error al eliminar: ' + error.message, 'error');
+                    console.error('❌ Error inesperado:', error);
+                    mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             };
 
-            // Agregar nombre
+            // AGREGAR NOMBRE
             document.getElementById('btnAgregarNombre').addEventListener('click', async function() {
                 const input = document.getElementById('inputNuevoNombre');
                 const nombre = input.value.trim();
@@ -245,25 +242,27 @@
                     if (error) throw error;
                     input.value = '';
                     await cargarPersonal();
-                    mostrarMensaje(`✅ "${nombre}" agregado correctamente`, 'exito');
+                    mostrarMensaje(`✅ "${nombre}" agregado`, 'exito');
                 } catch (error) {
-                    console.error('Error al agregar nombre:', error);
-                    mostrarMensaje('❌ Error al agregar: ' + error.message, 'error');
+                    console.error('Error al agregar:', error);
+                    if (error.code === '42501') {
+                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
+                    } else {
+                        mostrarMensaje('❌ Error: ' + error.message, 'error');
+                    }
                 }
             });
 
-            // Insertar lista completa de nombres
+            // INSERTAR LISTA COMPLETA
             document.getElementById('btnInsertarNombres').addEventListener('click', async function() {
                 if (!confirm(`¿Insertar todos los nombres (${NOMBRES_POR_DEFECTO.length})?`)) return;
                 try {
-                    // Primero eliminar todos
                     const { error: deleteError } = await supabase
                         .from('horas_personal')
                         .delete()
                         .neq('id', '00000000-0000-0000-0000-000000000000');
                     if (deleteError) throw deleteError;
 
-                    // Insertar nuevos
                     const inserts = NOMBRES_POR_DEFECTO.map(nombre => ({ nombre }));
                     const { error: insertError } = await supabase
                         .from('horas_personal')
@@ -273,14 +272,18 @@
                     await cargarPersonal();
                     mostrarMensaje(`✅ ${NOMBRES_POR_DEFECTO.length} nombres insertados`, 'exito');
                 } catch (error) {
-                    console.error('Error al insertar nombres:', error);
-                    mostrarMensaje('❌ Error al insertar: ' + error.message, 'error');
+                    console.error('Error:', error);
+                    if (error.code === '42501') {
+                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
+                    } else {
+                        mostrarMensaje('❌ Error: ' + error.message, 'error');
+                    }
                 }
             });
 
-            // Eliminar todos los nombres
+            // ELIMINAR TODOS LOS NOMBRES
             document.getElementById('btnEliminarTodosNombres').addEventListener('click', async function() {
-                if (!confirm('⚠️ ¿Eliminar TODOS los nombres? Los cocineros no podrán registrarse.')) return;
+                if (!confirm('⚠️ ¿Eliminar TODOS los nombres?')) return;
                 try {
                     const { error } = await supabase
                         .from('horas_personal')
@@ -290,12 +293,16 @@
                     await cargarPersonal();
                     mostrarMensaje('🗑️ Todos los nombres eliminados', 'info');
                 } catch (error) {
-                    console.error('Error al eliminar todos:', error);
-                    mostrarMensaje('❌ Error al eliminar: ' + error.message, 'error');
+                    console.error('Error:', error);
+                    if (error.code === '42501') {
+                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
+                    } else {
+                        mostrarMensaje('❌ Error: ' + error.message, 'error');
+                    }
                 }
             });
 
-            // Botón recargar personal
+            // RECARGAR PERSONAL
             document.getElementById('btnRecargarPersonal').addEventListener('click', function() {
                 this.textContent = '⏳...';
                 cargarPersonal().finally(() => {
@@ -303,7 +310,6 @@
                 });
             });
 
-            // Permitir agregar con Enter
             document.getElementById('inputNuevoNombre').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -312,7 +318,7 @@
             });
 
             // ------------------------------------------------------------
-            // FUNCIONES DE DATOS (registros)
+            // FUNCIONES DE REGISTROS
             // ------------------------------------------------------------
             function inicializarSelectores() {
                 const mesSel = document.getElementById('mesSelector');
@@ -353,93 +359,79 @@
             async function cargarRegistros() {
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
-
                 const ultimoDia = new Date(anio, mes, 0).getDate();
                 const start = `${anio}-${String(mes).padStart(2, '0')}-01`;
                 const end = `${anio}-${String(mes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
 
-                console.log(`📅 Filtrando desde ${start} hasta ${end}`);
-
                 try {
-                    console.log('📥 Cargando registros del mes:', mes, anio);
                     const { data, error } = await supabase
                         .from('horas_registros')
                         .select('*')
                         .gte('fecha', start)
                         .lte('fecha', end)
                         .order('created_at', { ascending: false });
-                    if (error) {
-                        console.error('❌ Error al cargar registros:', error);
-                        mostrarError('Error al cargar registros: ' + error.message);
+                    if (error) throw error;
+
+                    const contenedor = document.getElementById('listaRegistros');
+                    if (!data || data.length === 0) {
+                        contenedor.innerHTML = '<div class="empty-state">No hay registros en este mes.</div>';
                         return;
                     }
-                    console.log('✅ Registros cargados:', data);
-                    renderizarLista(data);
-                    actualizarResumen(data);
+
+                    let html = '';
+                    data.forEach(reg => {
+                        const horas = calcularHoras(reg.hora_inicio, reg.hora_fin);
+                        const fotoHtml = reg.foto_url ?
+                            `<img src="${reg.foto_url}" class="foto-preview" onclick="event.stopPropagation(); abrirFoto('${reg.foto_url}')" alt="foto">` :
+                            '<span class="badge">Sin foto</span>';
+                        html += `
+                            <div class="registro-item">
+                                <div class="registro-info">
+                                    <span class="nombre">${reg.nombre || 'Anónimo'}</span>
+                                    <span class="fecha">📅 ${formatearFecha(reg.fecha)}</span>
+                                    <span>⏱️ ${reg.hora_inicio} → ${reg.hora_fin}</span>
+                                    <span class="horas">${horas.toFixed(2)} h</span>
+                                    ${reg.comentarios ? `<span>💬 ${reg.comentarios}</span>` : ''}
+                                    ${fotoHtml}
+                                </div>
+                                <div>
+                                    <button class="btn btn-danger btn-sm" onclick="eliminarRegistro('${reg.id}')">🗑️</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    contenedor.innerHTML = html;
+
+                    // Actualizar resumen
+                    const mapa = {};
+                    data.forEach(r => {
+                        const nom = r.nombre || 'Anónimo';
+                        const horas = calcularHoras(r.hora_inicio, r.hora_fin);
+                        mapa[nom] = (mapa[nom] || 0) + horas;
+                    });
+                    const tbody = document.getElementById('cuerpoResumen');
+                    let totalGeneral = 0;
+                    let htmlResumen = '';
+                    Object.keys(mapa).sort().forEach(nom => {
+                        const h = mapa[nom];
+                        totalGeneral += h;
+                        htmlResumen += `<tr><td>${nom}</td><td>${h.toFixed(2)} h</td></tr>`;
+                    });
+                    if (Object.keys(mapa).length === 0) {
+                        htmlResumen = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Sin datos</td></tr>';
+                    }
+                    tbody.innerHTML = htmlResumen;
+                    document.getElementById('totalGeneral').textContent = `Total general: ${totalGeneral.toFixed(2)} h`;
+
                 } catch (error) {
-                    console.error('❌ Error en cargarRegistros:', error);
-                    mostrarError('Error de conexión: ' + error.message);
+                    console.error('Error al cargar registros:', error);
+                    mostrarError('Error al cargar registros: ' + error.message);
                 }
             }
 
-            function renderizarLista(registros) {
-                const contenedor = document.getElementById('listaRegistros');
-                if (!registros || registros.length === 0) {
-                    contenedor.innerHTML = '<div class="empty-state">No hay registros en este mes.</div>';
-                    return;
-                }
-                let html = '';
-                registros.forEach(reg => {
-                    const horas = calcularHoras(reg.hora_inicio, reg.hora_fin);
-                    const fotoHtml = reg.foto_url ?
-                        `<img src="${reg.foto_url}" class="foto-preview" onclick="event.stopPropagation(); abrirFoto('${reg.foto_url}')" alt="foto">` :
-                        '<span class="badge">Sin foto</span>';
-                    html += `
-                        <div class="registro-item">
-                            <div class="registro-info">
-                                <span class="nombre">${reg.nombre || 'Anónimo'}</span>
-                                <span class="fecha">📅 ${formatearFecha(reg.fecha)}</span>
-                                <span>⏱️ ${reg.hora_inicio} → ${reg.hora_fin}</span>
-                                <span class="horas">${horas.toFixed(2)} h</span>
-                                ${reg.comentarios ? `<span>💬 ${reg.comentarios}</span>` : ''}
-                                ${fotoHtml}
-                            </div>
-                            <div>
-                                <button class="btn btn-danger btn-sm" onclick="eliminarRegistro('${reg.id}')">🗑️</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                contenedor.innerHTML = html;
-            }
-
-            function actualizarResumen(registros) {
-                const mapa = {};
-                registros.forEach(r => {
-                    const nom = r.nombre || 'Anónimo';
-                    const horas = calcularHoras(r.hora_inicio, r.hora_fin);
-                    mapa[nom] = (mapa[nom] || 0) + horas;
-                });
-                const tbody = document.getElementById('cuerpoResumen');
-                let totalGeneral = 0;
-                let html = '';
-                Object.keys(mapa).sort().forEach(nom => {
-                    const h = mapa[nom];
-                    totalGeneral += h;
-                    html += `<tr><td>${nom}</td><td>${h.toFixed(2)} h</td></tr>`;
-                });
-                if (Object.keys(mapa).length === 0) {
-                    html = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Sin datos este mes</td></tr>';
-                }
-                tbody.innerHTML = html;
-                document.getElementById('totalGeneral').textContent = `Total general: ${totalGeneral.toFixed(2)} h`;
-            }
-
-            // ------------------------------------------------------------
-            // ACCIONES (eliminar registros, exportar)
-            // ------------------------------------------------------------
+            // ELIMINAR REGISTRO
             window.eliminarRegistro = async function(id) {
-                if (!confirm('¿Eliminar este registro permanentemente?')) return;
+                if (!confirm('¿Eliminar este registro?')) return;
                 try {
                     const { error } = await supabase
                         .from('horas_registros')
@@ -449,13 +441,14 @@
                     await cargarRegistros();
                     mostrarMensaje('✅ Registro eliminado', 'exito');
                 } catch (error) {
-                    console.error('Error al eliminar:', error);
-                    mostrarMensaje('❌ Error al eliminar: ' + error.message, 'error');
+                    console.error('Error:', error);
+                    mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             };
 
+            // ELIMINAR TODOS LOS REGISTROS DEL MES
             document.getElementById('btnEliminarTodos').addEventListener('click', async function() {
-                if (!confirm('⚠️ ¿Eliminar TODOS los registros del mes seleccionado? No se puede deshacer.')) return;
+                if (!confirm('⚠️ ¿Eliminar TODOS los registros del mes?')) return;
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
                 const ultimoDia = new Date(anio, mes, 0).getDate();
@@ -469,13 +462,14 @@
                         .lte('fecha', end);
                     if (error) throw error;
                     await cargarRegistros();
-                    mostrarMensaje('🗑️ Registros del mes eliminados', 'info');
+                    mostrarMensaje('🗑️ Registros eliminados', 'info');
                 } catch (error) {
-                    console.error('Error al eliminar todos:', error);
-                    mostrarMensaje('❌ Error al eliminar: ' + error.message, 'error');
+                    console.error('Error:', error);
+                    mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             });
 
+            // EXPORTAR CSV
             document.getElementById('btnExportarCSV').addEventListener('click', async function() {
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
@@ -505,22 +499,18 @@
                     link.href = URL.createObjectURL(blob);
                     link.download = `horas_extras_${mes}_${anio}.csv`;
                     link.click();
-                    URL.revokeObjectURL(link.href);
                     mostrarMensaje(`✅ CSV exportado (${data.length} registros)`, 'exito');
                 } catch (error) {
-                    console.error('Error al exportar:', error);
-                    mostrarMensaje('❌ Error al exportar: ' + error.message, 'error');
+                    console.error('Error:', error);
+                    mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             });
 
-            // Eventos de filtro
             document.getElementById('btnCalcularTotal').addEventListener('click', cargarRegistros);
             document.getElementById('mesSelector').addEventListener('change', cargarRegistros);
             document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
 
-            // ------------------------------------------------------------
-            // MODAL DE FOTO
-            // ------------------------------------------------------------
+            // MODAL FOTO
             window.abrirFoto = function(src) {
                 document.getElementById('fotoModalImg').src = src;
                 document.getElementById('fotoModal').classList.add('active');
@@ -530,15 +520,12 @@
             };
             document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
 
-            // ------------------------------------------------------------
             // INICIALIZAR
-            // ------------------------------------------------------------
-            console.log('🚀 Inicializando panel...');
             inicializarSelectores();
             cargarRegistros();
             cargarPersonal();
 
-        })(); // Fin del IIFE
+        })();
     </script>
 </body>
 </html>
