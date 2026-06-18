@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
-        /* (mismos estilos que antes, no los repito para ahorrar) */
+        /* (ESTILOS COMPLETOS - los mismos que tenías) */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #333; padding: 10px; }
         .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -42,7 +42,6 @@
         .item-list th { background: #e2e8f0; text-align: left; padding: 8px 6px; font-size: 11px; color: #475569; }
         .item-list td { padding: 8px 6px; font-size: 13px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
         .btn-del-row { background: #fee2e2; color: #ef4444; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
-        .btn-clear-row { background: #fef3c7; color: #d97706; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; margin-right: 4px; }
         .cesta-cant { width: 65px; padding: 5px; text-align: center; margin-top: 0; font-weight: bold; }
         .cesta-uni { width: 90px; padding: 5px; margin-top: 0; font-size: 12px; }
         .cesta-item-flex { display: flex; align-items: center; gap: 6px; }
@@ -74,11 +73,13 @@
 <div class="container">
     <div id="alerta-reloj-compras" class="banner-alerta-tiempo"></div>
     <h1>👨‍🍳 Fredware Compras - Panel de Control</h1>
+    
     <div class="tabs">
         <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">📥 Cesta y Pedidos</button>
         <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">🚛 Vista de Control</button>
         <button class="tab-btn" id="btn-t3" onclick="switchTab(3)">📦 Catálogo y Proveedores</button>
     </div>
+
     <div id="sec1" class="app-section active">
         <div class="box" style="border-left: 4px solid #2563eb;">
             <h3>➕ Introducción Manual de Artículo con Medida</h3>
@@ -98,18 +99,22 @@
                 <button class="btn-add-manual" onclick="agregarArticuloManual()">➕ Añadir</button>
             </div>
         </div>
+
         <div class="box">
             <h3>📝 Pegar Texto de WhatsApp (Bloque Completo)</h3>
             <textarea id="raw-whatsapp" rows="3" placeholder="Pega aquí el mensaje de faltas (Ej: carne, tomate, cebollas)..."></textarea>
             <button class="btn-action" onclick="parsearTextoWhatsApp()">⚡ Volcar Líneas de WhatsApp</button>
         </div>
+
         <div class="box" style="border-left: 4px solid #25d366;">
             <h3>📲 Lanzar Pedidos Consolidados por WhatsApp</h3>
             <div id="contenedor-bloques-whatsapp" style="margin-top: 8px;"></div>
         </div>
+
         <div class="box">
             <h3>🛒 Cesta de la Compra Actual (Organizada en Acordeón)</h3>
             <div id="contenedor-acordeon-cesta"></div>
+            
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button class="btn-action" style="background: #2563eb; margin-top: 0;" onclick="subirCestaAlServidor()">
                     <span id="btn-sync-text">⚡ Sincronizar Pedidos con la Oficina</span>
@@ -118,6 +123,7 @@
             </div>
         </div>
     </div>
+
     <div id="sec2" class="app-section">
         <div class="box">
             <h3>📅 Distribución teórica de repartos para hoy</h3>
@@ -126,30 +132,44 @@
         <div class="box">
             <h3>📝 Notas de la cocina (Faltas registradas por el equipo)</h3>
             <table class="item-list">
-                <thead><tr><th>Producto Solicitado</th><th style="text-align: center; width: 150px;">Acciones</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Producto Solicitado</th>
+                        <th style="text-align: center; width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
                 <tbody id="tabla-faltas-cocina"></tbody>
             </table>
         </div>
     </div>
+
     <div id="sec3" class="app-section">
         <div class="box">
             <h3>🏢 Alta / Modificación de Proveedor</h3>
             <label for="prov-nombre">Nombre Comercial:</label>
             <input type="text" id="prov-nombre" placeholder="Ej: MAKRO">
+            
             <label for="prov-contacto">👤 Persona de Contacto:</label>
             <input type="text" id="prov-contacto" placeholder="Ej: Paco, Laura Gallego...">
+            
             <label for="prov-telefono">📞 Teléfono de Contacto (Prefijo sin +, Ej: 34600123456):</label>
             <input type="text" id="prov-telefono" placeholder="Ej: 34604002691">
+
             <label for="prov-hora">Hora Límite de Pedido:</label>
             <input type="time" id="prov-hora" value="13:00">
+
             <label>Días que hay que hacer el PEDIDO:</label>
             <div class="days-grid" id="grid-pedidos"></div>
+
             <label>Días que viene el REPARTO al local:</label>
             <div class="days-grid" id="grid-repartos"></div>
+
             <button class="btn-action" onclick="guardarProveedor()">💾 Guardar Proveedor</button>
         </div>
+
         <div id="panel-plantilla-habituales" class="box" style="border-left: 4px solid #10b981; display: none;">
             <h3>📋 Plantilla de Artículos Habituales de: <span id="nombre-prov-plantilla" style="color:#2563eb;"></span></h3>
+            
             <div class="inline-form" style="margin-bottom: 15px;">
                 <input type="text" id="nuevo-articulo-plantilla" placeholder="Ej: PATATAS FRITAS, LIMONES, LECHE..." class="input-art uppercase" style="text-transform: uppercase;">
                 <select id="unidad-articulo-plantilla" class="select-uni">
@@ -161,20 +181,25 @@
                 </select>
                 <button class="btn-add-manual" style="background:#10b981;" onclick="agregarArticuloAPlantilla()">➕ Añadir a Lista</button>
             </div>
-            <div id="lista-articulos-plantilla" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px;"></div>
+
+            <div id="lista-articulos-plantilla" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px;">
+                </div>
+
             <button class="btn-action" style="background:#2563eb;" onclick="volcarPlantillaACesta()">🛒 Volcar seleccionados a la Cesta</button>
         </div>
+        
         <div class="box">
             <h3>📋 Agenda de Proveedores y Catálogos Activos</h3>
             <div id="lista-prov-config"></div>
         </div>
     </div>
 </div>
+
 <div id="toast-container"></div>
 
 <script>
     // ============================================================
-    //  CONFIGURACIÓN
+    // CONFIGURACIÓN
     // ============================================================
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
@@ -183,10 +208,10 @@
     const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     let proveedorSeleccionadoId = null;
     let alertaEnviadaHora = false;
-    let cestaLocal = [];
+    let cestaLocal = []; // Cache en memoria
 
     // ============================================================
-    //  UTILIDADES
+    // UTILIDADES
     // ============================================================
     function lanzarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toast-container');
@@ -223,7 +248,7 @@
     }
 
     // ============================================================
-    //  INICIALIZACIÓN DE GRIDS
+    // INICIALIZACIÓN DE GRIDS
     // ============================================================
     function initDaysGrids() {
         ['pedidos', 'repartos'].forEach(tipo => {
@@ -242,7 +267,7 @@
     }
 
     // ============================================================
-    //  NAVEGACIÓN
+    // NAVEGACIÓN
     // ============================================================
     function switchTab(num) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -258,7 +283,7 @@
     }
 
     // ============================================================
-    //  FUNCIONES DE ACCESO A SUPABASE (con nombres de columna reales)
+    // FUNCIONES DE ACCESO A SUPABASE
     // ============================================================
 
     // --- CESTA ---
@@ -293,7 +318,7 @@
         if (error) throw error;
     }
 
-    // --- FALTAS (usando columna 'insumo' en lugar de 'descripcion') ---
+    // --- FALTAS ---
     async function obtenerFaltas() {
         const { data, error } = await db_nube
             .from('faltas_cocina')
@@ -301,21 +326,6 @@
             .order('fecha_anotado', { ascending: false });
         if (error) throw error;
         return data;
-    }
-
-    async function agregarFalta(insumo) {
-        const { error } = await db_nube
-            .from('faltas_cocina')
-            .insert({ insumo: insumo });
-        if (error) throw error;
-    }
-
-    async function eliminarFalta(id) {
-        const { error } = await db_nube
-            .from('faltas_cocina')
-            .delete()
-            .eq('id', id);
-        if (error) throw error;
     }
 
     // --- PROVEEDORES ---
@@ -329,7 +339,7 @@
     }
 
     // ============================================================
-    //  CARGA INICIAL Y SUSCRIPCIONES EN TIEMPO REAL
+    // CARGA INICIAL Y SUSCRIPCIONES EN TIEMPO REAL
     // ============================================================
 
     async function cargarDatosIniciales() {
@@ -343,6 +353,7 @@
             localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
             renderCesta();
             renderVisorPasivo();
+            // 🔵 Evaluar el banner inmediatamente después de cargar los datos
             evaluarRelojesDeCierre();
         } catch (error) {
             console.error("Error cargando datos iniciales:", error);
@@ -379,19 +390,28 @@
     }
 
     // ============================================================
-    //  ALERTA DE CIERRE
+    // 🔵 ALERTA DE CIERRE (BANNER + WHATSAPP 1 HORA ANTES) - CORREGIDO
     // ============================================================
     function evaluarRelojesDeCierre() {
         const banner = document.getElementById('alerta-reloj-compras');
         if (!banner) return;
 
+        // Obtener proveedores desde localStorage (ya están guardados)
         const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+        // Usar cestaLocal (que ya está actualizada)
         const cesta = cestaLocal.filter(item => item.estado === 'PENDIENTE');
         const ahora = new Date();
+
+        console.log("🔔 Evaluando relojes de cierre...", {
+            proveedores: proveedores.length,
+            pendientes: cesta.length,
+            hora: ahora.toTimeString()
+        });
 
         let proveedoresEnPeligro = [];
 
         proveedores.forEach(p => {
+            // Verificar si este proveedor tiene pedidos pendientes
             const tienePendientes = cesta.some(item => item.proveedor_id === p.nombre);
             if (!tienePendientes || !p.hora_limite) return;
 
@@ -403,6 +423,8 @@
 
             const diferenciaMinutos = Math.floor((limiteObj - ahora) / 1000 / 60);
 
+            console.log(`  ⏰ ${p.nombre}: límite ${p.hora_limite}, faltan ${diferenciaMinutos} minutos`);
+
             if (diferenciaMinutos > 0 && diferenciaMinutos <= 120) {
                 proveedoresEnPeligro.push({ nombre: p.nombre, minutos: diferenciaMinutos });
             }
@@ -412,27 +434,35 @@
             proveedoresEnPeligro.sort((a, b) => a.minutos - b.minutos);
             const masUrgente = proveedoresEnPeligro[0];
 
+            // Enviar alerta WhatsApp si faltan 60 minutos o menos y no se ha enviado aún
             if (masUrgente.minutos <= 60 && !alertaEnviadaHora) {
                 let mensaje = `⚠️ ALERTA FRED: Pedidos a punto de cerrar en 1 hora.\n\n`;
                 proveedoresEnPeligro.forEach(p => {
                     mensaje += `• ${p.nombre}: ${p.minutos} minutos restantes.\n`;
                 });
                 mensaje += `\nRevisa el panel de compras urgentemente.`;
-                window.open('https://wa.me/34604002691?text=' + encodeURIComponent(mensaje), '_blank');
+                
+                // 🔵 Abrir WhatsApp con el número fijo de Fred
+                const url = 'https://wa.me/34604002691?text=' + encodeURIComponent(mensaje);
+                window.open(url, '_blank');
+                
                 alertaEnviadaHora = true;
                 lanzarToast("📲 Alerta de 1 hora enviada a Fred.");
             }
 
+            // Mostrar el banner
             banner.innerHTML = `⚠️ ¡OJO, FRED! Quedan solo ${masUrgente.minutos} minutos para cerrar y enviar el pedido de: ${masUrgente.nombre}`;
             banner.style.display = 'block';
+            console.log("🟥 Banner ACTIVADO");
         } else {
             banner.style.display = 'none';
             alertaEnviadaHora = false;
+            console.log("🟩 Banner DESACTIVADO");
         }
     }
 
     // ============================================================
-    //  FUNCIONES DE LA CESTA
+    // FUNCIONES DE LA CESTA (CRUD CON SUPABASE)
     // ============================================================
 
     async function agregarArticuloManual() {
@@ -451,6 +481,7 @@
         }
 
         const detalleFormateado = `[${cantidad} ${unidad}] ${producto}`;
+        
         const existe = cestaLocal.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
         if (existe) {
             lanzarToast("Este artículo ya está activo en tu cesta.", "warning");
@@ -475,7 +506,8 @@
             inputArt.value = ''; inputCant.value = '1'; delete inputArt.dataset.sugerido;
             lanzarToast("Insumo añadido manual para mañana.");
             renderCesta();
-            sincronizarConOficina('cesta', cestaLocal);
+            // Evaluar el banner después de añadir
+            evaluarRelojesDeCierre();
         } catch (error) {
             lanzarToast("Error al guardar en la nube.", "error");
         }
@@ -531,7 +563,7 @@
                 document.getElementById('raw-whatsapp').value = '';
                 lanzarToast(`Volcado completado. +${itemsAnadidos} artículos.`);
                 renderCesta();
-                sincronizarConOficina('cesta', cestaLocal);
+                evaluarRelojesDeCierre();
             } catch (error) {
                 lanzarToast("Error al guardar en la nube.", "error");
             }
@@ -550,7 +582,7 @@
             await actualizarItemCesta(item.id, { detalle: nuevoDetalle });
             item.detalle = nuevoDetalle;
             renderCesta();
-            sincronizarConOficina('cesta', cestaLocal);
+            evaluarRelojesDeCierre();
         } catch (error) {
             lanzarToast("Error al actualizar.", "error");
         }
@@ -563,7 +595,7 @@
             await actualizarItemCesta(item.id, { proveedor_id: provNombre });
             item.proveedor_id = provNombre;
             renderCesta();
-            sincronizarConOficina('cesta', cestaLocal);
+            evaluarRelojesDeCierre();
         } catch (error) {
             lanzarToast("Error al cambiar proveedor.", "error");
         }
@@ -577,7 +609,7 @@
             await eliminarItemCesta(item.id);
             cestaLocal.splice(idx, 1);
             renderCesta();
-            sincronizarConOficina('cesta', cestaLocal);
+            evaluarRelojesDeCierre();
         } catch (error) {
             lanzarToast("Error al eliminar.", "error");
         }
@@ -590,12 +622,11 @@
         try {
             await actualizarItemCesta(item.id, { estado: 'RECIBIDO' });
             
-            // Buscar en faltas usando 'insumo'
             const nombreArticulo = descomponerDetalleCesta(item.detalle).articulo;
             const faltas = await obtenerFaltas();
             const faltaEncontrada = faltas.find(f => f.insumo && f.insumo.includes(nombreArticulo));
             if (faltaEncontrada) {
-                await eliminarFalta(faltaEncontrada.id);
+                await db_nube.from('faltas_cocina').delete().eq('id', faltaEncontrada.id);
             }
 
             cestaLocal.splice(idx, 1);
@@ -605,7 +636,7 @@
 
             lanzarToast(`✅ ${item.detalle} marcado como recibido.`);
             renderCesta();
-            sincronizarConOficina('cesta', cestaLocal);
+            evaluarRelojesDeCierre();
         } catch (error) {
             lanzarToast("Error al marcar como recibido.", "error");
         }
@@ -716,7 +747,7 @@
     }
 
     // ============================================================
-    //  BLOQUES WHATSAPP
+    // BLOQUES WHATSAPP
     // ============================================================
     function renderBloquesWhatsApp(cesta, proveedores) {
         const contenedor = document.getElementById('contenedor-bloques-whatsapp');
@@ -768,7 +799,7 @@
             }
             lanzarToast(`Bloque de ${provNombre} vaciado.`);
             renderCesta();
-            sincronizarConOficina('cesta', cestaLocal);
+            evaluarRelojesDeCierre();
         } catch (error) {
             lanzarToast("Error al vaciar bloque.", "error");
         }
@@ -788,7 +819,7 @@
     }
 
     // ============================================================
-    //  PROVEEDORES
+    // PROVEEDORES (CRUD CON SUPABASE)
     // ============================================================
 
     async function guardarProveedor() {
@@ -832,6 +863,7 @@
             const proveedores = await obtenerProveedores();
             localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
             renderCesta();
+            evaluarRelojesDeCierre();
         } catch (error) {
             lanzarToast("Error al guardar proveedor.", "error");
         }
@@ -905,13 +937,14 @@
             lanzarToast("Distribuidor eliminado.");
             await cargarProveedoresDesdeSupabase();
             renderCesta();
+            evaluarRelojesDeCierre();
         } catch (error) {
             lanzarToast("Error al eliminar proveedor.", "error");
         }
     }
 
     // ============================================================
-    //  PLANTILLA DE ARTÍCULOS HABITUALES
+    // PLANTILLA DE ARTÍCULOS HABITUALES
     // ============================================================
 
     async function cargarPlantillaProveedor(idProv) {
@@ -1038,7 +1071,7 @@
                 }
                 lanzarToast(`¡Volcados +${contador} bultos a tu cesta!`);
                 renderCesta();
-                sincronizarConOficina('cesta', cestaLocal);
+                evaluarRelojesDeCierre();
             } catch (error) {
                 lanzarToast("Error al volcar a la cesta.", "error");
             }
@@ -1048,7 +1081,7 @@
     }
 
     // ============================================================
-    //  VISTA DE CONTROL
+    // VISTA DE CONTROL
     // ============================================================
 
     function renderVisorPasivo() { 
@@ -1110,7 +1143,7 @@
             if (!falta) return;
             if (!confirm(`¿Deseas descartar la falta "${falta.insumo}" sin comprar?`)) return;
 
-            await eliminarFalta(id);
+            await db_nube.from('faltas_cocina').delete().eq('id', id);
             lanzarToast("Falta eliminada de la lista.");
             renderVisorPasivo();
         } catch (error) {
@@ -1139,18 +1172,18 @@
 
             await agregarItemCesta(nuevoItem);
             cestaLocal.push(nuevoItem);
-            await eliminarFalta(id);
+            await db_nube.from('faltas_cocina').delete().eq('id', id);
             lanzarToast("Falta cargada en la cesta para mañana.");
             renderVisorPasivo();
             renderCesta();
-            sincronizarConOficina('cesta', cestaLocal);
+            evaluarRelojesDeCierre();
         } catch (error) {
             lanzarToast("Error al cargar falta a la cesta.", "error");
         }
     }
 
     // ============================================================
-    //  SINCRONIZACIÓN CON NGROK (OPCIONAL)
+    // SINCRONIZACIÓN CON NGROK (OPCIONAL)
     // ============================================================
 
     async function sincronizarConOficina(endpoint, datos) {
@@ -1191,7 +1224,7 @@
     }
 
     // ============================================================
-    //  EXPORTAR JSON
+    // EXPORTAR JSON (desde la caché en memoria)
     // ============================================================
 
     function exportarPedidosJson() {
@@ -1207,7 +1240,7 @@
     }
 
     // ============================================================
-    //  AUTOCOMPLETADO
+    // AUTOCOMPLETADO
     // ============================================================
 
     function buscarAutocompletado(busqueda) {
@@ -1262,7 +1295,7 @@
     }
 
     // ============================================================
-    //  EVENTOS GLOBALES
+    // EVENTOS GLOBALES
     // ============================================================
 
     document.addEventListener('click', (e) => {
@@ -1274,13 +1307,14 @@
     });
 
     // ============================================================
-    //  INICIALIZACIÓN
+    // INICIALIZACIÓN
     // ============================================================
 
     async function initApp() {
         initDaysGrids();
         await cargarDatosIniciales();
         suscribirseCambios();
+        // 🔵 Evaluar el banner cada 60 segundos
         setInterval(evaluarRelojesDeCierre, 60000);
         await cargarProveedoresDesdeSupabase();
     }
