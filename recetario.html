@@ -16,7 +16,7 @@
         .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
 
         .box { background: #ffffff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .box-title { font-size: 14px; font-weight: 700; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .box-title { font-size: 14px; font-weight: 700; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         label { display: block; font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 2px; }
         input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background-color: #f8fafc; }
         input:focus, select:focus, textarea:focus { border-color: #10b981; background-color: #fff; }
@@ -29,6 +29,8 @@
         .btn-blue { background: #3b82f6; }
         .btn-blue:hover { background: #2563eb; }
         .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #475569; }
+        .btn-outline:hover { background: #f1f5f9; }
 
         .tabla-ingredientes { width: 100%; border-collapse: collapse; font-size: 13px; }
         .tabla-ingredientes th { background: #f1f5f9; padding: 6px 4px; font-size: 10px; text-transform: uppercase; border: 1px solid #cbd5e1; text-align: center; }
@@ -52,6 +54,9 @@
         .toast-success { border-left: 4px solid #10b981; }
         .toast-error { border-left: 4px solid #ef4444; }
 
+        .selector-recetas { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .selector-recetas select { flex: 1; min-width: 200px; }
+
         @media (max-width: 768px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -59,11 +64,35 @@
 <div class="container">
     <h1>📋 FICHA TÉCNICA DE RECETAS (ESTILO EXCEL)</h1>
 
+    <!-- Barra de carga/selector de recetas -->
+    <div class="box">
+        <div class="box-title">📂 Cargar Receta Existente</div>
+        <div class="selector-recetas">
+            <select id="selector-recetas" onchange="cargarRecetaSeleccionada()">
+                <option value="">-- Seleccionar receta para editar --</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="cargarListaRecetas()">🔄 Refrescar lista</button>
+            <button class="btn btn-outline btn-sm" onclick="limpiarFormulario()">🗑️ Nuevo</button>
+        </div>
+    </div>
+
     <div class="box">
         <div class="box-title">🍽️ Datos Generales del Plato</div>
         <div class="grid-3">
             <div><label>Código</label><input type="text" id="plato-codigo" placeholder="Ej: 10001"></div>
-            <div><label>Nombre del Plato</label><input type="text" id="plato-nombre" placeholder="Ej: Ensaladilla"></div>
+            <div><label>Nombre del Plato *</label><input type="text" id="plato-nombre" placeholder="Ej: Ensaladilla"></div>
+            <div>
+                <label>Categoría</label>
+                <select id="plato-categoria">
+                    <option value="ENTRANTES">Entrantes</option>
+                    <option value="CARNES">Carnes</option>
+                    <option value="PESCADOS">Pescados</option>
+                    <option value="POSTRES">Postres</option>
+                    <option value="VEGETALES">Vegetales</option>
+                    <option value="ARROCES">Arroces</option>
+                    <option value="FAST GOOD">Fast Good</option>
+                </select>
+            </div>
             <div>
                 <label>Temporada</label>
                 <select id="plato-temporada">
@@ -77,6 +106,7 @@
             <div><label>Nº Raciones (Pax)</label><input type="number" id="plato-pax" value="1" min="1"></div>
             <div><label>URL de la Foto</label><input type="text" id="plato-foto" placeholder="https://..."></div>
             <div><label>PVP Actual (€)</label><input type="number" id="plato-pvp" value="0.00" step="0.05"></div>
+            <div><label>IVA (%)</label><input type="number" id="plato-iva" value="10.0" step="0.1" min="0" max="21"></div>
         </div>
         <div class="grid-2" style="margin-top:10px;">
             <div>
@@ -122,6 +152,7 @@
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn" onclick="calcularResultados()">🧮 Calcular Costes</button>
             <button class="btn btn-blue" onclick="guardarReceta()">💾 Guardar Receta en Supabase</button>
+            <button class="btn btn-danger" onclick="confirmarEliminarReceta()">🗑️ Eliminar Receta</button>
         </div>
     </div>
 
@@ -149,6 +180,8 @@
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let recetaActualId = null;
 
     // ============================================================
     // TOAST
@@ -191,14 +224,14 @@
             <td><button class="btn-danger btn-sm" onclick="eliminarFila(this)">🗑️</button></td>
         `;
         tbody.appendChild(row);
-        // Forzar recalculo
-        recalcularFila(row.querySelector('.ing-neto'));
+        // Forzar recalculo de todos los costes
+        recalcularTodos();
     }
 
     function eliminarFila(btn) {
         const row = btn.closest('tr');
         row.remove();
-        calcularResultados();
+        recalcularTodos();
     }
 
     function recalcularFila(input) {
@@ -220,6 +253,17 @@
         calcularResultados();
     }
 
+    function recalcularTodos() {
+        document.querySelectorAll('#cuerpo-ingredientes tr').forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            if (inputs.length > 0) {
+                // Disparamos el recalculo sobre el campo neto o bruto
+                const netoInput = row.querySelector('.ing-neto');
+                if (netoInput) recalcularFila(netoInput);
+            }
+        });
+    }
+
     // ============================================================
     // CÁLCULO DE RESULTADOS
     // ============================================================
@@ -234,15 +278,15 @@
         const pax = parseInt(document.getElementById('plato-pax').value) || 1;
         const costeRacion = pax > 0 ? costeTotal / pax : 0;
         const pvpActual = parseFloat(document.getElementById('plato-pvp').value) || 0;
-        const iva = 10.0; // Fijo, pero se podría añadir input
+        const iva = parseFloat(document.getElementById('plato-iva').value) || 10;
 
         let cmpPorc = 0, mbcPorc = 0, pvpIdeal = 0, diferencia = 0;
         if (pvpActual > 0) {
             cmpPorc = (costeRacion / pvpActual) * 100;
             mbcPorc = 100 - cmpPorc;
         }
-        // PVP Ideal: si asumimos un MBC objetivo (ej. 70%), se calcula PVP = costeRacion / (1 - margen)
-        const margenObjetivo = 0.70; // 70% MBC
+        // PVP Ideal: margen objetivo del 70% (MBC)
+        const margenObjetivo = 0.70;
         pvpIdeal = costeRacion / (1 - margenObjetivo);
         if (pvpActual > 0) diferencia = ((pvpIdeal - pvpActual) / pvpActual) * 100;
 
@@ -260,10 +304,25 @@
     // GUARDAR EN SUPABASE
     // ============================================================
     async function guardarReceta() {
+        // Validar campos obligatorios
+        const nombre = document.getElementById('plato-nombre').value.trim();
+        if (!nombre) {
+            lanzarToast('El nombre del plato es obligatorio.', 'error');
+            document.getElementById('plato-nombre').focus();
+            return;
+        }
+
+        const filas = document.querySelectorAll('#cuerpo-ingredientes tr');
+        if (filas.length === 0) {
+            lanzarToast('Agrega al menos un ingrediente.', 'error');
+            return;
+        }
+
         // Recoger datos del plato
         const platoData = {
-            codigo: document.getElementById('plato-codigo').value.trim() || 'S/C',
-            nombre_plato: document.getElementById('plato-nombre').value.trim(),
+            id: document.getElementById('plato-codigo').value.trim() || nombre.toUpperCase().replace(/\s+/g, '_'),
+            nombre_plato: nombre,
+            categoria: document.getElementById('plato-categoria').value,
             temporada: document.getElementById('plato-temporada').value,
             pax: parseInt(document.getElementById('plato-pax').value) || 1,
             foto_url: document.getElementById('plato-foto').value.trim(),
@@ -273,18 +332,9 @@
             vegetarianos: document.getElementById('plato-vegetarianos').checked,
             diabeticos: document.getElementById('plato-diabeticos').checked,
             pvp_actual: parseFloat(document.getElementById('plato-pvp').value) || 0,
-            iva: 10.0,
-            categoria: 'GENERAL' // o puedes añadir un selector de categoría
+            iva: parseFloat(document.getElementById('plato-iva').value) || 10,
+            codigo: document.getElementById('plato-codigo').value.trim()
         };
-
-        if (!platoData.nombre_plato) {
-            lanzarToast('El nombre del plato es obligatorio.', 'error');
-            return;
-        }
-
-        // Generar ID único (usamos código o nombre)
-        const id = platoData.codigo || platoData.nombre_plato.toUpperCase().replace(/\s+/g, '_');
-        platoData.id = id;
 
         // 1. Guardar/Actualizar plato en recetas_platos
         const { error: errorPlato } = await supabase
@@ -296,21 +346,20 @@
             return;
         }
 
-        // 2. Guardar ingredientes (eliminar los existentes y luego insertar)
-        const { error: deleteError } = await supabase
+        const platoId = platoData.id;
+
+        // 2. Eliminar ingredientes viejos
+        await supabase
             .from('ingredientes_receta')
             .delete()
-            .eq('plato_id', id);
+            .eq('plato_id', platoId);
 
-        if (deleteError) {
-            console.warn('No se pudieron eliminar ingredientes viejos:', deleteError);
-        }
-
-        const filas = document.querySelectorAll('#cuerpo-ingredientes tr');
+        // 3. Insertar nuevos ingredientes
         const ingredientes = [];
-        filas.forEach(row => {
-            const nombre = row.querySelector('.ing-nombre').value.trim();
-            if (!nombre) return;
+        let hayError = false;
+        for (const row of filas) {
+            const nombreIng = row.querySelector('.ing-nombre').value.trim();
+            if (!nombreIng) continue;
             const aprov = parseFloat(row.querySelector('.ing-aprov').value) || 100;
             const neto = parseFloat(row.querySelector('.ing-neto').value) || 0;
             const bruto = parseFloat(row.querySelector('.ing-bruto').value) || 0;
@@ -318,10 +367,30 @@
             const unidad = row.querySelector('.ing-unidad').value;
             const coste = parseFloat(row.querySelector('.ing-coste').value) || 0;
 
+            // Buscar o crear el insumo en maestro_escandallos para obtener el ID
+            let insumoId = nombreIng;
+            // Intentar obtener ID existente
+            const { data: existing } = await supabase
+                .from('maestro_escandallos')
+                .select('id')
+                .eq('id', nombreIng)
+                .maybeSingle();
+
+            if (existing) {
+                insumoId = existing.id;
+            } else {
+                // Si no existe, lo creamos (opcional)
+                // Pero para simplificar, guardamos el nombre como ID
+                // o podríamos crear el registro automáticamente
+                // Aquí lo dejamos como el nombre, pero es mejor tener el ID real.
+                // Por ahora, usamos el nombre como ID (esto requiere que la tabla acepte cualquier texto)
+                insumoId = nombreIng;
+            }
+
             ingredientes.push({
-                plato_id: id,
-                insumo_inventario_id: nombre, // Podríamos buscar el ID real, pero simplificamos
-                cantidad_por_porcion: neto, // Usamos neto como cantidad
+                plato_id: platoId,
+                insumo_inventario_id: insumoId,
+                cantidad_por_porcion: neto,
                 aprovechamiento: aprov,
                 peso_neto: neto,
                 peso_bruto: bruto,
@@ -329,7 +398,7 @@
                 unidad_inventario: unidad,
                 coste_cmp: coste
             });
-        });
+        }
 
         if (ingredientes.length > 0) {
             const { error: errorIng } = await supabase
@@ -342,12 +411,73 @@
             }
         }
 
+        recetaActualId = platoId;
         lanzarToast(`✅ Receta "${platoData.nombre_plato}" guardada correctamente.`);
+        cargarListaRecetas(); // Actualizar selector
     }
 
     // ============================================================
-    // CARGAR RECETA EXISTENTE (por si quieres editar)
+    // ELIMINAR RECETA
     // ============================================================
+    async function confirmarEliminarReceta() {
+        const nombre = document.getElementById('plato-nombre').value.trim();
+        if (!nombre) {
+            lanzarToast('No hay receta cargada para eliminar.', 'warning');
+            return;
+        }
+        if (!confirm(`¿Estás seguro de eliminar la receta "${nombre}" y todos sus ingredientes?`)) return;
+
+        const id = document.getElementById('plato-codigo').value.trim() || nombre.toUpperCase().replace(/\s+/g, '_');
+        const { error } = await supabase
+            .from('recetas_platos')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            lanzarToast('Error al eliminar: ' + error.message, 'error');
+            return;
+        }
+        lanzarToast('Receta eliminada.', 'success');
+        limpiarFormulario();
+        cargarListaRecetas();
+    }
+
+    // ============================================================
+    // CARGAR LISTA DE RECETAS PARA SELECTOR
+    // ============================================================
+    async function cargarListaRecetas() {
+        const select = document.getElementById('selector-recetas');
+        const { data, error } = await supabase
+            .from('recetas_platos')
+            .select('id, nombre_plato')
+            .order('nombre_plato', { ascending: true });
+
+        if (error) {
+            console.error('Error cargando lista:', error);
+            return;
+        }
+
+        select.innerHTML = '<option value="">-- Seleccionar receta para editar --</option>';
+        if (data) {
+            data.forEach(rec => {
+                const option = document.createElement('option');
+                option.value = rec.id;
+                option.textContent = rec.nombre_plato;
+                select.appendChild(option);
+            });
+        }
+    }
+
+    async function cargarRecetaSeleccionada() {
+        const select = document.getElementById('selector-recetas');
+        const id = select.value;
+        if (!id) {
+            limpiarFormulario();
+            return;
+        }
+        await cargarReceta(id);
+    }
+
     async function cargarReceta(id) {
         const { data: plato, error } = await supabase
             .from('recetas_platos')
@@ -360,13 +490,15 @@
             return;
         }
 
-        // Rellenar campos del plato
+        recetaActualId = id;
         document.getElementById('plato-codigo').value = plato.codigo || '';
         document.getElementById('plato-nombre').value = plato.nombre_plato || '';
+        document.getElementById('plato-categoria').value = plato.categoria || 'ENTRANTES';
         document.getElementById('plato-temporada').value = plato.temporada || 'Anual';
         document.getElementById('plato-pax').value = plato.pax || 1;
         document.getElementById('plato-foto').value = plato.foto_url || '';
         document.getElementById('plato-pvp').value = plato.pvp_actual || 0;
+        document.getElementById('plato-iva').value = plato.iva || 10;
         document.getElementById('plato-presentacion').value = plato.presentacion || '';
         document.getElementById('plato-elaboracion').value = plato.elaboracion || '';
         document.getElementById('plato-celiacos').checked = plato.celiacos || false;
@@ -405,14 +537,38 @@
     }
 
     // ============================================================
+    // LIMPIAR FORMULARIO
+    // ============================================================
+    function limpiarFormulario() {
+        recetaActualId = null;
+        document.getElementById('plato-codigo').value = '';
+        document.getElementById('plato-nombre').value = '';
+        document.getElementById('plato-categoria').value = 'ENTRANTES';
+        document.getElementById('plato-temporada').value = 'Anual';
+        document.getElementById('plato-pax').value = 1;
+        document.getElementById('plato-foto').value = '';
+        document.getElementById('plato-pvp').value = '0.00';
+        document.getElementById('plato-iva').value = '10.0';
+        document.getElementById('plato-presentacion').value = '';
+        document.getElementById('plato-elaboracion').value = '';
+        document.getElementById('plato-celiacos').checked = false;
+        document.getElementById('plato-vegetarianos').checked = false;
+        document.getElementById('plato-diabeticos').checked = false;
+
+        document.getElementById('cuerpo-ingredientes').innerHTML = '';
+        filaIngredienteCount = 0;
+        // Añadir una fila vacía de ejemplo
+        agregarFilaIngrediente('', 100, 0, 0, 0, 'KG', 0);
+        calcularResultados();
+        document.getElementById('selector-recetas').value = '';
+    }
+
+    // ============================================================
     // INICIALIZACIÓN
     // ============================================================
-    // Agregar una fila de ejemplo al cargar
     window.onload = function() {
-        // Si quieres cargar una receta por defecto, descomenta:
-        // cargarReceta('TU_ID_AQUI');
-        // O simplemente añadir una fila vacía:
-        agregarFilaIngrediente('', 100, 0, 0, 0, 'KG', 0);
+        cargarListaRecetas();
+        limpiarFormulario(); // Esto añade una fila vacía
     };
 
     // Exponer funciones globales
@@ -422,6 +578,10 @@
     window.calcularResultados = calcularResultados;
     window.guardarReceta = guardarReceta;
     window.cargarReceta = cargarReceta;
+    window.cargarListaRecetas = cargarListaRecetas;
+    window.cargarRecetaSeleccionada = cargarRecetaSeleccionada;
+    window.limpiarFormulario = limpiarFormulario;
+    window.confirmarEliminarReceta = confirmarEliminarReceta;
 </script>
 </body>
 </html>
