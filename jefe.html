@@ -39,6 +39,10 @@
         .header-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .badge-jefe { background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
         .btn-sm { padding: 4px 10px; font-size: 0.7rem; }
+        .admin-personal { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 16px; border: 1px solid #e2e8f0; }
+        .admin-personal .lista-nombres { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+        .admin-personal .lista-nombres .nombre-tag { background: #dbeafe; padding: 2px 12px 2px 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+        .admin-personal .lista-nombres .nombre-tag button { background: none; border: none; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 1rem; padding: 0 2px; }
     </style>
 </head>
 <body>
@@ -66,6 +70,17 @@
         </table>
         <div class="total-general" id="totalGeneral">Total general: 0.0 h</div>
     </div>
+
+    <!-- Administración de personal (solo para el jefe) -->
+    <div class="admin-personal">
+        <div style="font-weight: 600; margin-bottom: 8px;">👥 Gestionar personal (cocineros y picas)</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="inputNuevoNombre" placeholder="Nuevo nombre" style="flex:1; min-width:150px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:10px;">
+            <button id="btnAgregarNombre" class="btn btn-success">➕ Añadir</button>
+        </div>
+        <div class="lista-nombres" id="listaNombres"></div>
+        <div style="font-size:0.8rem; color:#64748b; margin-top:6px;">Los nombres aparecerán en el desplegable para los cocineros.</div>
+    </div>
 </div>
 
 <div class="container" style="max-width: 1000px;">
@@ -91,15 +106,84 @@
         const SUPABASE_URL = 'https://fredlesg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
 
-        // Inicializar cliente de Supabase
-        // IMPORTANTE: usamos 'supabase' (no 'supabaseJs') porque así se llama la librería
-        if (!window.supabaseClient) {
-            window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
-        const supabase = window.supabaseClient;
+        // ✅ IMPORTANTE: usamos 'supabase' (NO 'supabaseJs')
+        // La librería se llama 'supabase' cuando se carga con el CDN
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ---------------------------------------------
-        // 2. FUNCIONES DE DATOS
+        // 2. FUNCIONES DE PERSONAL
+        // ---------------------------------------------
+        async function cargarPersonal() {
+            try {
+                const { data, error } = await supabase
+                    .from('horas_personal')
+                    .select('nombre')
+                    .order('nombre');
+                if (error) throw error;
+                renderizarListaNombres(data);
+            } catch (error) {
+                console.error('Error al cargar personal:', error);
+            }
+        }
+
+        function renderizarListaNombres(data) {
+            const contenedor = document.getElementById('listaNombres');
+            if (!data || data.length === 0) {
+                contenedor.innerHTML = '<span style="color:#94a3b8; font-size:0.9rem;">No hay nombres agregados.</span>';
+                return;
+            }
+            let html = '';
+            data.forEach(item => {
+                html += `<span class="nombre-tag">${item.nombre} <button onclick="eliminarNombre('${item.nombre}')" title="Eliminar">✕</button></span>`;
+            });
+            contenedor.innerHTML = html;
+        }
+
+        window.eliminarNombre = async function(nombre) {
+            if (!confirm(`¿Eliminar a "${nombre}" de la lista?`)) return;
+            try {
+                const { error } = await supabase
+                    .from('horas_personal')
+                    .delete()
+                    .eq('nombre', nombre);
+                if (error) throw error;
+                cargarPersonal();
+            } catch (error) {
+                console.error('Error al eliminar nombre:', error);
+                alert('No se pudo eliminar. Revisa permisos.');
+            }
+        };
+
+        document.getElementById('btnAgregarNombre').addEventListener('click', async function() {
+            const input = document.getElementById('inputNuevoNombre');
+            const nombre = input.value.trim();
+            if (!nombre) {
+                alert('Escribe un nombre.');
+                return;
+            }
+            try {
+                const { error } = await supabase
+                    .from('horas_personal')
+                    .insert([{ nombre }]);
+                if (error) throw error;
+                input.value = '';
+                cargarPersonal();
+            } catch (error) {
+                console.error('Error al agregar nombre:', error);
+                alert('Error al agregar. ¿Ya existe ese nombre?');
+            }
+        });
+
+        // Permitir agregar con Enter
+        document.getElementById('inputNuevoNombre').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('btnAgregarNombre').click();
+            }
+        });
+
+        // ---------------------------------------------
+        // 3. FUNCIONES DE DATOS (registros)
         // ---------------------------------------------
         function inicializarSelectores() {
             const mesSel = document.getElementById('mesSelector');
@@ -211,7 +295,7 @@
         }
 
         // ---------------------------------------------
-        // 3. ACCIONES (eliminar, exportar)
+        // 4. ACCIONES (eliminar, exportar)
         // ---------------------------------------------
         window.eliminarRegistro = async function(id) {
             if (!confirm('¿Eliminar este registro permanentemente?')) return;
@@ -289,7 +373,7 @@
         document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
 
         // ---------------------------------------------
-        // 4. MODAL DE FOTO
+        // 5. MODAL DE FOTO
         // ---------------------------------------------
         window.abrirFoto = function(src) {
             document.getElementById('fotoModalImg').src = src;
@@ -301,10 +385,11 @@
         document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
 
         // ---------------------------------------------
-        // 5. INICIALIZAR
+        // 6. INICIALIZAR
         // ---------------------------------------------
         inicializarSelectores();
         cargarRegistros();
+        cargarPersonal();
 
     })();
 </script>
