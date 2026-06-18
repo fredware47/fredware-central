@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🍽️ Fredware - Recetario Digital y Alérgenos UE</title>
+    <title>🍽️ Fredware - Recetario Digital (Formato Excel)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f8fafc; color: #1e293b; padding: 15px; }
-        .container { max-width: 1250px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        h1 { font-size: 20px; text-align: center; margin-bottom: 15px; background: #0f172a; color: white; padding: 14px; border-radius: 8px; font-weight: 800; text-transform: uppercase; }
+        body { background-color: #f1f5f9; color: #1e293b; padding: 10px; }
+        .container { max-width: 1400px; margin: 0 auto; background: #ffffff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        h1 { font-size: 20px; text-align: center; margin-bottom: 15px; background: #0f172a; color: white; padding: 14px; border-radius: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
         
         .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; transition: all 0.2s; }
@@ -17,134 +17,146 @@
         .app-section { display: none; }
         .app-section.active { display: block; }
 
-        .box { background: #ffffff; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; margin-bottom: 15px; }
-        h3 { font-size: 14px; margin-bottom: 12px; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; font-weight: 700; text-transform: uppercase; }
-        label { display: block; font-size: 12px; font-weight: bold; margin-top: 10px; color: #475569; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; outline: none; background-color: #f8fafc; }
-        input:focus, select:focus { border-color: #10b981; background-color: #fff; }
+        .box { background: #ffffff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; overflow-x: auto; }
+        h3 { font-size: 14px; margin-bottom: 12px; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; font-weight: 700; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         
-        .btn-action { background: #10b981; color: white; border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .btn-action:active { transform: scale(0.99); }
-        .btn-danger { background: #ef4444; }
+        /* Estilo hoja de cálculo */
+        .hoja-excel { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
+        .hoja-excel th { background: #f1f5f9; text-align: left; padding: 8px 6px; font-size: 10px; color: #475569; font-weight: 700; border: 1px solid #cbd5e1; text-transform: uppercase; position: sticky; top: 0; z-index: 5; }
+        .hoja-excel td { padding: 4px 6px; border: 1px solid #cbd5e1; vertical-align: middle; background-color: #fff; }
+        .hoja-excel tr:nth-child(even) td { background-color: #f8fafc; }
+        .hoja-excel input[type="text"], .hoja-excel input[type="number"], .hoja-excel select {
+            width: 100%;
+            padding: 4px 6px;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            font-weight: 500;
+            outline: none;
+            border-radius: 0;
+            min-width: 60px;
+            color: #1e293b;
+        }
+        .hoja-excel input:focus, .hoja-excel select:focus {
+            background: #fffbe6;
+            outline: 2px solid #10b981;
+        }
+        .hoja-excel .chk-alergeno { width: 18px; height: 18px; cursor: pointer; margin: 0; }
+        .btn-fila { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px; transition: 0.2s; }
+        .btn-fila:hover { background: #e2e8f0; }
+        .btn-danger-fila { color: #ef4444; }
+        .btn-danger-fila:hover { background: #fee2e2; }
+        .btn-add-fila { color: #10b981; font-weight: bold; }
+        .btn-add-fila:hover { background: #dcfce7; }
 
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-        .item-list { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .item-list th { background: #f1f5f9; text-align: left; padding: 10px 4px; font-size: 10px; color: #475569; font-weight: 700; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; }
-        .item-list td { padding: 10px 4px; font-size: 12px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
-        
-        .chk-alergeno { width: 16px; height: 16px; cursor: pointer; }
-        .badge-categoria { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; }
+        .badge-categoria { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 10px; white-space: nowrap; }
 
         #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
         .toast { background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast-success { border-left: 4px solid #10b981; }
         .toast-error { border-left: 4px solid #ef4444; }
+
+        /* Modal para importar */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 600px; width: 95%; max-height: 80vh; overflow-y: auto; }
+        .modal-content textarea { width: 100%; height: 200px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace; font-size: 13px; }
+        .modal-content .btn-modal { margin-top: 10px; padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .modal-content .btn-modal:hover { background: #059669; }
+        .modal-content .btn-cerrar { background: #94a3b8; margin-left: 8px; }
+        .modal-content .btn-cerrar:hover { background: #64748b; }
+
+        @media (max-width: 768px) {
+            .box { padding: 8px; }
+            .hoja-excel { font-size: 11px; min-width: 700px; }
+            .hoja-excel input, .hoja-excel select { font-size: 11px; padding: 2px 4px; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🍽️ Fredware Central - Recetario Digital</h1>
+    <h1>🍽️ Fredware - Recetario Digital (Formato Excel)</h1>
     
     <div class="tabs">
-        <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">🍽️ Mi Carta y Alérgenos UE</button>
-        <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">📋 Composición de Escandallos</button>
+        <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">🍽️ Carta / Alérgenos UE</button>
+        <button class="tab-btn" id="btn-t2" onclick="switchTab(2)">📋 Escandallos (Composición)</button>
     </div>
 
-    <!-- PESTAÑA 1: GESTIÓN DE CARTA Y ALÉRGENOS -->
+    <!-- PESTAÑA 1: CARTA Y ALÉRGENOS (VISTA EXCEL) -->
     <div id="sec1" class="app-section active">
-        <div class="box" style="border-left: 4px solid #10b981;">
-            <h3>Añadir Nuevo Plato a la Carta</h3>
-            <div class="grid-inputs">
-                <div>
-                    <label for="plato-id">ID Único (Para TPV, Ej: CACHOPO_IND):</label>
-                    <input type="text" id="plato-id" placeholder="Ej: CACHOPO_IND" style="text-transform: uppercase;">
-                </div>
-                <div>
-                    <label for="plato-nombre">Nombre Comercial del Plato:</label>
-                    <input type="text" id="plato-nombre" placeholder="Ej: Cachopo Individual">
-                </div>
-                <div>
-                    <label for="plato-categoria">Categoría de la Carta:</label>
-                    <select id="plato-categoria">
-                        <option value="ENTRANTES">Entrantes</option>
-                        <option value="CARNES">Carnes</option>
-                        <option value="PESCADOS">Pescados</option>
-                        <option value="POSTRES">Postres</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="plato-precio">Precio de Venta (€):</label>
-                    <input type="number" id="plato-precio" value="0.00" step="0.05">
-                </div>
-            </div>
-            <button class="btn-action" onclick="guardarPlatoCarta()">      Registrar Plato en Carta</button>
-        </div>
-
         <div class="box">
-            <h3>Declaración Oficial de Alérgenos (Reglamento UE 1169/2011)</h3>
-            <div style="overflow-x: auto;">
-                <table class="item-list">
+            <h3>
+                <span>📋 Lista de Platos (edición directa en celdas)</span>
+                <span style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button onclick="mostrarModalImportar()" class="btn-fila btn-add-fila" style="font-size:13px;">📥 Importar desde Excel</button>
+                    <button onclick="agregarFilaPlato()" class="btn-fila btn-add-fila" style="font-size:13px;">➕ Añadir Plato</button>
+                </span>
+            </h3>
+            <div style="overflow-x:auto;">
+                <table class="hoja-excel" id="tabla-carta-excel">
                     <thead>
                         <tr>
-                            <th>Plato</th>
-                            <th>Categoría</th>
-                            <th>P. Venta</th>
-                            <th style="text-align:center;">GLU</th>
-                            <th style="text-align:center;">CRU</th>
-                            <th style="text-align:center;">HUE</th>
-                            <th style="text-align:center;">PES</th>
-                            <th style="text-align:center;">CAC</th>
-                            <th style="text-align:center;">SOJ</th>
-                            <th style="text-align:center;">LAC</th>
-                            <th style="text-align:center;">FRU</th>
-                            <th style="text-align:center;">API</th>
-                            <th style="text-align:center;">MOS</th>
-                            <th style="text-align:center;">SES</th>
-                            <th style="text-align:center;">SUL</th>
-                            <th style="text-align:center;">ALT</th>
-                            <th style="text-align:center;">MOL</th>
-                            <th style="text-align:center;">Acción</th>
+                            <th style="min-width:120px;">ID Plato</th>
+                            <th style="min-width:150px;">Nombre</th>
+                            <th style="min-width:120px;">Categoría</th>
+                            <th style="min-width:70px;">Precio (€)</th>
+                            <th style="text-align:center; min-width:45px;" title="Gluten">GLU</th>
+                            <th style="text-align:center; min-width:45px;" title="Crustáceos">CRU</th>
+                            <th style="text-align:center; min-width:45px;" title="Huevos">HUE</th>
+                            <th style="text-align:center; min-width:45px;" title="Pescado">PES</th>
+                            <th style="text-align:center; min-width:45px;" title="Cacahuetes">CAC</th>
+                            <th style="text-align:center; min-width:45px;" title="Soja">SOJ</th>
+                            <th style="text-align:center; min-width:45px;" title="Lácteos">LAC</th>
+                            <th style="text-align:center; min-width:45px;" title="Frutos secos">FRU</th>
+                            <th style="text-align:center; min-width:45px;" title="Apio">API</th>
+                            <th style="text-align:center; min-width:45px;" title="Mostaza">MOS</th>
+                            <th style="text-align:center; min-width:45px;" title="Sésamo">SES</th>
+                            <th style="text-align:center; min-width:45px;" title="Sulfitos">SUL</th>
+                            <th style="text-align:center; min-width:45px;" title="Altramuces">ALT</th>
+                            <th style="text-align:center; min-width:45px;" title="Moluscos">MOL</th>
+                            <th style="min-width:60px; text-align:center;">Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="tabla-carta-alergenos"></tbody>
+                    <tbody id="cuerpo-carta-excel">
+                        <!-- Cargado dinámicamente -->
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- PESTAÑA 2: ESCANDALLOS DE COMPOSICIÓN -->
+    <!-- PESTAÑA 2: ESCANDALLOS (se mantiene igual pero mejorado) -->
     <div id="sec2" class="app-section">
         <div class="box" style="border-left: 4px solid #0284c7;">
             <h3>Asignar Ingrediente a Plato</h3>
-            <div class="grid-inputs" style="align-items: flex-end;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:12px; align-items:flex-end;">
                 <div>
-                    <label for="select-receta-plato">Selecciona Plato:</label>
-                    <select id="select-receta-plato" onchange="cargarIngredientesPlatoActual()"></select>
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569;">Selecciona Plato:</label>
+                    <select id="select-receta-plato" onchange="cargarIngredientesPlatoActual()" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;"></select>
                 </div>
                 <div>
-                    <label for="select-insumo-maestro">Selecciona Insumo Inventario:</label>
-                    <select id="select-insumo-maestro"></select>
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569;">Selecciona Insumo:</label>
+                    <select id="select-insumo-maestro" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;"></select>
                 </div>
                 <div>
-                    <label for="insumo-cantidad">Cantidad Necesaria (Kilos/Unidades):</label>
-                    <input type="number" id="insumo-cantidad" value="0.100" step="0.001" min="0.001">
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569;">Cantidad (kg/unid):</label>
+                    <input type="number" id="insumo-cantidad" value="0.100" step="0.001" min="0.001" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;">
                 </div>
                 <div>
-                    <button class="btn-action" style="background:#0284c7; margin-top: 0;" onclick="anadirIngredienteAPlato()">   Añadir Insumo</button>
+                    <button class="btn-action" style="background:#0284c7;color:white;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;width:100%;margin-top:0;" onclick="anadirIngredienteAPlato()">➕ Añadir Insumo</button>
                 </div>
             </div>
         </div>
 
         <div class="box">
-            <h3>Ficha Técnica y Desglose del Plato Seleccionado</h3>
-            <table class="item-list">
+            <h3>📋 Ficha Técnica del Plato Seleccionado</h3>
+            <table class="hoja-excel" style="min-width:400px;">
                 <thead>
                     <tr>
-                        <th>Ingrediente del Almacén</th>
-                        <th>Cantidad Escandallada</th>
-                        <th>Unidad Conteo</th>
-                        <th style="text-align: center; width: 100px;">Acción</th>
+                        <th>Ingrediente</th>
+                        <th>Cantidad</th>
+                        <th>Unidad</th>
+                        <th style="text-align:center;width:80px;">Acción</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-desglose-ingredientes"></tbody>
@@ -153,25 +165,50 @@
     </div>
 </div>
 
+<!-- Modal para importar Excel -->
+<div id="modal-importar" class="modal-overlay" onclick="if(event.target===this) cerrarModalImportar()">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">📥 Importar desde Excel</h3>
+        <p style="font-size:13px;color:#475569;">Copia las columnas de tu Excel (Categoría, Plato, Precio) separadas por tabuladores y pégalas aquí:</p>
+        <textarea id="texto-importar" placeholder="Ej:&#10;ENTRANTES	Croquetas	12&#10;ENTRANTES	Tortilla	10&#10;CARNES	Entrecot	18"></textarea>
+        <div style="margin-top:10px;display:flex;gap:8px;">
+            <button class="btn-modal" onclick="importarDesdeExcel()">📥 Importar</button>
+            <button class="btn-modal btn-cerrar" onclick="cerrarModalImportar()">Cancelar</button>
+        </div>
+        <p style="font-size:11px;color:#94a3b8;margin-top:8px;">Formato: <strong>Categoría</strong> (tabulador) <strong>Nombre del plato</strong> (tabulador) <strong>Precio</strong> (opcional)</p>
+    </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script>
+    // ============================================================
+    // CONFIGURACIÓN SUPABASE
+    // ============================================================
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
     const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const API_URL = "https://untried-january-thinning.ngrok-free.dev/";
-    let listadoEscandallosGlobal = [];
+    let platosGlobal = [];
+    let ingredientesGlobal = [];
 
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
     function lanzarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toast-container');
         if (!container) return;
         const toast = document.createElement('div');
         toast.className = `toast toast-${tipo}`;
-        toast.innerHTML = `<span>${tipo === 'success' ? '✅' : '❌'}</span> <span>${mensaje}</span>`;
+        toast.innerHTML = `<span>${tipo === 'success' ? '✅' : '❌'}</span> <span>${mensaje}`;
         container.appendChild(toast);
         setTimeout(() => toast.classList.add('show'), 50);
         setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
+    }
+
+    function generarIdUnico(base) {
+        const limpio = base.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        return limpio + '_' + Date.now().toString(36);
     }
 
     function switchTab(num) {
@@ -179,112 +216,321 @@
         document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
         document.getElementById(`btn-t${num}`).classList.add('active');
         document.getElementById(`sec${num}`).classList.add('active');
-        
-        if (num === 1) cargarCartaAlergenos();
+        if (num === 1) cargarCarta();
         if (num === 2) inicializarPestanaRecetas();
     }
 
-    // ========================================================
-    // LOGICA PESTAÑA 1: CARTA Y ALÉRGENOS INTERACTIVOS
-    // ========================================================
-    async function cargarCartaAlergenos() {
-        const cuerpo = document.getElementById('tabla-carta-alergenos');
-        if(!cuerpo) return;
-        cuerpo.innerHTML = '<tr><td colspan="18">⏳ Leyendo la carta de Attica As Galeras...</td></tr>';
+    // ============================================================
+    // PESTAÑA 1: CARTA (VISTA EXCEL)
+    // ============================================================
+    async function cargarCarta() {
+        const cuerpo = document.getElementById('cuerpo-carta-excel');
+        if (!cuerpo) return;
+        cuerpo.innerHTML = '<tr><td colspan="19" style="text-align:center;color:#94a3b8;padding:20px;">⏳ Cargando carta...</td></tr>';
 
         const { data: platos, error } = await db_nube
             .from('recetas_platos')
             .select('*')
             .order('nombre_plato', { ascending: true });
 
-        if (error) { cuerpo.innerHTML = '<tr><td colspan="18">❌ Error de lectura en Supabase.</td></tr>'; return; }
-        cuerpo.innerHTML = '';
-
-        if(!platos || platos.length === 0) {
-            cuerpo.innerHTML = '<tr><td colspan="18" style="text-align:center;color:#94a3b8;font-style:italic;">La carta está vacía. Registra el primer plato arriba.</td></tr>';
+        if (error) {
+            cuerpo.innerHTML = '<tr><td colspan="19" style="text-align:center;color:#ef4444;">❌ Error de lectura</td></tr>';
             return;
         }
 
-        platos.forEach(p => {
-            cuerpo.innerHTML += `
-                <tr>
-                    <td><strong>${p.nombre_plato}</strong></td>
-                    <td><span class="badge-categoria">${p.categoria}</span></td>
-                    <td><strong>${p.precio || '0.00'}€</strong></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_gluten ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_gluten', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_crustaceos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_crustaceos', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_huevos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_huevos', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_pescado ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_pescado', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_cacahuetes ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_cacahuetes', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_soja ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_soja', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_lacteos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_lacteos', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_frutos_cascara ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_frutos_cascara', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_apio ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_apio', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_mostaza ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_mostaza', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_sesamo ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_sesamo', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_sulfitos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_sulfitos', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_altramuces ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_altramuces', this.checked)"></td>
-                    <td style="text-align:center;"><input type="checkbox" class="chk-alergeno" ${p.a_moluscos ? 'checked' : ''} onchange="conmutarAlergenoNube('${p.id}', 'a_moluscos', this.checked)"></td>
-                    <td style="text-align:center;"><button class="btn-clear-row" style="background:#fee2e2;color:#ef4444;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;" onclick="eliminarPlatoCarta('${p.id}')">❌</button></td>
-                </tr>
-            `;
+        platosGlobal = platos || [];
+        renderizarCarta();
+    }
+
+    function renderizarCarta() {
+        const cuerpo = document.getElementById('cuerpo-carta-excel');
+        if (!cuerpo) return;
+        cuerpo.innerHTML = '';
+
+        if (platosGlobal.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="19" style="text-align:center;color:#94a3b8;padding:20px;">La carta está vacía. Añade platos con el botón "➕ Añadir Plato" o importa desde Excel.</td></tr>';
+            return;
+        }
+
+        platosGlobal.forEach((p, idx) => {
+            const row = document.createElement('tr');
+            row.dataset.id = p.id;
+
+            // ID (solo texto, no editable)
+            const tdId = document.createElement('td');
+            tdId.textContent = p.id;
+            tdId.style.fontWeight = 'bold';
+            tdId.style.fontSize = '11px';
+            tdId.style.color = '#475569';
+            row.appendChild(tdId);
+
+            // Nombre (editable)
+            const tdNombre = document.createElement('td');
+            const inputNombre = document.createElement('input');
+            inputNombre.type = 'text';
+            inputNombre.value = p.nombre_plato || '';
+            inputNombre.placeholder = 'Nombre del plato';
+            inputNombre.addEventListener('blur', () => {
+                if (inputNombre.value !== p.nombre_plato) {
+                    p.nombre_plato = inputNombre.value.trim();
+                    actualizarCampo(p.id, 'nombre_plato', p.nombre_plato);
+                }
+            });
+            tdNombre.appendChild(inputNombre);
+            row.appendChild(tdNombre);
+
+            // Categoría (editable con select)
+            const tdCategoria = document.createElement('td');
+            const selectCat = document.createElement('select');
+            const categorias = ['ENTRANTES', 'CARNES', 'PESCADOS', 'POSTRES', 'VEGETALES', 'FAST GOOD', 'PARA LOS MÁS PEQUES', 'ARROCES Y PASTAS'];
+            categorias.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                if (p.categoria === cat) opt.selected = true;
+                selectCat.appendChild(opt);
+            });
+            selectCat.addEventListener('change', () => {
+                p.categoria = selectCat.value;
+                actualizarCampo(p.id, 'categoria', p.categoria);
+            });
+            tdCategoria.appendChild(selectCat);
+            row.appendChild(tdCategoria);
+
+            // Precio (editable)
+            const tdPrecio = document.createElement('td');
+            const inputPrecio = document.createElement('input');
+            inputPrecio.type = 'number';
+            inputPrecio.step = '0.05';
+            inputPrecio.min = '0';
+            inputPrecio.value = p.precio || '';
+            inputPrecio.placeholder = '0.00';
+            inputPrecio.addEventListener('blur', () => {
+                const val = parseFloat(inputPrecio.value) || 0;
+                if (val !== p.precio) {
+                    p.precio = val;
+                    actualizarCampo(p.id, 'precio', val);
+                }
+            });
+            tdPrecio.appendChild(inputPrecio);
+            row.appendChild(tdPrecio);
+
+            // Alérgenos (14 checkboxes)
+            const alergenos = [
+                { col: 'a_gluten', label: 'GLU' },
+                { col: 'a_crustaceos', label: 'CRU' },
+                { col: 'a_huevos', label: 'HUE' },
+                { col: 'a_pescado', label: 'PES' },
+                { col: 'a_cacahuetes', label: 'CAC' },
+                { col: 'a_soja', label: 'SOJ' },
+                { col: 'a_lacteos', label: 'LAC' },
+                { col: 'a_frutos_cascara', label: 'FRU' },
+                { col: 'a_apio', label: 'API' },
+                { col: 'a_mostaza', label: 'MOS' },
+                { col: 'a_sesamo', label: 'SES' },
+                { col: 'a_sulfitos', label: 'SUL' },
+                { col: 'a_altramuces', label: 'ALT' },
+                { col: 'a_moluscos', label: 'MOL' }
+            ];
+
+            alergenos.forEach(al => {
+                const td = document.createElement('td');
+                td.style.textAlign = 'center';
+                const chk = document.createElement('input');
+                chk.type = 'checkbox';
+                chk.className = 'chk-alergeno';
+                chk.checked = p[al.col] || false;
+                chk.addEventListener('change', () => {
+                    p[al.col] = chk.checked;
+                    actualizarCampo(p.id, al.col, chk.checked);
+                });
+                td.appendChild(chk);
+                row.appendChild(td);
+            });
+
+            // Acción (eliminar)
+            const tdAccion = document.createElement('td');
+            tdAccion.style.textAlign = 'center';
+            const btnDel = document.createElement('button');
+            btnDel.className = 'btn-fila btn-danger-fila';
+            btnDel.textContent = '🗑️';
+            btnDel.title = 'Eliminar plato';
+            btnDel.addEventListener('click', () => eliminarPlato(p.id));
+            tdAccion.appendChild(btnDel);
+            row.appendChild(tdAccion);
+
+            cuerpo.appendChild(row);
         });
     }
 
-    async function guardarPlatoCarta() {
-        const id = document.getElementById('plato-id').value.trim().toUpperCase().replace(/\s+/g, '_');
-        const nombre = document.getElementById('plato-nombre').value.trim();
-        const categoria = document.getElementById('plato-categoria').value;
-        const precio = parseFloat(document.getElementById('plato-precio').value) || 0.00;
-
-        if(!id || !nombre) { lanzarToast("El ID y el Nombre son obligatorios.", "error"); return; }
-
-        const { error } = await db_nube
-            .from('recetas_platos')
-            .insert([{ id: id, nombre_plato: nombre, categoria: categoria, precio: precio }]);
-
-        if(error) { lanzarToast("Error al guardar plato (ID duplicado).", "error"); return; }
-        
-        document.getElementById('plato-id').value = '';
-        document.getElementById('plato-nombre').value = '';
-        document.getElementById('plato-precio').value = '0.00';
-        lanzarToast("Plato inyectado en la carta digital.");
-        cargarCartaAlergenos();
+    async function actualizarCampo(id, campo, valor) {
+        const updateData = {};
+        updateData[campo] = valor;
+        const { error } = await db_nube.from('recetas_platos').update(updateData).eq('id', id);
+        if (error) {
+            lanzarToast(`Error al actualizar ${campo}`, 'error');
+            console.error(error);
+        }
     }
 
-    async function conmutarAlergenoNube(platoId, columna, valor) {
-        let updateData = {};
-        updateData[columna] = valor;
-        const { error } = await db_nube.from('recetas_platos').update(updateData).eq('id', platoId);
-        if(error) lanzarToast("Error de sincronización.", "error");
-        else lanzarToast("Alérgeno actualizado por Ley Europea.");
+    async function eliminarPlato(id) {
+        if (!confirm('¿Eliminar este plato y todos sus ingredientes asociados?')) return;
+        const { error } = await db_nube.from('recetas_platos').delete().eq('id', id);
+        if (error) {
+            lanzarToast('Error al eliminar', 'error');
+            return;
+        }
+        platosGlobal = platosGlobal.filter(p => p.id !== id);
+        renderizarCarta();
+        lanzarToast('Plato eliminado');
+        // Refrescar select de escandallos si está visible
+        if (document.getElementById('sec2').classList.contains('active')) {
+            inicializarPestanaRecetas();
+        }
     }
 
-    async function eliminarPlatoCarta(id) {
-        if(!confirm("¿Eliminar este plato y todo su escandallo asociado?")) return;
-        await db_nube.from('recetas_platos').delete().eq('id', id);
-        lanzarToast("Plato descatalogado.");
-        cargarCartaAlergenos();
+    async function agregarFilaPlato() {
+        const nuevoId = generarIdUnico('PLATO');
+        const nuevoPlato = {
+            id: nuevoId,
+            nombre_plato: 'Nuevo plato',
+            categoria: 'ENTRANTES',
+            precio: 0.00,
+            a_gluten: false,
+            a_crustaceos: false,
+            a_huevos: false,
+            a_pescado: false,
+            a_cacahuetes: false,
+            a_soja: false,
+            a_lacteos: false,
+            a_frutos_cascara: false,
+            a_apio: false,
+            a_mostaza: false,
+            a_sesamo: false,
+            a_sulfitos: false,
+            a_altramuces: false,
+            a_moluscos: false
+        };
+        const { error } = await db_nube.from('recetas_platos').insert([nuevoPlato]);
+        if (error) {
+            lanzarToast('Error al añadir plato: ' + error.message, 'error');
+            return;
+        }
+        platosGlobal.push(nuevoPlato);
+        renderizarCarta();
+        lanzarToast('Plato añadido. Edita los datos en las celdas.');
+        // Refrescar select de escandallos
+        if (document.getElementById('sec2').classList.contains('active')) {
+            inicializarPestanaRecetas();
+        }
     }
 
-    // ========================================================
-    // LOGICA PESTAÑA 2: ESCANDALLOS DE COMPOSICIÓN
-    // ========================================================
+    // ============================================================
+    // IMPORTAR DESDE EXCEL
+    // ============================================================
+    function mostrarModalImportar() {
+        document.getElementById('modal-importar').style.display = 'flex';
+        document.getElementById('texto-importar').value = '';
+        document.getElementById('texto-importar').focus();
+    }
+
+    function cerrarModalImportar() {
+        document.getElementById('modal-importar').style.display = 'none';
+    }
+
+    async function importarDesdeExcel() {
+        const texto = document.getElementById('texto-importar').value.trim();
+        if (!texto) {
+            lanzarToast('Pega el texto copiado de Excel.', 'warning');
+            return;
+        }
+
+        const lineas = texto.split('\n').filter(l => l.trim() !== '');
+        let importados = 0;
+        let errores = [];
+
+        for (const linea of lineas) {
+            const partes = linea.split('\t').map(p => p.trim());
+            // Formato: [categoría, nombre, precio?]
+            if (partes.length < 2) continue;
+            const categoria = partes[0].toUpperCase();
+            const nombre = partes[1];
+            const precio = partes.length >= 3 ? parseFloat(partes[2].replace(',', '.')) || 0 : 0;
+
+            if (!nombre) continue;
+
+            const id = generarIdUnico(nombre);
+            const nuevoPlato = {
+                id: id,
+                nombre_plato: nombre,
+                categoria: categoria,
+                precio: precio,
+                a_gluten: false,
+                a_crustaceos: false,
+                a_huevos: false,
+                a_pescado: false,
+                a_cacahuetes: false,
+                a_soja: false,
+                a_lacteos: false,
+                a_frutos_cascara: false,
+                a_apio: false,
+                a_mostaza: false,
+                a_sesamo: false,
+                a_sulfitos: false,
+                a_altramuces: false,
+                a_moluscos: false
+            };
+
+            const { error } = await db_nube.from('recetas_platos').insert([nuevoPlato]);
+            if (error) {
+                errores.push(`${nombre}: ${error.message}`);
+            } else {
+                importados++;
+                platosGlobal.push(nuevoPlato);
+            }
+        }
+
+        cerrarModalImportar();
+        if (importados > 0) {
+            lanzarToast(`✅ ${importados} platos importados correctamente.`);
+            renderizarCarta();
+            // Refrescar select de escandallos
+            if (document.getElementById('sec2').classList.contains('active')) {
+                inicializarPestanaRecetas();
+            }
+        } else {
+            lanzarToast('No se pudo importar ningún plato. Revisa el formato.', 'error');
+        }
+        if (errores.length > 0) {
+            console.error('Errores de importación:', errores);
+        }
+    }
+
+    // ============================================================
+    // PESTAÑA 2: ESCANDALLOS (mejorado)
+    // ============================================================
     async function inicializarPestanaRecetas() {
         const selectPlatos = document.getElementById('select-receta-plato');
         const selectInsumos = document.getElementById('select-insumo-maestro');
-        if(!selectPlatos || !selectInsumos) return;
+        if (!selectPlatos || !selectInsumos) return;
 
-        selectPlatos.innerHTML = '';
-        selectInsumos.innerHTML = '';
-
-        // Cargar Platos
+        // Cargar platos
         const { data: platos } = await db_nube.from('recetas_platos').select('id, nombre_plato').order('nombre_plato');
-        platos.forEach(p => { selectPlatos.innerHTML += `<option value="${p.id}">${p.nombre_plato}</option>`; });
+        selectPlatos.innerHTML = '';
+        if (platos) {
+            platos.forEach(p => {
+                selectPlatos.innerHTML += `<option value="${p.id}">${p.nombre_plato}</option>`;
+            });
+        }
 
-        // Cargar Insumos del Maestro
+        // Cargar insumos del maestro
         const { data: insumos } = await db_nube.from('maestro_escandallos').select('id, nombre_articulo').order('nombre_articulo');
-        insumos.forEach(i => { selectInsumos.innerHTML += `<option value="${i.id}">${i.nombre_articulo}</option>`; });
+        selectInsumos.innerHTML = '';
+        if (insumos) {
+            insumos.forEach(i => {
+                selectInsumos.innerHTML += `<option value="${i.id}">${i.nombre_articulo}</option>`;
+            });
+        }
 
         cargarIngredientesPlatoActual();
     }
@@ -292,28 +538,34 @@
     async function cargarIngredientesPlatoActual() {
         const platoId = document.getElementById('select-receta-plato').value;
         const cuerpo = document.getElementById('tabla-desglose-ingredientes');
-        if(!platoId || !cerpo) return;
-        cuerpo.innerHTML = '<tr><td colspan="4">⏳ Leyendo ficha técnica...</td></tr>';
+        if (!platoId || !cuerpo) return;
+        cuerpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:10px;">⏳ Cargando...</td></tr>';
 
         const { data: lineas, error } = await db_nube
             .from('ingredientes_receta')
             .select('*, maestro_escandallos(unidad_recuento)')
             .eq('plato_id', platoId);
 
+        if (error) {
+            cuerpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#ef4444;">Error de lectura</td></tr>';
+            return;
+        }
+
+        ingredientesGlobal = lineas || [];
         cuerpo.innerHTML = '';
-        if(!lineas || lineas.length === 0) {
+        if (ingredientesGlobal.length === 0) {
             cuerpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;font-style:italic;">Este plato no tiene ingredientes asignados.</td></tr>';
             return;
         }
 
-        lineas.forEach(l => {
+        ingredientesGlobal.forEach(l => {
             const uM = l.maestro_escandallos ? l.maestro_escandallos.unidad_recuento : 'UNIDADES';
             cuerpo.innerHTML += `
                 <tr>
                     <td><strong>${l.insumo_inventario_id}</strong></td>
                     <td style="font-weight:bold;color:#0284c7;">${l.cantidad_por_porcion}</td>
                     <td><span style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">${uM}</span></td>
-                    <td style="text-align:center;"><button class="btn-del-row" style="padding:4px 8px;" onclick="quitarIngredienteReceta(${l.id})">❌ Quitar</button></td>
+                    <td style="text-align:center;"><button class="btn-fila btn-danger-fila" onclick="quitarIngredienteReceta(${l.id})">🗑️</button></td>
                 </tr>
             `;
         });
@@ -324,26 +576,66 @@
         const insumoId = document.getElementById('select-insumo-maestro').value;
         const cantidad = parseFloat(document.getElementById('insumo-cantidad').value) || 0;
 
-        if(!platoId || !insumoId || cantidad <= 0) { lanzarToast("Revisa los campos y la cantidad.", "error"); return; }
+        if (!platoId || !insumoId || cantidad <= 0) {
+            lanzarToast('Completa todos los campos y cantidad mayor que 0.', 'warning');
+            return;
+        }
 
-        await db_nube.from('ingredientes_receta').insert([{
+        const { error } = await db_nube.from('ingredientes_receta').insert([{
             plato_id: platoId,
             insumo_inventario_id: insumoId,
             cantidad_por_porcion: cantidad
         }]);
 
-        lanzarToast("Ingrediente integrado en el escandallo.");
+        if (error) {
+            lanzarToast('Error al añadir ingrediente: ' + error.message, 'error');
+            return;
+        }
+
+        lanzarToast('Ingrediente añadido al escandallo.');
         cargarIngredientesPlatoActual();
     }
 
     async function quitarIngredienteReceta(lineaId) {
-        await db_nube.from('ingredientes_receta').delete().eq('id', lineaId);
-        lanzarToast("Línea eliminada.");
+        if (!confirm('¿Quitar este ingrediente del escandallo?')) return;
+        const { error } = await db_nube.from('ingredientes_receta').delete().eq('id', lineaId);
+        if (error) {
+            lanzarToast('Error al eliminar', 'error');
+            return;
+        }
+        lanzarToast('Ingrediente eliminado.');
         cargarIngredientesPlatoActual();
     }
 
-    // Carga inicial pasiva
-    cargarCartaAlergenos();
+    // ============================================================
+    // SUSCRIPCIONES EN TIEMPO REAL (para actualizar automáticamente)
+    // ============================================================
+    function suscribirseCambios() {
+        db_nube
+            .channel('recetas-platos-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'recetas_platos' }, () => {
+                cargarCarta();
+            })
+            .subscribe();
+
+        db_nube
+            .channel('ingredientes-receta-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredientes_receta' }, () => {
+                if (document.getElementById('sec2').classList.contains('active')) {
+                    cargarIngredientesPlatoActual();
+                }
+            })
+            .subscribe();
+    }
+
+    // ============================================================
+    // INICIALIZACIÓN
+    // ============================================================
+    cargarCarta();
+    suscribirseCambios();
+
+    // Para que el modal no se cierre al hacer clic dentro
+    document.querySelector('.modal-content')?.addEventListener('click', (e) => e.stopPropagation());
 </script>
 </body>
 </html>
