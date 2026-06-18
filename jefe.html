@@ -6,250 +6,50 @@
     <title>Panel Horas Extras - Jefe</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            background: #f1f5f9;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .container {
-            max-width: 1000px;
-            width: 100%;
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-        }
-        h1,
-        h2 {
-            color: #0f172a;
-            font-weight: 700;
-        }
-        h1 {
-            font-size: 1.8rem;
-            border-bottom: 4px solid #3b82f6;
-            padding-bottom: 8px;
-            display: inline-block;
-        }
-        .filtros {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
-            margin: 12px 0;
-        }
-        .filtros select,
-        .filtros input {
-            padding: 8px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-        }
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            background: #e2e8f0;
-            color: #1e293b;
-            transition: 0.2s;
-        }
-        .btn-success {
-            background: #22c55e;
-            color: white;
-        }
-        .btn-success:hover {
-            background: #16a34a;
-        }
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #cbd5e1;
-        }
-        .btn-outline:hover {
-            background: #f1f5f9;
-        }
-        .resumen-personas {
-            background: #f8fafc;
-            border-radius: 14px;
-            padding: 16px;
-            margin-top: 12px;
-        }
-        .resumen-personas table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        .resumen-personas th {
-            text-align: left;
-            padding: 8px 6px;
-            border-bottom: 2px solid #cbd5e1;
-        }
-        .resumen-personas td {
-            padding: 8px 6px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .total-general {
-            font-weight: 700;
-            font-size: 1.1rem;
-            border-top: 2px solid #94a3b8;
-            padding-top: 10px;
-            margin-top: 4px;
-        }
-        .registro-item {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            border-left: 4px solid #3b82f6;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-        }
-        .registro-info {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 16px;
-            align-items: center;
-            flex: 1;
-        }
-        .registro-info .nombre {
-            font-weight: 700;
-            background: #dbeafe;
-            padding: 0 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
-        .registro-info .fecha {
-            font-weight: 500;
-        }
-        .registro-info .horas {
-            background: #dbeafe;
-            padding: 0 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            color: #1e40af;
-        }
-        .registro-info .foto-preview {
-            width: 38px;
-            height: 38px;
-            border-radius: 8px;
-            object-fit: cover;
-            cursor: pointer;
-            border: 1px solid #e2e8f0;
-        }
-        .foto-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.75);
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-        }
-        .foto-modal.active {
-            display: flex;
-        }
-        .foto-modal img {
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: 16px;
-        }
-        .empty-state {
-            color: #94a3b8;
-            text-align: center;
-            padding: 30px 0;
-            font-style: italic;
-        }
-        .badge {
-            background: #e2e8f0;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #1e293b;
-        }
-        .header-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        .badge-jefe {
-            background: #8b5cf6;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-        .btn-sm {
-            padding: 4px 10px;
-            font-size: 0.7rem;
-        }
-        .admin-personal {
-            background: #f8fafc;
-            border-radius: 14px;
-            padding: 16px;
-            margin-top: 16px;
-            border: 1px solid #e2e8f0;
-        }
-        .admin-personal .lista-nombres {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin: 8px 0;
-        }
-        .admin-personal .lista-nombres .nombre-tag {
-            background: #dbeafe;
-            padding: 2px 12px 2px 16px;
-            border-radius: 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.85rem;
-        }
-        .admin-personal .lista-nombres .nombre-tag button {
-            background: none;
-            border: none;
-            color: #ef4444;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0 2px;
-        }
-        .error-box {
-            background: #fee2e2;
-            border: 1px solid #fecaca;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 12px 0;
-            color: #991b1b;
-            display: none;
-        }
-        .error-box.show {
-            display: block;
-        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; }
+        body { background: #f1f5f9; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 1000px; width: 100%; background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h1, h2 { color: #0f172a; font-weight: 700; }
+        h1 { font-size: 1.8rem; border-bottom: 4px solid #3b82f6; padding-bottom: 8px; display: inline-block; }
+        .filtros { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; }
+        .filtros select, .filtros input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; background: #e2e8f0; color: #1e293b; transition: 0.2s; }
+        .btn-success { background: #22c55e; color: white; }
+        .btn-success:hover { background: #16a34a; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-outline { background: transparent; border: 1px solid #cbd5e1; }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .resumen-personas { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 12px; }
+        .resumen-personas table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .resumen-personas th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #cbd5e1; }
+        .resumen-personas td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; }
+        .total-general { font-weight: 700; font-size: 1.1rem; border-top: 2px solid #94a3b8; padding-top: 10px; margin-top: 4px; }
+        .registro-item { background: #f8fafc; border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; border-left: 4px solid #3b82f6; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+        .registro-info { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; flex: 1; }
+        .registro-info .nombre { font-weight: 700; background: #dbeafe; padding: 0 10px; border-radius: 20px; font-size: 0.85rem; }
+        .registro-info .fecha { font-weight: 500; }
+        .registro-info .horas { background: #dbeafe; padding: 0 12px; border-radius: 20px; font-weight: 600; color: #1e40af; }
+        .registro-info .foto-preview { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid #e2e8f0; }
+        .foto-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.75); justify-content: center; align-items: center; z-index: 999; }
+        .foto-modal.active { display: flex; }
+        .foto-modal img { max-width: 90%; max-height: 90%; border-radius: 16px; }
+        .empty-state { color: #94a3b8; text-align: center; padding: 30px 0; font-style: italic; }
+        .badge { background: #e2e8f0; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; color: #1e293b; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .badge-jefe { background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+        .btn-sm { padding: 4px 10px; font-size: 0.7rem; }
+        .admin-personal { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 16px; border: 1px solid #e2e8f0; }
+        .admin-personal .lista-nombres { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+        .admin-personal .lista-nombres .nombre-tag { background: #dbeafe; padding: 2px 12px 2px 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+        .admin-personal .lista-nombres .nombre-tag button { background: none; border: none; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 1rem; padding: 0 2px; }
+        .error-box { background: #fee2e2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin: 12px 0; color: #991b1b; display: none; }
+        .error-box.show { display: block; }
+        .badge-count { background: #e2e8f0; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; color: #475569; margin-left: 8px; }
+        .btn-recargar { background: #8b5cf6; color: white; }
+        .btn-recargar:hover { background: #7c3aed; }
     </style>
 </head>
 <body>
@@ -284,12 +84,17 @@
         <div class="admin-personal">
             <div style="font-weight: 600; margin-bottom: 8px;">👥 Gestionar personal (cocineros y picas)</div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <input type="text" id="inputNuevoNombre" placeholder="Nuevo nombre"
-                style="flex:1; min-width:150px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:10px;">
+                <input type="text" id="inputNuevoNombre" placeholder="Nuevo nombre" style="flex:1; min-width:150px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:10px;">
                 <button id="btnAgregarNombre" class="btn btn-success">➕ Añadir</button>
+                <button id="btnInsertarNombres" class="btn btn-primary">📥 Insertar lista</button>
             </div>
-            <div class="lista-nombres" id="listaNombres"></div>
-            <div style="font-size:0.8rem; color:#64748b; margin-top:6px;">Los nombres aparecerán en el desplegable para los cocineros.</div>
+            <div class="lista-nombres" id="listaNombres">
+                <span style="color:#94a3b8; font-size:0.9rem;">Cargando...</span>
+            </div>
+            <div style="font-size:0.8rem; color:#64748b; margin-top:6px;">
+                Los nombres aparecerán en el desplegable para los cocineros.
+                <button id="btnRecargarPersonal" class="btn btn-recargar btn-sm" style="margin-left:8px;">🔄 Recargar</button>
+            </div>
         </div>
     </div>
 
@@ -305,7 +110,7 @@
 
     <script>
         // ------------------------------------------------------------
-        // CONFIGURACIÓN DE SUPABASE
+        // CONFIGURACIÓN DE SUPABASE (SOLO UNA VEZ)
         // ------------------------------------------------------------
         (function() {
             'use strict';
@@ -316,12 +121,23 @@
             console.log('🔍 Conectando a Supabase (jefe)...');
             console.log('URL:', SUPABASE_URL);
 
+            // ✅ Crear cliente UNA SOLA VEZ
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // Lista de nombres por defecto
+            const NOMBRES_POR_DEFECTO = [
+                'Antonio', 'Remedios', 'Rafael', 'Andrea', 'Ines',
+                'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
+            ];
 
             function mostrarError(mensaje) {
                 const box = document.getElementById('errorBox');
                 box.textContent = '❌ ' + mensaje;
                 box.className = 'error-box show';
+            }
+
+            function ocultarError() {
+                document.getElementById('errorBox').className = 'error-box';
             }
 
             // ---------------------------------------------
@@ -338,11 +154,21 @@
                     if (error) {
                         console.error('❌ Error al cargar personal:', error);
                         mostrarError('Error al cargar personal: ' + error.message);
+                        document.getElementById('listaNombres').innerHTML =
+                            '<span style="color:#94a3b8; font-size:0.9rem;">Error al cargar</span>';
                         return;
                     }
 
                     console.log('✅ Personal cargado:', data);
+
+                    if (!data || data.length === 0) {
+                        document.getElementById('listaNombres').innerHTML =
+                            '<span style="color:#94a3b8; font-size:0.9rem;">No hay nombres. Usa "Insertar lista"</span>';
+                        return;
+                    }
+
                     renderizarListaNombres(data);
+                    ocultarError();
                 } catch (error) {
                     console.error('❌ Error en cargarPersonal:', error);
                     mostrarError('Error de conexión: ' + error.message);
@@ -357,9 +183,9 @@
                 }
                 let html = '';
                 data.forEach(item => {
-                    html +=
-                        `<span class="nombre-tag">${item.nombre} <button onclick="eliminarNombre('${item.nombre}')" title="Eliminar">✕</button></span>`;
+                    html += `<span class="nombre-tag">${item.nombre} <button onclick="eliminarNombre('${item.nombre}')" title="Eliminar">✕</button></span>`;
                 });
+                html += `<span class="badge-count" style="margin-left:8px;">${data.length} nombres</span>`;
                 contenedor.innerHTML = html;
             }
 
@@ -372,6 +198,7 @@
                         .eq('nombre', nombre);
                     if (error) throw error;
                     cargarPersonal();
+                    mostrarMensaje(`✅ "${nombre}" eliminado`, 'exito');
                 } catch (error) {
                     console.error('Error al eliminar nombre:', error);
                     alert('No se pudo eliminar. Revisa permisos.');
@@ -398,11 +225,37 @@
                 }
             });
 
-            document.getElementById('inputNuevoNombre').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    document.getElementById('btnAgregarNombre').click();
+            // Insertar lista completa de nombres
+            document.getElementById('btnInsertarNombres').addEventListener('click', async function() {
+                if (!confirm(`¿Insertar todos los nombres (${NOMBRES_POR_DEFECTO.length})?`)) return;
+                try {
+                    // Primero eliminar todos
+                    const { error: deleteError } = await supabase
+                        .from('horas_personal')
+                        .delete()
+                        .neq('id', '00000000-0000-0000-0000-000000000000');
+                    if (deleteError) throw deleteError;
+
+                    // Insertar nuevos
+                    const inserts = NOMBRES_POR_DEFECTO.map(nombre => ({ nombre }));
+                    const { error: insertError } = await supabase
+                        .from('horas_personal')
+                        .insert(inserts);
+                    if (insertError) throw insertError;
+
+                    cargarPersonal();
+                } catch (error) {
+                    console.error('Error al insertar nombres:', error);
+                    alert('Error al insertar la lista. Revisa permisos.');
                 }
+            });
+
+            // Botón recargar personal
+            document.getElementById('btnRecargarPersonal').addEventListener('click', function() {
+                this.textContent = '⏳...';
+                cargarPersonal().finally(() => {
+                    this.textContent = '🔄 Recargar';
+                });
             });
 
             // ---------------------------------------------
@@ -489,20 +342,20 @@
                         `<img src="${reg.foto_url}" class="foto-preview" onclick="event.stopPropagation(); abrirFoto('${reg.foto_url}')" alt="foto">` :
                         '<span class="badge">Sin foto</span>';
                     html += `
-                            <div class="registro-item">
-                                <div class="registro-info">
-                                    <span class="nombre">${reg.nombre || 'Anónimo'}</span>
-                                    <span class="fecha">📅 ${formatearFecha(reg.fecha)}</span>
-                                    <span>⏱️ ${reg.hora_inicio} → ${reg.hora_fin}</span>
-                                    <span class="horas">${horas.toFixed(2)} h</span>
-                                    ${reg.comentarios ? `<span>💬 ${reg.comentarios}</span>` : ''}
-                                    ${fotoHtml}
-                                </div>
-                                <div>
-                                    <button class="btn btn-danger btn-sm" onclick="eliminarRegistro('${reg.id}')">🗑️</button>
-                                </div>
+                        <div class="registro-item">
+                            <div class="registro-info">
+                                <span class="nombre">${reg.nombre || 'Anónimo'}</span>
+                                <span class="fecha">📅 ${formatearFecha(reg.fecha)}</span>
+                                <span>⏱️ ${reg.hora_inicio} → ${reg.hora_fin}</span>
+                                <span class="horas">${horas.toFixed(2)} h</span>
+                                ${reg.comentarios ? `<span>💬 ${reg.comentarios}</span>` : ''}
+                                ${fotoHtml}
                             </div>
-                        `;
+                            <div>
+                                <button class="btn btn-danger btn-sm" onclick="eliminarRegistro('${reg.id}')">🗑️</button>
+                            </div>
+                        </div>
+                    `;
                 });
                 contenedor.innerHTML = html;
             }
@@ -542,4 +395,94 @@
                     if (error) throw error;
                     cargarRegistros();
                 } catch (error) {
-                    console.error('Error al eliminar
+                    console.error('Error al eliminar:', error);
+                    alert('No se pudo eliminar. Verifica permisos.');
+                }
+            };
+
+            document.getElementById('btnEliminarTodos').addEventListener('click', async function() {
+                if (!confirm('⚠️ ¿Eliminar TODOS los registros del mes seleccionado? No se puede deshacer.')) return;
+                const mes = parseInt(document.getElementById('mesSelector').value);
+                const anio = parseInt(document.getElementById('anioSelector').value);
+                const ultimoDia = new Date(anio, mes, 0).getDate();
+                const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
+                const end = `${anio}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
+                try {
+                    const { error } = await supabase
+                        .from('horas_registros')
+                        .delete()
+                        .gte('fecha', start)
+                        .lte('fecha', end);
+                    if (error) throw error;
+                    cargarRegistros();
+                } catch (error) {
+                    console.error('Error al eliminar todos:', error);
+                    alert('Error al eliminar. Revisa permisos.');
+                }
+            });
+
+            document.getElementById('btnExportarCSV').addEventListener('click', async function() {
+                const mes = parseInt(document.getElementById('mesSelector').value);
+                const anio = parseInt(document.getElementById('anioSelector').value);
+                const ultimoDia = new Date(anio, mes, 0).getDate();
+                const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
+                const end = `${anio}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
+                try {
+                    const { data, error } = await supabase
+                        .from('horas_registros')
+                        .select('*')
+                        .gte('fecha', start)
+                        .lte('fecha', end);
+                    if (error) throw error;
+                    if (!data || data.length === 0) {
+                        alert('No hay registros para exportar.');
+                        return;
+                    }
+                    let csv = 'Persona,Fecha,Hora Inicio,Hora Fin,Horas Extras,Comentarios\n';
+                    data.forEach(r => {
+                        const horas = calcularHoras(r.hora_inicio, r.hora_fin);
+                        const fecha = formatearFecha(r.fecha);
+                        const coment = (r.comentarios || '').replace(/,/g, ';');
+                        csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio},${r.hora_fin},${horas.toFixed(2)},${coment}\n`;
+                    });
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `horas_extras_${mes}_${anio}.csv`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                } catch (error) {
+                    console.error('Error al exportar:', error);
+                    alert('Error al exportar. Revisa conexión.');
+                }
+            });
+
+            // Eventos de filtro
+            document.getElementById('btnCalcularTotal').addEventListener('click', cargarRegistros);
+            document.getElementById('mesSelector').addEventListener('change', cargarRegistros);
+            document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
+
+            // ---------------------------------------------
+            // MODAL DE FOTO
+            // ---------------------------------------------
+            window.abrirFoto = function(src) {
+                document.getElementById('fotoModalImg').src = src;
+                document.getElementById('fotoModal').classList.add('active');
+            };
+            window.cerrarFoto = function() {
+                document.getElementById('fotoModal').classList.remove('active');
+            };
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
+
+            // ---------------------------------------------
+            // INICIALIZAR
+            // ---------------------------------------------
+            console.log('🚀 Inicializando panel...');
+            inicializarSelectores();
+            cargarRegistros();
+            cargarPersonal();
+
+        })(); // Fin del IIFE
+    </script>
+</body>
+</html>
