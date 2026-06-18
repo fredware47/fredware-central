@@ -61,10 +61,13 @@
     </div>
 
     <script>
-        // -------------------- CONFIGURACIÓN DE SUPABASE (CON TUS CREDENCIALES) --------------------
-        const SUPABASE_URL = 'https://fredlesg.supabase.co';
+        // ---------------------------------------------
+        // CONFIGURACIÓN CORRECTA DE SUPABASE
+        // ---------------------------------------------
+        const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
-        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // -------------------- CARGAR LISTA DE PERSONAL --------------------
         async function cargarPersonal() {
@@ -135,7 +138,6 @@
                             upsert: false
                         });
                     if (uploadError) throw uploadError;
-                    // Obtener URL pública
                     const { data: urlData } = supabase.storage
                         .from('fotos')
                         .getPublicUrl(fileName);
