@@ -3,579 +3,1561 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🚚 Fredware - Terminal Unificada</title>
+    <title>🚚 Fredware - Terminal Unificada de Cocina</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .tab-btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
-        .tab-btn.active { background: #1e293b; color: white; }
-        .tab-btn:hover:not(.active) { background: #e2e8f0; }
-        .tab-content { display: none; animation: fadeIn 0.3s ease-in; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .accordion-header { padding: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; }
-        .accordion-content { padding: 4px 0; }
+        /* ===== ESTILOS ORIGINALES ===== */
+        .accordion-header { padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s, transform 0.1s; }
+        .accordion-header:active { transform: scale(0.99); }
+        .accordion-content { display: block; padding: 4px 0; }
         .accordion-content.collapsed { display: none; }
-        .accordion-icon { transition: transform 0.2s; }
+        .accordion-icon { font-size: 12px; transition: transform 0.2s; color: inherit; }
         .accordion-header.active .accordion-icon { transform: rotate(180deg); }
-        
-        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s; position: fixed; bottom: 20px; right: 20px; z-index: 10000; }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast-success { border-left: 4px solid #10b981; }
         .toast-error { border-left: 4px solid #ef4444; }
+        .toast-warning { border-left: 4px solid #f59e0b; }
+
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== PESTAÑAS ===== */
+        .tabs-container { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 14px; color: #475569; background: transparent; }
+        .tab-btn.active { background: white; color: #1e293b; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.5); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ===== FOTOS ===== */
+        .foto-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
+        .foto-thumb:hover { border-color: #3b82f6; transform: scale(1.05); }
         
-        .tag-hoy { background: #10b981; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; }
-        .tag-manana { background: #f59e0b; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; }
-        .tag-pasado { background: #ef4444; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; }
-        .tag-no-reparto { background: #94a3b8; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; }
-        
-        .foto-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; }
-        .foto-thumb:hover { border-color: #3b82f6; }
-        
-        .producto-critico { background: #fef3c7; border-left: 4px solid #f59e0b; }
+        .tag-hoy { background: #10b981; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
+        .tag-manana { background: #f59e0b; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
+        .tag-pasado { background: #ef4444; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
+        .tag-no-reparto { background: #94a3b8; color: white; font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: bold; }
+
+        @media (max-width: 640px) {
+            .tabs-container { flex-direction: column; gap: 4px; }
+            .tab-btn { padding: 10px; font-size: 13px; }
+        }
     </style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
 
-<!-- HEADER -->
-<header class="bg-white border-b py-4 px-6 sticky top-0 z-50 shadow-sm">
-    <div class="max-w-4xl mx-auto flex justify-between items-center flex-wrap gap-3">
-        <div class="flex items-center gap-3">
-            <span class="text-3xl">🚚</span>
-            <div>
-                <h1 class="text-lg font-black">FREDWARE CENTRAL</h1>
-                <p class="text-xs text-emerald-600 font-bold uppercase">Cocina, Recepción & Trazabilidad</p>
+    <!-- ===== HEADER ===== -->
+    <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-2xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🚚</span>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-slate-900">FREDWARE CENTRAL</h1>
+                    <p class="text-xs text-emerald-600 font-bold tracking-widest uppercase">Cocina, Recepción & Trazabilidad</p>
+                </div>
+            </div>
+            <div class="flex flex-col items-end space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span id="badge-red" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold">🟢 ONLINE</span>
+                    <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
+                        ➕ ENTRADA DIRECTA
+                    </button>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v11.0</span>
+                </div>
+                <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
-            <span id="badge-red" class="bg-emerald-100 text-emerald-800 text-xs px-3 py-2 rounded-xl font-bold">🟢 ONLINE</span>
-            <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 py-2 rounded-xl">➕ ENTRADA DIRECTA</button>
+    </header>
+
+    <main class="max-w-2xl mx-auto w-full px-4 mt-6 space-y-6">
+
+        <!-- ===== PESTAÑAS ===== -->
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="tab-faltas">📝 Faltas</button>
+            <button class="tab-btn" data-tab="tab-entradas">🚛 Entradas</button>
+            <button class="tab-btn" data-tab="tab-trazabilidad">📸 Trazabilidad</button>
         </div>
-    </div>
-</header>
 
-<!-- MAIN -->
-<main class="max-w-4xl mx-auto px-4 mt-6">
+        <!-- ===== TAB 1: FALTAS ===== -->
+        <div id="tab-faltas" class="tab-content active">
+            <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                    <span>📝</span> Control de Faltas Diarias
+                </h2>
+                <div class="flex gap-2 items-center">
+                    <input type="text" id="insumo-falta" placeholder="Ej: MAYONESA, CEBOLLAS..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 uppercase text-base shadow-inner">
+                    
+                    <button id="btn-micro-voz" onclick="activarDictadoPorVoz()" class="bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center h-[50px] w-[50px]">
+                        🎙️
+                    </button>
 
-    <!-- PESTAÑAS -->
-    <div class="flex gap-2 bg-slate-100 p-2 rounded-xl mb-6">
-        <button class="tab-btn active" data-tab="tab-faltas">📝 Faltas</button>
-        <button class="tab-btn" data-tab="tab-entradas">🚛 Entradas</button>
-        <button class="tab-btn" data-tab="tab-trazabilidad">📸 Trazabilidad</button>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB 1: FALTAS -->
-    <!-- ============================================================ -->
-    <div id="tab-faltas" class="tab-content active">
-        <div class="bg-white rounded-2xl p-5 shadow-sm border">
-            <h2 class="text-sm font-bold text-slate-500 uppercase mb-4">📝 Control de Faltas</h2>
-            <div class="flex gap-2 mb-4">
-                <input id="insumo-falta" placeholder="Ej: MAYONESA, CEBOLLAS..." class="flex-1 bg-slate-50 border rounded-xl px-4 py-3 uppercase">
-                <button onclick="registrarFalta()" class="bg-sky-600 text-white font-bold px-5 rounded-xl">➕ Añadir</button>
+                    <button onclick="registrarFaltaCocina()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
+                        ➕ Añadir
+                    </button>
+                </div>
+                <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto"></div>
             </div>
-            <div id="contenedor-faltas" class="space-y-2 max-h-60 overflow-y-auto"></div>
         </div>
-    </div>
 
-    <!-- ============================================================ -->
-    <!-- TAB 2: ENTRADAS -->
-    <!-- ============================================================ -->
-    <div id="tab-entradas" class="tab-content">
-        <div class="bg-white rounded-2xl p-5 shadow-sm border">
-            <h2 class="text-sm font-bold text-emerald-600 uppercase mb-4">🚛 Entradas Esperadas</h2>
-            <div id="visor-entradas" class="space-y-4"></div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB 3: TRAZABILIDAD CON FOTOS -->
-    <!-- ============================================================ -->
-    <div id="tab-trazabilidad" class="tab-content">
-        <div class="bg-white rounded-2xl p-5 shadow-sm border">
-            <h2 class="text-sm font-bold text-purple-600 uppercase mb-4">📸 Trazabilidad con Foto</h2>
-            <div class="flex gap-2 mb-4">
-                <input id="search-foto" placeholder="Buscar producto..." class="flex-1 bg-slate-50 border rounded-xl px-4 py-3 uppercase">
-                <button onclick="buscarFotos()" class="bg-purple-600 text-white font-bold px-4 rounded-xl">🔍</button>
-                <button onclick="abrirCamara()" class="bg-emerald-600 text-white font-bold px-4 rounded-xl">📷 Nueva</button>
+        <!-- ===== TAB 2: ENTRADAS ===== -->
+        <div id="tab-entradas" class="tab-content">
+            <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
+                    <span>🚛</span> Entradas Esperadas (Check & Trazabilidad)
+                </h2>
+                <div id="visor-repartos-hoy" class="space-y-4"></div>
             </div>
-            <div id="lista-fotos" class="space-y-3 max-h-[500px] overflow-y-auto"></div>
         </div>
-    </div>
 
-</main>
-
-<!-- TOAST -->
-<div id="toast-container"></div>
-
-<script>
-// ============================================================
-// CONFIGURACIÓN
-// ============================================================
-const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
-const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const API_URL = "https://untried-january-thinning.ngrok-free.dev";
-
-const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-
-const PRODUCTOS_CRITICOS = ['HUEVO','HUEVOS','PAN','BOLLO','FRUTA','FRUTAS','VERDURA','PESCADO','MARISCO','LECHE','CARNE','POLLO','TOMATE'];
-
-let cestaGlobal = [];
-let fotosGlobal = [];
-
-// ============================================================
-// TOAST
-// ============================================================
-function toast(mensaje, tipo = 'success') {
-    const container = document.getElementById('toast-container');
-    const t = document.createElement('div');
-    t.className = `toast toast-${tipo}`;
-    t.innerHTML = `${tipo === 'success' ? '✅' : '❌'} ${mensaje}`;
-    container.appendChild(t);
-    setTimeout(() => t.classList.add('show'), 50);
-    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
-}
-
-// ============================================================
-// PESTAÑAS
-// ============================================================
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.onclick = function() {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        this.classList.add('active');
-        document.getElementById(this.dataset.tab).classList.add('active');
-        if (this.dataset.tab === 'tab-trazabilidad') cargarFotos();
-    };
-});
-
-// ============================================================
-// FUNCIONES SUPABASE
-// ============================================================
-async function getFaltas() {
-    const { data, error } = await db.from('faltas_cocina').select('*').order('fecha_anotado', { ascending: false });
-    if (error) throw error;
-    return data;
-}
-
-async function addFalta(insumo) {
-    const { error } = await db.from('faltas_cocina').insert({ insumo });
-    if (error) throw error;
-}
-
-async function deleteFalta(id) {
-    const { error } = await db.from('faltas_cocina').delete().eq('id', id);
-    if (error) throw error;
-}
-
-async function getCesta() {
-    const { data, error } = await db.from('cesta_pedidos').select('*').neq('estado', 'RECIBIDO').neq('estado', 'AUSENTE');
-    if (error) throw error;
-    return data;
-}
-
-async function deleteItemCesta(id) {
-    const { error } = await db.from('cesta_pedidos').delete().eq('id', id);
-    if (error) throw error;
-}
-
-async function getProveedores() {
-    const { data, error } = await db.from('proveedores').select('*');
-    if (error) throw error;
-    return data;
-}
-
-// ============================================================
-// FOTOS - SUPABASE STORAGE
-// ============================================================
-async function getFotos(filtro = '') {
-    let query = db.from('fotos_trazabilidad').select('*').order('fecha_registro', { ascending: false });
-    if (filtro) query = query.ilike('producto', `%${filtro}%`);
-    const { data, error } = await query;
-    if (error) throw error;
-    return data;
-}
-
-async function saveFoto(producto, proveedor, url, obs = '') {
-    const { error } = await db.from('fotos_trazabilidad').insert({
-        producto: producto.toUpperCase(),
-        proveedor: proveedor || 'S/P',
-        url_foto: url,
-        observaciones: obs,
-        fecha_registro: new Date().toISOString()
-    });
-    if (error) throw error;
-}
-
-async function deleteFoto(id) {
-    const { error } = await db.from('fotos_trazabilidad').delete().eq('id', id);
-    if (error) throw error;
-}
-
-async function uploadFoto(base64, producto) {
-    const blob = await fetch(base64).then(r => r.blob());
-    const filename = `${producto}_${Date.now()}.jpg`;
-    const { error } = await db.storage.from('fotos_trazabilidad').upload(filename, blob, { contentType: 'image/jpeg' });
-    if (error) throw error;
-    const { data } = db.storage.from('fotos_trazabilidad').getPublicUrl(filename);
-    return data.publicUrl;
-}
-
-// ============================================================
-// GESTIÓN DE FALTAS
-// ============================================================
-async function registrarFalta() {
-    const input = document.getElementById('insumo-falta');
-    const valor = input.value.trim().toUpperCase();
-    if (!valor || valor.length < 3) return toast('Mínimo 3 letras', 'error');
-    try {
-        await addFalta(valor);
-        input.value = '';
-        toast(`⚠️ Falta añadida: ${valor}`);
-        renderFaltas();
-    } catch (e) { toast('Error al guardar', 'error'); }
-}
-
-async function renderFaltas() {
-    const container = document.getElementById('contenedor-faltas');
-    try {
-        const faltas = await getFaltas();
-        if (!faltas.length) { container.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No hay faltas</div>'; return; }
-        container.innerHTML = faltas.map(f => `
-            <div class="flex justify-between items-center bg-slate-50 border px-4 py-2 rounded-xl">
-                <span class="font-bold text-amber-600">⚠️ ${f.insumo}</span>
-                <button onclick="borrarFalta(${f.id})" class="text-xs bg-red-50 text-red-600 border px-3 py-1 rounded-lg hover:bg-red-600 hover:text-white">Eliminar</button>
+        <!-- ===== TAB 3: TRAZABILIDAD CON FOTOS ===== -->
+        <div id="tab-trazabilidad" class="tab-content">
+            <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 class="text-sm font-bold text-purple-600 uppercase tracking-wider flex items-center gap-2">
+                    <span>📸</span> Trazabilidad con Foto
+                </h2>
+                <p class="text-xs text-slate-500">Productos que requieren control fotográfico (huevos, panes, frutas...)</p>
+                
+                <div class="flex gap-2 items-center">
+                    <input type="text" id="search-trazabilidad" placeholder="Buscar producto..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-500 uppercase text-base shadow-inner">
+                    <button onclick="buscarTrazabilidad()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
+                        🔍 Buscar
+                    </button>
+                    <button onclick="abrirCamaraTrazabilidad()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
+                        📷 Nueva Foto
+                    </button>
+                </div>
+                
+                <div id="resultados-trazabilidad" class="space-y-3 mt-4 max-h-[500px] overflow-y-auto"></div>
             </div>
-        `).join('');
-    } catch (e) { console.error(e); }
-}
+        </div>
 
-async function borrarFalta(id) {
-    try {
-        await deleteFalta(id);
-        toast('Falta eliminada');
-        renderFaltas();
-    } catch (e) { toast('Error', 'error'); }
-}
+    </main>
 
-// ============================================================
-// ENTRADAS ESPERADAS
-// ============================================================
-async function renderEntradas() {
-    const container = document.getElementById('visor-entradas');
-    try {
-        cestaGlobal = await getCesta();
-        if (!cestaGlobal.length) { container.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No hay productos pendientes</div>'; return; }
-        
-        const grupos = {};
-        cestaGlobal.forEach(item => {
-            const prov = (item.proveedor_id || 'S/P').toUpperCase();
-            if (!grupos[prov]) grupos[prov] = [];
-            grupos[prov].push(item);
-        });
+    <div id="toast-container"></div>
 
-        let html = '';
-        Object.keys(grupos).sort().forEach(prov => {
-            const items = grupos[prov];
-            const dias = obtenerDiasReparto(prov);
-            const estado = obtenerEstadoDia(dias);
-            const tag = estado.estado === 'hoy' ? 'tag-hoy' : estado.estado === 'manana' ? 'tag-manana' : estado.estado === 'pasado' ? 'tag-pasado' : 'tag-no-reparto';
-            const tagText = estado.estado === 'hoy' ? '🟢 Reparte hoy' : estado.estado === 'manana' ? '🟡 Reparte mañana' : estado.estado === 'pasado' ? '🔴 ' + estado.mensaje : '⚪ Sin días';
-            
-            html += `<div class="border rounded-xl p-3 mb-3 bg-slate-50">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-bold">🏢 ${prov} <span class="text-xs font-normal">(${items.length} pendientes)</span></span>
-                    <span class="${tag} text-xs px-2 py-1 rounded-full">${tagText}</span>
-                </div>`;
-            
-            items.forEach(item => {
-                const critico = esProductoCritico(item.detalle);
-                html += `<div class="flex justify-between items-center py-2 border-b last:border-0 ${critico ? 'producto-critico px-2 rounded' : ''}">
-                    <span class="text-sm">📦 ${item.detalle} ${critico ? '⭐' : ''}</span>
-                    <div class="flex gap-2">
-                        <button onclick="marcarNoLlego('${item.id}')" class="bg-slate-200 hover:bg-red-200 text-xs px-3 py-1 rounded-xl">❌ No llegó</button>
-                        <button onclick="recibirProducto('${item.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 rounded-xl">📥 Recibir</button>
-                    </div>
-                </div>`;
-            });
-            html += `</div>`;
-        });
-        container.innerHTML = html;
-    } catch (e) { console.error(e); }
-}
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN
+        // ============================================================
+        const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+        const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+        const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
-function obtenerDiasReparto(provNombre) {
-    const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores') || '[]');
-    const p = proveedores.find(p => p.nombre === provNombre);
-    return p?.dias_reparto || [];
-}
+        const CONFIG_APPCC = {
+            CONGELADOR: { min: -30, max: -12, defecto: -18, alerta: "🚨 RECHAZO CRÍTICO: ¡CONGELADO FUERA DE MARGEN! (MÁX -12°C)" },
+            NEVERA:     { min: 0,   max: 8,   defecto: 4,   alerta: "⚠️ ALERTA: REFRIGERADO ALTO. VALORAR DEVOLUCIÓN (MÁX 8°C)" },
+            SECO:       { min: 5,   max: 25,  defecto: 20,  alerta: "⚠️ ADVERTENCIA: AMBIENTE MUY ALTO (MÁX RECOMENDADO 25°C)" }
+        };
 
-function obtenerEstadoDia(dias) {
-    const hoy = new Date().getDay();
-    if (!dias.length) return { estado: 'no-reparto', mensaje: '' };
-    if (dias.includes(hoy)) return { estado: 'hoy', mensaje: '' };
-    const prox = dias.filter(d => d > hoy);
-    const next = prox.length ? Math.min(...prox) : Math.min(...dias);
-    const diff = (next - hoy + 7) % 7;
-    if (diff === 1) return { estado: 'manana', mensaje: `(mañana ${DIAS_SEMANA[next]})` };
-    return { estado: 'pasado', mensaje: `(en ${diff} días)` };
-}
+        // ===== PRODUCTOS CRÍTICOS (para fotos) =====
+        const PRODUCTOS_CRITICOS = [
+            'HUEVO', 'HUEVOS',
+            'PAN', 'BOLLO', 'BOLLOS', 'PAN DE MOLDE',
+            'FRUTA', 'FRUTAS',
+            'VERDURA', 'VERDURAS',
+            'PESCADO', 'PESCADOS',
+            'MARISCO', 'MARISCOS',
+            'LECHE', 'LACTEO', 'LACTEOS',
+            'CARNE', 'CARNES',
+            'POLLO',
+            'TOMATE', 'TOMATES'
+        ];
 
-function esProductoCritico(detalle) {
-    if (!detalle) return false;
-    const limpio = detalle.replace(/^\[.*?\]\s*/, '').toUpperCase();
-    return PRODUCTOS_CRITICOS.some(c => limpio.includes(c));
-}
+        let cestaGlobal = [];
+        let alertaEnviadaHora = false;
 
-// ============================================================
-// RECIBIR PRODUCTO
-// ============================================================
-async function recibirProducto(id) {
-    try {
-        const item = cestaGlobal.find(c => c.id === id);
-        if (!item) return;
-        
-        // Eliminar de la cesta
-        await deleteItemCesta(id);
-        cestaGlobal = cestaGlobal.filter(c => c.id !== id);
-        
-        // Verificar si es crítico
-        if (esProductoCritico(item.detalle)) {
-            const prod = item.detalle.replace(/^\[.*?\]\s*/, '').trim();
-            const confirm = await Swal.fire({
-                title: '📸 Producto Crítico',
-                text: `"${prod}" requiere foto. ¿Quieres tomarla ahora?`,
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: '📷 Tomar Foto',
-                cancelButtonText: 'Ahora no'
-            });
-            if (confirm.isConfirmed) {
-                await abrirCamara(prod, item.proveedor_id);
+        // ============================================================
+        // UTILIDADES
+        // ============================================================
+        function lanzarToast(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${tipo}`;
+            let icono = '✅';
+            if (tipo === 'error') icono = '❌';
+            if (tipo === 'warning') icono = '⚠️';
+            toast.innerHTML = `<span>${icono}</span> <span>${mensaje}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 50);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function actualizarEstadoRed(online) {
+            const badge = document.getElementById('badge-red');
+            if (!badge) return;
+            if (online) {
+                badge.innerHTML = "🟢 ONLINE";
+                badge.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold";
+                const ahora = new Date();
+                document.getElementById('timestamp-sincro').innerText = `Última actualización: ${ahora.toTimeString().split(' ')[0]}`;
+            } else {
+                badge.innerHTML = "📡 OFFLINE";
+                badge.className = "bg-amber-500 text-white text-xs px-2.5 py-2 rounded-xl border border-amber-600 font-black animate-pulse shadow-sm";
             }
         }
-        
-        toast('✅ Producto recibido');
-        renderEntradas();
-    } catch (e) { toast('Error', 'error'); }
-}
 
-async function marcarNoLlego(id) {
-    try {
-        const item = cestaGlobal.find(c => c.id === id);
-        if (!item) return;
-        const prod = item.detalle.replace(/^\[.*?\]\s*/, '').trim();
-        const confirm = await Swal.fire({ title: '¿Confirmar?', text: `Marcar "${prod}" como no entregado`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Sí' });
-        if (!confirm.isConfirmed) return;
-        
-        await deleteItemCesta(id);
-        cestaGlobal = cestaGlobal.filter(c => c.id !== id);
-        await addFalta(`${prod} (NO ENTREGADO)`);
-        toast('⚠️ Incidencia registrada', 'error');
-        renderEntradas();
-        renderFaltas();
-    } catch (e) { toast('Error', 'error'); }
-}
-
-// ============================================================
-// ENTRADA DIRECTA
-// ============================================================
-async function abrirEntradaDirecta() {
-    const { value: prod } = await Swal.fire({ title: '➕ Compra Directa', input: 'text', inputLabel: 'Producto', inputPlaceholder: 'Ej: HARINA...', showCancelButton: true });
-    if (!prod) return;
-    const prov = prompt('Proveedor (opcional):', 'S/P') || 'S/P';
-    
-    // Si es crítico, ofrecer foto
-    if (esProductoCritico(prod)) {
-        const confirm = await Swal.fire({ title: '📸 Producto Crítico', text: `"${prod}" requiere foto`, icon: 'info', showCancelButton: true, confirmButtonText: '📷 Tomar Foto', cancelButtonText: 'Ahora no' });
-        if (confirm.isConfirmed) await abrirCamara(prod, prov);
-    }
-    toast('✅ Producto registrado');
-}
-
-// ============================================================
-// 📸 CÁMARA Y FOTOS (SIN ERRORES)
-// ============================================================
-let stream = null;
-let fotoData = null;
-let productoActual = '';
-let proveedorActual = '';
-
-async function abrirCamara(producto = '', proveedor = '') {
-    productoActual = producto || (await Swal.fire({ title: 'Producto', input: 'text', inputPlaceholder: 'Ej: HUEVOS...', showCancelButton: true })).value || '';
-    if (!productoActual) return;
-    proveedorActual = proveedor || (await Swal.fire({ title: 'Proveedor', input: 'text', inputPlaceholder: 'Opcional', showCancelButton: true })).value || 'S/P';
-    
-    try {
-        const { value: foto } = await Swal.fire({
-            title: `📸 ${productoActual}`,
-            html: `
-                <video id="video-camara" autoplay playsinline style="width:100%; max-height:300px; background:#0f172a; border-radius:12px;"></video>
-                <div class="flex gap-2 justify-center mt-3">
-                    <button id="btn-capturar" class="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold">📸 Capturar</button>
-                    <button id="btn-cambiar" class="bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold">🔄 Girar</button>
-                </div>
-                <div id="preview-container" style="display:none;" class="mt-3">
-                    <img id="preview-img" style="width:100%; max-height:200px; border-radius:12px; border:2px solid #10b981;">
-                    <div class="flex gap-2 justify-center mt-2">
-                        <button id="btn-confirmar" class="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold">✅ Confirmar</button>
-                        <button id="btn-retomar" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-xl font-bold">🔄 Reintentar</button>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <textarea id="obs-foto" rows="2" class="w-full bg-slate-50 border rounded-xl px-4 py-2 text-sm" placeholder="Observaciones..."></textarea>
-                </div>
-            `,
-            showConfirmButton: false,
-            showCancelButton: true,
-            cancelButtonText: 'Cancelar',
-            didOpen: async () => {
-                await iniciarCamara();
-                document.getElementById('btn-capturar').onclick = capturarFoto;
-                document.getElementById('btn-cambiar').onclick = cambiarCamara;
-                document.getElementById('btn-confirmar').onclick = confirmarFoto;
-                document.getElementById('btn-retomar').onclick = retomarFoto;
-            },
-            willClose: () => { if (stream) stream.getTracks().forEach(t => t.stop()); }
-        });
-    } catch (e) { console.error(e); toast('Error con la cámara', 'error'); }
-}
-
-let facing = 'environment';
-
-async function iniciarCamara() {
-    try {
-        if (stream) stream.getTracks().forEach(t => t.stop());
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 640 } }, audio: false });
-        document.getElementById('video-camara').srcObject = stream;
-    } catch (e) { toast('No se pudo acceder a la cámara', 'error'); }
-}
-
-function cambiarCamara() {
-    facing = facing === 'environment' ? 'user' : 'environment';
-    iniciarCamara();
-}
-
-function capturarFoto() {
-    const video = document.getElementById('video-camara');
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    fotoData = canvas.toDataURL('image/jpeg', 0.9);
-    document.getElementById('preview-img').src = fotoData;
-    document.getElementById('preview-container').style.display = 'block';
-    document.getElementById('video-camara').style.display = 'none';
-    document.getElementById('btn-capturar').style.display = 'none';
-    document.getElementById('btn-cambiar').style.display = 'none';
-}
-
-function retomarFoto() {
-    document.getElementById('preview-container').style.display = 'none';
-    document.getElementById('video-camara').style.display = 'block';
-    document.getElementById('btn-capturar').style.display = 'inline-block';
-    document.getElementById('btn-cambiar').style.display = 'inline-block';
-    fotoData = null;
-}
-
-async function confirmarFoto() {
-    if (!fotoData) return;
-    try {
-        const obs = document.getElementById('obs-foto')?.value || '';
-        Swal.fire({ title: '📡 Subiendo...', allowOutsideClick: false, showConfirmButton: false });
-        const url = await uploadFoto(fotoData, productoActual);
-        await saveFoto(productoActual, proveedorActual, url, obs);
-        Swal.close();
-        toast(`✅ Foto de ${productoActual} guardada`);
-        cargarFotos();
-        Swal.close();
-    } catch (e) { toast('Error al guardar', 'error'); }
-}
-
-// ============================================================
-// LISTA DE FOTOS
-// ============================================================
-async function cargarFotos() {
-    const container = document.getElementById('lista-fotos');
-    try {
-        fotosGlobal = await getFotos();
-        if (!fotosGlobal.length) {
-            container.innerHTML = '<div class="text-center text-slate-400 py-8"><div class="text-4xl">📷</div><p>No hay fotos</p></div>';
-            return;
+        function esProductoCritico(producto) {
+            if (!producto) return false;
+            const upper = producto.toUpperCase();
+            return PRODUCTOS_CRITICOS.some(critico => upper.includes(critico));
         }
-        container.innerHTML = fotosGlobal.map(f => `
-            <div class="flex gap-3 bg-slate-50 border rounded-xl p-3 items-start">
-                <img src="${f.url_foto}" class="foto-thumb" onclick="window.open('${f.url_foto}','_blank')">
-                <div class="flex-1">
-                    <div class="font-bold">${f.producto} ${esProductoCritico(f.producto) ? '⭐' : ''}</div>
-                    <div class="text-xs text-slate-500">${f.proveedor} · ${new Date(f.fecha_registro).toLocaleString()}</div>
-                    ${f.observaciones ? `<div class="text-xs text-slate-600">📝 ${f.observaciones}</div>` : ''}
-                </div>
-                <button onclick="eliminarFoto('${f.id}')" class="text-red-500 text-sm bg-red-50 px-2 py-1 rounded-lg">🗑️</button>
-            </div>
-        `).join('');
-    } catch (e) { console.error(e); }
-}
 
-function buscarFotos() {
-    const search = document.getElementById('search-foto').value.trim().toUpperCase();
-    if (!search) return cargarFotos();
-    const filtradas = fotosGlobal.filter(f => f.producto.toUpperCase().includes(search) || (f.proveedor && f.proveedor.toUpperCase().includes(search)));
-    const container = document.getElementById('lista-fotos');
-    if (!filtradas.length) { container.innerHTML = '<div class="text-center text-slate-400 py-4">No hay coincidencias</div>'; return; }
-    container.innerHTML = filtradas.map(f => `
-        <div class="flex gap-3 bg-slate-50 border rounded-xl p-3 items-start">
-            <img src="${f.url_foto}" class="foto-thumb" onclick="window.open('${f.url_foto}','_blank')">
-            <div class="flex-1">
-                <div class="font-bold">${f.producto}</div>
-                <div class="text-xs text-slate-500">${f.proveedor} · ${new Date(f.fecha_registro).toLocaleString()}</div>
-            </div>
-            <button onclick="eliminarFoto('${f.id}')" class="text-red-500 text-sm bg-red-50 px-2 py-1 rounded-lg">🗑️</button>
-        </div>
-    `).join('');
-}
+        function obtenerDiasReparto(proveedorNombre) {
+            const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+            const prov = proveedores.find(p => p.nombre === proveedorNombre);
+            if (prov && prov.dias_reparto && Array.isArray(prov.dias_reparto)) {
+                return prov.dias_reparto;
+            }
+            return [];
+        }
 
-async function eliminarFoto(id) {
-    const confirm = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Sí' });
-    if (!confirm.isConfirmed) return;
-    try {
-        await deleteFoto(id);
-        toast('Foto eliminada');
-        cargarFotos();
-    } catch (e) { toast('Error', 'error'); }
-}
+        function obtenerEstadoDiaReparto(diasReparto) {
+            const hoy = new Date().getDay();
+            if (diasReparto.length === 0) return { estado: 'no-reparto', mensaje: 'Sin días asignados' };
+            if (diasReparto.includes(hoy)) return { estado: 'hoy', mensaje: 'Reparte hoy 🚚' };
+            const proximos = diasReparto.filter(d => d > hoy);
+            let proximoDia = proximos.length > 0 ? Math.min(...proximos) : Math.min(...diasReparto);
+            const diff = (proximoDia - hoy + 7) % 7;
+            if (diff === 1) return { estado: 'manana', mensaje: `Reparte mañana (${DIAS_SEMANA[proximoDia]})` };
+            else if (diff === 0) return { estado: 'hoy', mensaje: 'Reparte hoy' };
+            else return { estado: 'pasado', mensaje: `Próximo: ${DIAS_SEMANA[proximoDia]} (en ${diff} días)` };
+        }
 
-// ============================================================
-// INICIALIZAR
-// ============================================================
-async function init() {
-    try {
-        const provs = await getProveedores();
-        localStorage.setItem('fredware_proveedores', JSON.stringify(provs));
-    } catch (e) {}
-    await renderFaltas();
-    await renderEntradas();
-    await cargarFotos();
-    setInterval(async () => {
-        await renderEntradas();
-        await renderFaltas();
-    }, 30000);
-}
+        function formatearFecha(fechaStr) {
+            if (!fechaStr) return 'S/F';
+            try {
+                const d = new Date(fechaStr);
+                if (!isNaN(d)) {
+                    return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                }
+                return fechaStr;
+            } catch { return fechaStr; }
+        }
 
-// Exponer funciones globales
-window.registrarFalta = registrarFalta;
-window.borrarFalta = borrarFalta;
-window.recibirProducto = recibirProducto;
-window.marcarNoLlego = marcarNoLlego;
-window.abrirEntradaDirecta = abrirEntradaDirecta;
-window.abrirCamara = abrirCamara;
-window.buscarFotos = buscarFotos;
-window.eliminarFoto = eliminarFoto;
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
-init();
-</script>
+        // ============================================================
+        // PESTAÑAS
+        // ============================================================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+                
+                if (this.dataset.tab === 'tab-trazabilidad') {
+                    cargarFotosTrazabilidad();
+                }
+            });
+        });
+
+        // ============================================================
+        // FUNCIONES SUPABASE
+        // ============================================================
+        async function obtenerFaltas() {
+            const { data, error } = await db_nube
+                .from('faltas_cocina')
+                .select('*')
+                .order('fecha_anotado', { ascending: false });
+            if (error) throw error;
+            return data;
+        }
+
+        async function agregarFalta(insumo) {
+            const { error } = await db_nube
+                .from('faltas_cocina')
+                .insert({ insumo: insumo });
+            if (error) throw error;
+        }
+
+        async function eliminarFalta(id) {
+            const { error } = await db_nube
+                .from('faltas_cocina')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+        }
+
+        async function obtenerCesta() {
+            const { data, error } = await db_nube
+                .from('cesta_pedidos')
+                .select('*')
+                .neq('estado', 'RECIBIDO')
+                .neq('estado', 'AUSENTE')
+                .order('fecha_registro', { ascending: true });
+            if (error) throw error;
+            return data;
+        }
+
+        async function actualizarItemCesta(id, cambios) {
+            const { error } = await db_nube
+                .from('cesta_pedidos')
+                .update(cambios)
+                .eq('id', id);
+            if (error) throw error;
+        }
+
+        async function eliminarItemCesta(id) {
+            const { error } = await db_nube
+                .from('cesta_pedidos')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+        }
+
+        async function obtenerProveedores() {
+            const { data, error } = await db_nube
+                .from('proveedores')
+                .select('*')
+                .order('nombre', { ascending: true });
+            if (error) throw error;
+            return data;
+        }
+
+        // ============================================================
+        // FUNCIONES PARA FOTOS (NUEVO)
+        // ============================================================
+        async function obtenerFotosTrazabilidad(productoFiltro = null) {
+            try {
+                let query = db_nube
+                    .from('fotos_trazabilidad')
+                    .select('*')
+                    .order('fecha_registro', { ascending: false });
+                
+                if (productoFiltro) {
+                    query = query.ilike('producto', `%${productoFiltro}%`);
+                }
+                
+                const { data, error } = await query;
+                if (error) {
+                    console.error('Error en obtenerFotosTrazabilidad:', error);
+                    // Si la tabla no existe, devolver array vacío
+                    if (error.code === 'PGRST205') {
+                        lanzarToast('⚠️ La tabla fotos_trazabilidad no existe. Crea la tabla en Supabase.', 'warning');
+                        return [];
+                    }
+                    throw error;
+                }
+                return data || [];
+            } catch (error) {
+                console.error('Error obteniendo fotos:', error);
+                return [];
+            }
+        }
+
+        async function guardarFotoTrazabilidad(producto, proveedor, urlFoto, observaciones = '', qrTexto = '') {
+            try {
+                const { error } = await db_nube
+                    .from('fotos_trazabilidad')
+                    .insert({
+                        producto: producto.toUpperCase(),
+                        proveedor: proveedor || 'S/P',
+                        url_foto: urlFoto,
+                        observaciones: observaciones,
+                        qr_texto: qrTexto,
+                        fecha_registro: new Date().toISOString()
+                    });
+                if (error) throw error;
+                return true;
+            } catch (error) {
+                console.error('Error guardando foto:', error);
+                lanzarToast('Error al guardar foto en la nube.', 'error');
+                return false;
+            }
+        }
+
+        async function eliminarFotoTrazabilidad(id) {
+            try {
+                const { error } = await db_nube
+                    .from('fotos_trazabilidad')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                return true;
+            } catch (error) {
+                console.error('Error eliminando foto:', error);
+                lanzarToast('Error al eliminar foto.', 'error');
+                return false;
+            }
+        }
+
+        async function subirFotoASupabase(base64Data, producto) {
+            try {
+                const blob = await fetch(base64Data).then(r => r.blob());
+                const timestamp = Date.now();
+                const fileName = `${producto.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.jpg`;
+                
+                const { error: uploadError } = await db_nube.storage
+                    .from('fotos_trazabilidad')
+                    .upload(fileName, blob, {
+                        contentType: 'image/jpeg',
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    console.error('Error subiendo a storage:', uploadError);
+                    // Si el bucket no existe, intentar crear el bucket automáticamente (no siempre funciona)
+                    if (uploadError.message.includes('bucket not found')) {
+                        lanzarToast('⚠️ El bucket "fotos_trazabilidad" no existe. Crea el bucket en Storage de Supabase.', 'warning');
+                    }
+                    throw uploadError;
+                }
+
+                const { data: urlData } = db_nube.storage
+                    .from('fotos_trazabilidad')
+                    .getPublicUrl(fileName);
+
+                return urlData.publicUrl;
+            } catch (error) {
+                console.error('Error subiendo foto:', error);
+                throw error;
+            }
+        }
+
+        // ============================================================
+        // GESTIÓN DE FALTAS
+        // ============================================================
+        async function cargarDatosIniciales() {
+            try {
+                const [cesta, faltas, proveedores] = await Promise.all([
+                    obtenerCesta(),
+                    obtenerFaltas(),
+                    obtenerProveedores()
+                ]);
+                cestaGlobal = cesta;
+                localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
+                renderFaltasLocales();
+                renderCheckMercancia(cestaGlobal);
+                actualizarEstadoRed(true);
+            } catch (error) {
+                console.error("Error cargando datos iniciales:", error);
+                actualizarEstadoRed(false);
+                cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
+                renderFaltasLocales();
+                renderCheckMercancia(cestaGlobal);
+                lanzarToast("Error al cargar datos de la nube.", "error");
+            }
+        }
+
+        function suscribirseCambios() {
+            db_nube
+                .channel('faltas-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'faltas_cocina' }, () => {
+                    renderFaltasLocales();
+                })
+                .subscribe();
+
+            db_nube
+                .channel('cesta-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'cesta_pedidos' }, async () => {
+                    cestaGlobal = await obtenerCesta();
+                    renderCheckMercancia(cestaGlobal);
+                })
+                .subscribe();
+
+            // Suscripción a fotos_trazabilidad
+            db_nube
+                .channel('fotos-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'fotos_trazabilidad' }, () => {
+                    const tabActiva = document.querySelector('.tab-content.active');
+                    if (tabActiva && tabActiva.id === 'tab-trazabilidad') {
+                        cargarFotosTrazabilidad();
+                    }
+                })
+                .subscribe();
+        }
+
+        async function registrarFaltaCocina() {
+            const input = document.getElementById('insumo-falta');
+            const valor = input.value.trim().toUpperCase();
+            if(!valor) return;
+
+            if(valor.length < 3) {
+                Swal.fire({ icon: 'warning', title: 'Texto muy corto', text: 'Escribe al menos 3 letras para registrar la falta.', confirmButtonColor: '#0284c7' });
+                return;
+            }
+
+            try {
+                const faltas = await obtenerFaltas();
+                if(faltas.some(f => f.insumo === valor)) {
+                    lanzarToast("Insumo ya anotado anteriormente.", "warning");
+                    input.value = '';
+                    return;
+                }
+
+                await agregarFalta(valor);
+                input.value = '';
+                lanzarToast(`⚠️ Falta añadida: ${valor}`);
+                sincronizarConOficina('faltas', await obtenerFaltas());
+            } catch (error) {
+                lanzarToast("Error al registrar falta en la nube.", "error");
+            }
+        }
+
+        function activarDictadoPorVoz() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                lanzarToast("Este navegador o dispositivo no soporta dictado por voz.", "error");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            const btnMicro = document.getElementById('btn-micro-voz');
+            const inputFalta = document.getElementById('insumo-falta');
+
+            recognition.lang = 'es-ES';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                btnMicro.className = "bg-red-500 border border-red-700 text-xl p-3 rounded-xl shadow-sm animate-pulse flex items-center justify-center h-[50px] w-[50px]";
+                lanzarToast("🎙️ Escuchando... Habla ahora", "warning");
+            };
+
+            recognition.onerror = (event) => {
+                console.error(event.error);
+                lanzarToast("No se pudo abrir el micro. Revisa permisos.", "error");
+                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
+            };
+
+            recognition.onend = () => {
+                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
+            };
+
+            recognition.onresult = (event) => {
+                const textoDictado = event.results[0][0].transcript;
+                if (textoDictado) {
+                    const limpio = textoDictado.trim().toUpperCase().replace(/\.$/, '');
+                    inputFalta.value = limpio;
+                    registrarFaltaCocina();
+                }
+            };
+
+            recognition.start();
+        }
+
+        async function renderFaltasLocales() {
+            try {
+                const faltas = await obtenerFaltas();
+                const container = document.getElementById('contenedor-faltas-local');
+                if(!container) return; container.innerHTML = '';
+                if(faltas.length === 0) {
+                    container.innerHTML = `<div class="text-center italic text-slate-400 text-xs py-2">No hay faltas apuntadas hoy.</div>`;
+                    return;
+                }
+                faltas.forEach((item) => {
+                    container.innerHTML += `
+                        <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
+                            <span class="text-sm font-bold text-amber-600">⚠️ ${item.insumo}</span>
+                            <button onclick="borrarFaltaLocal(${item.id})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Error renderizando faltas:", error);
+            }
+        }
+
+        async function borrarFaltaLocal(id) {
+            try {
+                await eliminarFalta(id);
+                lanzarToast("Falta eliminada.");
+                sincronizarConOficina('faltas', await obtenerFaltas());
+            } catch (error) {
+                lanzarToast("Error al eliminar falta.", "error");
+            }
+        }
+
+        // ============================================================
+        // SINCRONIZACIÓN CON NGROK
+        // ============================================================
+        async function sincronizarConOficina(endpoint, datos) {
+            try {
+                await fetch(`${API_URL}/api/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify(datos)
+                });
+                actualizarEstadoRed(true);
+            } catch (error) { 
+                console.error("Error pasivo en red local:", error); 
+                actualizarEstadoRed(false);
+            }
+        }
+
+        // ============================================================
+        // RECEPCIÓN Y TRAZABILIDAD
+        // ============================================================
+        function evaluarAlertaTemperatura() {
+            const temp = parseFloat(document.getElementById('swal-temp').value);
+            const alertaBox = document.getElementById('swal-alerta-temp');
+            const modo = document.getElementById('swal-modo-conservacion').value;
+            if (isNaN(temp)) { alertaBox.style.display = 'none'; return; }
+            const limites = CONFIG_APPCC[modo];
+            if (temp > limites.max) {
+                alertaBox.innerHTML = limites.alerta;
+                alertaBox.className = "p-2.5 bg-red-100 text-red-700 border border-red-300 rounded-xl text-xs font-black text-center animate-pulse shadow-sm";
+                alertaBox.style.display = 'block';
+            } else {
+                alertaBox.style.display = 'none';
+            }
+        }
+
+        function cambiarTipoConservacion(tipo) {
+            const btnNevera = document.getElementById('btn-cons-nevera');
+            const btnConge = document.getElementById('btn-cons-conge');
+            const btnSeco = document.getElementById('btn-cons-seco');
+            const inputModo = document.getElementById('swal-modo-conservacion');
+            const inputTemp = document.getElementById('swal-temp');
+
+            inputModo.value = tipo;
+            [btnNevera, btnConge, btnSeco].forEach(b => b.className = "py-2 rounded-xl font-bold text-xs border bg-slate-50 text-slate-500 border-slate-200 transition-all");
+
+            if(tipo === 'CONGELADOR') {
+                btnConge.className = "py-2 rounded-xl font-black text-xs bg-sky-600 text-white shadow-sm";
+                inputTemp.value = CONFIG_APPCC.CONGELADOR.defecto;
+            } else if(tipo === 'SECO') {
+                btnSeco.className = "py-2 rounded-xl font-black text-xs bg-amber-500 text-white shadow-sm";
+                inputTemp.value = CONFIG_APPCC.SECO.defecto;
+            } else {
+                btnNevera.className = "py-2 rounded-xl font-black text-xs bg-emerald-600 text-white shadow-sm";
+                inputTemp.value = CONFIG_APPCC.NEVERA.defecto;
+            }
+            evaluarAlertaTemperatura();
+        }
+
+        async function abrirFlujoRecepcion(detalleCompleto, proveedor, uIdUnique) {
+            let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
+            let productoLimpio = detalleCompleto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+            let cantidadEsperada = 1;
+            let matchCant = detalleCompleto.match(/^\[(\d+)\s*\w+\]/);
+            if(matchCant) { cantidadEsperada = parseInt(matchCant[1]); }
+
+            let conservacionInicial = "NEVERA";
+            if (productoLimpio.includes("CONGELADO") || productoLimpio.includes("CONGE") || productoLimpio.includes("HELADO")) {
+                conservacionInicial = "CONGELADOR";
+            } else if (productoLimpio.includes("HARINA") || productoLimpio.includes("SECO") || productoLimpio.includes("ACEITE") || productoLimpio.includes("LATA") || productoLimpio.includes("BOTE")) {
+                conservacionInicial = "SECO";
+            }
+
+            const { value: formValues } = await Swal.fire({
+                title: `📥 Recibir: ${productoLimpio}`,
+                background: '#ffffff', color: '#0f172a', confirmButtonColor: '#10b981', cancelButtonColor: '#64748b', showCancelButton: true, confirmButtonText: 'Procesar Entrada', cancelButtonText: 'Cancelar',
+                html: `
+                    <div class="text-left space-y-3 font-sans px-1">
+                        <div id="swal-alerta-temp" style="display:none;"></div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de Conservación:</label>
+                            <div class="grid grid-cols-3 gap-1.5 mt-1">
+                                <button type="button" id="btn-cons-nevera" onclick="cambiarTipoConservacion('NEVERA')">❄️ Nevera</button>
+                                <button type="button" id="btn-cons-conge" onclick="cambiarTipoConservacion('CONGELADOR')">🥶 Conge</button>
+                                <button type="button" id="btn-cons-seco" onclick="cambiarTipoConservacion('SECO')">📦 Ambiente</button>
+                            </div>
+                            <input id="swal-modo-conservacion" type="hidden" value="${conservacionInicial}">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Temperatura Real (°C):</label>
+                            <input id="swal-temp" type="number" step="0.1" oninput="evaluarAlertaTemperatura()" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-lg shadow-inner">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Kilos/Unidades Reales:</label>
+                                <input id="swal-cantidad" type="number" min="1" step="1" value="${cantidadEsperada}" class="w-full bg-slate-50 text-slate-900 font-bold text-center border border-slate-300 rounded-xl py-2.5 text-base shadow-inner">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-sky-600 uppercase tracking-wider mb-1">Nº Pegatinas (Brother):</label>
+                                <input id="swal-stickers" type="number" min="0" value="1" class="w-full bg-sky-50 text-slate-900 font-bold text-center border border-sky-300 rounded-xl py-2.5 text-base shadow-inner">
+                            </div>
+                        </div>
+                    </div>
+                `,
+                didOpen: () => { cambiarTipoConservacion(conservacionInicial); },
+                preConfirm: () => {
+                    const cantReal = parseInt(document.getElementById('swal-cantidad').value) || 0;
+                    if(cantReal <= 0) {
+                        Swal.showValidationMessage('⚠️ Error: La cantidad ingresada debe ser mayor que cero.');
+                        return false;
+                    }
+                    return {
+                        temperatura: parseFloat(document.getElementById('swal-temp').value),
+                        cantidad: cantReal,
+                        stickers: parseInt(document.getElementById('swal-stickers').value) || 0,
+                        conservacion: document.getElementById('swal-modo-conservacion').value
+                    }
+                }
+            });
+
+            if (!formValues) return;
+
+            let autorizador = "SISTEMA";
+            const limitesRef = CONFIG_APPCC[formValues.conservacion];
+            if (formValues.temperatura > limitesRef.max) {
+                const confirmacionCritica = await Swal.fire({
+                    title: '🚨 ADVERTENCIA APPCC',
+                    text: `Mercancía fuera de rango térmico para ${formValues.conservacion}. Introduce tu NOMBRE para firmar la autorización:`,
+                    input: 'text',
+                    placeholder: 'Ej: Carlos, Daniela...',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Firmar y Forzar Entrada',
+                    cancelButtonText: 'Rechazar bulto',
+                    preConfirm: (value) => {
+                        if (!value.trim()) { Swal.showValidationMessage('⚠️ Es obligatorio firmar con tu nombre para forzar la entrada.'); }
+                        return value.trim().toUpperCase();
+                    }
+                });
+                if (!confirmacionCritica.isConfirmed) return;
+                autorizador = confirmacionCritica.value;
+            }
+
+            const ahora = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
+
+            let huboRotura = false;
+            let cantidadFaltante = 0;
+            let faltasLocales = await obtenerFaltas();
+            
+            if(idxGlobal !== -1) {
+                if(formValues.cantidad < cantidadEsperada) {
+                    huboRotura = true;
+                    cantidadFaltante = cantidadEsperada - formValues.cantidad;
+                }
+                await eliminarItemCesta(cestaGlobal[idxGlobal].id);
+                cestaGlobal.splice(idxGlobal, 1);
+            }
+
+            faltasLocales = faltasLocales.filter(f => f.insumo !== productoLimpio);
+            if(huboRotura) {
+                await agregarFalta(`${productoLimpio} (FALTARON ${cantidadFaltante} UNID DEL PEDIDO)`);
+            }
+
+            const datosBaseDatos = {
+                producto: productoLimpio,
+                temperatura: formValues.temperatura,
+                conservacion: formValues.conservacion,
+                proveedor: proveedor,
+                cantidad_total: formValues.cantidad,
+                fecha_registro: ahora.toISOString(),
+                autorizado_por: autorizador
+            };
+
+            let loteEtiquetas = [];
+            if (formValues.stickers > 0) {
+                for (let i = 1; i <= formValues.stickers; i++) {
+                    const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
+                    loteEtiquetas.push({
+                        producto: productoLimpio,
+                        unidad: formValues.conservacion === "CONGELADOR" ? `🥶 CÁMARA CONGE (${i}/${formValues.stickers})` : `${i} DE ${formValues.stickers}`,
+                        fecha: formValues.conservacion === "CONGELADOR" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
+                        texto_qr: `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}|FIRMA:${autorizador}`
+                    });
+                }
+            }
+
+            Swal.fire({ title: '📡 Sincronizando albarán...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
+
+            try {
+                const resBD = await fetch(`${API_URL}/guardar_mercancia`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosBaseDatos) });
+                if (!resBD.ok) throw new Error("Error en grabación SQL.");
+
+                if (loteEtiquetas.length > 0) {
+                    try {
+                        await fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: loteEtiquetas }) });
+                    } catch (e) {
+                        lanzarToast("Bulto guardado. Impresora Brother desconectada.", "warning");
+                    }
+                }
+
+                // Si es producto crítico, ofrecer foto
+                if (esProductoCritico(productoLimpio)) {
+                    Swal.close();
+                    const tomarFoto = await Swal.fire({
+                        title: '📸 Producto Crítico',
+                        text: `"${productoLimpio}" requiere control fotográfico. ¿Quieres tomar una foto ahora?`,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonColor: '#10b981',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: '📷 Tomar Foto',
+                        cancelButtonText: 'Ahora no'
+                    });
+                    
+                    if (tomarFoto.isConfirmed) {
+                        await abrirCamaraTrazabilidad(productoLimpio, proveedor);
+                    }
+                }
+
+                await sincronizarConOficina('cesta', cestaGlobal);
+                await sincronizarConOficina('faltas', await obtenerFaltas());
+
+                lanzarToast("Albarán procesado correctamente.");
+                Swal.close();
+                renderFaltasLocales();
+                renderCheckMercancia(cestaGlobal);
+
+            } catch (error) {
+                Swal.fire({ title: '❌ ERROR DE RED', text: 'El PC central de la oficina está apagado.', icon: 'error' });
+            }
+        }
+
+        // ============================================================
+        // RECEPCIÓN MASIVA
+        // ============================================================
+        async function recibirTodoElProveedor(provNombre) {
+            let bultosPendientes = cestaGlobal.filter(item => (item.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && (item.estado === "PENDIENTE" || item.estado === "PREPARADO"));
+            if(bultosPendientes.length === 0) return;
+
+            const { value: tempMasiva } = await Swal.fire({
+                title: `⚡ Recepción Rápida: ${provNombre}`,
+                text: `Introduce la temperatura general del camión (°C) para procesar las ${bultosPendientes.length} líneas juntas:`,
+                input: 'number',
+                inputAttributes: { step: '0.1' },
+                inputValue: 4.0,
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                confirmButtonText: 'Validar Camión',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (tempMasiva === undefined || tempMasiva === "") return;
+            const tFloat = parseFloat(tempMasiva);
+
+            let autorizador = "SISTEMA";
+            if(tFloat > 8.0) {
+                const confCritica = await Swal.fire({
+                    title: '🚨 CRÍTICO: FUERA DE RANGO',
+                    text: `La temperatura de ${tFloat}°C rompe el APPCC. Introduce el NOMBRE de la persona que autoriza la descarga:`,
+                    input: 'text',
+                    placeholder: 'Ej: Carlos, Daniela...',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Forzar entrada y Firmar',
+                    cancelButtonText: 'Rechazar albarán',
+                    preConfirm: (value) => {
+                        if (!value.trim()) { Swal.showValidationMessage('⚠️ Debes introducir un nombre para firmar la excepción.'); }
+                        return value.trim().toUpperCase();
+                    }
+                });
+                if(!confCritica.isConfirmed) return;
+                autorizador = confCritica.value;
+            }
+
+            Swal.fire({ title: '📡 Procesando lote...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
+
+            const ahora = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const fechaString = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()}`;
+
+            let arrayLoteMercancias = [];
+            let loteCompletoEtiquetas = [];
+            let productosCriticos = [];
+
+            for (let item of bultosPendientes) {
+                let idx = cestaGlobal.findIndex(c => c.id === item.id);
+                if (idx !== -1) {
+                    await eliminarItemCesta(item.id);
+                    cestaGlobal.splice(idx, 1);
+                }
+
+                let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+                
+                if (esProductoCritico(productoLimpio)) {
+                    productosCriticos.push({ producto: productoLimpio, proveedor: provNombre });
+                }
+
+                arrayLoteMercancias.push({
+                    producto: productoLimpio,
+                    temperatura: tFloat,
+                    conservacion: "NEVERA",
+                    proveedor: provNombre,
+                    cantidad_total: 1,
+                    fecha_registro: ahora.toISOString(),
+                    autorizado_por: autorizador
+                });
+
+                loteCompletoEtiquetas.push({
+                    producto: productoLimpio,
+                    unidad: `1 DE 1`,
+                    fecha: `RECP: ${fechaString}`,
+                    texto_qr: `PROD:${productoLimpio}|LOTE:MASIVO|F.ENTRADA:${fechaString}|FIRMA:${autorizador}`
+                });
+            }
+
+            try {
+                await fetch(`${API_URL}/guardar_mercancia_lote`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ lote: arrayLoteMercancias }) 
+                });
+            } catch(e) {
+                for(let datosIndividual of arrayLoteMercancias) {
+                    await fetch(`${API_URL}/guardar_mercancia`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosIndividual) });
+                }
+            }
+
+            if (loteCompletoEtiquetas.length > 0) {
+                fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: loteCompletoEtiquetas }) }).catch(() => {});
+            }
+
+            await sincronizarConOficina('cesta', cestaGlobal);
+
+            lanzarToast("Camión procesado por lote.");
+            Swal.close();
+            renderFaltasLocales();
+            renderCheckMercancia(cestaGlobal);
+
+            if (productosCriticos.length > 0) {
+                const tomarFotos = await Swal.fire({
+                    title: '📸 Productos Críticos',
+                    text: `Hay ${productosCriticos.length} productos que requieren control fotográfico. ¿Quieres tomar fotos ahora?`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '📷 Tomar Fotos',
+                    cancelButtonText: 'Ahora no'
+                });
+                
+                if (tomarFotos.isConfirmed) {
+                    for (let p of productosCriticos) {
+                        await abrirCamaraTrazabilidad(p.producto, p.proveedor);
+                    }
+                }
+            }
+        }
+
+        // ============================================================
+        // MARCAR COMO NO LLEGÓ
+        // ============================================================
+        async function marcarProductoNoLlego(uIdUnique) {
+            let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
+            if(idxGlobal === -1) return;
+            
+            const item = cestaGlobal[idxGlobal];
+            let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+
+            const confirmacion = await Swal.fire({
+                title: '¿Confirmas incidencia?',
+                text: `¿Quieres marcar "${productoLimpio}" como no entregado?`,
+                icon: 'warning',
+                background: '#ffffff',
+                color: '#0f172a',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Sí, registrar incidencia',
+                cancelButtonText: 'Volver'
+            });
+
+            if (!confirmacion.isConfirmed) return;
+
+            await eliminarItemCesta(item.id);
+            cestaGlobal.splice(idxGlobal, 1);
+            await agregarFalta(`${productoLimpio} (PROVEEDOR NO ENTREGÓ EN REPARTO)`);
+
+            Swal.fire({ title: '📡 Notificando...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
+
+            try {
+                await sincronizarConOficina('cesta', cestaGlobal);
+                await sincronizarConOficina('faltas', await obtenerFaltas());
+
+                lanzarToast("Incidencia comunicada.", "error");
+                Swal.close();
+                renderFaltasLocales();
+                renderCheckMercancia(cestaGlobal);
+            } catch (error) {
+                Swal.fire({ title: '❌ ERROR DE RED', text: 'Guardado en local.', icon: 'error' });
+            }
+        }
+
+        // ============================================================
+        // RENDERIZADO DE MERCANCÍA
+        // ============================================================
+        function renderCheckMercancia(cesta) {
+            const container = document.getElementById('visor-repartos-hoy');
+            if(!container) return; container.innerHTML = '';
+
+            if(!cesta || !Array.isArray(cesta) || cesta.length === 0) {
+                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">No hay productos pendientes de recibir.</div>`;
+                return;
+            }
+
+            const estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
+            const ahora = new Date();
+            const hoyString = ahora.toISOString().split('T')[0];
+            const mananaObj = new Date(ahora);
+            mananaObj.setDate(ahora.getDate() + 1);
+            const mananaString = mananaObj.toISOString().split('T')[0];
+
+            let gruposCesta = {};
+            cesta.forEach(item => {
+                if(item.estado === "PENDIENTE" || item.estado === "PREPARADO") {
+                    let prov = (item.proveedor_id || "S/P").trim().toUpperCase();
+                    if(!gruposCesta[prov]) gruposCesta[prov] = [];
+                    gruposCesta[prov].push(item);
+                }
+            });
+
+            let deClaves = Object.keys(gruposCesta);
+            if(deClaves.length === 0) {
+                container.innerHTML = `<div class="italic text-slate-400 text-sm text-center py-4">No quedan artículos pendientes de verificar.</div>`;
+                return;
+            }
+
+            deClaves.sort().forEach(provNombre => {
+                let articulosDelProveedor = gruposCesta[provNombre];
+                let maxDiasRetraso = 0;
+                let htmlArticulos = '';
+
+                const diasReparto = obtenerDiasReparto(provNombre);
+                const estadoDia = obtenerEstadoDiaReparto(diasReparto);
+                let tagColor = '';
+                let tagTexto = '';
+                switch(estadoDia.estado) {
+                    case 'hoy':
+                        tagColor = 'tag-hoy';
+                        tagTexto = '🟢 Reparte hoy';
+                        break;
+                    case 'manana':
+                        tagColor = 'tag-manana';
+                        tagTexto = '🟡 Reparte mañana';
+                        break;
+                    case 'pasado':
+                        tagColor = 'tag-pasado';
+                        tagTexto = '🔴 ' + estadoDia.mensaje;
+                        break;
+                    default:
+                        tagColor = 'tag-no-reparto';
+                        tagTexto = '⚪ Sin días asignados';
+                }
+
+                articulosDelProveedor.forEach(item => {
+                    let uId = item.id || "FALLBACK";
+                    if (item.fecha_registro) {
+                        let fechaRegistro = new Date(item.fecha_registro);
+                        let diferenciaTiempo = ahora - fechaRegistro;
+                        let diasDiferencia = Math.floor(diferenciaTiempo / (1000 * 60 * 60 * 24));
+                        if (diasDiferencia > maxDiasRetraso) maxDiasRetraso = diasDiferencia;
+                    }
+
+                    let etiquetaFecha = "";
+                    if (item.fecha_entrega_esperada) {
+                        if (item.fecha_entrega_esperada === hoyString) {
+                            etiquetaFecha = `<span class="ml-2 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-md font-bold">🚚 HOY</span>`;
+                        } else if (item.fecha_entrega_esperada === mananaString) {
+                            etiquetaFecha = `<span class="ml-2 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-md font-bold">⏳ PARA MAÑANA</span>`;
+                        } else {
+                            const partes = item.fecha_entrega_esperada.split('-');
+                            const fechaFormateada = partes.length === 3 ? `${partes[2]}/${partes[1]}` : item.fecha_entrega_esperada;
+                            etiquetaFecha = `<span class="ml-2 bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-md font-bold">📅 ${fechaFormateada}</span>`;
+                        }
+                    } else {
+                        etiquetaFecha = `<span class="ml-2 bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-md">S/F</span>`;
+                    }
+
+                    const esCritico = esProductoCritico(item.detalle);
+                    const badgeCritico = esCritico ? `<span class="ml-2 bg-amber-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">⭐ CRÍTICO</span>` : '';
+
+                    htmlArticulos += `
+                        <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-none">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-semibold text-slate-700">📦 ${item.detalle} ${badgeCritico}</span>
+                                <div class="flex flex-wrap items-center gap-1">${etiquetaFecha}</div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="marcarProductoNoLlego('${uId}')" class="bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-700 text-xs font-bold px-2.5 py-2 rounded-xl border border-slate-300 shadow-sm">
+                                    ❌ No llegó
+                                </button>
+                                <button onclick="abrirFlujoRecepcion('${item.detalle.replace(/'/g, "\\'")}', '${provNombre}', '${uId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-3 py-2 rounded-xl shadow-sm">
+                                    📥 Recibir
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                let estiloCabecera = "bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100";
+                if (maxDiasRetraso === 1) estiloCabecera = "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100";
+                else if (maxDiasRetraso >= 2) estiloCabecera = "bg-red-50 border-red-300 text-red-900 hover:bg-red-100 animate-pulse";
+
+                let esColapsado = estadosColapsados[provNombre] === true;
+                const safeId = provNombre.replace(/[^a-z0-9]/gi, '_');
+
+                let cardHtml = document.createElement('div');
+                cardHtml.className = "mb-2";
+                cardHtml.innerHTML = `
+                    <div class="accordion-header ${esColapsado ? '' : 'active'} ${estiloCabecera}" onclick="conmutarAcordeonCocina('${provNombre}')">
+                        <span>
+                            <span class="font-black tracking-wide">${provNombre}</span>
+                            <span class="ml-1 text-xs opacity-70 font-normal">(${articulosDelProveedor.length} pendientes)</span>
+                            <span class="ml-2 ${tagColor}">${tagTexto}</span>
+                        </span>
+                        <div class="flex items-center space-x-2" onclick="event.stopPropagation();">
+                            <button onclick="recibirTodoElProveedor('${provNombre}')" class="bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg border border-sky-700 shadow-sm">⚡ RECIBIR TODO</button>
+                            <span class="accordion-icon ml-2">▼</span>
+                        </div>
+                    </div>
+                    <div id="acord-cocina-${safeId}" class="accordion-content ${esColapsado ? 'collapsed' : ''} bg-white border-x border-b border-slate-200 px-4 pb-2 rounded-b-xl shadow-sm">
+                        <div class="divide-y divide-slate-100">${htmlArticulos}</div>
+                    </div>
+                `;
+                container.appendChild(cardHtml);
+            });
+        }
+
+        function conmutarAcordeonCocina(provNombre) {
+            const safeId = provNombre.replace(/[^a-z0-9]/gi, '_');
+            const content = document.getElementById(`acord-cocina-${safeId}`);
+            if(!content) return;
+
+            let estadosColapsados = JSON.parse(localStorage.getItem('fredware_cocina_acordeon_estados')) || {};
+            
+            if(content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                estadosColapsados[provNombre] = false;
+                content.previousElementSibling.classList.add('active');
+            } else {
+                content.classList.add('collapsed');
+                estadosColapsados[provNombre] = true;
+                content.previousElementSibling.classList.remove('active');
+            }
+            localStorage.setItem('fredware_cocina_acordeon_estados', JSON.stringify(estadosColapsados));
+        }
+
+        // ============================================================
+        // ENTRADA DIRECTA
+        // ============================================================
+        async function abrirEntradaDirecta() {
+            const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+            let optionsHtml = '<option value="S/P">PROVEEDOR GENÉRICO / COMPRA DIRECTA</option>';
+            proveedores.forEach(p => { optionsHtml += `<option value="${p.nombre}">${p.nombre}</option>`; });
+
+            const { value: directoValues } = await Swal.fire({
+                title: '➕ Compra de Última Hora',
+                background: '#ffffff', color: '#0f172a', confirmButtonColor: '#d97706', showCancelButton: true, confirmButtonText: 'Siguiente paso', cancelButtonText: 'Volver',
+                html: `
+                    <div class="text-left space-y-3 font-sans px-1">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre de la Mercancía:</label>
+                            <input id="dir-producto" type="text" placeholder="Ej: HARINA DE TRIGO..." class="w-full bg-slate-50 text-slate-900 font-bold border border-slate-300 rounded-xl py-2.5 px-3 uppercase focus:outline-none focus:border-amber-500 shadow-inner">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Origen / Distribuidor:</label>
+                            <select id="dir-proveedor" class="w-full bg-slate-50 text-slate-900 border border-slate-300 rounded-xl py-2.5 px-3 focus:outline-none focus:border-amber-500 font-bold">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                `,
+                preConfirm: () => {
+                    return {
+                        producto: document.getElementById('dir-producto').value.trim().toUpperCase(),
+                        proveedor: document.getElementById('dir-proveedor').value
+                    }
+                }
+            });
+
+            if (!directoValues || !directoValues.producto) return;
+            
+            if (esProductoCritico(directoValues.producto)) {
+                const tomarFoto = await Swal.fire({
+                    title: '📸 Producto Crítico',
+                    text: `"${directoValues.producto}" requiere control fotográfico. ¿Quieres tomar una foto ahora?`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '📷 Tomar Foto',
+                    cancelButtonText: 'Ahora no'
+                });
+                
+                if (tomarFoto.isConfirmed) {
+                    await abrirCamaraTrazabilidad(directoValues.producto, directoValues.proveedor);
+                }
+            }
+            
+            const tempId = "DIR_" + Math.random().toString(36).substring(2, 7) + "_" + Date.now();
+            abrirFlujoRecepcion(directoValues.producto, directoValues.proveedor, tempId);
+        }
+
+        // ============================================================
+        // 📸 SISTEMA DE FOTOS PARA TRAZABILIDAD
+        // ============================================================
+        
+        let streamCamara = null;
+        let fotoDataURL = null;
+        let productoFotoActual = '';
+        let proveedorFotoActual = '';
+        let facingModeTrazabilidad = 'environment';
+
+        async function abrirCamaraTrazabilidad(producto = '', proveedor = '') {
+            productoFotoActual = producto || '';
+            proveedorFotoActual = proveedor || '';
+
+            if (!productoFotoActual) {
+                const { value: prod } = await Swal.fire({
+                    title: '📷 Nueva Foto de Trazabilidad',
+                    input: 'text',
+                    inputLabel: 'Nombre del producto',
+                    inputPlaceholder: 'Ej: HUEVOS, PAN DE MOLDE...',
+                    inputAttributes: { autocapitalize: 'characters' },
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    confirmButtonText: 'Siguiente',
+                    cancelButtonText: 'Cancelar'
+                });
+                if (!prod) return;
+                productoFotoActual = prod.toUpperCase();
+            }
+
+            if (!proveedorFotoActual) {
+                const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
+                const { value: prov } = await Swal.fire({
+                    title: '📷 Proveedor',
+                    input: 'select',
+                    inputOptions: (() => {
+                        const opts = { 'S/P': 'PROVEEDOR GENÉRICO' };
+                        proveedores.forEach(p => { opts[p.nombre] = p.nombre; });
+                        return opts;
+                    })(),
+                    inputPlaceholder: 'Selecciona proveedor',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    confirmButtonText: 'Siguiente',
+                    cancelButtonText: 'Cancelar'
+                });
+                if (!prov) return;
+                proveedorFotoActual = prov;
+            }
+
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Cámara no soportada');
+                }
+
+                const result = await Swal.fire({
+                    title: `📸 Foto de: ${productoFotoActual}`,
+                    html: `
+                        <div class="space-y-3">
+                            <p class="text-xs text-slate-500">Producto: <strong>${productoFotoActual}</strong> | Proveedor: <strong>${proveedorFotoActual}</strong></p>
+                            <video id="camara-preview" autoplay playsinline style="width:100%; max-height:300px; background:#0f172a; border-radius:12px; object-fit:cover;"></video>
+                            <div class="flex gap-2 justify-center flex-wrap">
+                                <button id="btn-tomar-foto" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl shadow-sm transition-all active:scale-95">📸 Tomar Foto</button>
+                                <button id="btn-cambiar-camara" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-3 rounded-xl shadow-sm transition-all active:scale-95">🔄 Girar</button>
+                            </div>
+                            <div id="preview-foto" style="display:none;">
+                                <img id="foto-preview-img" style="width:100%; max-height:200px; border-radius:12px; object-fit:contain; border:2px solid #10b981;">
+                                <div class="flex gap-2 justify-center mt-2 flex-wrap">
+                                    <button id="btn-confirmar-foto" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-xl">✅ Confirmar</button>
+                                    <button id="btn-retomar-foto" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-6 py-2 rounded-xl">🔄 Reintentar</button>
+                                    <button id="btn-cancelar-foto" class="bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-2 rounded-xl">❌ Cancelar</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Observaciones (opcional):</label>
+                                <textarea id="foto-observaciones" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm" placeholder="Ej: Producto en buen estado..."></textarea>
+                            </div>
+                        </div>
+                    `,
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar',
+                    didOpen: async () => {
+                        await iniciarCamaraTrazabilidad();
+                        
+                        document.getElementById('btn-tomar-foto').onclick = capturarFotoTrazabilidad;
+                        document.getElementById('btn-cambiar-camara').onclick = cambiarCamaraTrazabilidad;
+                        document.getElementById('btn-confirmar-foto').onclick = confirmarFotoTrazabilidad;
+                        document.getElementById('btn-retomar-foto').onclick = retomarFotoTrazabilidad;
+                        document.getElementById('btn-cancelar-foto').onclick = () => {
+                            fotoDataURL = null;
+                            document.getElementById('preview-foto').style.display = 'none';
+                            document.getElementById('camara-preview').style.display = 'block';
+                            document.getElementById('btn-tomar-foto').style.display = 'inline-block';
+                            document.getElementById('btn-cambiar-camara').style.display = 'inline-block';
+                        };
+                    },
+                    willClose: () => {
+                        detenerCamaraTrazabilidad();
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error cámara:', error);
+                
+                // Fallback: subir foto desde archivo
+                const { value: file } = await Swal.fire({
+                    title: '📷 Subir Foto',
+                    text: 'No se pudo acceder a la cámara. Puedes subir una foto desde tu dispositivo.',
+                    input: 'file',
+                    inputAttributes: { accept: 'image/*' },
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    confirmButtonText: '📤 Subir Foto',
+                    cancelButtonText: 'Cancelar'
+                });
+                
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        await guardarFotoTrazabilidadConDataURL(e.target.result, productoFotoActual, proveedorFotoActual);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+
+        async function iniciarCamaraTrazabilidad() {
+            try {
+                if (streamCamara) {
+                    streamCamara.getTracks().forEach(track => track.stop());
+                }
+                
+                const constraints = {
+                    video: { facingMode: facingModeTrazabilidad, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                };
+                
+                streamCamara = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('camara-preview');
+                if (video) {
+                    video.srcObject = streamCamara;
+                    await video.play();
+                }
+            } catch (error) {
+                console.error('Error iniciando cámara:', error);
+                lanzarToast('No se pudo acceder a la cámara. Usando modo subida de archivos.', 'warning');
+            }
+        }
+
+        function detenerCamaraTrazabilidad() {
+            if (streamCamara) {
+                streamCamara.getTracks().forEach(track => track.stop());
+                streamCamara = null;
+            }
+        }
+
+        function cambiarCamaraTrazabilidad() {
+            facingModeTrazabilidad = facingModeTrazabilidad === 'environment' ? 'user' : 'environment';
+            iniciarCamaraTrazabilidad();
+        }
+
+        function capturarFotoTrazabilidad() {
+            const video = document.getElementById('camara-preview');
+            if (!video) return;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 800;
+            canvas.height = video.videoHeight || 600;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            fotoDataURL = canvas.toDataURL('image/jpeg', 0.9);
+            
+            document.getElementById('foto-preview-img').src = fotoDataURL;
+            document.getElementById('preview-foto').style.display = 'block';
+            document.getElementById('camara-preview').style.display = 'none';
+            document.getElementById('btn-tomar-foto').style.display = 'none';
+            document.getElementById('btn-cambiar-camara').style.display = 'none';
+        }
+
+        function retomarFotoTrazabilidad() {
+            fotoDataURL = null;
+            document.getElementById('preview-foto').style.display = 'none';
+            document.getElementById('camara-preview').style.display = 'block';
+            document.getElementById('btn-tomar-foto').style.display = 'inline-block';
+            document.getElementById('btn-cambiar-camara').style.display = 'inline-block';
+        }
+
+        async function confirmarFotoTrazabilidad() {
+            if (!fotoDataURL) {
+                lanzarToast('No hay foto para guardar', 'warning');
+                return;
+            }
+            
+            const observaciones = document.getElementById('foto-observaciones')?.value || '';
+            
+            Swal.close();
+            await guardarFotoTrazabilidadConDataURL(fotoDataURL, productoFotoActual, proveedorFotoActual, observaciones);
+            fotoDataURL = null;
+        }
+
+        async function guardarFotoTrazabilidadConDataURL(dataURL, producto, proveedor, observaciones = '') {
+            try {
+                Swal.fire({ title: '📡 Subiendo foto a la nube...', allowOutsideClick: false, showConfirmButton: false });
+                
+                const urlFoto = await subirFotoASupabase(dataURL, producto);
+                
+                const qrTexto = `PROD:${producto.toUpperCase()}|FECHA:${new Date().toISOString().split('T')[0]}|PROV:${proveedor.toUpperCase()}|ID:${Date.now()}`;
+                
+                const exito = await guardarFotoTrazabilidad(producto, proveedor, urlFoto, observaciones, qrTexto);
+                
+                Swal.close();
+                if (exito) {
+                    lanzarToast(`✅ Foto de ${producto} guardada en la nube`);
+                    cargarFotosTrazabilidad();
+                }
+                
+            } catch (error) {
+                console.error('Error guardando foto:', error);
+                Swal.fire({ title: '❌ Error al guardar foto', text: error.message, icon: 'error' });
+            }
+        }
+
+        // ============================================================
+        // BUSCAR Y MOSTRAR FOTOS DE TRAZABILIDAD
+        // ============================================================
+
+        async function cargarFotosTrazabilidad() {
+            const container = document.getElementById('resultados-trazabilidad');
+            if (!container) return;
+            
+            try {
+                const fotos = await obtenerFotosTrazabilidad();
+                
+                if (!fotos || fotos.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-slate-400">
+                            <div class="text-4xl mb-3">📷</div>
+                            <p class="font-bold">No hay fotos registradas</p>
+                            <p class="text-xs">Haz clic en "Nueva Foto" para empezar</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = fotos.map(foto => `
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex gap-4 items-start hover:shadow-sm transition-all">
+                        <img src="${foto.url_foto}" alt="${foto.producto}" 
+                             class="w-20 h-20 object-cover rounded-lg border-2 border-slate-200 cursor-pointer hover:border-emerald-500 transition-all"
+                             onclick="window.open('${foto.url_foto}','_blank')">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-slate-800">${escapeHtml(foto.producto)}</span>
+                                <span class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">${escapeHtml(foto.proveedor || 'S/P')}</span>
+                                ${esProductoCritico(foto.producto) ? '<span class="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">⭐ CRÍTICO</span>' : ''}
+                            </div>
+                            <div class="text-xs text-slate-500 mt-1">
+                                📅 ${formatearFecha(foto.fecha_registro)}
+                            </div>
+                            ${foto.observaciones ? `<p class="text-xs text-slate-600 mt-1">📝 ${escapeHtml(foto.observaciones)}</p>` : ''}
+                            ${foto.qr_texto ? `<p class="text-[10px] text-slate-400 mt-1 font-mono truncate">QR: ${escapeHtml(foto.qr_texto)}</p>` : ''}
+                        </div>
+                        <button onclick="eliminarFotoTrazabilidad('${foto.id}')" class="text-red-500 hover:text-red-700 text-sm font-bold bg-red-50 hover:bg-red-100 px-3 py-1 rounded-lg border border-red-200 transition-all">
+                            🗑️
+                        </button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error cargando fotos:', error);
+                container.innerHTML = `<p class="text-red-500 text-sm">❌ Error al cargar fotos: ${error.message}</p>`;
+            }
+        }
+
+        function buscarTrazabilidad() {
+            const search = document.getElementById('search-trazabilidad').value.trim().toUpperCase();
+            if (!search) {
+                cargarFotosTrazabilidad();
+                return;
+            }
+            
+            // Recargar y filtrar visualmente
+            cargarFotosTrazabilidad().then(() => {
+                const container = document.getElementById('resultados-trazabilidad');
+                const items = container.querySelectorAll('.bg-slate-50');
+                items.forEach(item => {
+                    const texto = item.textContent.toUpperCase();
+                    item.style.display = texto.includes(search) ? '' : 'none';
+                });
+            });
+        }
+
+        // Enter en el buscador
+        document.getElementById('search-trazabilidad')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') buscarTrazabilidad();
+        });
+
+        // ============================================================
+        // ELIMINAR FOTO
+        // ============================================================
+        async function eliminarFotoTrazabilidad(id) {
+            const confirm = await Swal.fire({
+                title: '¿Eliminar foto?',
+                text: 'Esta acción no se puede deshacer',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+            
+            if (!confirm.isConfirmed) return;
+            
+            try {
+                const exito = await eliminarFotoTrazabilidad(id);
+                if (exito) {
+                    lanzarToast('Foto eliminada');
+                    cargarFotosTrazabilidad();
+                }
+            } catch (error) {
+                console.error('Error eliminando foto:', error);
+                lanzarToast('Error al eliminar foto', 'error');
+            }
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        async function init() {
+            await cargarDatosIniciales();
+            suscribirseCambios();
+            
+            // Si la pestaña de trazabilidad está activa al cargar
+            const tabTrazabilidad = document.getElementById('tab-trazabilidad');
+            if (tabTrazabilidad && tabTrazabilidad.classList.contains('active')) {
+                cargarFotosTrazabilidad();
+            }
+            
+            setInterval(async () => {
+                await cargarDatosIniciales();
+            }, 15000);
+        }
+
+        // Exponer funciones globales
+        window.registrarFaltaCocina = registrarFaltaCocina;
+        window.activarDictadoPorVoz = activarDictadoPorVoz;
+        window.borrarFaltaLocal = borrarFaltaLocal;
+        window.abrirEntradaDirecta = abrirEntradaDirecta;
+        window.abrirCamaraTrazabilidad = abrirCamaraTrazabilidad;
+        window.buscarTrazabilidad = buscarTrazabilidad;
+        window.eliminarFotoTrazabilidad = eliminarFotoTrazabilidad;
+        window.marcarProductoNoLlego = marcarProductoNoLlego;
+        window.recibirTodoElProveedor = recibirTodoElProveedor;
+        window.abrirFlujoRecepcion = abrirFlujoRecepcion;
+
+        init();
+    </script>
 </body>
 </html>
