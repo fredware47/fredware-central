@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>📦 Fredware - Mercancía Recibida</title>
+    <title>📦 Fredware - Productos Recibidos</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; }
         
         .container { max-width: 1200px; margin: 0 auto; }
-        
         .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         
         .fade-in { animation: fadeIn 0.3s ease-in; }
@@ -33,6 +32,11 @@
         .stat-number { font-size: 24px; font-weight: 900; }
         .stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
         
+        .fredware-header { background: #1e293b; color: white; padding: 12px 20px; border-radius: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .fredware-header h1 { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+        .fredware-header .sub { font-size: 11px; color: #94a3b8; font-weight: 400; }
+        .fredware-logo { font-size: 28px; }
+        
         .flex { display: flex; }
         .flex-wrap { flex-wrap: wrap; }
         .items-center { align-items: center; }
@@ -43,7 +47,6 @@
         .mt-1 { margin-top: 4px; }
         .mt-2 { margin-top: 8px; }
         .mt-4 { margin-top: 16px; }
-        .mb-4 { margin-bottom: 16px; }
         .text-center { text-align: center; }
         .text-sm { font-size: 14px; }
         .text-xs { font-size: 12px; }
@@ -78,8 +81,6 @@
         .py-2 { padding-top: 8px; padding-bottom: 8px; }
         .py-12 { padding-top: 48px; padding-bottom: 48px; }
         .px-3 { padding-left: 12px; padding-right: 12px; }
-        .px-4 { padding-left: 16px; padding-right: 16px; }
-        
         .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         
         .grid-cols-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
@@ -89,27 +90,40 @@
             .grid-cards { grid-template-columns: 1fr; }
             .grid-cols-5 { grid-template-columns: repeat(2, 1fr); }
             .grid-cols-3 { grid-template-columns: 1fr; }
+            .fredware-header { flex-direction: column; text-align: center; }
+            .fredware-header div:last-child { margin-left: 0 !important; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- HEADER -->
-    <div class="card flex items-center justify-between flex-wrap gap-3">
-        <div>
-            <h1 class="text-2xl font-black text-slate-800 flex items-center gap-3">
-                <span style="font-size: 28px;">📦</span>
-                Mercancía Recibida
-                <span id="totalBadge" class="text-sm font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">0</span>
-            </h1>
-            <p class="text-sm text-slate-500 mt-1">Consulta todo lo que ha llegado (vía ngrok)</p>
+    <!-- HEADER CON LOGO FREDWARE -->
+    <div class="card" style="padding: 0; border: none; background: transparent;">
+        <div class="fredware-header">
+            <span class="fredware-logo">👨‍🍳</span>
+            <div>
+                <h1>FREDWARE</h1>
+                <span class="sub">Sistema de Control de Recepciones</span>
+            </div>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span id="statusBadge" class="badge-offline" style="background: #475569; color: #e2e8f0;">🔴 Desconectado</span>
+                <button onclick="recargarDatos()" class="btn" style="background: #475569; color: white; font-size: 12px; padding: 8px 16px;">
+                    🔄 Recargar
+                </button>
+            </div>
         </div>
-        <div class="flex items-center gap-3 flex-wrap">
-            <span id="statusBadge" class="badge-offline">🔴 Desconectado</span>
-            <button onclick="recargarDatos()" class="btn btn-outline text-sm flex items-center gap-2">
-                🔄 Recargar
-            </button>
+    </div>
+
+    <!-- CONTADOR DE PRODUCTOS -->
+    <div class="card" style="border-left: 4px solid #10b981;">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+                <span style="font-size: 24px;">📦</span>
+                <span style="font-size: 18px; font-weight: 900; color: #1e293b;">Productos Recibidos</span>
+                <span id="totalBadge" class="text-sm font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full" style="margin-left: 8px;">0</span>
+            </div>
+            <span style="font-size: 12px; color: #94a3b8;">Historial de mercancía recibida</span>
         </div>
     </div>
 
@@ -161,8 +175,8 @@
     <div id="resultsContainer" class="grid-cards">
         <div class="col-span-full text-center py-12 text-slate-400">
             <div style="font-size: 40px; margin-bottom: 12px;">📡</div>
-            <p class="font-bold">Cargando datos del túnel ngrok...</p>
-            <p class="text-sm">Conectando a: untried-january-thinning.ngrok-free.dev</p>
+            <p class="font-bold">Cargando productos recibidos...</p>
+            <p class="text-sm">Conectando al servidor Fredware</p>
         </div>
     </div>
 
@@ -179,6 +193,7 @@
     // CONFIGURACIÓN - TU TÚNEL NGrok
     // ============================================================
     const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+    // Si estás en local, usa: const API_URL = "http://localhost:8000";
 
     // ============================================================
     // ESTADO
@@ -224,8 +239,7 @@
             if (fechaStr.includes('/')) {
                 const partes = fechaStr.split('/');
                 if (partes.length === 3) {
-                    const d = new Date(partes[2], partes[1] - 1, partes[0]);
-                    return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    return `${partes[0]}/${partes[1]}/${partes[2]}`;
                 }
             }
             const d = new Date(fechaStr);
@@ -258,18 +272,35 @@
         return div.innerHTML;
     }
 
+    function getBadgeTemperatura(temp) {
+        if (temp === null || temp === undefined || isNaN(temp)) return { class: 'bg-slate-200 text-slate-600', label: 'N/A' };
+        if (temp <= 8) return { class: 'bg-emerald-100 text-emerald-800', label: `✅ ${temp}°C` };
+        if (temp <= 15) return { class: 'bg-amber-100 text-amber-800', label: `⚠️ ${temp}°C` };
+        return { class: 'bg-red-100 text-red-800', label: `🚨 ${temp}°C` };
+    }
+
+    function getBadgeConservacion(conservacion) {
+        const map = {
+            'CONGELADOR': { class: 'bg-sky-100 text-sky-800', label: '🥶 Congelador' },
+            'NEVERA': { class: 'bg-emerald-100 text-emerald-800', label: '❄️ Nevera' },
+            'SECO': { class: 'bg-amber-100 text-amber-800', label: '📦 Ambiente' }
+        };
+        return map[conservacion] || { class: 'bg-slate-100 text-slate-600', label: conservacion || 'N/A' };
+    }
+
     // ============================================================
-    // CARGA DE DATOS DESDE EL SERVIDOR VÍA NGrok
+    // CARGA DE DATOS DESDE /obtener_mercancias
     // ============================================================
     async function cargarDatos() {
         try {
             statusBadge.className = 'badge-connecting';
             statusBadge.innerHTML = '🟡 Conectando...';
+            statusBadge.style.background = '#fef3c7';
+            statusBadge.style.color = '#92400e';
 
-            console.log('📡 Conectando a:', `${API_URL}/api/datos`);
+            console.log('📡 Conectando a:', `${API_URL}/obtener_mercancias`);
             
-            // IMPORTANTE: El header ngrok-skip-browser-warning es obligatorio
-            const response = await fetch(`${API_URL}/api/datos`, {
+            const response = await fetch(`${API_URL}/obtener_mercancias`, {
                 headers: { 
                     'ngrok-skip-browser-warning': 'true',
                     'Content-Type': 'application/json'
@@ -279,123 +310,36 @@
             let datos = [];
 
             if (response.ok) {
-                const db = await response.json();
-                console.log('✅ Datos del servidor:', db);
+                const mercancias = await response.json();
+                console.log('✅ Productos recibidos:', mercancias);
                 
-                // Extraer cesta
-                if (db.cesta && Array.isArray(db.cesta)) {
-                    const recibidos = db.cesta.filter(item => item.estado === 'RECIBIDO');
-                    recibidos.forEach(item => {
+                if (Array.isArray(mercancias) && mercancias.length > 0) {
+                    mercancias.forEach(item => {
                         datos.push({
-                            id: item.id || 'local_' + Math.random().toString(36).substr(2, 6),
-                            producto: item.detalle ? item.detalle.replace(/^\[.*?\]\s*/, '') : 'Sin nombre',
-                            proveedor: item.proveedor_id || 'S/P',
+                            id: 'sql_' + Math.random().toString(36).substr(2, 6),
+                            producto: item.producto || 'Sin nombre',
+                            proveedor: item.proveedor || 'S/P',
                             temperatura: item.temperatura || null,
                             conservacion: item.conservacion || null,
-                            cantidad: item.cantidad_total || 1,
-                            fecha_registro: item.fecha_registro || new Date().toISOString(),
-                            autorizado_por: item.autorizado_por || null,
-                            observaciones: item.observaciones || '',
-                            fuente: 'servidor'
+                            cantidad: item.cantidad || 1,
+                            fecha_registro: item.fecha_registro || new Date().toISOString()
                         });
                     });
+                    
+                    statusBadge.className = 'badge-online';
+                    statusBadge.innerHTML = `🟢 Online (${datos.length})`;
+                    statusBadge.style.background = '#d1fae5';
+                    statusBadge.style.color = '#065f46';
+                } else {
+                    statusBadge.innerHTML = '📭 Sin productos';
+                    statusBadge.className = 'badge-offline';
+                    statusBadge.style.background = '#475569';
+                    statusBadge.style.color = '#e2e8f0';
                 }
-                
-                // Extraer faltas
-                if (db.faltas && Array.isArray(db.faltas)) {
-                    db.faltas.forEach(f => {
-                        datos.push({
-                            id: 'falta_' + Math.random().toString(36).substr(2, 6),
-                            producto: f,
-                            proveedor: '⚠️ FALTA',
-                            temperatura: null,
-                            conservacion: null,
-                            cantidad: 0,
-                            fecha_registro: new Date().toISOString(),
-                            autorizado_por: null,
-                            observaciones: '⚠️ Producto no entregado',
-                            fuente: 'faltas'
-                        });
-                    });
-                }
-
-                statusBadge.className = 'badge-online';
-                statusBadge.innerHTML = `🟢 Online (${datos.length})`;
-
             } else {
                 throw new Error(`HTTP ${response.status}`);
             }
 
-            // Si no hay datos, intentar con el endpoint alternativo
-            if (datos.length === 0) {
-                try {
-                    console.log('📡 Intentando con /obtener_mercancias...');
-                    const res2 = await fetch(`${API_URL}/obtener_mercancias`, {
-                        headers: { 'ngrok-skip-browser-warning': 'true' }
-                    });
-                    
-                    if (res2.ok) {
-                        const mercancias = await res2.json();
-                        if (mercancias && Array.isArray(mercancias)) {
-                            mercancias.forEach(item => {
-                                datos.push({
-                                    id: item.id || 'sql_' + Math.random().toString(36).substr(2, 6),
-                                    producto: item.producto || 'Sin nombre',
-                                    proveedor: item.proveedor || 'S/P',
-                                    temperatura: item.temperatura || null,
-                                    conservacion: item.conservacion || null,
-                                    cantidad: item.cantidad || 1,
-                                    fecha_registro: item.fecha_registro || new Date().toISOString(),
-                                    autorizado_por: null,
-                                    observaciones: '',
-                                    fuente: 'sqlite'
-                                });
-                            });
-                            statusBadge.className = 'badge-online';
-                            statusBadge.innerHTML = `🟢 SQLite (${datos.length})`;
-                        }
-                    }
-                } catch (e2) {
-                    console.log('⚠️ /obtener_mercancias no disponible');
-                }
-            }
-
-            // Si todo falla, usar localStorage
-            if (datos.length === 0) {
-                console.log('📡 Usando localStorage como respaldo...');
-                
-                const cestaLocal = localStorage.getItem('fredware_cesta_compras');
-                if (cestaLocal) {
-                    try {
-                        const cesta = JSON.parse(cestaLocal);
-                        const recibidos = cesta.filter(item => item.estado === 'RECIBIDO');
-                        recibidos.forEach(item => {
-                            datos.push({
-                                id: item.id || 'cache_' + Math.random().toString(36).substr(2, 6),
-                                producto: item.detalle ? item.detalle.replace(/^\[.*?\]\s*/, '') : 'Sin nombre',
-                                proveedor: item.proveedor_id || 'S/P',
-                                temperatura: null,
-                                conservacion: null,
-                                cantidad: 1,
-                                fecha_registro: item.fecha_registro || new Date().toISOString(),
-                                autorizado_por: null,
-                                observaciones: '',
-                                fuente: 'cache'
-                            });
-                        });
-                    } catch {}
-                }
-                
-                if (datos.length > 0) {
-                    statusBadge.className = 'badge-connecting';
-                    statusBadge.innerHTML = `💾 Caché (${datos.length})`;
-                } else {
-                    statusBadge.className = 'badge-offline';
-                    statusBadge.innerHTML = '🔴 Sin datos';
-                }
-            }
-
-            // Mostrar datos
             allData = datos;
             filteredData = [...allData];
             
@@ -408,45 +352,14 @@
             console.error('Error cargando datos:', error);
             statusBadge.className = 'badge-offline';
             statusBadge.innerHTML = `🔴 ${error.message || 'Error'}`;
-            
-            // Intentar con localStorage como último recurso
-            try {
-                const cestaLocal = localStorage.getItem('fredware_cesta_compras');
-                if (cestaLocal) {
-                    const cesta = JSON.parse(cestaLocal);
-                    const datos = cesta.filter(item => item.estado === 'RECIBIDO').map(item => ({
-                        id: item.id || 'cache_' + Math.random().toString(36).substr(2, 6),
-                        producto: item.detalle ? item.detalle.replace(/^\[.*?\]\s*/, '') : 'Sin nombre',
-                        proveedor: item.proveedor_id || 'S/P',
-                        temperatura: null,
-                        conservacion: null,
-                        cantidad: 1,
-                        fecha_registro: item.fecha_registro || new Date().toISOString(),
-                        autorizado_por: null,
-                        observaciones: '',
-                        fuente: 'cache'
-                    }));
-                    
-                    if (datos.length > 0) {
-                        allData = datos;
-                        filteredData = [...allData];
-                        actualizarFiltrosProveedores();
-                        aplicarFiltros();
-                        actualizarEstadisticas();
-                        renderizarPagina();
-                        statusBadge.className = 'badge-connecting';
-                        statusBadge.innerHTML = `💾 Caché (${datos.length})`;
-                        return;
-                    }
-                }
-            } catch {}
+            statusBadge.style.background = '#475569';
+            statusBadge.style.color = '#e2e8f0';
             
             resultsContainer.innerHTML = `
                 <div class="col-span-full bg-white rounded-2xl border border-red-200 p-8 text-center">
                     <div style="font-size: 40px; margin-bottom: 12px;">❌</div>
                     <p class="font-bold text-red-700">Error al cargar los datos</p>
                     <p class="text-sm text-slate-500 mt-2">${error.message || 'No se pudo conectar con el servidor'}</p>
-                    <p class="text-xs text-slate-400 mt-1">Asegúrate de que el servidor está corriendo y ngrok está activo</p>
                     <button onclick="recargarDatos()" class="btn btn-outline mt-4">🔄 Reintentar</button>
                 </div>
             `;
@@ -474,8 +387,7 @@
             if (search) {
                 const producto = (item.producto || '').toUpperCase();
                 const proveedor = (item.proveedor || '').toUpperCase();
-                const obs = (item.observaciones || '').toUpperCase();
-                if (!producto.includes(search) && !proveedor.includes(search) && !obs.includes(search)) {
+                if (!producto.includes(search) && !proveedor.includes(search)) {
                     return false;
                 }
             }
@@ -513,15 +425,12 @@
         }).length;
         
         const providers = new Set(filteredData.map(item => item.proveedor).filter(Boolean)).size;
-        const incidencias = filteredData.filter(item => 
-            item.observaciones && item.observaciones.toLowerCase().includes('mal')
-        ).length;
 
         totalCount.textContent = total;
         todayCount.textContent = hoyCount;
         weekCount.textContent = semanaCount;
         providersCount.textContent = providers;
-        incidenciasCount.textContent = incidencias;
+        incidenciasCount.textContent = '0';
         totalBadge.textContent = total;
     }
 
@@ -547,49 +456,31 @@
             resultsContainer.innerHTML = `
                 <div class="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center fade-in">
                     <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
-                    <p class="text-xl font-bold text-slate-600">No hay datos</p>
+                    <p class="text-xl font-bold text-slate-600">No hay productos recibidos</p>
                     <p class="text-sm text-slate-400 mt-2">Aún no se ha registrado ninguna recepción</p>
-                    <p class="text-xs text-slate-400 mt-1">Prueba a recibir un producto desde la app de faltas</p>
                 </div>
             `;
             return;
         }
 
         resultsContainer.innerHTML = pageData.map(item => {
-            const tieneIncidencia = item.observaciones && item.observaciones.toLowerCase().includes('mal');
-            
-            let etiquetaFuente = '';
-            if (item.fuente === 'servidor') {
-                etiquetaFuente = '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">📡 Servidor</span>';
-            } else if (item.fuente === 'sqlite') {
-                etiquetaFuente = '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">🗄️ SQLite</span>';
-            } else if (item.fuente === 'faltas') {
-                etiquetaFuente = '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">⚠️ Falta</span>';
-            } else {
-                etiquetaFuente = '<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">💾 Caché</span>';
-            }
-            
             return `
             <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm fade-in">
                 <div class="flex flex-col gap-2">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-base font-black text-slate-800">${escapeHtml(item.producto || 'Sin nombre')}</span>
                         <span class="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">${escapeHtml(item.proveedor || 'S/P')}</span>
-                        ${tieneIncidencia ? `<span class="text-xs font-bold bg-red-100 text-red-700 px-3 py-1 rounded-full">⚠️ Incidencia</span>` : ''}
-                        ${etiquetaFuente}
+                        <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">📡 Recibido</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                         <span>📅 ${formatearFecha(item.fecha_registro)}</span>
                         ${item.temperatura !== null && item.temperatura !== undefined ? 
-                            `<span class="font-bold ${item.temperatura <= 8 ? 'text-emerald-600' : item.temperatura <= 15 ? 'text-amber-600' : 'text-red-600'}">🌡️ ${item.temperatura}°C</span>` : ''}
+                            `<span class="font-bold px-2 py-0.5 rounded-full ${getBadgeTemperatura(item.temperatura).class}">${getBadgeTemperatura(item.temperatura).label}</span>` : ''}
                         ${item.conservacion ? 
-                            `<span class="font-bold text-slate-600">${item.conservacion === 'CONGELADOR' ? '🥶' : item.conservacion === 'NEVERA' ? '❄️' : '📦'} ${item.conservacion}</span>` : ''}
+                            `<span class="font-bold px-2 py-0.5 rounded-full ${getBadgeConservacion(item.conservacion).class}">${getBadgeConservacion(item.conservacion).label}</span>` : ''}
                         ${item.cantidad ? 
                             `<span class="font-bold text-blue-600">📦 ${item.cantidad} uds</span>` : ''}
-                        ${item.autorizado_por ? 
-                            `<span class="font-bold text-purple-600">✍️ ${escapeHtml(item.autorizado_por)}</span>` : ''}
                     </div>
-                    ${item.observaciones ? `<p class="text-xs text-slate-500 mt-1">📝 ${escapeHtml(item.observaciones)}</p>` : ''}
                 </div>
             </div>
         `}).join('');
@@ -620,7 +511,6 @@
     // INICIALIZAR
     // ============================================================
     cargarDatos();
-    // Refrescar cada 30 segundos
     setInterval(cargarDatos, 30000);
 </script>
 </body>
