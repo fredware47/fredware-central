@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>👨‍🍳 Fredware - Personal</title>
+    
+    <!-- ========================================================== -->
+    <!-- 🔥 FAVICON PARA PC Y MÓVIL -->
+    <!-- ========================================================== -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E👨‍🍳%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E👨‍🍳%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231e293b'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23fbbf24'%3E👨‍🍳%3C/text%3E%3C/svg%3E">
+    <meta name="theme-color" content="#1e293b">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f1f5f9; color: #1e293b; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        .panel { max-width: 650px; width: 100%; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; }
+        
+        h1 { font-size: 24px; font-weight: 800; color: #0f172a; text-align: center; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        h1 .logo-icon { font-size: 32px; }
+        .sub { text-align: center; color: #64748b; font-size: 14px; margin-bottom: 25px; }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px 15px; text-align: center; cursor: pointer; transition: all 0.2s; text-decoration: none; color: #1e293b; }
+        .card:hover { background: #f1f5f9; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-color: #94a3b8; }
+        .card:active { transform: scale(0.97); }
+        
+        .card .icono { font-size: 32px; display: block; margin-bottom: 8px; }
+        .card .nombre { font-weight: 700; font-size: 14px; }
+        .card .desc { font-size: 11px; color: #64748b; margin-top: 4px; }
+        
+        .card-faltas { border-left: 4px solid #f59e0b; }
+        .card-faltas:hover { border-color: #d97706; }
+        
+        .card-horas { border-left: 4px solid #3b82f6; }
+        .card-horas:hover { border-color: #2563eb; }
+        
+        .card-caducidades { border-left: 4px solid #ef4444; }
+        .card-caducidades:hover { border-color: #dc2626; }
+        
+        .card-fichas { border-left: 4px solid #8b5cf6; }
+        .card-fichas:hover { border-color: #7c3aed; }
+        
+        .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+        
+        .badge-activo { background: #22c55e; color: white; font-size: 9px; padding: 1px 8px; border-radius: 20px; margin-left: 5px; display: inline-block; vertical-align: middle; }
+        
+        .volver { display: inline-block; margin-top: 15px; color: #64748b; font-size: 13px; text-decoration: none; transition: color 0.2s; }
+        .volver:hover { color: #2563eb; }
+        
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 500px) {
+            .grid { grid-template-columns: 1fr; gap: 12px; }
+            .panel { padding: 20px; }
+            h1 { font-size: 20px; }
+            .card { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <h1>
+            <span class="logo-icon">👨‍🍳</span>
+            Personal - Fredware
+        </h1>
+        <p class="sub">Herramientas para el equipo de cocina</p>
+        
+        <div class="grid">
+            <!-- ===== FALTAS ===== -->
+            <a href="faltas.html" class="card card-faltas">
+                <span class="icono">📝</span>
+                <span class="nombre">Faltas <span class="badge-activo">Activo</span></span>
+                <span class="desc">Control de faltas diarias</span>
+            </a>
+            
+            <!-- ===== HORAS EXTRA ===== -->
+            <a href="horas-cocineros.html" class="card card-horas">
+                <span class="icono">🕒</span>
+                <span class="nombre">Horas Extra <span class="badge-activo">Activo</span></span>
+                <span class="desc">Registro de horas</span>
+            </a>
+            
+            <!-- ===== CADUCIDADES ===== -->
+            <a href="caducidades.html" class="card card-caducidades">
+                <span class="icono">📦</span>
+                <span class="nombre">Caducidades <span class="badge-activo">Activo</span></span>
+                <span class="desc">Etiquetado y trazabilidad</span>
+            </a>
+            
+            <!-- ===== FICHAS DE PRODUCCIÓN ===== -->
+            <a href="fichas_tecnicas.html" class="card card-fichas">
+                <span class="icono">📄</span>
+                <span class="nombre">Fichas Producción <span class="badge-activo">Activo</span></span>
+                <span class="desc">Trazabilidad y control</span>
+            </a>
+        </div>
+        
+        <!-- ===== VOLVER AL PANEL PRINCIPAL ===== -->
+        <div class="text-center mt-4">
+            <a href="index.html" class="volver">← Volver al Panel de Control</a>
+        </div>
+        
+        <div class="footer">
+            Fredware v2.0 · Herramientas para el personal
+        </div>
+    </div>
+</body>
+</html>
