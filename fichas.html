@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📄 Fredware - Fichas Técnicas</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        
+        .fredware-header { background: #1e293b; color: white; padding: 12px 20px; border-radius: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .fredware-header h1 { font-size: 20px; font-weight: 900; }
+        .fredware-header .sub { font-size: 11px; color: #94a3b8; font-weight: 400; }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-purple { background: #8b5cf6; color: white; }
+        .btn-purple:hover { background: #7c3aed; }
+        .btn-outline { background: transparent; color: #475569; border: 1px solid #cbd5e1; }
+        .btn-outline:hover { background: #f1f5f9; }
+        
+        .ficha-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; cursor: pointer; }
+        .ficha-item:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.1); }
+        .ficha-item.seleccionada { border-color: #2563eb; background: #eff6ff; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .flex { display: flex; }
+        .flex-wrap { flex-wrap: wrap; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .gap-4 { gap: 16px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-4 { margin-top: 16px; }
+        .mb-4 { margin-bottom: 16px; }
+        .text-center { text-align: center; }
+        .text-sm { font-size: 14px; }
+        .text-xs { font-size: 12px; }
+        .font-bold { font-weight: 700; }
+        .font-black { font-weight: 900; }
+        .text-slate-400 { color: #94a3b8; }
+        .text-slate-500 { color: #64748b; }
+        .text-slate-600 { color: #475569; }
+        .text-slate-800 { color: #1e293b; }
+        .text-emerald-600 { color: #059669; }
+        .text-blue-600 { color: #2563eb; }
+        
+        .badge-online { background: #d1fae5; color: #065f46; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .badge-offline { background: #fee2e2; color: #991b1b; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        
+        input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        
+        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #cbd5e1; border-radius: 0 0 10px 10px; max-height: 200px; overflow-y: auto; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; }
+        .suggestion-item { padding: 10px 14px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #f1f5f9; }
+        .suggestion-item:hover { background: #eff6ff; }
+        .suggestion-item .producto { font-weight: 700; color: #1e293b; }
+        .suggestion-item .detalle { font-size: 11px; color: #94a3b8; }
+        
+        .ingrediente-linea { background: #f8fafc; padding: 6px 12px; border-radius: 6px; margin-bottom: 4px; border-left: 3px solid #10b981; }
+        
+        .checkbox-seleccion { width: 18px; height: 18px; cursor: pointer; accent-color: #2563eb; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 999; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; border-radius: 16px; max-width: 600px; width: 100%; padding: 24px; max-height: 80vh; overflow-y: auto; }
+        
+        @media (max-width: 640px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- HEADER -->
+    <div class="card" style="padding: 0; border: none; background: transparent;">
+        <div class="fredware-header">
+            <span class="text-3xl">📄</span>
+            <div>
+                <h1>FREDWARE - Fichas Técnicas</h1>
+                <span class="sub">Trazabilidad y Control de Producción</span>
+            </div>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span id="statusBadge" class="badge-offline">🔴 Desconectado</span>
+                <button onclick="recargarDatos()" class="btn" style="background: #475569; color: white; font-size: 12px; padding: 8px 16px;">🔄 Recargar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑAS -->
+    <div class="flex gap-2 bg-slate-100 p-2 rounded-xl mb-4 flex-wrap">
+        <button class="tab-btn btn btn-primary" data-tab="tab-crear" style="flex:1;">📝 Crear Ficha</button>
+        <button class="tab-btn btn" data-tab="tab-historial" style="flex:1; background:#e2e8f0; color:#475569;">📋 Historial</button>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 1: CREAR FICHA -->
+    <!-- ============================================================ -->
+    <div id="tab-crear" class="tab-content active">
+        <div class="card">
+            <h2 class="text-lg font-black text-slate-800 mb-4">📝 Nueva Ficha Técnica</h2>
+            
+            <div class="grid-2">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre de la Preparación *</label>
+                    <input type="text" id="ficha-nombre" placeholder="Ej: EMPANADA GALLEGA DE ZORZA" class="uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Número de Lote *</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="ficha-lote" placeholder="LOTE-001" class="uppercase" style="flex:1;">
+                        <button onclick="generarLoteAuto()" class="btn btn-primary" style="white-space:nowrap;">⚙️ Auto</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fecha de Elaboración</label>
+                <input type="date" id="ficha-fecha">
+            </div>
+
+            <div class="mt-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ingredientes y Trazabilidad</label>
+                <div class="relative">
+                    <div class="flex gap-2">
+                        <div class="flex-1 relative">
+                            <input type="text" id="ingrediente-input" placeholder="Escribe un ingrediente (ej: zorza, harina, cebolla)..." class="w-full uppercase" autocomplete="off" oninput="buscarAutocompletado(this.value)">
+                            <div id="autocomplete-box" class="autocomplete-suggestions"></div>
+                        </div>
+                        <button onclick="agregarIngrediente()" class="btn btn-success" style="white-space:nowrap;">➕ Añadir</button>
+                    </div>
+                </div>
+                
+                <!-- Lista de ingredientes con formato automático -->
+                <div id="lista-ingredientes" class="mt-3 max-h-[300px] overflow-y-auto">
+                    <div class="text-xs text-slate-400 text-center py-4">Los ingredientes añadidos aparecerán aquí</div>
+                </div>
+                
+                <!-- Textarea oculto para el formato final -->
+                <textarea id="ficha-ingredientes" style="display:none;"></textarea>
+                
+                <div class="text-xs text-slate-400 mt-1">💡 Escribe el nombre del ingrediente y el sistema buscará automáticamente la última recepción</div>
+            </div>
+
+            <div class="flex gap-3 mt-4 flex-wrap">
+                <button onclick="guardarFicha()" class="btn btn-primary" style="flex:1; padding: 14px;">
+                    💾 Guardar Ficha
+                </button>
+                <button onclick="imprimirFicha()" class="btn btn-success" style="flex:1; padding: 14px;">
+                    🖨️ Imprimir A4 con QR
+                </button>
+                <button onclick="imprimirSticker()" class="btn btn-warning" style="flex:1; padding: 14px;">
+                    🏷️ Imprimir Sticker
+                </button>
+                <button onclick="limpiarFormulario()" class="btn btn-danger" style="padding: 14px;">
+                    🗑️ Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 2: HISTORIAL -->
+    <!-- ============================================================ -->
+    <div id="tab-historial" class="tab-content">
+        <div class="card">
+            <h2 class="text-lg font-black text-slate-800 mb-4">📋 Historial de Fichas</h2>
+            
+            <div class="flex gap-2 mb-4 flex-wrap">
+                <input type="text" id="buscar-historial" placeholder="🔍 Buscar por nombre o lote..." class="flex-1 uppercase" oninput="filtrarHistorial()">
+                <button onclick="recargarHistorial()" class="btn btn-primary" style="white-space:nowrap;">🔄 Recargar</button>
+            </div>
+
+            <!-- Barra de acciones en lote -->
+            <div class="flex gap-2 mb-4 flex-wrap items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <span class="text-xs font-bold text-slate-500 mr-2">Acciones en lote:</span>
+                <button onclick="seleccionarTodasFichas()" class="btn btn-outline text-xs px-3 py-1.5">✅ Seleccionar todas</button>
+                <button onclick="deseleccionarTodasFichas()" class="btn btn-outline text-xs px-3 py-1.5">❌ Deseleccionar</button>
+                <span class="text-xs text-slate-400">|</span>
+                <button onclick="imprimirFichasSeleccionadas()" class="btn btn-success text-xs px-3 py-1.5">📄 Imprimir A4</button>
+                <button onclick="imprimirStickersSeleccionados()" class="btn btn-warning text-xs px-3 py-1.5">🏷️ Imprimir Stickers</button>
+                <button onclick="eliminarFichasSeleccionadas()" class="btn btn-danger text-xs px-3 py-1.5">🗑️ Eliminar</button>
+                <span id="contador-seleccionadas" class="text-xs font-bold text-blue-600 ml-auto">0 seleccionadas</span>
+            </div>
+
+            <div id="historial-lista" class="space-y-3 max-h-[500px] overflow-y-auto">
+                <div class="text-center text-slate-400 py-8">Cargando fichas...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TOAST -->
+<!-- ============================================================ -->
+<div id="toast-container" style="position:fixed; bottom:20px; right:20px; z-index:10000; display:flex; flex-direction:column; gap:8px;"></div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
+const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+
+let fichasGlobal = [];
+let recepcionesGlobal = [];
+let ingredientesLista = [];
+
+// ============================================================
+// UTILIDADES
+// ============================================================
+function toast(mensaje, tipo = 'success') {
+    const container = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    const colores = { success: 'bg-emerald-600', error: 'bg-red-600', warning: 'bg-amber-600', info: 'bg-blue-600' };
+    t.className = `${colores[tipo] || colores.success} text-white px-4 py-3 rounded-xl shadow-lg text-sm font-bold fade-in`;
+    t.textContent = mensaje;
+    container.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+function generarId() {
+    return 'ID_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+}
+
+function getFechaHoy() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function formatearFechaDDMMYYYY(fechaStr) {
+    if (!fechaStr) return '';
+    try {
+        const d = new Date(fechaStr);
+        if (!isNaN(d)) {
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+        // Si ya está en formato DD/MM/YYYY
+        if (fechaStr.includes('/')) return fechaStr;
+        return fechaStr;
+    } catch { return fechaStr; }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================================
+// PESTAÑAS
+// ============================================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.onclick = function() {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('btn-primary');
+            b.style.background = '#e2e8f0';
+            b.style.color = '#475569';
+        });
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        this.classList.add('btn-primary');
+        this.style.background = '#2563eb';
+        this.style.color = 'white';
+        document.getElementById(this.dataset.tab).classList.add('active');
+        if (this.dataset.tab === 'tab-historial') cargarHistorial();
+    };
+});
+
+// ============================================================
+// FUNCIONES SUPABASE
+// ============================================================
+async function obtenerFichas() {
+    const { data, error } = await db
+        .from('fichas')
+        .select('*')
+        .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+}
+
+async function guardarFichaEnDB(ficha) {
+    const { error } = await db.from('fichas').insert([ficha]);
+    if (error) throw error;
+}
+
+async function eliminarFichaDB(id) {
+    const { error } = await db.from('fichas').delete().eq('id', id);
+    if (error) throw error;
+}
+
+async function eliminarFichasDB(ids) {
+    for (const id of ids) {
+        await eliminarFichaDB(id);
+    }
+}
+
+// ============================================================
+// RECEPCIONES (desde SQLite vía API)
+// ============================================================
+async function cargarRecepciones() {
+    try {
+        const response = await fetch(`${API_URL}/obtener_mercancias`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        if (!response.ok) throw new Error('Error al cargar recepciones');
+        recepcionesGlobal = await response.json();
+        // Actualizar estado de conexión
+        document.getElementById('statusBadge').className = 'badge-online';
+        document.getElementById('statusBadge').textContent = '🟢 Online';
+    } catch (error) {
+        console.error('Error cargando recepciones:', error);
+        document.getElementById('statusBadge').className = 'badge-offline';
+        document.getElementById('statusBadge').textContent = '🔴 Desconectado';
+    }
+}
+
+// ============================================================
+// 🔍 AUTOCOMPLETADO INTELIGENTE
+// ============================================================
+function buscarAutocompletado(busqueda) {
+    const box = document.getElementById('autocomplete-box');
+    const texto = busqueda.trim().toUpperCase();
+    
+    if (!texto || texto.length < 2) {
+        box.style.display = 'none';
+        return;
+    }
+    
+    // Buscar en recepciones
+    const coincidencias = recepcionesGlobal.filter(r => 
+        r.producto && r.producto.toUpperCase().includes(texto)
+    );
+    
+    // También buscar en fichas anteriores (ingredientes ya usados)
+    const ingredientesConocidos = new Set();
+    fichasGlobal.forEach(f => {
+        if (f.ingredientes_detalle) {
+            const lineas = f.ingredientes_detalle.split('\n');
+            lineas.forEach(linea => {
+                const match = linea.match(/•\s*([^(]+)/);
+                if (match) {
+                    const nombre = match[1].trim().toUpperCase();
+                    if (nombre.includes(texto)) {
+                        ingredientesConocidos.add(nombre);
+                    }
+                }
+            });
+        }
+    });
+    
+    // Combinar y mostrar
+    const resultados = [];
+    const vistos = new Set();
+    
+    // Primero las coincidencias exactas de recepciones
+    coincidencias.forEach(r => {
+        const key = r.producto.toUpperCase();
+        if (!vistos.has(key)) {
+            vistos.add(key);
+            resultados.push({
+                producto: r.producto,
+                proveedor: r.proveedor || 'S/P',
+                fecha: r.fecha_registro,
+                tipo: 'recepcion',
+                coincidencia: key
+            });
+        }
+    });
+    
+    // Luego los ingredientes conocidos
+    ingredientesConocidos.forEach(nombre => {
+        if (!vistos.has(nombre)) {
+            vistos.add(nombre);
+            resultados.push({
+                producto: nombre,
+                proveedor: 'S/P',
+                fecha: null,
+                tipo: 'conocido',
+                coincidencia: nombre
+            });
+        }
+    });
+    
+    if (resultados.length === 0) {
+        box.style.display = 'none';
+        return;
+    }
+    
+    // Ordenar por relevancia (exactitud de la coincidencia)
+    resultados.sort((a, b) => {
+        const aStarts = a.coincidencia.startsWith(texto);
+        const bStarts = b.coincidencia.startsWith(texto);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.coincidencia.localeCompare(b.coincidencia);
+    });
+    
+    // Mostrar hasta 8 resultados
+    const mostrar = resultados.slice(0, 8);
+    
+    box.innerHTML = '';
+    mostrar.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        const fechaStr = item.fecha ? formatearFechaDDMMYYYY(item.fecha) : '';
+        const label = item.tipo === 'recepcion' ? '📦 Recibido' : '📝 Conocido';
+        div.innerHTML = `
+            <div class="producto">${escapeHtml(item.producto)}</div>
+            <div class="detalle">${label} | Proveedor: ${escapeHtml(item.proveedor)} ${fechaStr ? '| 📅 ' + fechaStr : ''}</div>
+        `;
+        div.onclick = () => seleccionarSugerencia(item);
+        box.appendChild(div);
+    });
+    
+    box.style.display = 'block';
+}
+
+function seleccionarSugerencia(item) {
+    const input = document.getElementById('ingrediente-input');
+    input.value = '';
+    document.getElementById('autocomplete-box').style.display = 'none';
+    
+    // Si tiene fecha, usarla; si no, preguntar
+    let fecha = item.fecha;
+    let proveedor = item.proveedor || 'S/P';
+    
+    if (!fecha) {
+        // Si no tiene fecha, preguntar al usuario
+        Swal.fire({
+            title: `📅 Fecha de llegada de ${item.producto}`,
+            text: 'Introduce la fecha de recepción de este ingrediente:',
+            input: 'date',
+            inputValue: getFechaHoy(),
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Aceptar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const fechaFormateada = formatearFechaDDMMYYYY(result.value);
+                agregarIngredienteConDatos(item.producto, proveedor, fechaFormateada);
+            } else {
+                // Si cancela, añadir sin fecha
+                agregarIngredienteConDatos(item.producto, proveedor, 'S/F');
+            }
+        });
+        return;
+    }
+    
+    const fechaFormateada = formatearFechaDDMMYYYY(fecha) || 'S/F';
+    agregarIngredienteConDatos(item.producto, proveedor, fechaFormateada);
+}
+
+// ============================================================
+// AGREGAR INGREDIENTE CON DATOS
+// ============================================================
+function agregarIngredienteConDatos(producto, proveedor, fecha) {
+    const textoLinea = `${producto.toUpperCase()} (Lote Prov: ${proveedor.toUpperCase()}) - Llegada: ${fecha}`;
+    ingredientesLista.push({
+        producto: producto.toUpperCase(),
+        proveedor: proveedor.toUpperCase(),
+        fecha: fecha,
+        texto: textoLinea
+    });
+    renderizarIngredientes();
+    toast(`✅ ${producto} añadido a la lista`);
+}
+
+function agregarIngrediente() {
+    const input = document.getElementById('ingrediente-input');
+    const texto = input.value.trim();
+    if (!texto) return;
+    
+    // Si el usuario escribió manualmente, intentar parsear
+    const upper = texto.toUpperCase();
+    
+    // Buscar en recepciones
+    const encontrado = recepcionesGlobal.find(r => 
+        r.producto && r.producto.toUpperCase() === upper
+    );
+    
+    if (encontrado) {
+        const fecha = formatearFechaDDMMYYYY(encontrado.fecha_registro) || 'S/F';
+        agregarIngredienteConDatos(encontrado.producto, encontrado.proveedor || 'S/P', fecha);
+    } else {
+        // Si no se encuentra, preguntar
+        Swal.fire({
+            title: `📦 ¿Datos para ${texto}?`,
+            html: `
+                <div class="text-left">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Proveedor:</label>
+                    <input id="swal-proveedor" class="swal2-input" placeholder="Ej: MAKRO" value="S/P">
+                    <label class="block text-xs font-bold text-slate-500 mt-3 mb-1">Fecha de llegada:</label>
+                    <input id="swal-fecha" class="swal2-input" type="date" value="${getFechaHoy()}">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Añadir',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                const prov = document.getElementById('swal-proveedor').value.trim().toUpperCase() || 'S/P';
+                const fecha = document.getElementById('swal-fecha').value;
+                return { proveedor: prov, fecha: fecha };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const fechaFormateada = result.value.fecha ? formatearFechaDDMMYYYY(result.value.fecha) : 'S/F';
+                agregarIngredienteConDatos(texto, result.value.proveedor, fechaFormateada);
+            }
+        });
+    }
+    input.value = '';
+    document.getElementById('autocomplete-box').style.display = 'none';
+}
+
+function renderizarIngredientes() {
+    const container = document.getElementById('lista-ingredientes');
+    if (ingredientesLista.length === 0) {
+        container.innerHTML = '<div class="text-xs text-slate-400 text-center py-4">No hay ingredientes añadidos</div>';
+        return;
+    }
+    
+    container.innerHTML = ingredientesLista.map((item, idx) => `
+        <div class="ingrediente-linea flex justify-between items-center">
+            <span class="text-sm font-medium text-slate-800">• ${escapeHtml(item.texto)}</span>
+            <button onclick="eliminarIngrediente(${idx})" class="text-red-500 hover:text-red-700 text-sm font-bold px-2">✕</button>
+        </div>
+    `).join('');
+    
+    // Actualizar textarea oculto
+    const textarea = document.getElementById('ficha-ingredientes');
+    textarea.value = ingredientesLista.map(item => `• ${item.texto}`).join('\n');
+}
+
+function eliminarIngrediente(idx) {
+    ingredientesLista.splice(idx, 1);
+    renderizarIngredientes();
+}
+
+// ============================================================
+// CREAR FICHA
+// ============================================================
+function generarLoteAuto() {
+    const ahora = new Date();
+    const lote = `LOTE-${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}-${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
+    document.getElementById('ficha-lote').value = lote;
+}
+
+function setFechaHoy() {
+    document.getElementById('ficha-fecha').value = getFechaHoy();
+}
+
+function limpiarFormulario() {
+    document.getElementById('ficha-nombre').value = '';
+    document.getElementById('ficha-lote').value = '';
+    ingredientesLista = [];
+    renderizarIngredientes();
+    document.getElementById('ingrediente-input').value = '';
+    document.getElementById('autocomplete-box').style.display = 'none';
+    setFechaHoy();
+}
+
+// ============================================================
+// GUARDAR E IMPRIMIR
+// ============================================================
+async function guardarFicha() {
+    const nombre = document.getElementById('ficha-nombre').value.trim().toUpperCase();
+    const lote = document.getElementById('ficha-lote').value.trim().toUpperCase();
+    const fecha = document.getElementById('ficha-fecha').value;
+    const ingredientes = document.getElementById('ficha-ingredientes').value.trim();
+
+    if (!nombre || !lote) {
+        toast('⚠️ Nombre y Lote son obligatorios', 'error');
+        return;
+    }
+
+    if (ingredientesLista.length === 0) {
+        toast('⚠️ Añade al menos un ingrediente', 'warning');
+        return;
+    }
+
+    try {
+        const ficha = {
+            id: generarId(),
+            nombre_produccion: nombre,
+            lote: lote,
+            fecha_preparacion: fecha,
+            fecha_llegada_ingredientes: fecha,
+            ingredientes_detalle: ingredientes,
+            created_at: new Date().toISOString()
+        };
+
+        await guardarFichaEnDB(ficha);
+        toast('✅ Ficha guardada correctamente');
+        limpiarFormulario();
+        cargarHistorial();
+    } catch (error) {
+        toast('❌ Error al guardar: ' + error.message, 'error');
+    }
+}
+
+async function imprimirFicha() {
+    const nombre = document.getElementById('ficha-nombre').value.trim().toUpperCase();
+    const lote = document.getElementById('ficha-lote').value.trim().toUpperCase();
+    const fecha = document.getElementById('ficha-fecha').value;
+    const ingredientes = document.getElementById('ficha-ingredientes').value.trim();
+
+    if (!nombre || !lote) {
+        toast('⚠️ Nombre y Lote son obligatorios', 'error');
+        return;
+    }
+
+    const datos = {
+        nombre: nombre,
+        lote: lote,
+        fecha_prep: formatearFechaDDMMYYYY(fecha) || new Date().toLocaleDateString('es-ES'),
+        ingredientes: ingredientes || 'Sin ingredientes registrados.'
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/generar_ficha_a4`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify(datos)
+        });
+
+        if (response.ok) {
+            toast('✅ Ficha A4 generada y enviada a impresión');
+        } else {
+            const error = await response.json();
+            toast('❌ Error al imprimir: ' + error.message, 'error');
+        }
+    } catch (error) {
+        toast('❌ Error al conectar con el servidor', 'error');
+    }
+}
+
+async function imprimirSticker() {
+    const nombre = document.getElementById('ficha-nombre').value.trim().toUpperCase();
+    const lote = document.getElementById('ficha-lote').value.trim().toUpperCase();
+    const fecha = document.getElementById('ficha-fecha').value;
+
+    if (!nombre || !lote) {
+        toast('⚠️ Nombre y Lote son obligatorios', 'error');
+        return;
+    }
+
+    const datos = {
+        nombre: nombre,
+        lote: lote,
+        fecha_prep: formatearFechaDDMMYYYY(fecha) || new Date().toLocaleDateString('es-ES'),
+        texto_qr: `PROD:${nombre}|LOTE:${lote}|F:${formatearFechaDDMMYYYY(fecha) || new Date().toLocaleDateString('es-ES')}`
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/generar_sticker`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify(datos)
+        });
+
+        if (response.ok) {
+            toast('✅ Sticker enviado a impresión');
+        } else {
+            const error = await response.json();
+            toast('❌ Error al imprimir: ' + error.message, 'error');
+        }
+    } catch (error) {
+        toast('❌ Error al conectar con el servidor', 'error');
+    }
+}
+
+// ============================================================
+// HISTORIAL CON SELECCIÓN MÚLTIPLE
+// ============================================================
+let fichasSeleccionadas = new Set();
+
+async function cargarHistorial() {
+    const container = document.getElementById('historial-lista');
+    try {
+        fichasGlobal = await obtenerFichas();
+        // Resetear selecciones
+        fichasSeleccionadas.clear();
+        renderizarHistorial(fichasGlobal);
+        actualizarContadorSeleccionadas();
+    } catch (error) {
+        container.innerHTML = `<div class="text-center text-red-500 py-8">❌ Error al cargar: ${error.message}</div>`;
+    }
+}
+
+function renderizarHistorial(fichas) {
+    const container = document.getElementById('historial-lista');
+    if (!fichas || fichas.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-400 py-8">📭 No hay fichas registradas</div>`;
+        return;
+    }
+
+    container.innerHTML = fichas.map(f => {
+        const seleccionada = fichasSeleccionadas.has(f.id);
+        return `
+        <div class="ficha-item ${seleccionada ? 'seleccionada' : ''}" onclick="toggleSeleccionFicha('${f.id}')">
+            <div class="flex justify-between items-start flex-wrap gap-2">
+                <div class="flex items-start gap-3">
+                    <input type="checkbox" class="checkbox-seleccion mt-1" ${seleccionada ? 'checked' : ''} onclick="event.stopPropagation(); toggleSeleccionFicha('${f.id}')">
+                    <div class="flex-1 min-w-0">
+                        <div class="font-black text-slate-800">${escapeHtml(f.nombre_produccion)}</div>
+                        <div class="text-sm text-slate-500">📦 ${escapeHtml(f.lote)}</div>
+                        <div class="text-xs text-slate-400">📅 ${formatearFechaDDMMYYYY(f.fecha_preparacion) || f.fecha_preparacion}</div>
+                        ${f.ingredientes_detalle ? `<div class="text-xs text-slate-600 mt-1 line-clamp-2">${escapeHtml(f.ingredientes_detalle.substring(0, 150))}${f.ingredientes_detalle.length > 150 ? '...' : ''}</div>` : ''}
+                    </div>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="event.stopPropagation(); imprimirFichaDesdeHistorial('${f.id}')" class="btn btn-success text-xs px-3 py-1.5">📄 A4</button>
+                    <button onclick="event.stopPropagation(); imprimirStickerDesdeHistorial('${f.id}')" class="btn btn-warning text-xs px-3 py-1.5">🏷️ Sticker</button>
+                    <button onclick="event.stopPropagation(); eliminarFicha('${f.id}')" class="btn btn-danger text-xs px-3 py-1.5">🗑️</button>
+                </div>
+            </div>
+        </div>
+    `}).join('');
+}
+
+function toggleSeleccionFicha(id) {
+    if (fichasSeleccionadas.has(id)) {
+        fichasSeleccionadas.delete(id);
+    } else {
+        fichasSeleccionadas.add(id);
+    }
+    actualizarContadorSeleccionadas();
+    renderizarHistorial(fichasGlobal);
+}
+
+function seleccionarTodasFichas() {
+    fichasGlobal.forEach(f => fichasSeleccionadas.add(f.id));
+    actualizarContadorSeleccionadas();
+    renderizarHistorial(fichasGlobal);
+}
+
+function deseleccionarTodasFichas() {
+    fichasSeleccionadas.clear();
+    actualizarContadorSeleccionadas();
+    renderizarHistorial(fichasGlobal);
+}
+
+function actualizarContadorSeleccionadas() {
+    document.getElementById('contador-seleccionadas').textContent = `${fichasSeleccionadas.size} seleccionadas`;
+}
+
+function getFichasSeleccionadas() {
+    return fichasGlobal.filter(f => fichasSeleccionadas.has(f.id));
+}
+
+function filtrarHistorial() {
+    const busqueda = document.getElementById('buscar-historial').value.trim().toUpperCase();
+    if (!busqueda) {
+        renderizarHistorial(fichasGlobal);
+        return;
+    }
+    const filtradas = fichasGlobal.filter(f => 
+        f.nombre_produccion.toUpperCase().includes(busqueda) ||
+        f.lote.toUpperCase().includes(busqueda)
+    );
+    renderizarHistorial(filtradas);
+}
+
+// ============================================================
+// ACCIONES EN LOTE
+// ============================================================
+async function imprimirFichasSeleccionadas() {
+    const seleccionadas = getFichasSeleccionadas();
+    if (seleccionadas.length === 0) {
+        toast('⚠️ No hay fichas seleccionadas', 'warning');
+        return;
+    }
+
+    const datos = seleccionadas.map(f => ({
+        nombre: f.nombre_produccion,
+        lote: f.lote,
+        fecha_prep: formatearFechaDDMMYYYY(f.fecha_preparacion) || f.fecha_preparacion,
+        ingredientes: f.ingredientes_detalle || 'Sin ingredientes registrados.'
+    }));
+
+    try {
+        const response = await fetch(`${API_URL}/generar_ficha_a4_masiva`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify({ fichas: datos })
+        });
+
+        if (response.ok) {
+            toast(`✅ ${seleccionadas.length} fichas A4 enviadas a impresión`);
+        } else {
+            toast('❌ Error al imprimir', 'error');
+        }
+    } catch (error) {
+        toast('❌ Error al conectar con el servidor', 'error');
+    }
+}
+
+async function imprimirStickersSeleccionados() {
+    const seleccionadas = getFichasSeleccionadas();
+    if (seleccionadas.length === 0) {
+        toast('⚠️ No hay fichas seleccionadas', 'warning');
+        return;
+    }
+
+    const datos = seleccionadas.map(f => ({
+        nombre: f.nombre_produccion,
+        lote: f.lote,
+        fecha_prep: formatearFechaDDMMYYYY(f.fecha_preparacion) || f.fecha_preparacion,
+        texto_qr: `PROD:${f.nombre_produccion}|LOTE:${f.lote}|F:${formatearFechaDDMMYYYY(f.fecha_preparacion) || f.fecha_preparacion}`
+    }));
+
+    try {
+        const response = await fetch(`${API_URL}/generar_sticker_masivo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify({ stickers: datos })
+        });
+
+        if (response.ok) {
+            toast(`✅ ${seleccionadas.length} stickers enviados a impresión`);
+        } else {
+            toast('❌ Error al imprimir', 'error');
+        }
+    } catch (error) {
+        toast('❌ Error al conectar con el servidor', 'error');
+    }
+}
+
+async function eliminarFichasSeleccionadas() {
+    const seleccionadas = getFichasSeleccionadas();
+    if (seleccionadas.length === 0) {
+        toast('⚠️ No hay fichas seleccionadas', 'warning');
+        return;
+    }
+
+    const confirm = await Swal.fire({
+        title: `¿Eliminar ${seleccionadas.length} fichas?`,
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Sí, eliminar todas',
+        cancelButtonText: 'Cancelar'
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+        for (const f of seleccionadas) {
+            await eliminarFichaDB(f.id);
+        }
+        toast(`✅ ${seleccionadas.length} fichas eliminadas`);
+        fichasSeleccionadas.clear();
+        cargarHistorial();
+    } catch (error) {
+        toast('❌ Error al eliminar', 'error');
+    }
+}
+
+// ============================================================
+// ACCIONES INDIVIDUALES DESDE HISTORIAL
+// ============================================================
+async function imprimirFichaDesdeHistorial(id) {
+    const ficha = fichasGlobal.find(f => f.id === id);
+    if (!ficha) return;
+
+    const datos = {
+        nombre: ficha.nombre_produccion,
+        lote: ficha.lote,
+        fecha_prep: formatearFechaDDMMYYYY(ficha.fecha_preparacion) || ficha.fecha_preparacion,
+        ingredientes: ficha.ingredientes_detalle || 'Sin ingredientes registrados.'
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/generar_ficha_a4`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify(datos)
+        });
+        if (response.ok) toast('✅ Ficha A4 enviada a impresión');
+        else toast('❌ Error al imprimir', 'error');
+    } catch (error) {
+        toast('❌ Error al conectar', 'error');
+    }
+}
+
+async function imprimirStickerDesdeHistorial(id) {
+    const ficha = fichasGlobal.find(f => f.id === id);
+    if (!ficha) return;
+
+    const datos = {
+        nombre: ficha.nombre_produccion,
+        lote: ficha.lote,
+        fecha_prep: formatearFechaDDMMYYYY(ficha.fecha_preparacion) || ficha.fecha_preparacion,
+        texto_qr: `PROD:${ficha.nombre_produccion}|LOTE:${ficha.lote}|F:${formatearFechaDDMMYYYY(ficha.fecha_preparacion) || ficha.fecha_preparacion}`
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/generar_sticker`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify(datos)
+        });
+        if (response.ok) toast('✅ Sticker enviado a impresión');
+        else toast('❌ Error al imprimir', 'error');
+    } catch (error) {
+        toast('❌ Error al conectar', 'error');
+    }
+}
+
+async function eliminarFicha(id) {
+    const confirm = await Swal.fire({
+        title: '¿Eliminar ficha?',
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+        await eliminarFichaDB(id);
+        toast('✅ Ficha eliminada');
+        cargarHistorial();
+    } catch (error) {
+        toast('❌ Error al eliminar', 'error');
+    }
+}
+
+// ============================================================
+// RECARGAR
+// ============================================================
+function recargarDatos() {
+    cargarHistorial();
+    cargarRecepciones();
+    toast('🔄 Datos recargados');
+}
+
+function recargarHistorial() {
+    cargarHistorial();
+}
+
+// ============================================================
+// INICIALIZAR
+// ============================================================
+document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+document.getElementById('tab-crear').classList.add('active');
+
+setFechaHoy();
+cargarRecepciones();
+cargarHistorial();
+
+// Exponer funciones globales
+window.agregarIngrediente = agregarIngrediente;
+window.generarLoteAuto = generarLoteAuto;
+window.guardarFicha = guardarFicha;
+window.imprimirFicha = imprimirFicha;
+window.imprimirSticker = imprimirSticker;
+window.limpiarFormulario = limpiarFormulario;
+window.recargarDatos = recargarDatos;
+window.recargarHistorial = recargarHistorial;
+window.filtrarHistorial = filtrarHistorial;
+window.eliminarFicha = eliminarFicha;
+window.imprimirFichaDesdeHistorial = imprimirFichaDesdeHistorial;
+window.imprimirStickerDesdeHistorial = imprimirStickerDesdeHistorial;
+window.buscarAutocompletado = buscarAutocompletado;
+window.seleccionarTodasFichas = seleccionarTodasFichas;
+window.deseleccionarTodasFichas = deseleccionarTodasFichas;
+window.imprimirFichasSeleccionadas = imprimirFichasSeleccionadas;
+window.imprimirStickersSeleccionados = imprimirStickersSeleccionados;
+window.eliminarFichasSeleccionadas = eliminarFichasSeleccionadas;
+
+// Enter para añadir ingrediente
+document.getElementById('ingrediente-input')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); agregarIngrediente(); }
+});
+
+// Cerrar autocomplete al hacer clic fuera
+document.addEventListener('click', (e) => {
+    const box = document.getElementById('autocomplete-box');
+    const input = document.getElementById('ingrediente-input');
+    if (box && input && !box.contains(e.target) && e.target !== input) {
+        box.style.display = 'none';
+    }
+});
+</script>
+</body>
+</html>
