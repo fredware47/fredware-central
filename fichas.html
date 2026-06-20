@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>📄 Fredware - Fichas Técnicas</title>
+    <title>📄 Fredware - Fichas de Producción</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -32,6 +32,8 @@
         .btn-purple:hover { background: #7c3aed; }
         .btn-outline { background: transparent; color: #475569; border: 1px solid #cbd5e1; }
         .btn-outline:hover { background: #f1f5f9; }
+        .btn-download { background: #0891b2; color: white; }
+        .btn-download:hover { background: #0e7490; }
         
         .ficha-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; cursor: pointer; }
         .ficha-item:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.1); }
@@ -76,10 +78,6 @@
         
         .checkbox-seleccion { width: 18px; height: 18px; cursor: pointer; accent-color: #2563eb; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 999; }
-        .modal-overlay.active { display: flex; }
-        .modal-content { background: white; border-radius: 16px; max-width: 600px; width: 100%; padding: 24px; max-height: 80vh; overflow-y: auto; }
-        
         @media (max-width: 640px) {
             .grid-2 { grid-template-columns: 1fr; }
         }
@@ -93,7 +91,7 @@
         <div class="fredware-header">
             <span class="text-3xl">📄</span>
             <div>
-                <h1>FREDWARE - Fichas Técnicas</h1>
+                <h1>FREDWARE - Fichas de Producción</h1>
                 <span class="sub">Trazabilidad y Control de Producción</span>
             </div>
             <div style="margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
@@ -114,7 +112,7 @@
     <!-- ============================================================ -->
     <div id="tab-crear" class="tab-content active">
         <div class="card">
-            <h2 class="text-lg font-black text-slate-800 mb-4">📝 Nueva Ficha Técnica</h2>
+            <h2 class="text-lg font-black text-slate-800 mb-4">📝 Nueva Ficha de Producción</h2>
             
             <div class="grid-2">
                 <div>
@@ -180,11 +178,15 @@
     <!-- ============================================================ -->
     <div id="tab-historial" class="tab-content">
         <div class="card">
-            <h2 class="text-lg font-black text-slate-800 mb-4">📋 Historial de Fichas</h2>
+            <h2 class="text-lg font-black text-slate-800 mb-4">📋 Historial de Fichas de Producción</h2>
             
             <div class="flex gap-2 mb-4 flex-wrap">
                 <input type="text" id="buscar-historial" placeholder="🔍 Buscar por nombre o lote..." class="flex-1 uppercase" oninput="filtrarHistorial()">
                 <button onclick="recargarHistorial()" class="btn btn-primary" style="white-space:nowrap;">🔄 Recargar</button>
+                <!-- 🔥 NUEVO BOTÓN: DESCARGAR TODAS LAS FICHAS -->
+                <button onclick="descargarTodasFichas()" class="btn btn-download" style="white-space:nowrap;">
+                    📥 Descargar Todas
+                </button>
             </div>
 
             <!-- Barra de acciones en lote -->
@@ -252,7 +254,6 @@ function formatearFechaDDMMYYYY(fechaStr) {
         if (!isNaN(d)) {
             return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
-        // Si ya está en formato DD/MM/YYYY
         if (fechaStr.includes('/')) return fechaStr;
         return fechaStr;
     } catch { return fechaStr; }
@@ -322,7 +323,6 @@ async function cargarRecepciones() {
         });
         if (!response.ok) throw new Error('Error al cargar recepciones');
         recepcionesGlobal = await response.json();
-        // Actualizar estado de conexión
         document.getElementById('statusBadge').className = 'badge-online';
         document.getElementById('statusBadge').textContent = '🟢 Online';
     } catch (error) {
@@ -344,12 +344,10 @@ function buscarAutocompletado(busqueda) {
         return;
     }
     
-    // Buscar en recepciones
     const coincidencias = recepcionesGlobal.filter(r => 
         r.producto && r.producto.toUpperCase().includes(texto)
     );
     
-    // También buscar en fichas anteriores (ingredientes ya usados)
     const ingredientesConocidos = new Set();
     fichasGlobal.forEach(f => {
         if (f.ingredientes_detalle) {
@@ -366,11 +364,9 @@ function buscarAutocompletado(busqueda) {
         }
     });
     
-    // Combinar y mostrar
     const resultados = [];
     const vistos = new Set();
     
-    // Primero las coincidencias exactas de recepciones
     coincidencias.forEach(r => {
         const key = r.producto.toUpperCase();
         if (!vistos.has(key)) {
@@ -385,7 +381,6 @@ function buscarAutocompletado(busqueda) {
         }
     });
     
-    // Luego los ingredientes conocidos
     ingredientesConocidos.forEach(nombre => {
         if (!vistos.has(nombre)) {
             vistos.add(nombre);
@@ -404,7 +399,6 @@ function buscarAutocompletado(busqueda) {
         return;
     }
     
-    // Ordenar por relevancia (exactitud de la coincidencia)
     resultados.sort((a, b) => {
         const aStarts = a.coincidencia.startsWith(texto);
         const bStarts = b.coincidencia.startsWith(texto);
@@ -413,7 +407,6 @@ function buscarAutocompletado(busqueda) {
         return a.coincidencia.localeCompare(b.coincidencia);
     });
     
-    // Mostrar hasta 8 resultados
     const mostrar = resultados.slice(0, 8);
     
     box.innerHTML = '';
@@ -438,12 +431,10 @@ function seleccionarSugerencia(item) {
     input.value = '';
     document.getElementById('autocomplete-box').style.display = 'none';
     
-    // Si tiene fecha, usarla; si no, preguntar
     let fecha = item.fecha;
     let proveedor = item.proveedor || 'S/P';
     
     if (!fecha) {
-        // Si no tiene fecha, preguntar al usuario
         Swal.fire({
             title: `📅 Fecha de llegada de ${item.producto}`,
             text: 'Introduce la fecha de recepción de este ingrediente:',
@@ -458,7 +449,6 @@ function seleccionarSugerencia(item) {
                 const fechaFormateada = formatearFechaDDMMYYYY(result.value);
                 agregarIngredienteConDatos(item.producto, proveedor, fechaFormateada);
             } else {
-                // Si cancela, añadir sin fecha
                 agregarIngredienteConDatos(item.producto, proveedor, 'S/F');
             }
         });
@@ -489,10 +479,8 @@ function agregarIngrediente() {
     const texto = input.value.trim();
     if (!texto) return;
     
-    // Si el usuario escribió manualmente, intentar parsear
     const upper = texto.toUpperCase();
     
-    // Buscar en recepciones
     const encontrado = recepcionesGlobal.find(r => 
         r.producto && r.producto.toUpperCase() === upper
     );
@@ -501,7 +489,6 @@ function agregarIngrediente() {
         const fecha = formatearFechaDDMMYYYY(encontrado.fecha_registro) || 'S/F';
         agregarIngredienteConDatos(encontrado.producto, encontrado.proveedor || 'S/P', fecha);
     } else {
-        // Si no se encuentra, preguntar
         Swal.fire({
             title: `📦 ¿Datos para ${texto}?`,
             html: `
@@ -546,7 +533,6 @@ function renderizarIngredientes() {
         </div>
     `).join('');
     
-    // Actualizar textarea oculto
     const textarea = document.getElementById('ficha-ingredientes');
     textarea.value = ingredientesLista.map(item => `• ${item.texto}`).join('\n');
 }
@@ -698,7 +684,6 @@ async function cargarHistorial() {
     const container = document.getElementById('historial-lista');
     try {
         fichasGlobal = await obtenerFichas();
-        // Resetear selecciones
         fichasSeleccionadas.clear();
         renderizarHistorial(fichasGlobal);
         actualizarContadorSeleccionadas();
@@ -779,6 +764,39 @@ function filtrarHistorial() {
         f.lote.toUpperCase().includes(busqueda)
     );
     renderizarHistorial(filtradas);
+}
+
+// ============================================================
+// 🔥 NUEVA FUNCIÓN: DESCARGAR TODAS LAS FICHAS
+// ============================================================
+function descargarTodasFichas() {
+    if (!fichasGlobal || fichasGlobal.length === 0) {
+        toast('⚠️ No hay fichas para descargar', 'warning');
+        return;
+    }
+
+    const ahora = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    const fecha = `${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}`;
+    
+    // Crear el archivo JSON con todas las fichas
+    const datos = {
+        fecha_exportacion: ahora.toISOString(),
+        total_fichas: fichasGlobal.length,
+        fichas: fichasGlobal
+    };
+    
+    const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fichas_produccion_${fecha}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast(`✅ ${fichasGlobal.length} fichas descargadas`);
 }
 
 // ============================================================
@@ -990,6 +1008,7 @@ window.deseleccionarTodasFichas = deseleccionarTodasFichas;
 window.imprimirFichasSeleccionadas = imprimirFichasSeleccionadas;
 window.imprimirStickersSeleccionados = imprimirStickersSeleccionados;
 window.eliminarFichasSeleccionadas = eliminarFichasSeleccionadas;
+window.descargarTodasFichas = descargarTodasFichas;
 
 // Enter para añadir ingrediente
 document.getElementById('ingrediente-input')?.addEventListener('keypress', (e) => {
