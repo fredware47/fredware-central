@@ -22,6 +22,8 @@
         .btn-opcion.selected { background: #3b82f6; color: white; }
         .btn-principal { background: #10b981; color: white; font-size: 16px; padding: 15px; border: none; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2); }
         .btn-principal:hover { background-color: #059669; }
+        .btn-reintento { background: #f59e0b; color: white; border: none; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; }
+        .btn-reintento:hover { background: #d97706; }
         .etiqueta-vista { background: #fffde7; border: 2px dashed #fbc02d; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center; font-family: monospace; font-size: 14px; }
         #contenedor-qr { display: flex; justify-content: center; margin: 15px 0; }
         #reader { background-color: #000; border-radius: 8px; overflow: hidden; border: 2px solid #3b82f6; }
@@ -54,9 +56,10 @@
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
         .toast.show { opacity: 1; }
         .historial { background: #f1f5f9; border-radius: 8px; padding: 10px; margin-top: 15px; max-height: 200px; overflow-y: auto; font-size: 12px; }
-        .historial-item { border-bottom: 1px solid #cbd5e1; padding: 6px 0; display: flex; justify-content: space-between; }
+        .historial-item { border-bottom: 1px solid #cbd5e1; padding: 6px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
         .reimprimir { background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 12px; margin-left: 8px; }
         .estado-offline { background: #fef9c3; color: #854d0e; padding: 5px; border-radius: 6px; text-align: center; font-size: 12px; margin-bottom: 10px; display: none; }
+        .badge-pendientes { background: #ef4444; color: white; border-radius: 12px; padding: 2px 10px; font-size: 10px; font-weight: bold; margin-left: 6px; }
     </style>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -151,13 +154,18 @@
     <div class="historial" id="historial-container">
         <strong>📋 Últimas etiquetas emitidas:</strong>
         <div id="lista-historial">(No hay etiquetas aún)</div>
+        <button id="btn-forzar-reintento" class="btn-reintento" onclick="forzarReintentoCola()" style="display:none;">
+            🔄 Reintentar impresiones pendientes <span id="contador-pendientes" class="badge-pendientes">0</span>
+        </button>
     </div>
 </div>
 
 <div id="toast-mensaje" class="toast"></div>
 
 <script>
-    // ----- URL fija del servidor (ngrok) -----
+    // ============================================================
+    // CONFIGURACIÓN
+    // ============================================================
     const IP_SERVIDOR_CENTRAL = "https://untried-january-thinning.ngrok-free.dev";
     
     // Variables globales
@@ -168,22 +176,37 @@
     let ultimoEscaneoRaw = '';
     let ultimoEscaneoParseado = { nombre: '', lote: '', fecha: '' };
     
-    // ----- Funciones auxiliares -----
+    // ============================================================
+    // FUNCIONES AUXILIARES
+    // ============================================================
     function mostrarToast(mensaje, color = "#333") {
         const toast = document.getElementById('toast-mensaje');
+        if (!toast) return;
         toast.textContent = mensaje;
         toast.style.backgroundColor = color;
         toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2500);
+        setTimeout(() => toast.classList.remove('show'), 3000);
     }
     
     function actualizarEstadoServidor() {
-        fetch(IP_SERVIDOR_CENTRAL + '/obtener_catalogo', { method: 'HEAD', headers: { 'ngrok-skip-browser-warning': 'true' }, timeout: 3000 })
-            .then(() => { document.getElementById('offline-banner').style.display = 'none'; })
-            .catch(() => { document.getElementById('offline-banner').style.display = 'block'; });
+        fetch(IP_SERVIDOR_CENTRAL + '/obtener_catalogo', { 
+            method: 'HEAD', 
+            headers: { 'ngrok-skip-browser-warning': 'true' }, 
+            timeout: 3000 
+        })
+        .then(() => { 
+            const banner = document.getElementById('offline-banner');
+            if (banner) banner.style.display = 'none'; 
+        })
+        .catch(() => { 
+            const banner = document.getElementById('offline-banner');
+            if (banner) banner.style.display = 'block'; 
+        });
     }
     
-    // ----- Actualización del visor -----
+    // ============================================================
+    // ACTUALIZACIÓN DEL VISOR
+    // ============================================================
     function actualizarVisor(rawText, parseado) {
         const visorTexto = document.getElementById('visor-texto-completo');
         const visorCampos = document.getElementById('visor-campos');
@@ -193,7 +216,9 @@
         }
     }
     
-    // ----- Carga de catálogo -----
+    // ============================================================
+    // CATÁLOGO
+    // ============================================================
     function cargarCatalogo() {
         fetch(`${IP_SERVIDOR_CENTRAL}/obtener_catalogo`, { 
             method: 'GET', 
@@ -202,115 +227,320 @@
         .then(res => res.ok ? res.json() : Promise.reject())
         .then(data => {
             if (data && data.productos) {
-                document.getElementById('base-datos-secos').innerHTML = data.productos.map(p => `<option value="${p.replace(/"/g, '&quot;')}">`).join('');
+                const datalist = document.getElementById('base-datos-secos');
+                if (datalist) {
+                    datalist.innerHTML = data.productos.map(p => `<option value="${p.replace(/"/g, '&quot;')}">`).join('');
+                }
             }
         })
-        .catch(() => mostrarToast("⚠️ Catálogo no disponible - modo offline", "#f59e0b"));
+        .catch(() => {
+            // Catálogo local de respaldo
+            const catalogoLocal = ['ARROZ', 'LENTEJAS', 'GARBANZOS', 'AZÚCAR', 'HARINA', 'SAL', 'ACEITE', 'VINAGRE', 'PASTA', 'TOMATE'];
+            const datalist = document.getElementById('base-datos-secos');
+            if (datalist) {
+                datalist.innerHTML = catalogoLocal.map(p => `<option value="${p}">`).join('');
+            }
+            mostrarToast("⚠️ Catálogo no disponible - modo offline", "#f59e0b");
+        });
     }
     
-    // ----- Historial local -----
-    let historialEtiquetas = JSON.parse(localStorage.getItem('fredware_historial') || '[]');
+    // ============================================================
+    // HISTORIAL LOCAL
+    // ============================================================
+    let historialEtiquetas = JSON.parse(localStorage.getItem('fredware_historial_caducidades') || '[]');
+    
     function actualizarHistorialUI() {
         const contenedor = document.getElementById('lista-historial');
+        if (!contenedor) return;
+        
         if (historialEtiquetas.length === 0) {
             contenedor.innerHTML = '(No hay etiquetas aún)';
             return;
         }
+        
         contenedor.innerHTML = historialEtiquetas.slice(-10).reverse().map(entry => `
             <div class="historial-item">
                 <span><strong>${entry.tipo}</strong> ${entry.producto} (${entry.lote || 'S/L'}) - ${entry.fecha}</span>
-                <button class="reimprimir" data-qr="${entry.qr.replace(/"/g, '&quot;')}">🔄 Reimprimir</button>
+                <div style="display:flex; gap:4px;">
+                    <button class="reimprimir" data-qr="${entry.qr.replace(/"/g, '&quot;')}" 
+                            data-producto="${entry.producto.replace(/"/g, '&quot;')}"
+                            data-lote="${(entry.lote || 'S/L').replace(/"/g, '&quot;')}"
+                            data-fecha="${(entry.fecha || '').replace(/"/g, '&quot;')}"
+                            data-tipo="${entry.tipo}">
+                        🔄 Reimprimir
+                    </button>
+                </div>
             </div>
         `).join('');
+        
         document.querySelectorAll('.reimprimir').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const qr = btn.getAttribute('data-qr');
+                const producto = btn.getAttribute('data-producto');
+                const lote = btn.getAttribute('data-lote');
+                const fecha = btn.getAttribute('data-fecha');
+                const tipo = btn.getAttribute('data-tipo');
+                
                 if (qr) {
-                    generarQRLocal(qr);
-                    mostrarToast("Etiqueta reimpresa en pantalla", "#3b82f6");
+                    reimprimirDesdeHistorial(qr, producto, lote, fecha, tipo);
                 }
             });
         });
+        
+        // Actualizar contador de pendientes
+        actualizarContadorPendientes();
     }
     
     function agregarAlHistorial(tipo, producto, lote, fecha, qr) {
         historialEtiquetas.unshift({ tipo, producto, lote, fecha, qr, timestamp: Date.now() });
-        if (historialEtiquetas.length > 20) historialEtiquetas.pop();
-        localStorage.setItem('fredware_historial', JSON.stringify(historialEtiquetas));
+        if (historialEtiquetas.length > 50) historialEtiquetas.pop();
+        localStorage.setItem('fredware_historial_caducidades', JSON.stringify(historialEtiquetas));
         actualizarHistorialUI();
     }
     
-    // ----- Cola offline -----
+    // ============================================================
+    // COLA OFFLINE
+    // ============================================================
     function guardarEnCola(paqueteImpresion, datosBD) {
-        colaOffline.push({ paqueteImpresion, datosBD, timestamp: Date.now() });
+        colaOffline.push({ 
+            paqueteImpresion, 
+            datosBD, 
+            timestamp: Date.now(),
+            intentos: 0
+        });
         localStorage.setItem('fredware_cola_offline', JSON.stringify(colaOffline));
-        mostrarToast("📦 Sin conexión: guardado en cola local", "#f59e0b");
+        mostrarToast("📦 Guardado en cola local. Reintentará automáticamente.", "#f59e0b");
+        actualizarContadorPendientes();
+    }
+    
+    function actualizarContadorPendientes() {
+        const colaGuardada = localStorage.getItem('fredware_cola_offline');
+        let count = 0;
+        if (colaGuardada) {
+            try {
+                const cola = JSON.parse(colaGuardada);
+                count = cola.length;
+            } catch(e) {}
+        }
+        
+        const contador = document.getElementById('contador-pendientes');
+        const boton = document.getElementById('btn-forzar-reintento');
+        
+        if (contador) contador.textContent = count;
+        if (boton) {
+            boton.style.display = count > 0 ? 'block' : 'none';
+        }
     }
     
     function procesarColaOffline() {
-        if (!navigator.onLine) return;
+        if (!navigator.onLine) {
+            console.log('📡 Sin conexión, esperando...');
+            return;
+        }
+        
         const colaGuardada = localStorage.getItem('fredware_cola_offline');
-        if (!colaGuardada) return;
-        colaOffline = JSON.parse(colaGuardada);
-        if (colaOffline.length === 0) return;
+        if (!colaGuardada) {
+            actualizarContadorPendientes();
+            return;
+        }
+        
+        try {
+            colaOffline = JSON.parse(colaGuardada);
+        } catch(e) {
+            localStorage.removeItem('fredware_cola_offline');
+            return;
+        }
+        
+        if (colaOffline.length === 0) {
+            localStorage.removeItem('fredware_cola_offline');
+            actualizarContadorPendientes();
+            return;
+        }
+        
         mostrarToast(`🔄 Reintentando ${colaOffline.length} elementos pendientes...`, "#3b82f6");
+        console.log(`📦 Procesando cola: ${colaOffline.length} items`);
         
         const procesarSiguiente = () => {
             if (colaOffline.length === 0) {
                 localStorage.removeItem('fredware_cola_offline');
+                mostrarToast("✅ Todos los pendientes sincronizados", "#10b981");
+                actualizarContadorPendientes();
                 return;
             }
+            
             const item = colaOffline[0];
+            item.intentos = (item.intentos || 0) + 1;
+            
+            // Si tiene más de 5 intentos, lo saltamos
+            if (item.intentos > 5) {
+                console.warn('⚠️ Item con muchos intentos, se omite:', item);
+                colaOffline.shift();
+                localStorage.setItem('fredware_cola_offline', JSON.stringify(colaOffline));
+                actualizarContadorPendientes();
+                procesarSiguiente();
+                return;
+            }
+            
             dispararServidorDual(item.paqueteImpresion, item.datosBD, true)
                 .then(() => {
                     colaOffline.shift();
                     localStorage.setItem('fredware_cola_offline', JSON.stringify(colaOffline));
+                    actualizarContadorPendientes();
                     procesarSiguiente();
                 })
                 .catch(() => {
-                    mostrarToast("No se pudo sincronizar toda la cola, reintentará después", "#ef4444");
+                    // Guardar con intentos incrementados
+                    localStorage.setItem('fredware_cola_offline', JSON.stringify(colaOffline));
+                    actualizarContadorPendientes();
+                    // Esperar 5 segundos antes de reintentar
+                    setTimeout(procesarSiguiente, 5000);
                 });
         };
+        
         procesarSiguiente();
     }
     
+    function forzarReintentoCola() {
+        const colaGuardada = localStorage.getItem('fredware_cola_offline');
+        if (!colaGuardada) {
+            mostrarToast("📭 No hay elementos pendientes", "#3b82f6");
+            return;
+        }
+        try {
+            const cola = JSON.parse(colaGuardada);
+            if (cola.length === 0) {
+                mostrarToast("📭 No hay elementos pendientes", "#3b82f6");
+                return;
+            }
+            mostrarToast(`🔄 Reintentando ${cola.length} elementos...`, "#3b82f6");
+            procesarColaOffline();
+        } catch(e) {
+            localStorage.removeItem('fredware_cola_offline');
+            mostrarToast("📭 No hay elementos pendientes", "#3b82f6");
+        }
+    }
+    
+    // ============================================================
+    // ENVÍO AL SERVIDOR (MEJORADO)
+    // ============================================================
     function dispararServidorDual(paqueteImpresion, datosBD, esReintento = false) {
         const headers = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
+        
+        console.log('📤 Enviando a impresora:', paqueteImpresion);
+        console.log('📤 Enviando a BD:', datosBD);
+        
         return Promise.all([
-            fetch(`${IP_SERVIDOR_CENTRAL}/imprimir_lote`, { method: 'POST', headers, body: JSON.stringify(paqueteImpresion) }),
-            fetch(`${IP_SERVIDOR_CENTRAL}/guardar_mercancia`, { method: 'POST', headers, body: JSON.stringify(datosBD) })
-        ]).then(([res1, res2]) => {
+            fetch(`${IP_SERVIDOR_CENTRAL}/imprimir_lote`, { 
+                method: 'POST', 
+                headers, 
+                body: JSON.stringify(paqueteImpresion) 
+            }),
+            fetch(`${IP_SERVIDOR_CENTRAL}/guardar_mercancia`, { 
+                method: 'POST', 
+                headers, 
+                body: JSON.stringify(datosBD) 
+            })
+        ]).then(async ([res1, res2]) => {
+            // Leer respuestas para depuración
+            let texto1 = '';
+            let texto2 = '';
+            try {
+                texto1 = await res1.text();
+            } catch(e) {}
+            try {
+                texto2 = await res2.text();
+            } catch(e) {}
+            
+            console.log('📥 Respuesta impresión:', res1.status, texto1);
+            console.log('📥 Respuesta BD:', res2.status, texto2);
+            
             if (res1.ok && res2.ok) {
-                if (!esReintento) mostrarToast("✅ Guardado en SQL y orden enviada a la impresora.", "#10b981");
+                if (!esReintento) {
+                    mostrarToast("✅ Etiqueta enviada a la impresora Brother", "#10b981");
+                }
                 return true;
             } else {
-                throw new Error("Error en el servidor");
+                let errorMsg = '';
+                if (!res1.ok) errorMsg += `Impresora: ${res1.status} `;
+                if (!res2.ok) errorMsg += `BD: ${res2.status}`;
+                throw new Error(errorMsg || "Error en el servidor");
             }
         }).catch(error => {
+            console.error('❌ Error en servidor:', error);
             if (!esReintento) {
                 guardarEnCola(paqueteImpresion, datosBD);
-                mostrarToast("⚠️ Error de conexión: se guardó localmente", "#ef4444");
+                mostrarToast("⚠️ Impresora no disponible. Etiqueta guardada en cola.", "#ef4444");
             }
             throw error;
         });
     }
     
-    // ----- Generar QR -----
-    function generarQRLocal(texto) {
-        const contenedor = document.getElementById('contenedor-qr');
-        contenedor.innerHTML = ""; 
-        ultimoQRGenerado = texto;
-        new QRCode(contenedor, {
-            text: texto,
-            width: 140,
-            height: 140,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
+    // ============================================================
+    // REIMPRIMIR DESDE HISTORIAL
+    // ============================================================
+    function reimprimirDesdeHistorial(qrData, producto, lote, fecha, tipo) {
+        console.log('🔄 Reimprimiendo:', producto);
+        
+        let nombre = producto || 'PRODUCTO';
+        let loteProd = lote || 'S/L';
+        let fechaCad = fecha || '';
+        
+        let paqueteImpresion = {
+            etiquetas: [{
+                producto: nombre,
+                unidad: loteProd,
+                fecha: `CAD: ${fechaCad}`,
+                texto_qr: qrData
+            }]
+        };
+        
+        let datosBD = {
+            producto: nombre,
+            conservacion: tipo === 'ELABORADO' ? 'NEVERA' : 'SECO',
+            proveedor: tipo === 'ELABORADO' ? 'PRODUCCION INTERNA' : 'PROVEEDOR REGLAMENTARIO',
+            cantidad_total: 1,
+            fecha_registro: new Date().toISOString()
+        };
+        
+        mostrarToast(`🔄 Reimprimiendo: ${nombre}`, "#3b82f6");
+        
+        dispararServidorDual(paqueteImpresion, datosBD, false)
+            .then(() => {
+                generarQRLocal(qrData);
+                const datosDiv = document.getElementById('etiqueta-datos');
+                if (datosDiv) {
+                    datosDiv.innerHTML = `PRODUCTO: ${nombre}<br>LOTE: ${loteProd}<br>VENCE: ${fechaCad}`;
+                }
+                document.getElementById('vista-previa').style.display = 'block';
+            })
+            .catch(() => {});
     }
     
-    // ----- Escáner QR (con debounce y actualización del visor) -----
+    // ============================================================
+    // GENERAR QR
+    // ============================================================
+    function generarQRLocal(texto) {
+        const contenedor = document.getElementById('contenedor-qr');
+        if (!contenedor) return;
+        contenedor.innerHTML = ""; 
+        ultimoQRGenerado = texto;
+        try {
+            new QRCode(contenedor, {
+                text: texto,
+                width: 140,
+                height: 140,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        } catch(e) {
+            contenedor.innerHTML = `<div style="color:#ef4444;">Error generando QR</div>`;
+        }
+    }
+    
+    // ============================================================
+    // ESCÁNER QR (NO TOCAR - FUNCIONA PERFECTO)
+    // ============================================================
     let ultimoEscaneoTime = 0;
     function onScanSuccess(decodedText) {
         const ahora = Date.now();
@@ -353,9 +583,13 @@
             fecha = `${pad(hoy.getDate())}/${pad(hoy.getMonth() + 1)}/${hoy.getFullYear()}`;
         }
         
-        document.getElementById('p1-nombre').value = nombre.toUpperCase();
-        document.getElementById('p1-lote').value = lote.toUpperCase();
-        document.getElementById('p1-fecha-elab').value = fecha;
+        const inputNombre = document.getElementById('p1-nombre');
+        const inputLote = document.getElementById('p1-lote');
+        const inputFecha = document.getElementById('p1-fecha-elab');
+        
+        if (inputNombre) inputNombre.value = nombre.toUpperCase();
+        if (inputLote) inputLote.value = lote.toUpperCase();
+        if (inputFecha) inputFecha.value = fecha;
         
         ultimoEscaneoRaw = cadena;
         ultimoEscaneoParseado = { nombre: nombre.toUpperCase(), lote: lote.toUpperCase(), fecha: fecha };
@@ -364,23 +598,29 @@
         mostrarToast(`📷 Escaneado: ${nombre}`, "#3b82f6");
     }
     
-    // Inicializar escáner
-    if (!html5QrcodeScanner) {
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 }, false);
-        html5QrcodeScanner.render(onScanSuccess, (err) => {});
+    // Inicializar escáner (SOLO UNA VEZ)
+    if (!html5QrcodeScanner && document.getElementById('reader')) {
+        try {
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 }, false);
+            html5QrcodeScanner.render(onScanSuccess, (err) => {});
+        } catch(e) {
+            console.error("Error al iniciar escáner:", e);
+        }
     }
     
-    // ----- Procesar opciones (sin Congelados) -----
+    // ============================================================
+    // PROCESAR OPCIONES
+    // ============================================================
     function procesarOpcion(opcion) {
         opcionActiva = opcion;
         document.querySelectorAll('.btn-opcion').forEach(b => b.classList.remove('selected'));
-        document.getElementById('opt-' + opcion).classList.add('selected');
+        const btn = document.getElementById('opt-' + opcion);
+        if (btn) btn.classList.add('selected');
         
         const panel = document.getElementById('panel-dinamico');
+        if (!panel) return;
         panel.innerHTML = '';
         panel.style.display = 'block';
-        const hoy = new Date();
-        const hoyStr = `${hoy.getDate().toString().padStart(2,'0')}/${(hoy.getMonth()+1).toString().padStart(2,'0')}/${hoy.getFullYear()}`;
         
         if (opcion === 'descongelado') {
             let vto = new Date(); vto.setDate(vto.getDate() + 3);
@@ -399,131 +639,27 @@
         return 'NEVERA';
     }
     
-    // ----- Emitir elaborado -----
+    // ============================================================
+    // EMITIR ELABORADO
+    // ============================================================
     function enviarEtiquetaElaborado() {
-        const nombre = document.getElementById('p1-nombre').value.trim().toUpperCase();
-        const lote = document.getElementById('p1-lote').value.trim().toUpperCase();
-        if (!nombre) { mostrarToast("Escanea o escribe un producto primero", "#ef4444"); return; }
-        if (!opcionActiva) { mostrarToast("Selecciona un proceso de destino (descongelado, refrigerado u otras)", "#ef4444"); return; }
+        const inputNombre = document.getElementById('p1-nombre');
+        const inputLote = document.getElementById('p1-lote');
         
-        let datoDinamico = '';
-        const panelDiv = document.getElementById('panel-dinamico');
-        if (panelDiv.style.display === 'block' && document.getElementById('dinamico-val-1')) {
-            datoDinamico = document.getElementById('dinamico-val-1').value.trim();
-            if (!datoDinamico) { mostrarToast("Completa el campo de fecha/valor dinámico", "#ef4444"); return; }
-        } else {
-            mostrarToast("Error: selecciona de nuevo la opción", "#ef4444");
+        if (!inputNombre || !inputLote) {
+            mostrarToast("Error: elementos del formulario no encontrados", "#ef4444");
             return;
         }
         
-        const conservacion = mapearConservacion(opcionActiva);
-        const cadenaQr = `TIPO:ELABORADO|PROD:${nombre}|LOTE:${lote}|OPER:${opcionActiva.toUpperCase()}|CAD:${datoDinamico}`;
+        const nombre = inputNombre.value.trim().toUpperCase();
+        const lote = inputLote.value.trim().toUpperCase();
         
-        let datosBD = { producto: nombre, conservacion: conservacion, proveedor: "PRODUCCION INTERNA", cantidad_total: 1, fecha_registro: new Date().toISOString() };
-        let paqueteImpresion = { 
-            etiquetas: [{ 
-                producto: nombre, 
-                unidad: lote, 
-                fecha: `CAD: ${datoDinamico} (${opcionActiva.toUpperCase()})`, 
-                texto_qr: cadenaQr 
-            }] 
-        };
+        if (!nombre) { mostrarToast("Escanea o escribe un producto primero", "#ef4444"); return; }
+        if (!opcionActiva) { mostrarToast("Selecciona un proceso de destino", "#ef4444"); return; }
         
-        generarQRLocal(cadenaQr);
-        document.getElementById('etiqueta-datos').innerHTML = `PRODUCTO: ${nombre}<br>LOTE DE ORIGEN: ${lote}<br>PROCESO: ${opcionActiva.toUpperCase()}<br>VENCE: ${datoDinamico}`;
-        document.getElementById('vista-previa').style.display = 'block';
-        agregarAlHistorial("ELABORADO", nombre, lote, datoDinamico, cadenaQr);
-        
-        dispararServidorDual(paqueteImpresion, datosBD).catch(() => {});
-        
-        document.getElementById('p1-nombre').value = '';
-        document.getElementById('p1-lote').value = '';
-        document.getElementById('p1-fecha-elab').value = '';
-        opcionActiva = '';
-        document.querySelectorAll('.btn-opcion').forEach(b => b.classList.remove('selected'));
-        document.getElementById('panel-dinamico').style.display = 'none';
-        document.getElementById('panel-dinamico').innerHTML = '';
-    }
-    
-    // ----- Emitir seco -----
-    function enviarEtiquetaSeco() {
-        const nombre = document.getElementById('p2-nombre').value.trim().toUpperCase();
-        const lote = document.getElementById('p2-lote').value.trim().toUpperCase() || 'S/L';
-        const fechaCad = document.getElementById('p2-fecha-cad').value;
-        const fechaRecep = document.getElementById('p2-fecha-recep').value;
-        
-        if (!nombre) { mostrarToast("Introduce el nombre del producto seco", "#ef4444"); return; }
-        if (!fechaCad) { mostrarToast("Selecciona fecha de caducidad", "#ef4444"); return; }
-        if (fechaRecep && fechaCad < fechaRecep) { mostrarToast("La caducidad no puede ser anterior a la recepción", "#ef4444"); return; }
-        
-        const fechaCadFormateada = fechaCad.split('-').reverse().join('/');
-        const cadenaQr = `TIPO:SECO|PROD:${nombre}|LOTE:${lote}|CAD:${fechaCadFormateada}`;
-        
-        let datosBD = { producto: nombre, conservacion: "SECO", proveedor: "PROVEEDOR REGLAMENTARIO", cantidad_total: 1, fecha_registro: new Date().toISOString() };
-        let paqueteImpresion = { 
-            etiquetas: [{ 
-                producto: nombre, 
-                unidad: lote, 
-                fecha: `CAD: ${fechaCadFormateada}`, 
-                texto_qr: cadenaQr 
-            }] 
-        };
-        
-        generarQRLocal(cadenaQr);
-        document.getElementById('etiqueta-datos').innerHTML = `PRODUCTO SECO: ${nombre}<br>LOTE FABRICANTE: ${lote}<br>CADUCIDAD: ${fechaCadFormateada}`;
-        document.getElementById('vista-previa').style.display = 'block';
-        agregarAlHistorial("SECO", nombre, lote, fechaCadFormateada, cadenaQr);
-        
-        dispararServidorDual(paqueteImpresion, datosBD).catch(() => {});
-        
-        document.getElementById('p2-lote').value = '';
-        document.getElementById('p2-fecha-cad').value = '';
-    }
-    
-    // ----- Reimprimir -----
-    document.getElementById('btn-reimprimir-ultima')?.addEventListener('click', () => {
-        if (ultimoQRGenerado) {
-            generarQRLocal(ultimoQRGenerado);
-            mostrarToast("Reimpreso QR en pantalla", "#10b981");
-        } else {
-            mostrarToast("No hay etiqueta previa", "#ef4444");
-        }
-    });
-    
-    // ----- Inicialización -----
-    document.getElementById('p2-fecha-recep').value = new Date().toISOString().split('T')[0];
-    cargarCatalogo();
-    actualizarHistorialUI();
-    actualizarEstadoServidor();
-    
-    const colaGuardada = localStorage.getItem('fredware_cola_offline');
-    if (colaGuardada) {
-        colaOffline = JSON.parse(colaGuardada);
-        if (colaOffline.length > 0) procesarColaOffline();
-    }
-    
-    window.addEventListener('online', () => { mostrarToast("Conexión restaurada", "#10b981"); procesarColaOffline(); actualizarEstadoServidor(); });
-    window.addEventListener('offline', () => { mostrarToast("Sin conexión - modo offline activado", "#ef4444"); document.getElementById('offline-banner').style.display = 'block'; });
-    
-    window.cambiarApp = function(appNum) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
-        if(appNum === 1) {
-            document.getElementById('btn-tab1').classList.add('active');
-            document.getElementById('app1').classList.add('active');
-        } else if (appNum === 2) {
-            document.getElementById('btn-tab2').classList.add('active');
-            document.getElementById('app2').classList.add('active');
-        } else if (appNum === 3) {
-            document.getElementById('btn-tab3').classList.add('active');
-            document.getElementById('app3').classList.add('active');
-            actualizarVisor(ultimoEscaneoRaw || "(Esperando escaneo...)", ultimoEscaneoParseado);
-        }
-    };
-    
-    window.procesarOpcion = procesarOpcion;
-    window.enviarEtiquetaElaborado = enviarEtiquetaElaborado;
-    window.enviarEtiquetaSeco = enviarEtiquetaSeco;
-</script>
-</body>
-</html>
+        let datoDinamico = '';
+        const panelDiv = document.getElementById('panel-dinamico');
+        if (panelDiv && panelDiv.style.display === 'block') {
+            const inputDinamico = document.getElementById('dinamico-val-1');
+            if (inputDinamico) {
+                datoDinamico = input
