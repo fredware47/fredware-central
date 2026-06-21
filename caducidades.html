@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fredware Etiquetas</title>
+    <title>Fredware Caducidades</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -89,6 +89,7 @@
             box-sizing: border-box; 
         }
         input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+        input[readonly] { background: #e9ecef; }
         
         .opciones-grid { 
             display: grid; 
@@ -180,7 +181,27 @@
             display: none !important;
         }
         
-        /* ESTILOS DE IMPRESIÓN */
+        /* INFO ESCANEO */
+        .info-escaneo {
+            margin-top: 10px;
+            padding: 12px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .info-escaneo .campo { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 3px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .info-escaneo .campo:last-child { border-bottom: none; }
+        .info-escaneo .etiqueta { font-weight: bold; color: #475569; }
+        .info-escaneo .valor { color: #0f172a; }
+        
+        /* ETIQUETA IMPRESIÓN */
         .etiqueta-impresion {
             background: white;
             padding: 15px;
@@ -279,25 +300,6 @@
         }
         .toast.show { opacity: 1; }
         
-        .info-escaneo {
-            margin-top: 10px;
-            padding: 12px;
-            background: #f1f5f9;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: monospace;
-            word-break: break-all;
-        }
-        .info-escaneo .campo { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 3px 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .info-escaneo .campo:last-child { border-bottom: none; }
-        .info-escaneo .etiqueta { font-weight: bold; color: #475569; }
-        .info-escaneo .valor { color: #0f172a; }
-        
         @media print {
             .no-print { display: none !important; }
             body { background: white; padding: 0; }
@@ -312,22 +314,34 @@
 <body>
 
 <div class="app-container">
-    <h2>Fredware Etiquetas 🏷️</h2>
+    <h2>Fredware Caducidades 🏷️</h2>
     
     <div id="offline-banner" class="estado-offline">⚠️ Modo offline - Datos guardados localmente</div>
     
     <div class="tabs no-print">
-        <button class="tab-btn active" onclick="cambiarApp(1)">📦 Elaborados</button>
-        <button class="tab-btn" onclick="cambiarApp(2)">📦 Secos</button>
-        <button class="tab-btn" onclick="cambiarApp(3)">📷 Escáner</button>
+        <button class="tab-btn active" onclick="cambiarApp(1)">📷 Escáner + Elaborados</button>
+        <button class="tab-btn" onclick="cambiarApp(2)">📦 Secos y Botes</button>
+        <button class="tab-btn" onclick="cambiarApp(3)">📋 Historial</button>
     </div>
 
-    <!-- APP 1: ELABORADOS -->
+    <!-- APP 1: ESCÁNER + ELABORADOS -->
     <div id="app1" class="app-section active">
+        <div class="box no-print">
+            <h3>📷 Escáner QR - Escanea la preparación</h3>
+            <div id="reader"></div>
+            
+            <div class="info-escaneo" id="info-escaneo">
+                <div class="campo"><span class="etiqueta">Estado:</span><span class="valor" id="estado-escaneo">Esperando escaneo...</span></div>
+                <div class="campo"><span class="etiqueta">Producto:</span><span class="valor" id="escaneo-producto">---</span></div>
+                <div class="campo"><span class="etiqueta">Lote:</span><span class="valor" id="escaneo-lote">---</span></div>
+                <div class="campo"><span class="etiqueta">Fecha Elaboración:</span><span class="valor" id="escaneo-fecha">---</span></div>
+            </div>
+        </div>
+        
         <div class="box no-print">
             <h3>📝 Datos del Producto</h3>
             <label>Producto / Elaborado:</label>
-            <input type="text" id="p1-nombre" placeholder="Nombre del producto...">
+            <input type="text" id="p1-nombre" placeholder="Escanea o escribe el producto...">
             
             <label>Lote Interno:</label>
             <input type="text" id="p1-lote" placeholder="Lote...">
@@ -337,8 +351,8 @@
             
             <h3>⚙️ Selecciona el Proceso:</h3>
             <div class="opciones-grid">
-                <button class="btn-opcion" id="opt-descongelado" onclick="procesarOpcion('descongelado')">🐟 Descongelado</button>
-                <button class="btn-opcion" id="opt-refrigerado" onclick="procesarOpcion('refrigerado')">❄️ Refrigerado</button>
+                <button class="btn-opcion" id="opt-descongelado" onclick="procesarOpcion('descongelado')">🐟 Descongelado (3d)</button>
+                <button class="btn-opcion" id="opt-refrigerado" onclick="procesarOpcion('refrigerado')">❄️ Refrigerado (5d)</button>
                 <button class="btn-opcion" id="opt-otras" onclick="procesarOpcion('otras')">📦 Otras</button>
             </div>
             
@@ -348,13 +362,13 @@
         </div>
         
         <!-- Área de impresión de etiquetas -->
-        <div id="area-impresion-elaborados"></div>
+        <div id="area-impresion"></div>
     </div>
 
     <!-- APP 2: SECOS -->
     <div id="app2" class="app-section">
         <div class="box no-print">
-            <h3>📦 Registro de Secos</h3>
+            <h3>📦 Registro de Secos y Botes</h3>
             
             <label>Nombre del Producto:</label>
             <input type="text" id="p2-nombre" placeholder="Nombre del producto seco...">
@@ -371,32 +385,18 @@
             <button class="btn-principal" onclick="generarEtiquetaSeco()">🖨️ GENERAR ETIQUETA</button>
         </div>
         
-        <!-- Área de impresión de etiquetas -->
         <div id="area-impresion-secos"></div>
     </div>
 
-    <!-- APP 3: ESCÁNER -->
+    <!-- APP 3: HISTORIAL -->
     <div id="app3" class="app-section">
         <div class="box no-print">
-            <h3>📷 Escáner QR</h3>
-            <div id="reader"></div>
-            
-            <div class="info-escaneo" id="info-escaneo">
-                <div class="campo"><span class="etiqueta">Estado:</span><span class="valor" id="estado-escaneo">Esperando escaneo...</span></div>
-                <div class="campo"><span class="etiqueta">Producto:</span><span class="valor" id="escaneo-producto">---</span></div>
-                <div class="campo"><span class="etiqueta">Lote:</span><span class="valor" id="escaneo-lote">---</span></div>
-                <div class="campo"><span class="etiqueta">Fecha:</span><span class="valor" id="escaneo-fecha">---</span></div>
+            <h3>📋 Historial de Etiquetas</h3>
+            <div class="historial" id="historial-container" style="max-height: 400px;">
+                <div id="lista-historial">(No hay etiquetas aún)</div>
             </div>
-            
-            <button class="btn-principal" onclick="cargarEscaneoAFormulario()">📋 Cargar al formulario</button>
-            <button class="btn-secundario" onclick="reiniciarEscanner()">🔄 Reiniciar escáner</button>
+            <button class="btn-secundario" onclick="limpiarHistorial()">🗑️ Limpiar historial</button>
         </div>
-    </div>
-    
-    <!-- Historial -->
-    <div class="historial no-print" id="historial-container">
-        <strong>📋 Últimas etiquetas:</strong>
-        <div id="lista-historial">(No hay etiquetas aún)</div>
     </div>
 </div>
 
@@ -406,37 +406,33 @@
     // ============================================
     // CONFIGURACIÓN
     // ============================================
+    const IP_SERVIDOR = "https://untried-january-thinning.ngrok-free.dev";
+    
     let opcionActiva = '';
     let html5QrcodeScanner = null;
-    let ultimoQRGenerado = '';
-    let ultimoEscaneoRaw = '';
+    let scannerIniciado = false;
+    let contadorEtiquetas = 0;
     let ultimoEscaneoParseado = { nombre: '', lote: '', fecha: '' };
     let historialEtiquetas = JSON.parse(localStorage.getItem('fredware_historial') || '[]');
-    let contadorEtiquetas = 0;
-    let scannerIniciado = false;
 
     // ============================================
-    // FUNCIÓN CAMBIAR APP (la que faltaba)
+    // FUNCIÓN CAMBIAR APP
     // ============================================
     function cambiarApp(appNum) {
-        // Ocultar todas las secciones
         document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         
-        // Mostrar la seleccionada
         if (appNum === 1) {
             document.getElementById('app1').classList.add('active');
             document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+            if (!scannerIniciado) setTimeout(iniciarEscanner, 300);
         } else if (appNum === 2) {
             document.getElementById('app2').classList.add('active');
             document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
         } else if (appNum === 3) {
             document.getElementById('app3').classList.add('active');
             document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
-            // Iniciar escáner si no está iniciado
-            if (!scannerIniciado) {
-                setTimeout(iniciarEscanner, 300);
-            }
+            actualizarHistorialUI();
         }
     }
 
@@ -455,6 +451,27 @@
         if (!fecha) return '';
         const d = new Date(fecha);
         return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+    }
+
+    function parsearFechaInput(fechaStr) {
+        // Intenta parsear fechas en formato DD/MM/YYYY o YYYY-MM-DD
+        if (!fechaStr) return null;
+        let partes;
+        if (fechaStr.includes('/')) {
+            partes = fechaStr.split('/');
+            return new Date(partes[2], partes[1] - 1, partes[0]);
+        } else if (fechaStr.includes('-')) {
+            partes = fechaStr.split('-');
+            return new Date(partes[0], partes[1] - 1, partes[2]);
+        }
+        return null;
+    }
+
+    function sumarDias(fechaStr, dias) {
+        const fecha = parsearFechaInput(fechaStr);
+        if (!fecha) return fechaStr;
+        fecha.setDate(fecha.getDate() + dias);
+        return formatearFecha(fecha);
     }
 
     // ============================================
@@ -511,13 +528,13 @@
         if (navigator.vibrate) navigator.vibrate(50);
         
         let cadena = decodedText.trim();
-        ultimoEscaneoRaw = cadena;
+        console.log('QR escaneado:', cadena);
         
         let nombre = "";
         let lote = "S/L";
         let fecha = "";
         
-        // Intentar varios formatos
+        // Parsear diferentes formatos
         if (cadena.toLowerCase().includes("producto:") || cadena.toLowerCase().includes("prod:")) {
             let textoLimpio = cadena.replace(/[\r\n]+/g, " ");
             
@@ -527,8 +544,14 @@
             let matchLote = textoLimpio.match(/lote:\s*([^|,;]+)/i);
             if (matchLote) lote = matchLote[1].trim();
             
-            let matchFecha = textoLimpio.match(/(?:fecha|cad):\s*([^|,;]+)/i);
+            let matchFecha = textoLimpio.match(/(?:fecha|elaboracion|elab):\s*([^|,;]+)/i);
             if (matchFecha) fecha = matchFecha[1].trim();
+            
+            // Si no se encuentra, buscar CAD (caducidad) como fallback
+            if (!fecha) {
+                let matchCad = textoLimpio.match(/cad:\s*([^|,;]+)/i);
+                if (matchCad) fecha = matchCad[1].trim();
+            }
             
             if (!nombre) {
                 let partes = cadena.split(/[|,;]/);
@@ -538,22 +561,25 @@
                         nombre = limpio.replace(/prod(?:ucto)?:/i, '').trim();
                     } else if (limpio.toLowerCase().includes('lote')) {
                         lote = limpio.replace(/lote:/i, '').trim();
-                    } else if (limpio.toLowerCase().includes('fecha') || limpio.toLowerCase().includes('cad')) {
-                        fecha = limpio.replace(/(?:fecha|cad):/i, '').trim();
+                    } else if (limpio.toLowerCase().includes('fecha') || limpio.toLowerCase().includes('elab')) {
+                        fecha = limpio.replace(/(?:fecha|elaboracion|elab):/i, '').trim();
                     }
                 });
             }
         } else {
+            // Formato simple: PROD|LOTE|FECHA
             let partes = cadena.split(/[|,;]/);
             if (partes.length >= 1) nombre = partes[0].trim();
             if (partes.length >= 2) lote = partes[1].trim();
             if (partes.length >= 3) fecha = partes[2].trim();
         }
         
+        // Si no hay nombre, usar parte del texto
         if (!nombre) nombre = cadena.substring(0, 30);
+        
+        // Si no hay fecha, usar fecha actual
         if (!fecha) {
-            const hoy = new Date();
-            fecha = formatearFecha(hoy);
+            fecha = formatearFecha(new Date());
         }
         
         ultimoEscaneoParseado = { 
@@ -562,10 +588,16 @@
             fecha: fecha 
         };
         
+        // Actualizar UI
         document.getElementById('estado-escaneo').textContent = '✅ Escaneado correctamente';
         document.getElementById('escaneo-producto').textContent = nombre.toUpperCase();
         document.getElementById('escaneo-lote').textContent = lote.toUpperCase();
         document.getElementById('escaneo-fecha').textContent = fecha;
+        
+        // Cargar al formulario
+        document.getElementById('p1-nombre').value = nombre.toUpperCase();
+        document.getElementById('p1-lote').value = lote.toUpperCase();
+        document.getElementById('p1-fecha-elab').value = fecha;
         
         mostrarToast(`📷 Escaneado: ${nombre}`, "#10b981");
     }
@@ -576,29 +608,13 @@
 
     function reiniciarEscanner() {
         if (html5QrcodeScanner) {
-            try {
-                html5QrcodeScanner.clear();
-            } catch(e) {}
+            try { html5QrcodeScanner.clear(); } catch(e) {}
             html5QrcodeScanner = null;
         }
         scannerIniciado = false;
         document.getElementById('reader').innerHTML = '';
-        setTimeout(() => {
-            iniciarEscanner();
-        }, 500);
+        setTimeout(iniciarEscanner, 500);
         mostrarToast('🔄 Reiniciando escáner...', '#6c757d');
-    }
-
-    function cargarEscaneoAFormulario() {
-        if (!ultimoEscaneoParseado.nombre || ultimoEscaneoParseado.nombre === '---') {
-            mostrarToast("❌ No hay escaneo previo", "#ef4444");
-            return;
-        }
-        document.getElementById('p1-nombre').value = ultimoEscaneoParseado.nombre;
-        document.getElementById('p1-lote').value = ultimoEscaneoParseado.lote;
-        document.getElementById('p1-fecha-elab').value = ultimoEscaneoParseado.fecha;
-        mostrarToast("✅ Datos cargados al formulario", "#10b981");
-        cambiarApp(1);
     }
 
     // ============================================
@@ -623,7 +639,45 @@
     }
 
     // ============================================
-    // GENERAR ETIQUETA ELABORADO
+    // PROCESAR OPCIÓN (determinar caducidad)
+    // ============================================
+    function procesarOpcion(opcion) {
+        opcionActiva = opcion;
+        document.querySelectorAll('.btn-opcion').forEach(b => b.classList.remove('selected'));
+        document.getElementById(`opt-${opcion}`)?.classList.add('selected');
+        
+        const panel = document.getElementById('panel-dinamico');
+        panel.innerHTML = '';
+        panel.style.display = 'block';
+        
+        const fechaElab = document.getElementById('p1-fecha-elab').value.trim() || formatearFecha(new Date());
+        let nuevaCaducidad = '';
+        
+        if (opcion === 'descongelado') {
+            nuevaCaducidad = sumarDias(fechaElab, 3);
+            panel.innerHTML = `
+                <label>📅 Caducidad Descongelado (+3 días):</label>
+                <input type="text" id="dinamico-val-1" value="${nuevaCaducidad}" readonly style="background:#e9ecef;">
+                <div style="font-size:12px;color:#666;margin-top:2px;">Calculado desde: ${fechaElab}</div>
+            `;
+        } else if (opcion === 'refrigerado') {
+            nuevaCaducidad = sumarDias(fechaElab, 5);
+            panel.innerHTML = `
+                <label>📅 Caducidad Refrigerado (+5 días):</label>
+                <input type="text" id="dinamico-val-1" value="${nuevaCaducidad}" readonly style="background:#e9ecef;">
+                <div style="font-size:12px;color:#666;margin-top:2px;">Calculado desde: ${fechaElab}</div>
+            `;
+        } else if (opcion === 'otras') {
+            panel.innerHTML = `
+                <label>📅 Caducidad Manual:</label>
+                <input type="text" id="dinamico-val-1" placeholder="Ej: 48h, o 22/06/2026">
+                <div style="font-size:12px;color:#666;margin-top:2px;">Introduce fecha o período</div>
+            `;
+        }
+    }
+
+    // ============================================
+    // GENERAR ETIQUETA ELABORADO (con nuevo QR)
     // ============================================
     function generarEtiquetaElaborado() {
         const nombre = document.getElementById('p1-nombre').value.trim().toUpperCase();
@@ -644,12 +698,18 @@
             return;
         }
         
-        const qrTexto = `TIPO:ELABORADO|PROD:${nombre}|LOTE:${lote}|PROC:${opcionActiva.toUpperCase()}|CAD:${valorDinamico}`;
+        // Generar nuevo QR con la caducidad calculada
+        const nuevoQR = `TIPO:ELABORADO|PROD:${nombre}|LOTE:${lote}|PROC:${opcionActiva.toUpperCase()}|CAD:${valorDinamico}`;
         const titulo = `ELABORADO - ${opcionActiva.toUpperCase()}`;
         const fechaExtra = `Elab: ${fechaElab} | Cad: ${valorDinamico}`;
         
-        agregarEtiqueta('elaborado', nombre, lote, fechaExtra, qrTexto, titulo);
+        // Crear etiqueta con el nuevo QR
+        crearEtiqueta(nombre, lote, fechaExtra, nuevoQR, titulo);
         
+        // Enviar al servidor para imprimir
+        enviarAlServidor(nombre, lote, nuevoQR, valorDinamico);
+        
+        // Limpiar campos
         document.getElementById('p1-nombre').value = '';
         document.getElementById('p1-lote').value = '';
         document.getElementById('p1-fecha-elab').value = '';
@@ -674,11 +734,14 @@
         const fechaCadFormateada = formatearFecha(fechaCad);
         const fechaRecepFormateada = fechaRecep ? formatearFecha(fechaRecep) : 'N/A';
         
-        const qrTexto = `TIPO:SECO|PROD:${nombre}|LOTE:${lote}|CAD:${fechaCadFormateada}`;
+        const nuevoQR = `TIPO:SECO|PROD:${nombre}|LOTE:${lote}|CAD:${fechaCadFormateada}`;
         const titulo = 'PRODUCTO SECO';
         const fechaExtra = `Recep: ${fechaRecepFormateada} | Cad: ${fechaCadFormateada}`;
         
-        agregarEtiqueta('seco', nombre, lote, fechaExtra, qrTexto, titulo);
+        crearEtiqueta(nombre, lote, fechaExtra, nuevoQR, titulo);
+        
+        // Enviar al servidor
+        enviarAlServidor(nombre, lote, nuevoQR, fechaCadFormateada);
         
         document.getElementById('p2-nombre').value = '';
         document.getElementById('p2-lote').value = '';
@@ -687,29 +750,25 @@
     }
 
     // ============================================
-    // AGREGAR ETIQUETA
+    // CREAR ETIQUETA
     // ============================================
-    function agregarEtiqueta(tipo, producto, lote, fechaExtra, qrTexto, titulo) {
+    function crearEtiqueta(producto, lote, fechaExtra, qrTexto, titulo) {
         contadorEtiquetas++;
-        const areaId = tipo === 'elaborado' ? 'area-impresion-elaborados' : 'area-impresion-secos';
-        const area = document.getElementById(areaId);
+        const area = document.getElementById('area-impresion');
         if (!area) return;
         
         const idQR = `qr-${Date.now()}-${Math.random().toString(36).substr(2,4)}`;
         const idEtiqueta = `etiqueta-${Date.now()}-${Math.random().toString(36).substr(2,4)}`;
-        
-        let lineas = [];
-        lineas.push(`PRODUCTO: ${producto || 'SIN NOMBRE'}`);
-        lineas.push(`LOTE: ${lote || 'S/L'}`);
-        if (fechaExtra) lineas.push(`FECHA: ${fechaExtra}`);
         
         const html = `
             <div class="etiqueta-impresion" id="${idEtiqueta}">
                 <div class="titulo-etiqueta">${titulo || 'ETIQUETA FREDWARE'}</div>
                 <div class="qr-container" id="${idQR}"></div>
                 <div class="datos-etiqueta">
-                    ${lineas.join('<br>')}
-                    <br><span style="font-size:11px;color:#666;">${new Date().toLocaleString()}</span>
+                    PRODUCTO: ${producto}<br>
+                    LOTE: ${lote}<br>
+                    FECHA: ${fechaExtra}<br>
+                    <span style="font-size:11px;color:#666;">${new Date().toLocaleString()}</span>
                 </div>
                 <button class="btn-secundario" onclick="imprimirEtiqueta('${idEtiqueta}')" style="margin-top:5px;">🖨️ Imprimir</button>
             </div>
@@ -718,10 +777,11 @@
         area.innerHTML += html;
         
         setTimeout(() => {
-            generarQR(qrTexto || producto || 'FREDWARE', idQR);
+            generarQR(qrTexto, idQR);
         }, 100);
         
-        agregarAlHistorial(tipo.toUpperCase(), producto, lote, fechaExtra, qrTexto);
+        // Guardar en historial
+        agregarAlHistorial(titulo, producto, lote, fechaExtra, qrTexto);
         mostrarToast(`✅ Etiqueta ${contadorEtiquetas} generada`, "#10b981");
     }
 
@@ -752,35 +812,34 @@
     }
 
     // ============================================
-    // PROCESAR OPCIÓN
+    // ENVIAR AL SERVIDOR (con ngrok)
     // ============================================
-    function procesarOpcion(opcion) {
-        opcionActiva = opcion;
-        document.querySelectorAll('.btn-opcion').forEach(b => b.classList.remove('selected'));
-        document.getElementById(`opt-${opcion}`)?.classList.add('selected');
+    function enviarAlServidor(producto, lote, qrTexto, caducidad) {
+        const datos = {
+            producto: producto,
+            lote: lote,
+            qr: qrTexto,
+            caducidad: caducidad,
+            timestamp: new Date().toISOString()
+        };
         
-        const panel = document.getElementById('panel-dinamico');
-        panel.innerHTML = '';
-        panel.style.display = 'block';
-        
-        if (opcion === 'descongelado') {
-            let vto = new Date(); vto.setDate(vto.getDate() + 3);
-            panel.innerHTML = `
-                <label>📅 Caducidad Descongelado (+3 días):</label>
-                <input type="text" id="dinamico-val-1" value="${formatearFecha(vto)}" readonly style="background:#e9ecef;">
-            `;
-        } else if (opcion === 'refrigerado') {
-            let vto = new Date(); vto.setDate(vto.getDate() + 5);
-            panel.innerHTML = `
-                <label>📅 Caducidad Refrigerado (+5 días):</label>
-                <input type="text" id="dinamico-val-1" value="${formatearFecha(vto)}" readonly style="background:#e9ecef;">
-            `;
-        } else if (opcion === 'otras') {
-            panel.innerHTML = `
-                <label>📅 Caducidad Manual:</label>
-                <input type="text" id="dinamico-val-1" placeholder="Ej: 48h, o 22/06/2026">
-            `;
-        }
+        fetch(`${IP_SERVIDOR}/imprimir_lote`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({ 
+                etiquetas: [{ 
+                    producto: producto, 
+                    unidad: lote, 
+                    fecha: `CAD: ${caducidad}`, 
+                    texto_qr: qrTexto 
+                }] 
+            })
+        })
+        .then(res => res.ok ? mostrarToast('✅ Enviado a impresora', '#10b981') : Promise.reject())
+        .catch(() => mostrarToast('⚠️ Error al enviar al servidor', '#ef4444'));
     }
 
     // ============================================
@@ -788,7 +847,7 @@
     // ============================================
     function agregarAlHistorial(tipo, producto, lote, fecha, qr) {
         historialEtiquetas.unshift({ tipo, producto, lote, fecha, qr, timestamp: Date.now() });
-        if (historialEtiquetas.length > 30) historialEtiquetas.pop();
+        if (historialEtiquetas.length > 50) historialEtiquetas.pop();
         localStorage.setItem('fredware_historial', JSON.stringify(historialEtiquetas));
         actualizarHistorialUI();
     }
@@ -799,30 +858,59 @@
             contenedor.innerHTML = '(No hay etiquetas aún)';
             return;
         }
-        contenedor.innerHTML = historialEtiquetas.slice(0, 15).map(entry => `
+        contenedor.innerHTML = historialEtiquetas.slice(0, 20).map((entry, index) => `
             <div class="historial-item">
                 <span><strong>${entry.tipo}</strong> ${entry.producto} (${entry.lote || 'S/L'})</span>
-                <button class="reimprimir" onclick="reimprimirEtiqueta('${entry.qr}','${entry.tipo}','${entry.producto}','${entry.lote}','${entry.fecha}')">🔄 Reimprimir</button>
+                <button class="reimprimir" onclick="reimprimirDesdeHistorial(${index})">🔄 Reimprimir</button>
             </div>
         `).join('');
     }
 
-    function reimprimirEtiqueta(qr, tipo, producto, lote, fecha) {
-        const titulo = tipo === 'ELABORADO' ? 'ELABORADO (REIMPRESIÓN)' : 'SECO (REIMPRESIÓN)';
-        agregarEtiqueta(tipo.toLowerCase(), producto, lote, fecha, qr, titulo);
+    function reimprimirDesdeHistorial(index) {
+        const entry = historialEtiquetas[index];
+        if (!entry) return;
+        const titulo = `${entry.tipo} (REIMPRESIÓN)`;
+        const idQR = `qr-re-${Date.now()}`;
+        const idEtiqueta = `etiqueta-re-${Date.now()}`;
+        const area = document.getElementById('area-impresion');
+        
+        const html = `
+            <div class="etiqueta-impresion" id="${idEtiqueta}">
+                <div class="titulo-etiqueta">${titulo}</div>
+                <div class="qr-container" id="${idQR}"></div>
+                <div class="datos-etiqueta">
+                    PRODUCTO: ${entry.producto}<br>
+                    LOTE: ${entry.lote}<br>
+                    FECHA: ${entry.fecha}<br>
+                    <span style="font-size:11px;color:#666;">Reimpresión: ${new Date().toLocaleString()}</span>
+                </div>
+                <button class="btn-secundario" onclick="imprimirEtiqueta('${idEtiqueta}')" style="margin-top:5px;">🖨️ Imprimir</button>
+            </div>
+        `;
+        
+        area.innerHTML += html;
+        setTimeout(() => generarQR(entry.qr || entry.producto, idQR), 100);
+        mostrarToast('🔄 Reimprimiendo etiqueta', '#3b82f6');
+    }
+
+    function limpiarHistorial() {
+        if (confirm('¿Seguro que quieres limpiar el historial?')) {
+            historialEtiquetas = [];
+            localStorage.removeItem('fredware_historial');
+            actualizarHistorialUI();
+            mostrarToast('🗑️ Historial limpiado', '#6c757d');
+        }
     }
 
     // ============================================
     // INICIALIZACIÓN
     // ============================================
     document.addEventListener('DOMContentLoaded', function() {
-        // Fecha por defecto para recepción
         document.getElementById('p2-fecha-recep').value = new Date().toISOString().split('T')[0];
         actualizarHistorialUI();
         
-        // Iniciar escáner cuando se detecte la pestaña
-        // El escáner se iniciará cuando el usuario haga clic en la pestaña
-        console.log('Fredware Etiquetas - Listo');
+        // Iniciar escáner automáticamente en la primera pestaña
+        setTimeout(iniciarEscanner, 500);
     });
 </script>
 </body>
