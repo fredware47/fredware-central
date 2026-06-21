@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fredware caducidades</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f0f4f8; margin: 0; padding: 10px; color: #333; }
+        .app-container { max-width: 600px; margin: 0 auto; background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; background: #1e293b; color: white; padding: 12px; border-radius: 8px; font-size: 18px; margin-bottom: 15px; }
+        h3 { margin-top: 0; color: #444; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; font-size: 15px;}
+        .tabs { display: flex; margin-bottom: 15px; background: #eee; border-radius: 8px; padding: 4px; }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #555; font-size: 14px; }
+        .tab-btn.active { background: #3b82f6; color: white; }
+        .app-section { display: none; }
+        .app-section.active { display: block; }
+        .box { background: #f8f9fa; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid #dadce0; }
+        label { font-weight: bold; display: block; margin-top: 10px; color: #555; font-size: 14px; }
+        input, select { width: 100%; padding: 11px; margin: 5px 0 12px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        .opciones-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; margin-bottom: 15px; }
+        .btn-opcion { padding: 14px 10px; font-weight: bold; border: 2px solid #3b82f6; background: white; color: #3b82f6; border-radius: 8px; cursor: pointer; font-size: 13px; }
+        .btn-opcion.selected { background: #3b82f6; color: white; }
+        .btn-principal { background: #10b981; color: white; font-size: 16px; padding: 15px; border: none; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2); }
+        .btn-principal:hover { background-color: #059669; }
+        .etiqueta-vista { background: #fffde7; border: 2px dashed #fbc02d; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center; font-family: monospace; font-size: 14px; }
+        #contenedor-qr { display: flex; justify-content: center; margin: 15px 0; }
+        #reader { background-color: #000; border-radius: 8px; overflow: hidden; border: 2px solid #3b82f6; }
+        
+        /* Estilos para el visor */
+        .visor-area {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+        .visor-texto {
+            background: #1e293b;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .visor-campo {
+            background: #334155;
+            padding: 8px;
+            border-radius: 6px;
+            margin: 5px 0;
+        }
+        
+        /* Toast y otros */
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+        .historial { background: #f1f5f9; border-radius: 8px; padding: 10px; margin-top: 15px; max-height: 200px; overflow-y: auto; font-size: 12px; }
+        .historial-item { border-bottom: 1px solid #cbd5e1; padding: 6px 0; display: flex; justify-content: space-between; }
+        .reimprimir { background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 12px; margin-left: 8px; }
+        .estado-offline { background: #fef9c3; color: #854d0e; padding: 5px; border-radius: 6px; text-align: center; font-size: 12px; margin-bottom: 10px; display: none; }
+    </style>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<div class="app-container">
+    <h2>Fredware caducidades 🍳</h2>
+    
+    <div id="offline-banner" class="estado-offline">⚠️ Modo offline - Los datos se guardarán localmente y se sincronizarán después.</div>
+    
+    <div class="tabs">
+        <button class="tab-btn active" id="btn-tab1" onclick="cambiarApp(1)">1. Productos Elaborados</button>
+        <button class="tab-btn" id="btn-tab2" onclick="cambiarApp(2)">2. Secos y Botes</button>
+        <button class="tab-btn" id="btn-tab3" onclick="cambiarApp(3)">3. Visor</button>
+    </div>
+
+    <div id="app1" class="app-section active">
+        <div class="box">
+            <h3>📷 Escáner de Fichas y Etiquetas</h3>
+            <div id="reader" style="width: 100%;"></div>
+        </div>
+        
+        <div class="box">
+            <h3>📝 Datos del Código Escaneado</h3>
+            <label>Producto / Elaborado:</label>
+            <input type="text" id="p1-nombre" placeholder="Esperando escaneo...">
+            
+            <label>Lote Interno:</label>
+            <input type="text" id="p1-lote" placeholder="Esperando escaneo...">
+            
+            <label>Fecha de Origen / Elaboración:</label>
+            <input type="text" id="p1-fecha-elab" placeholder="Esperando escaneo...">
+            
+            <h3>⚙️ Selecciona el Proceso de Destino:</h3>
+            <div class="opciones-grid">
+                <button class="btn-opcion" id="opt-descongelado" onclick="procesarOpcion('descongelado')">🐟 2. Descongelado</button>
+                <button class="btn-opcion" id="opt-refrigerado" onclick="procesarOpcion('refrigerado')">❄️ 3. Refrigerado (+5d)</button>
+                <button class="btn-opcion" id="opt-otras" onclick="procesarOpcion('otras')">📦 4. Otras Caducidades</button>
+            </div>
+            
+            <div id="panel-dinamico" style="background: #eef2f7; padding: 1px 12px; border-radius: 8px; margin-bottom: 12px; display:none;"></div>
+            
+            <button class="btn-principal" onclick="enviarEtiquetaElaborado()">🖨️ EMITIR Y GUARDAR ELABORADO</button>
+        </div>
+    </div>
+
+    <div id="app2" class="app-section">
+        <div class="box">
+            <h3>📦 Registro de Secos e Ingredientes</h3>
+            
+            <label>Nombre del Producto:</label>
+            <input type="text" id="p2-nombre" list="base-datos-secos" placeholder="Escribe el nombre del bote o seco...">
+            <datalist id="base-datos-secos"></datalist>
+            
+            <label>Lote del Fabricante:</label>
+            <input type="text" id="p2-lote" placeholder="Introduce el lote del bote...">
+            
+            <label>Fecha de Recepción / Apertura:</label>
+            <input type="date" id="p2-fecha-recep">
+            
+            <label>Fecha de Caducidad:</label>
+            <input type="date" id="p2-fecha-cad">
+            
+            <button class="btn-principal" onclick="enviarEtiquetaSeco()">🖨️ EMITIR Y GUARDAR SECO</button>
+        </div>
+    </div>
+
+    <!-- Pestaña Visor -->
+    <div id="app3" class="app-section">
+        <div class="box">
+            <h3>🔍 Visor del Escáner</h3>
+            <div class="visor-area">
+                <div style="font-weight: bold; margin-bottom: 8px;">Último código escaneado:</div>
+                <div id="visor-texto-completo" class="visor-texto">(Esperando escaneo...)</div>
+                <div id="visor-campos" class="visor-campo">Producto: ---<br>Lote: ---<br>Fecha: ---</div>
+                <div style="font-size: 12px; margin-top: 8px; color: #94a3b8;">Los datos se actualizan automáticamente al leer un QR.</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="vista-previa" style="display:none;">
+        <div class="etiqueta-vista">
+            <h4 style="margin:0 0 8px 0; color:#10b981;">📡 PAQUETE TRANSMITIDO CON ÉXITO</h4>
+            <div id="contenedor-qr"></div>
+            <div id="etiqueta-datos" style="text-align: left; background: white; padding: 10px; border-radius: 6px; border: 1px solid #dadce0; line-height: 1.4;"></div>
+            <button id="btn-reimprimir-ultima" style="margin-top:10px; background:#6c757d; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer;">🖨️ Reimprimir última</button>
+        </div>
+    </div>
+
+    <!-- Historial de etiquetas emitidas -->
+    <div class="historial" id="historial-container">
+        <strong>📋 Últimas etiquetas emitidas:</strong>
+        <div id="lista-historial">(No hay etiquetas aún)</div>
+    </div>
+</div>
+
+<div id="toast-mensaje" class="toast"></div>
+
+<script>
+    // ----- URL fija del servidor (ngrok) -----
+    const IP_SERVIDOR_CENTRAL = "https://untried-january-thinning.ngrok-free.dev";
+    
+    // Variables globales
+    let opcionActiva = '';
+    let html5QrcodeScanner = null;
+    let ultimoQRGenerado = '';
+    let colaOffline = [];
+    let ultimoEscaneoRaw = '';
+    let ultimoEscaneoParseado = { nombre: '', lote: '', fecha: '' };
+    
+    // ----- Funciones auxiliares -----
+    function mostrarToast(mensaje, color = "#333") {
+        const toast = document.getElementById('toast-mensaje');
+        toast.textContent = mensaje;
+        toast.style.backgroundColor = color;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+    
+    function actualizarEstadoServidor() {
+        fetch(IP_SERVIDOR_CENTRAL + '/obtener_catalogo', { method: 'HEAD', headers: { 'ngrok-skip-browser-warning': 'true' }, timeout: 3000 })
+            .then(() => { document.getElementById('offline-banner').style.display = 'none'; })
+            .catch(() => { document.getElementById('offline-banner').style.display = 'block'; });
+    }
+    
+    // ----- Actualización del visor -----
+    function actualizarVisor(rawText, parseado) {
+        const visorTexto = document.getElementById('visor-texto-completo');
+        const visorCampos = document.getElementById('visor-campos');
+        if (visorTexto) visorTexto.innerText = rawText || "(Esperando escaneo...)";
+        if (visorCampos) {
+            visorCampos.innerHTML = `Producto: ${parseado.nombre || "---"}<br>Lote: ${parseado.lote || "---"}<br>Fecha: ${parseado.fecha || "---"}`;
+        }
+    }
+    
+    // ----- Carga de catálogo -----
+    function cargarCatalogo() {
+        fetch(`${IP_SERVIDOR_CENTRAL}/obtener_catalogo`, { 
+            method: 'GET', 
+            headers: { 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' } 
+        })
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(data => {
+            if (data && data.productos) {
+                document.getElementById('base-datos-secos').innerHTML = data.productos.map(p => `<option value="${p.replace(/"/g, '&quot;')}">`).join('');
+            }
+        })
+        .catch(() => mostrarToast("⚠️ Catálogo no disponible - modo offline", "#f59e0b"));
+    }
+    
+    // ----- Historial local -----
+    let historialEtiquetas = JSON.parse(localStorage.getItem('fredware_historial') || '[]');
+    function actualizarHistorialUI() {
+        const contenedor = document.getElementById('lista-historial');
+        if (historialEtiquetas.length === 0) {
+            contenedor.innerHTML = '(No hay etiquetas aún)';
+            return;
+        }
+        contenedor.innerHTML = historialEtiquetas.slice(-10).reverse().map(entry => `
+            <div class="historial-item">
+                <span><strong>${entry.tipo}</strong> ${entry.producto} (${entry.lote || 'S/L'}) - ${entry.fecha}</span>
+                <button class="reimprimir" data-qr="${entry.qr.replace(/"/g, '&quot;')}">🔄 Reimprimir</button>
+            </div>
+        `).join('');
+        document.querySelectorAll('.reimprimir').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const qr = btn.getAttribute('data-qr');
+                if (qr) {
+                    generarQRLocal(qr);
+                    mostrarToast("Etiqueta reimpresa en pantalla", "#3b82f6");
+                }
+            });
+        });
+    }
+    
+    function agregarAlHistorial(tipo, producto, lote, fecha, qr) {
+        historialEtiquetas.unshift({ tipo, producto, lote, fecha, qr, timestamp: Date.now() });
+        if (historialEtiquetas.length > 20) historialEtiquetas.pop();
+        localStorage.setItem('fredware_historial', JSON.stringify(historialEtiquetas));
+        actualizarHistorialUI();
+    }
+    
+    // ----- Cola offline -----
+    function guardarEnCola(paqueteImpresion, datosBD) {
+        colaOffline.push({ paqueteImpresion, datosBD, timestamp: Date.now() });
+        localStorage.setItem('fredware_cola_offline', JSON.stringify(colaOffline));
+        mostrarToast("📦 Sin conexión: guardado en cola local", "#f59e0b");
+    }
+    
+    function procesarColaOffline() {
+        if (!navigator.onLine) return;
+        const colaGuardada = localStorage.getItem('fredware_cola_offline');
+        if (!colaGuardada) return;
+        colaOffline = JSON.parse(colaGuardada);
+        if (colaOffline.length === 0) return;
+        mostrarToast(`🔄 Reintentando ${colaOffline.length} elementos pendientes...`, "#3b82f6");
+        
+        const procesarSiguiente = () => {
+            if (colaOffline.length === 0) {
+                localStorage.removeItem('fredware_cola_offline');
+                return;
+            }
+            const item = colaOffline[0];
+            dispararServidorDual(item.paqueteImpresion, item.datosBD, true)
+                .then(() => {
+                    colaOffline.shift();
+                    localStorage.setItem('fredware_cola_offline', JSON.stringify(colaOffline));
+                    procesarSiguiente();
+                })
+                .catch(() => {
+                    mostrarToast("No se pudo sincronizar toda la cola, reintentará después", "#ef4444");
+                });
+        };
+        procesarSiguiente();
+    }
+    
+    function dispararServidorDual(paqueteImpresion, datosBD, esReintento = false) {
+        const headers = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
+        return Promise.all([
+            fetch(`${IP_SERVIDOR_CENTRAL}/imprimir_lote`, { method: 'POST', headers, body: JSON.stringify(paqueteImpresion) }),
+            fetch(`${IP_SERVIDOR_CENTRAL}/guardar_mercancia`, { method: 'POST', headers, body: JSON.stringify(datosBD) })
+        ]).then(([res1, res2]) => {
+            if (res1.ok && res2.ok) {
+                if (!esReintento) mostrarToast("✅ Guardado en SQL y orden enviada a la impresora.", "#10b981");
+                return true;
+            } else {
+                throw new Error("Error en el servidor");
+            }
+        }).catch(error => {
+            if (!esReintento) {
+                guardarEnCola(paqueteImpresion, datosBD);
+                mostrarToast("⚠️ Error de conexión: se guardó localmente", "#ef4444");
+            }
+            throw error;
+        });
+    }
+    
+    // ----- Generar QR -----
+    function generarQRLocal(texto) {
+        const contenedor = document.getElementById('contenedor-qr');
+        contenedor.innerHTML = ""; 
+        ultimoQRGenerado = texto;
+        new QRCode(contenedor, {
+            text: texto,
+            width: 140,
+            height: 140,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    }
+    
+    // ----- Escáner QR (con debounce y actualización del visor) -----
+    let ultimoEscaneoTime = 0;
+    function onScanSuccess(decodedText) {
+        const ahora = Date.now();
+        if (ahora - ultimoEscaneoTime < 500) return;
+        ultimoEscaneoTime = ahora;
+        
+        if (navigator.vibrate) navigator.vibrate(100);
+        
+        let cadena = decodedText.trim();
+        let nombre = "";
+        let lote = "S/L";
+        let fecha = "";
+        
+        if (cadena.toLowerCase().includes("producto:")) {
+            let textoLimpio = cadena.replace(/[\r\n]+/g, " ");
+            let posProd = textoLimpio.toLowerCase().indexOf("producto:");
+            let posLote = textoLimpio.toLowerCase().indexOf("lote:");
+            let posFecha = textoLimpio.toLowerCase().indexOf("fecha:");
+            if (posProd !== -1 && posLote !== -1) {
+                nombre = textoLimpio.substring(posProd + 9, posLote).trim();
+            }
+            if (posLote !== -1 && posFecha !== -1) {
+                lote = textoLimpio.substring(posLote + 5, posFecha).trim();
+            }
+            if (posFecha !== -1) {
+                fecha = textoLimpio.substring(posFecha + 6).trim();
+            }
+        } else {
+            let matchProd = cadena.match(/PROD:\s*([^|]+)/i);
+            nombre = matchProd ? matchProd[1].trim() : cadena;
+            let matchLote = cadena.match(/LOTE:\s*([^|]+)/i);
+            if (matchLote) lote = matchLote[1].trim();
+            let matchFecha = cadena.match(/FECHA:\s*([^|]+)/i);
+            if (matchFecha) fecha = matchFecha[1].trim();
+        }
+        
+        if (!fecha) {
+            const hoy = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            fecha = `${pad(hoy.getDate())}/${pad(hoy.getMonth() + 1)}/${hoy.getFullYear()}`;
+        }
+        
+        document.getElementById('p1-nombre').value = nombre.toUpperCase();
+        document.getElementById('p1-lote').value = lote.toUpperCase();
+        document.getElementById('p1-fecha-elab').value = fecha;
+        
+        ultimoEscaneoRaw = cadena;
+        ultimoEscaneoParseado = { nombre: nombre.toUpperCase(), lote: lote.toUpperCase(), fecha: fecha };
+        actualizarVisor(ultimoEscaneoRaw, ultimoEscaneoParseado);
+        
+        mostrarToast(`📷 Escaneado: ${nombre}`, "#3b82f6");
+    }
+    
+    // Inicializar escáner
+    if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 }, false);
+        html5QrcodeScanner.render(onScanSuccess, (err) => {});
+    }
+    
+    // ----- Procesar opciones (sin Congelados) -----
+    function procesarOpcion(opcion) {
+        opcionActiva = opcion;
+        document.querySelectorAll('.btn-opcion').forEach(b => b.classList.remove('selected'));
+        document.getElementById('opt-' + opcion).classList.add('selected');
+        
+        const panel = document.getElementById('panel-dinamico');
+        panel.innerHTML = '';
+        panel.style.display = 'block';
+        const hoy = new Date();
+        const hoyStr = `${hoy.getDate().toString().padStart(2,'0')}/${(hoy.getMonth()+1).toString().padStart(2,'0')}/${hoy.getFullYear()}`;
+        
+        if (opcion === 'descongelado') {
+            let vto = new Date(); vto.setDate(vto.getDate() + 3);
+            const vtoStr = `${vto.getDate().toString().padStart(2,'0')}/${(vto.getMonth()+1).toString().padStart(2,'0')}/${vto.getFullYear()}`;
+            panel.innerHTML = `<label>Fecha de Caducidad Secundaria (+3 días):</label><input type="text" id="dinamico-val-1" value="${vtoStr}" readonly style="background:#e9ecef;">`;
+        } else if (opcion === 'refrigerado') {
+            let vto = new Date(); vto.setDate(vto.getDate() + 5);
+            const vtoStr = `${vto.getDate().toString().padStart(2,'0')}/${(vto.getMonth()+1).toString().padStart(2,'0')}/${vto.getFullYear()}`;
+            panel.innerHTML = `<label>Fecha de Caducidad Receta (+5 días):</label><input type="text" id="dinamico-val-1" value="${vtoStr}" readonly style="background:#e9ecef;">`;
+        } else if (opcion === 'otras') {
+            panel.innerHTML = `<label>Introduce Caducidad Manual:</label><input type="text" id="dinamico-val-1" placeholder="Ej: 48 horas, o 22/06/2026">`;
+        }
+    }
+    
+    function mapearConservacion(opcion) {
+        return 'NEVERA';
+    }
+    
+    // ----- Emitir elaborado -----
+    function enviarEtiquetaElaborado() {
+        const nombre = document.getElementById('p1-nombre').value.trim().toUpperCase();
+        const lote = document.getElementById('p1-lote').value.trim().toUpperCase();
+        if (!nombre) { mostrarToast("Escanea o escribe un producto primero", "#ef4444"); return; }
+        if (!opcionActiva) { mostrarToast("Selecciona un proceso de destino (descongelado, refrigerado u otras)", "#ef4444"); return; }
+        
+        let datoDinamico = '';
+        const panelDiv = document.getElementById('panel-dinamico');
+        if (panelDiv.style.display === 'block' && document.getElementById('dinamico-val-1')) {
+            datoDinamico = document.getElementById('dinamico-val-1').value.trim();
+            if (!datoDinamico) { mostrarToast("Completa el campo de fecha/valor dinámico", "#ef4444"); return; }
+        } else {
+            mostrarToast("Error: selecciona de nuevo la opción", "#ef4444");
+            return;
+        }
+        
+        const conservacion = mapearConservacion(opcionActiva);
+        const cadenaQr = `TIPO:ELABORADO|PROD:${nombre}|LOTE:${lote}|OPER:${opcionActiva.toUpperCase()}|CAD:${datoDinamico}`;
+        
+        let datosBD = { producto: nombre, conservacion: conservacion, proveedor: "PRODUCCION INTERNA", cantidad_total: 1, fecha_registro: new Date().toISOString() };
+        let paqueteImpresion = { 
+            etiquetas: [{ 
+                producto: nombre, 
+                unidad: lote, 
+                fecha: `CAD: ${datoDinamico} (${opcionActiva.toUpperCase()})`, 
+                texto_qr: cadenaQr 
+            }] 
+        };
+        
+        generarQRLocal(cadenaQr);
+        document.getElementById('etiqueta-datos').innerHTML = `PRODUCTO: ${nombre}<br>LOTE DE ORIGEN: ${lote}<br>PROCESO: ${opcionActiva.toUpperCase()}<br>VENCE: ${datoDinamico}`;
+        document.getElementById('vista-previa').style.display = 'block';
+        agregarAlHistorial("ELABORADO", nombre, lote, datoDinamico, cadenaQr);
+        
+        dispararServidorDual(paqueteImpresion, datosBD).catch(() => {});
+        
+        document.getElementById('p1-nombre').value = '';
+        document.getElementById('p1-lote').value = '';
+        document.getElementById('p1-fecha-elab').value = '';
+        opcionActiva = '';
+        document.querySelectorAll('.btn-opcion').forEach(b => b.classList.remove('selected'));
+        document.getElementById('panel-dinamico').style.display = 'none';
+        document.getElementById('panel-dinamico').innerHTML = '';
+    }
+    
+    // ----- Emitir seco -----
+    function enviarEtiquetaSeco() {
+        const nombre = document.getElementById('p2-nombre').value.trim().toUpperCase();
+        const lote = document.getElementById('p2-lote').value.trim().toUpperCase() || 'S/L';
+        const fechaCad = document.getElementById('p2-fecha-cad').value;
+        const fechaRecep = document.getElementById('p2-fecha-recep').value;
+        
+        if (!nombre) { mostrarToast("Introduce el nombre del producto seco", "#ef4444"); return; }
+        if (!fechaCad) { mostrarToast("Selecciona fecha de caducidad", "#ef4444"); return; }
+        if (fechaRecep && fechaCad < fechaRecep) { mostrarToast("La caducidad no puede ser anterior a la recepción", "#ef4444"); return; }
+        
+        const fechaCadFormateada = fechaCad.split('-').reverse().join('/');
+        const cadenaQr = `TIPO:SECO|PROD:${nombre}|LOTE:${lote}|CAD:${fechaCadFormateada}`;
+        
+        let datosBD = { producto: nombre, conservacion: "SECO", proveedor: "PROVEEDOR REGLAMENTARIO", cantidad_total: 1, fecha_registro: new Date().toISOString() };
+        let paqueteImpresion = { 
+            etiquetas: [{ 
+                producto: nombre, 
+                unidad: lote, 
+                fecha: `CAD: ${fechaCadFormateada}`, 
+                texto_qr: cadenaQr 
+            }] 
+        };
+        
+        generarQRLocal(cadenaQr);
+        document.getElementById('etiqueta-datos').innerHTML = `PRODUCTO SECO: ${nombre}<br>LOTE FABRICANTE: ${lote}<br>CADUCIDAD: ${fechaCadFormateada}`;
+        document.getElementById('vista-previa').style.display = 'block';
+        agregarAlHistorial("SECO", nombre, lote, fechaCadFormateada, cadenaQr);
+        
+        dispararServidorDual(paqueteImpresion, datosBD).catch(() => {});
+        
+        document.getElementById('p2-lote').value = '';
+        document.getElementById('p2-fecha-cad').value = '';
+    }
+    
+    // ----- Reimprimir -----
+    document.getElementById('btn-reimprimir-ultima')?.addEventListener('click', () => {
+        if (ultimoQRGenerado) {
+            generarQRLocal(ultimoQRGenerado);
+            mostrarToast("Reimpreso QR en pantalla", "#10b981");
+        } else {
+            mostrarToast("No hay etiqueta previa", "#ef4444");
+        }
+    });
+    
+    // ----- Inicialización -----
+    document.getElementById('p2-fecha-recep').value = new Date().toISOString().split('T')[0];
+    cargarCatalogo();
+    actualizarHistorialUI();
+    actualizarEstadoServidor();
+    
+    const colaGuardada = localStorage.getItem('fredware_cola_offline');
+    if (colaGuardada) {
+        colaOffline = JSON.parse(colaGuardada);
+        if (colaOffline.length > 0) procesarColaOffline();
+    }
+    
+    window.addEventListener('online', () => { mostrarToast("Conexión restaurada", "#10b981"); procesarColaOffline(); actualizarEstadoServidor(); });
+    window.addEventListener('offline', () => { mostrarToast("Sin conexión - modo offline activado", "#ef4444"); document.getElementById('offline-banner').style.display = 'block'; });
+    
+    window.cambiarApp = function(appNum) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+        if(appNum === 1) {
+            document.getElementById('btn-tab1').classList.add('active');
+            document.getElementById('app1').classList.add('active');
+        } else if (appNum === 2) {
+            document.getElementById('btn-tab2').classList.add('active');
+            document.getElementById('app2').classList.add('active');
+        } else if (appNum === 3) {
+            document.getElementById('btn-tab3').classList.add('active');
+            document.getElementById('app3').classList.add('active');
+            actualizarVisor(ultimoEscaneoRaw || "(Esperando escaneo...)", ultimoEscaneoParseado);
+        }
+    };
+    
+    window.procesarOpcion = procesarOpcion;
+    window.enviarEtiquetaElaborado = enviarEtiquetaElaborado;
+    window.enviarEtiquetaSeco = enviarEtiquetaSeco;
+</script>
+</body>
+</html>
