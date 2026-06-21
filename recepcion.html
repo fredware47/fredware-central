@@ -28,8 +28,6 @@
         .btn-danger { background: #dc2626; color: white; }
         .btn-danger:hover { background: #b91c1c; }
         .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-success { background: #10b981; color: white; }
-        .btn-success:hover { background: #059669; }
         
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
         
@@ -93,7 +91,6 @@
         
         .grid-cols-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
         .grid-cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .grid-cols-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         
         .checkbox-wrapper {
             display: flex;
@@ -156,7 +153,6 @@
             .grid-cards { grid-template-columns: 1fr; }
             .grid-cols-5 { grid-template-columns: repeat(2, 1fr); }
             .grid-cols-3 { grid-template-columns: 1fr; }
-            .grid-cols-2 { grid-template-columns: 1fr; }
             .fredware-header { flex-direction: column; text-align: center; }
             .fredware-header div:last-child { margin-left: 0 !important; }
         }
@@ -276,6 +272,7 @@
     let currentPage = 1;
     const ITEMS_PER_PAGE = 15;
     let selectedIds = new Set();
+    let isDeleting = false;
 
     // ============================================================
     // DOM REFS
@@ -432,8 +429,7 @@
                 
                 if (Array.isArray(productos) && productos.length > 0) {
                     productos.forEach((item, index) => {
-                        // Asegurar que cada item tenga un ID único
-                        const id = item.id || item._id || `item_${index}_${Date.now()}`;
+                        const id = item.id || item._id || `item_${index}_${Date.now()}_${Math.random()}`;
                         datos.push({
                             id: id,
                             producto: item.producto || item.nombre || item.descripcion || 'Sin nombre',
@@ -489,25 +485,24 @@
     }
 
     // ============================================================
-    // ELIMINAR PRODUCTOS
+    // ELIMINAR PRODUCTOS (DE BD Y PANTALLA)
     // ============================================================
     async function eliminarProductos(ids) {
-        if (!ids || ids.length === 0) return;
+        if (!ids || ids.length === 0 || isDeleting) return;
         
         const confirmMsg = ids.length === 1 
-            ? '¿Estás seguro de que quieres eliminar este producto?'
-            : `¿Estás seguro de que quieres eliminar ${ids.length} productos?`;
+            ? '¿Estás seguro de que quieres ELIMINAR este producto de la base de datos?'
+            : `¿Estás seguro de que quieres ELIMINAR ${ids.length} productos de la base de datos?`;
         
         if (!confirm(confirmMsg)) return;
         
         try {
-            // Mostrar estado de carga
+            isDeleting = true;
             deleteSelectedBtn.disabled = true;
             deleteSelectedBtn.textContent = '⏳ Eliminando...';
             
-            console.log('🗑️ Eliminando productos:', ids);
+            console.log('🗑️ Eliminando productos de BD:', ids);
             
-            // Enviar petición de eliminación
             const response = await fetch(`${API_URL}${ENDPOINT_ELIMINAR}`, {
                 method: 'POST',
                 headers: {
@@ -517,35 +512,34 @@
                 body: JSON.stringify({ ids: ids })
             });
             
-            if (response.ok) {
-                const result = await response.json();
-                console.log('✅ Eliminación exitosa:', result);
-                
-                // Eliminar de los datos locales
-                const idsSet = new Set(ids);
-                allData = allData.filter(item => !idsSet.has(item.id));
-                selectedIds.clear();
-                
-                showToast(`✅ ${ids.length} producto(s) eliminado(s) correctamente`, 'success');
-                
-                // Recargar la vista
-                filteredData = [...allData];
-                actualizarFiltrosProveedores();
-                aplicarFiltros();
-                actualizarEstadisticas();
-                renderizarPagina();
-                actualizarSeleccion();
-                
-            } else {
+            if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
+            
+            const result = await response.json();
+            console.log('✅ Eliminación exitosa:', result);
+            
+            // Eliminar de los datos locales
+            const idsSet = new Set(ids);
+            allData = allData.filter(item => !idsSet.has(item.id));
+            filteredData = filteredData.filter(item => !idsSet.has(item.id));
+            selectedIds.clear();
+            
+            showToast(`✅ ${ids.length} producto(s) eliminado(s) correctamente`, 'success');
+            
+            // Recargar la vista
+            actualizarFiltrosProveedores();
+            actualizarEstadisticas();
+            renderizarPagina();
+            actualizarSeleccion();
             
         } catch (error) {
             console.error('Error eliminando productos:', error);
             showToast(`❌ Error al eliminar: ${error.message}`, 'error');
         } finally {
-            deleteSelectedBtn.disabled = true;
+            isDeleting = false;
+            deleteSelectedBtn.disabled = selectedIds.size === 0;
             deleteSelectedBtn.textContent = '🗑️ Eliminar Seleccionados';
             actualizarSeleccion();
         }
@@ -555,6 +549,7 @@
     // MANEJAR SELECCIÓN
     // ============================================================
     function toggleSeleccion(id) {
+        if (isDeleting) return;
         if (selectedIds.has(id)) {
             selectedIds.delete(id);
         } else {
@@ -565,6 +560,7 @@
     }
 
     function toggleSeleccionTodos() {
+        if (isDeleting) return;
         const pageData = obtenerDatosPagina();
         const allSelected = pageData.every(item => selectedIds.has(item.id));
         
@@ -580,11 +576,11 @@
     function actualizarSeleccion() {
         const count = selectedIds.size;
         selectedCount.textContent = `${count} seleccionado${count !== 1 ? 's' : ''}`;
-        deleteSelectedBtn.disabled = count === 0;
+        deleteSelectedBtn.disabled = count === 0 || isDeleting;
         
-        if (count > 0) {
+        if (count > 0 && !isDeleting) {
             deleteSelectedBtn.textContent = `🗑️ Eliminar ${count} seleccionado${count !== 1 ? 's' : ''}`;
-        } else {
+        } else if (!isDeleting) {
             deleteSelectedBtn.textContent = '🗑️ Eliminar Seleccionados';
         }
     }
@@ -720,4 +716,76 @@
                             <span>📅 ${formatearFecha(item.fecha_registro)}</span>
                             ${item.temperatura !== null && item.temperatura !== undefined ? 
                                 `<span class="font-bold px-2 py-0.5 rounded-full ${getBadgeTemperatura(item.temperatura).class}">${getBadgeTemperatura(item.temperatura).label}</span>` : ''}
-                            ${item
+                            ${item.conservacion ? 
+                                `<span class="font-bold px-2 py-0.5 rounded-full ${getBadgeConservacion(item.conservacion).class}">${getBadgeConservacion(item.conservacion).label}</span>` : ''}
+                            ${item.cantidad ? 
+                                `<span class="font-bold text-blue-600">📦 ${item.cantidad} uds</span>` : ''}
+                        </div>
+                    </div>
+                    <button class="btn btn-danger delete-btn" style="font-size: 10px; padding: 4px 8px; flex-shrink: 0;" 
+                            onclick="eliminarProductos(['${escapeHtml(item.id)}'])" 
+                            title="Eliminar este producto">
+                        ✕
+                    </button>
+                </div>
+            </div>
+        `}).join('');
+
+        // Event listeners para checkboxes
+        document.querySelectorAll('.item-checkbox').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const id = this.dataset.id;
+                if (this.checked) {
+                    selectedIds.add(id);
+                } else {
+                    selectedIds.delete(id);
+                }
+                actualizarSeleccion();
+                renderizarPagina();
+            });
+        });
+
+        // Event listener para "Seleccionar todos"
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) {
+            selectAll.addEventListener('change', toggleSeleccionTodos);
+        }
+    }
+
+    // ============================================================
+    // FUNCIONES GLOBALES
+    // ============================================================
+    window.recargarDatos = function() { cargarDatos(); };
+    window.eliminarProductos = eliminarProductos;
+
+    // ============================================================
+    // EVENTOS
+    // ============================================================
+    searchInput.addEventListener('input', aplicarFiltros);
+    providerFilter.addEventListener('change', aplicarFiltros);
+    dateFilter.addEventListener('change', aplicarFiltros);
+
+    deleteSelectedBtn.addEventListener('click', function() {
+        const ids = Array.from(selectedIds);
+        if (ids.length > 0) {
+            eliminarProductos(ids);
+        }
+    });
+
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) { currentPage--; renderizarPagina(); }
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+        if (currentPage < totalPages) { currentPage++; renderizarPagina(); }
+    });
+
+    // ============================================================
+    // INICIALIZAR
+    // ============================================================
+    cargarDatos();
+    setInterval(cargarDatos, 30000);
+</script>
+</body>
+</html>
