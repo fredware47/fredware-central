@@ -272,6 +272,10 @@
         return div.innerHTML;
     }
 
+    function safeString(value) {
+        return String(value || '').toUpperCase();
+    }
+
     function getBadgeTemperatura(temp) {
         if (temp === null || temp === undefined || isNaN(temp)) return { class: 'bg-slate-200 text-slate-600', label: 'N/A' };
         if (temp <= 8) return { class: 'bg-emerald-100 text-emerald-800', label: `✅ ${temp}°C` };
@@ -289,7 +293,7 @@
     }
 
     // ============================================================
-    // CARGA DE DATOS DESDE /obtener_mercancias
+    // CARGA DE DATOS
     // ============================================================
     async function cargarDatos() {
         try {
@@ -310,19 +314,39 @@
             let datos = [];
 
             if (response.ok) {
-                const mercancias = await response.json();
-                console.log('✅ Productos recibidos:', mercancias);
+                const data = await response.json();
+                console.log('✅ Datos del servidor:', data);
                 
-                if (Array.isArray(mercancias) && mercancias.length > 0) {
-                    mercancias.forEach(item => {
+                // 🔥 IMPORTANTE: La respuesta es un objeto con 'cesta' y 'faltas'
+                // Si es un array directamente, también funciona
+                let productos = [];
+                
+                if (Array.isArray(data)) {
+                    // Si es un array directo (como funcionaba antes)
+                    productos = data;
+                } else if (data.cesta && Array.isArray(data.cesta)) {
+                    // Si tiene propiedad 'cesta' (nuevo formato)
+                    productos = data.cesta;
+                    
+                    // Opcional: también mostrar productos en falta
+                    if (data.faltas && Array.isArray(data.faltas)) {
+                        // Si quieres mostrar también las faltas, descomenta esto:
+                        // productos = [...productos, ...data.faltas.map(item => ({...item, es_falta: true}))];
+                    }
+                } else {
+                    console.warn('⚠️ Formato de datos no reconocido:', data);
+                }
+                
+                if (Array.isArray(productos) && productos.length > 0) {
+                    productos.forEach(item => {
                         datos.push({
                             id: 'sql_' + Math.random().toString(36).substr(2, 6),
-                            producto: item.producto || 'Sin nombre',
+                            producto: item.producto || item.nombre || 'Sin nombre',
                             proveedor: item.proveedor || 'S/P',
-                            temperatura: item.temperatura || null,
+                            temperatura: item.temperatura !== undefined ? item.temperatura : null,
                             conservacion: item.conservacion || null,
                             cantidad: item.cantidad || 1,
-                            fecha_registro: item.fecha_registro || new Date().toISOString()
+                            fecha_registro: item.fecha_registro || item.fecha || new Date().toISOString()
                         });
                     });
                     
@@ -385,8 +409,8 @@
 
         filteredData = allData.filter(item => {
             if (search) {
-                const producto = (item.producto || '').toUpperCase();
-                const proveedor = (item.proveedor || '').toUpperCase();
+                const producto = safeString(item.producto);
+                const proveedor = safeString(item.proveedor);
                 if (!producto.includes(search) && !proveedor.includes(search)) {
                     return false;
                 }
