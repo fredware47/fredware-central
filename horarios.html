@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Horarios - Equipo de Cocina</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .controls-row label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .controls-row select, .controls-row input {
+            padding: 8px 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .controls-row select:focus, .controls-row input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .week-selector {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .week-selector button {
+            padding: 10px 20px;
+            border: none;
+            background: #3498db;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .week-selector button:hover {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        .week-selector span {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .schedule-table {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+            min-width: 900px;
+        }
+
+        thead {
+            background: #2c3e50;
+            color: white;
+        }
+
+        th {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #34495e;
+        }
+
+        td {
+            padding: 6px 4px;
+            text-align: center;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+            background: white;
+        }
+
+        .day-header {
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+
+        .day-header .date-info {
+            font-size: 0.8em;
+            font-weight: normal;
+            display: block;
+            color: #ecf0f1;
+        }
+
+        .time-slot {
+            background: #ecf0f1;
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 100px;
+            font-size: 0.8em;
+        }
+
+        .employee-cell {
+            min-width: 140px;
+            position: relative;
+            padding: 4px;
+        }
+
+        .employee-cell select {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 0.8em;
+            text-align: center;
+            min-height: 32px;
+            background: white;
+        }
+
+        .employee-cell select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .employee-cell .delete-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 11px;
+            cursor: pointer;
+            display: none;
+            line-height: 20px;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .employee-cell:hover .delete-btn {
+            display: block;
+        }
+
+        .employee-cell .delete-btn:hover {
+            background: #c0392b;
+            transform: scale(1.1);
+        }
+
+        .weekend {
+            background: #fef9e7;
+        }
+
+        .weekend-header {
+            background: #e67e22;
+        }
+
+        .weekend-header .date-info {
+            color: #fdebd0;
+        }
+
+        .employee-controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .employee-controls input {
+            padding: 10px 15px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 1em;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .employee-controls input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .employee-controls select {
+            padding: 10px 15px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 1em;
+            min-width: 150px;
+        }
+
+        .employee-controls button {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .btn-add {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background: #229954;
+            transform: scale(1.05);
+        }
+
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .btn-export {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-export:hover {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        .btn-import {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .btn-import:hover {
+            background: #8e44ad;
+            transform: scale(1.05);
+        }
+
+        .btn-print {
+            background: #e67e22;
+            color: white;
+        }
+
+        .btn-print:hover {
+            background: #d35400;
+            transform: scale(1.05);
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid #bdc3c7;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .quick-actions button {
+            padding: 8px 15px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .quick-actions button:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .employee-controls {
+                flex-direction: column;
+            }
+
+            .employee-controls input,
+            .employee-controls select {
+                width: 100%;
+            }
+
+            .week-selector {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        .turno-mañana { background: #d5f5e3; }
+        .turno-tarde { background: #fadbd8; }
+        .turno-partido { background: #d6eaf8; }
+        .descanso { background: #f5b7b1; }
+        .vacaciones { background: #f9e79f; }
+        .libre { background: #d5dbdb; }
+        .recuperado { background: #a9dfbf; }
+        .feriado { background: #f1948a; }
+
+        .staff-counter {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: #e8f4f8;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .staff-counter span {
+            font-weight: 600;
+        }
+
+        .shift-code {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            font-weight: bold;
+            margin-left: 3px;
+        }
+
+        .code-M { background: #27ae60; color: white; }
+        .code-T { background: #e67e22; color: white; }
+        .code-P { background: #2980b9; color: white; }
+        .code-L { background: #e74c3c; color: white; }
+        .code-V { background: #f1c40f; color: #2c3e50; }
+        .code-F { background: #e74c3c; color: white; }
+
+        .name-edit {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-align: left;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .name-edit:hover {
+            background: #ebf5fb;
+        }
+
+        .name-edit:focus {
+            background: white;
+            border: 2px solid #3498db;
+            outline: none;
+        }
+
+        .role-edit {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-size: 0.75em;
+            color: #7f8c8d;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .role-edit:hover {
+            background: #ebf5fb;
+        }
+
+        .role-edit:focus {
+            background: white;
+            border: 2px solid #3498db;
+            outline: none;
+        }
+
+        .employee-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            padding: 2px;
+        }
+
+        .employee-type-badge {
+            font-size: 0.6em;
+            padding: 1px 8px;
+            border-radius: 12px;
+            margin-top: 2px;
+        }
+
+        .badge-M { background: #27ae60; color: white; }
+        .badge-T { background: #e67e22; color: white; }
+        .badge-P { background: #2980b9; color: white; }
+
+        .month-year-display {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 5px 15px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+
+        /* Estilos para impresión */
+        @media print {
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .container {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                padding: 15px !important;
+                max-width: 100% !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            table {
+                font-size: 0.65em !important;
+                min-width: auto !important;
+            }
+
+            th, td {
+                padding: 3px 2px !important;
+            }
+
+            .employee-cell select {
+                border: 1px solid #999 !important;
+                font-size: 0.65em !important;
+                padding: 2px !important;
+                min-height: 20px !important;
+                -webkit-appearance: none !important;
+                appearance: none !important;
+            }
+
+            .employee-cell .delete-btn {
+                display: none !important;
+            }
+
+            .name-edit, .role-edit {
+                border: none !important;
+                background: transparent !important;
+                pointer-events: none !important;
+                font-size: 0.8em !important;
+            }
+
+            .week-selector {
+                margin-bottom: 10px !important;
+            }
+
+            .legend {
+                padding: 8px !important;
+                margin: 8px 0 !important;
+                font-size: 0.7em !important;
+            }
+
+            .staff-counter {
+                padding: 8px !important;
+                margin: 8px 0 !important;
+                font-size: 0.7em !important;
+            }
+
+            h1 {
+                font-size: 1.3em !important;
+            }
+
+            .subtitle {
+                font-size: 0.8em !important;
+                margin-bottom: 10px !important;
+            }
+
+            .employee-controls, .quick-actions, .controls-row {
+                display: none !important;
+            }
+
+            .employee-cell select option {
+                color: black !important;
+                background: white !important;
+            }
+
+            .day-header .date-info {
+                font-size: 0.7em !important;
+            }
+
+            .time-slot {
+                font-size: 0.7em !important;
+                padding: 3px 2px !important;
+            }
+
+            /* Asegurar que los colores se impriman */
+            .turno-mañana, .turno-tarde, .turno-partido, 
+            .descanso, .vacaciones, .libre, .recuperado, .feriado,
+            .weekend, .weekend-header, thead, .day-header, .time-slot {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 8mm;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="printArea">
+        <h1>
+            🍳 Gestión de Horarios - Cocina
+            <span style="font-size:0.6em; color:#7f8c8d;">v5.0 - Con calendario mensual</span>
+        </h1>
+        <p class="subtitle">Planificación semanal del equipo de cocina</p>
+
+        <!-- Controles de Mes y Año -->
+        <div class="controls-row no-print">
+            <label for="monthSelect">📅 Mes:</label>
+            <select id="monthSelect" onchange="updateCalendar()">
+                <option value="0">Enero</option>
+                <option value="1">Febrero</option>
+                <option value="2">Marzo</option>
+                <option value="3">Abril</option>
+                <option value="4">Mayo</option>
+                <option value="5">Junio</option>
+                <option value="6">Julio</option>
+                <option value="7">Agosto</option>
+                <option value="8">Septiembre</option>
+                <option value="9">Octubre</option>
+                <option value="10">Noviembre</option>
+                <option value="11">Diciembre</option>
+            </select>
+            
+            <label for="yearInput">Año:</label>
+            <input type="number" id="yearInput" value="2024" min="2020" max="2030" onchange="updateCalendar()" style="width:80px;">
+            
+            <span class="month-year-display" id="monthYearDisplay">Enero 2024</span>
+        </div>
+
+        <div class="week-selector no-print">
+            <button onclick="changeWeek(-1)">← Semana Anterior</button>
+            <span id="weekDisplay">Semana 1</span>
+            <button onclick="changeWeek(1)">Semana Siguiente →</button>
+            <button onclick="resetWeek()" style="background:#95a5a6;">Hoy</button>
+            <button onclick="printSchedule()" class="btn-print" style="margin-left:auto;">🖨️ Imprimir PDF</button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color turno-mañana"></div>
+                <span>Turno Mañana (M)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color turno-tarde"></div>
+                <span>Turno Tarde (T)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color turno-partido"></div>
+                <span>Turno Partido (P)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color descanso"></div>
+                <span>Descanso</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color vacaciones"></div>
+                <span>Vacaciones</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color libre"></div>
+                <span>Libre</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color recuperado"></div>
+                <span>Recuperado</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color feriado"></div>
+                <span>Feriado</span>
+            </div>
+            <div class="legend-item">
+                <span style="background:#e74c3c; color:white; padding:2px 8px; border-radius:4px;">✕</span>
+                <span>Eliminar empleado</span>
+            </div>
+            <div class="legend-item">
+                <span style="background:#3498db; color:white; padding:2px 8px; border-radius:4px;">✏️</span>
+                <span>Editar nombre/puesto</span>
+            </div>
+        </div>
+
+        <div class="staff-counter" id="staffCounter">
+            <span>👥 Total: <strong id="totalStaff">0</strong></span>
+            <span>🌅 Mañana: <strong id="morningStaff">0</strong></span>
+            <span>🌇 Tarde: <strong id="eveningStaff">0</strong></span>
+            <span>🔄 Partido: <strong id="partTimeStaff">0</strong></span>
+            <span>📅 Descansos: <strong id="restDays">0</strong></span>
+        </div>
+
+        <div class="employee-controls no-print">
+            <input type="text" id="employeeName" placeholder="Nombre (ej: Cocinero 1)" />
+            <input type="text" id="employeeRole" placeholder="Puesto (ej: Jefe de Cocina)" />
+            <select id="employeeType">
+                <option value="M">Turno Mañana (M)</option>
+                <option value="T">Turno Tarde (T)</option>
+                <option value="P">Turno Partido (P)</option>
+            </select>
+            <button class="btn-add" onclick="addEmployee()">➕ Añadir Empleado</button>
+            <button class="btn-clear" onclick="clearAll()">🗑️ Limpiar Todo</button>
+            <button class="btn-export" onclick="exportData()">📤 Exportar</button>
+            <button class="btn-import" onclick="document.getElementById('importFile').click()">📥 Importar</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
+        </div>
+
+        <div class="quick-actions no-print">
+            <button onclick="fillDefaultEmployees()">📋 Cargar Equipo por Defecto</button>
+            <button onclick="autoAssignShifts()">🤖 Asignar Turnos Automáticamente</button>
+            <button onclick="autoAssignRestDays()">📅 Asignar 2 Días Libres</button>
+            <button onclick="validateSchedule()">✅ Validar Horario</button>
+        </div>
+
+        <div class="schedule-table">
+            <table id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th style="min-width:150px;">Personal / Día</th>
+                        <th class="day-header" id="dayHeader0">Lunes <span class="date-info" id="date0"></span></th>
+                        <th class="day-header" id="dayHeader1">Martes <span class="date-info" id="date1"></span></th>
+                        <th class="day-header" id="dayHeader2">Miércoles <span class="date-info" id="date2"></span></th>
+                        <th class="day-header" id="dayHeader3">Jueves <span class="date-info" id="date3"></span></th>
+                        <th class="day-header" id="dayHeader4">Viernes <span class="date-info" id="date4"></span></th>
+                        <th class="day-header weekend-header" id="dayHeader5">Sábado <span class="date-info" id="date5"></span></th>
+                        <th class="day-header weekend-header" id="dayHeader6">Domingo <span class="date-info" id="date6"></span></th>
+                    </tr>
+                    <tr>
+                        <th style="background:#ecf0f1; color:#2c3e50;">Horarios</th>
+                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
+                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
+                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
+                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
+                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
+                        <td class="time-slot weekend">08:00-11:00<br>08:00-23:00</td>
+                        <td class="time-slot weekend">08:00-11:00<br>08:00-23:00</td>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top:20px; padding:15px; background:#f8f9fa; border-radius:10px;" class="no-print">
+            <h3 style="color:#2c3e50; margin-bottom:10px;">📅 Todos los Turnos Disponibles</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:0.9em;">
+                <div><span class="shift-code code-M">M</span> <strong>M1:</strong> 06:30 - 14:30</div>
+                <div><span class="shift-code code-M">M</span> <strong>M2:</strong> 07:00 - 15:00</div>
+                <div><span class="shift-code code-M">M</span> <strong>M3:</strong> 09:00 - 17:00</div>
+                <div><span class="shift-code code-M">M</span> <strong>M4:</strong> 10:00 - 18:00</div>
+                <div><span class="shift-code code-M">M</span> <strong>M5:</strong> 12:00 - 20:00</div>
+                <div><span class="shift-code code-M">M</span> <strong>M6:</strong> 08:00 - 16:00</div>
+                <div><span class="shift-code code-T">T</span> <strong>T1:</strong> 14:30 - 22:30</div>
+                <div><span class="shift-code code-T">T</span> <strong>T2:</strong> 15:00 - 23:00</div>
+                <div><span class="shift-code code-T">T</span> <strong>T3:</strong> 15:15 - 23:15</div>
+                <div><span class="shift-code code-T">T</span> <strong>T4:</strong> 16:00 - 24:00</div>
+                <div><span class="shift-code code-T">T</span> <strong>T5:</strong> 14:30 - 22:30</div>
+                <div><span class="shift-code code-P">P</span> <strong>P1:</strong> 12:00-16:00 / 20:00-24:00</div>
+                <div><span class="shift-code code-P">P</span> <strong>P2:</strong> 11:30-16:15 / 20:00-23:15</div>
+                <div><span class="shift-code code-P">P</span> <strong>P3:</strong> 11:45-16:14 / 20:00-23:00</div>
+                <div><span class="shift-code code-P">P</span> <strong>P4:</strong> 12:00-16:00 / 20:15-23:15</div>
+                <div><span class="shift-code code-L">L</span> <strong>DESCANSO:</strong> Día libre</div>
+                <div><span class="shift-code code-V">V</span> <strong>VACACIONES:</strong> Día de vacaciones</div>
+                <div><span class="shift-code code-L">L</span> <strong>LIBRE:</strong> Día libre especial</div>
+                <div><span class="shift-code code-L">L</span> <strong>RECUPERADO:</strong> Día recuperado</div>
+                <div><span class="shift-code code-F">F</span> <strong>FERIADO:</strong> Día feriado</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            employees: [],
+            weekOffset: 0,
+            currentDate: new Date()
+        };
+
+        const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+        const dayLabels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        
+        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        const allShifts = [
+            { code: '', hours: 'Descanso', type: 'L' },
+            { code: 'VAC', hours: 'Vacaciones', type: 'V' },
+            { code: 'LIB', hours: 'Libre', type: 'L' },
+            { code: 'REC', hours: 'Recuperado', type: 'L' },
+            { code: 'FER', hours: 'Feriado', type: 'F' },
+            { code: 'M1', hours: '06:30 - 14:30', type: 'M' },
+            { code: 'M2', hours: '07:00 - 15:00', type: 'M' },
+            { code: 'M3', hours: '09:00 - 17:00', type: 'M' },
+            { code: 'M4', hours: '10:00 - 18:00', type: 'M' },
+            { code: 'M5', hours: '12:00 - 20:00', type: 'M' },
+            { code: 'M6', hours: '08:00 - 16:00', type: 'M' },
+            { code: 'T1', hours: '14:30 - 22:30', type: 'T' },
+            { code: 'T2', hours: '15:00 - 23:00', type: 'T' },
+            { code: 'T3', hours: '15:15 - 23:15', type: 'T' },
+            { code: 'T4', hours: '16:00 - 24:00', type: 'T' },
+            { code: 'T5', hours: '14:30 - 22:30', type: 'T' },
+            { code: 'P1', hours: '12:00-16:00 / 20:00-24:00', type: 'P' },
+            { code: 'P2', hours: '11:30-16:15 / 20:00-23:15', type: 'P' },
+            { code: 'P3', hours: '11:45-16:14 / 20:00-23:00', type: 'P' },
+            { code: 'P4', hours: '12:00-16:00 / 20:15-23:15', type: 'P' }
+        ];
+
+        let nextId = 1;
+
+        // Obtener las fechas de la semana actual
+        function getWeekDates() {
+            const today = new Date(state.currentDate);
+            const currentDay = today.getDay(); // 0=domingo, 1=lunes, ...
+            
+            // Ajustar para que la semana empiece en lunes
+            const diff = (currentDay === 0) ? 6 : currentDay - 1;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - diff + (state.weekOffset * 7));
+            
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(monday);
+                date.setDate(monday.getDate() + i);
+                weekDates.push(date);
+            }
+            return weekDates;
+        }
+
+        // Actualizar el calendario
+        function updateCalendar() {
+            const month = parseInt(document.getElementById('monthSelect').value);
+            const year = parseInt(document.getElementById('yearInput').value);
+            
+            state.currentDate = new Date(year, month, 1);
+            
+            // Actualizar el display del mes
+            document.getElementById('monthYearDisplay').textContent = `${monthNames[month]} ${year}`;
+            
+            // Actualizar la semana
+            state.weekOffset = 0;
+            updateWeekDisplay();
+            renderTable();
+        }
+
+        function loadDefaultEmployees() {
+            const defaultEmployees = [
+                { name: 'Jefe de Cocina', role: 'Jefe', type: 'M' },
+                { name: 'Segundo de Cocina', role: 'Segundo', type: 'M' },
+                { name: 'Jefa de sector', role: 'Jefa', type: 'M' },
+                { name: 'Cocinero 1', role: 'Cocinero', type: 'M' },
+                { name: 'Cocinero 2', role: 'Cocinero', type: 'M' },
+                { name: 'Cocinero 3', role: 'Cocinero', type: 'T' },
+                { name: 'Cocinero 4', role: 'Cocinero', type: 'T' },
+                { name: 'Cocinero 5', role: 'Cocinero', type: 'T' },
+                { name: 'Cocinero 6', role: 'Cocinero', type: 'P' },
+                { name: 'Cocinero 7', role: 'Cocinero', type: 'P' },
+                { name: 'Pica 1', role: 'Pica', type: 'P' },
+                { name: 'Pica 2', role: 'Pica', type: 'P' }
+            ];
+
+            defaultEmployees.forEach(emp => {
+                addEmployee(emp.name, emp.role, emp.type);
+            });
+        }
+
+        function addEmployee(name, role, type) {
+            const nameInput = document.getElementById('employeeName');
+            const roleInput = document.getElementById('employeeRole');
+            const typeSelect = document.getElementById('employeeType');
+
+            let employeeName = name || nameInput.value.trim();
+            let employeeRole = role || roleInput.value.trim();
+            let employeeType = type || typeSelect.value;
+
+            if (!employeeName) {
+                alert('Por favor, introduce un nombre para el empleado.');
+                return;
+            }
+
+            if (!employeeRole) {
+                employeeRole = 'Cocinero';
+            }
+
+            const schedule = {};
+            days.forEach(day => {
+                schedule[day] = '';
+            });
+
+            const newEmployee = {
+                id: nextId++,
+                name: employeeName,
+                role: employeeRole,
+                type: employeeType,
+                schedule: schedule
+            };
+
+            state.employees.push(newEmployee);
+            renderTable();
+
+            nameInput.value = '';
+            roleInput.value = '';
+            updateCounters();
+
+            return newEmployee;
+        }
+
+        function deleteEmployee(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar este empleado?')) {
+                state.employees = state.employees.filter(emp => emp.id !== id);
+                renderTable();
+                updateCounters();
+            }
+        }
+
+        function updateEmployeeName(id, newName) {
+            const employee = state.employees.find(emp => emp.id === id);
+            if (employee) {
+                employee.name = newName;
+                updateCounters();
+            }
+        }
+
+        function updateEmployeeRole(id, newRole) {
+            const employee = state.employees.find(emp => emp.id === id);
+            if (employee) {
+                employee.role = newRole;
+            }
+        }
+
+        function getShiftColor(shiftCode) {
+            const shift = allShifts.find(s => s.code === shiftCode);
+            if (!shift) return 'white';
+            switch(shift.type) {
+                case 'M': return '#d5f5e3';
+                case 'T': return '#fadbd8';
+                case 'P': return '#d6eaf8';
+                case 'L': return '#f5b7b1';
+                case 'V': return '#f9e79f';
+                case 'F': return '#f1948a';
+                default: return 'white';
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('scheduleBody');
+            tbody.innerHTML = '';
+
+            // Actualizar las fechas en los encabezados
+            const weekDates = getWeekDates();
+            const month = state.currentDate.getMonth();
+            const year = state.currentDate.getFullYear();
+            
+            weekDates.forEach((date, index) => {
+                const dayNum = date.getDate();
+                const monthName = monthNames[date.getMonth()];
+                const dateElement = document.getElementById(`date${index}`);
+                if (dateElement) {
+                    dateElement.textContent = `${dayNum} ${monthName}`;
+                }
+                // Marcar el día actual
+                const headerElement = document.getElementById(`dayHeader${index}`);
+                if (headerElement) {
+                    const today = new Date();
+                    if (date.getDate() === today.getDate() && 
+                        date.getMonth() === today.getMonth() && 
+                        date.getFullYear() === today.getFullYear()) {
+                        headerElement.style.border = '3px solid #e74c3c';
+                    } else {
+                        headerElement.style.border = 'none';
+                    }
+                }
+            });
+
+            state.employees.forEach(emp => {
+                const row = document.createElement('tr');
+                
+                const nameCell = document.createElement('td');
+                nameCell.style.padding = '6px 8px';
+                nameCell.style.minWidth = '150px';
+                
+                const typeColors = {
+                    'M': '#27ae60',
+                    'T': '#e67e22',
+                    'P': '#2980b9'
+                };
+                
+                const typeNames = {
+                    'M': 'Mañana',
+                    'T': 'Tarde',
+                    'P': 'Partido'
+                };
+
+                nameCell.innerHTML = `
+                    <div class="employee-info">
+                        <input type="text" class="name-edit" value="${emp.name}" 
+                               onchange="updateEmployeeName(${emp.id}, this.value)"
+                               placeholder="Nombre" />
+                        <input type="text" class="role-edit" value="${emp.role}" 
+                               onchange="updateEmployeeRole(${emp.id}, this.value)"
+                               placeholder="Puesto" />
+                        <span class="employee-type-badge badge-${emp.type}">${typeNames[emp.type]}</span>
+                    </div>
+                `;
+                nameCell.style.borderLeft = `4px solid ${typeColors[emp.type]}`;
+                row.appendChild(nameCell);
+
+                days.forEach((day, index) => {
+                    const cell = document.createElement('td');
+                    cell.className = 'employee-cell';
+                    if (day === 'sábado' || day === 'domingo') {
+                        cell.classList.add('weekend');
+                    }
+
+                    const shiftValue = emp.schedule[day] || '';
+                    
+                    const select = document.createElement('select');
+                    select.style.width = '100%';
+                    select.style.padding = '4px';
+                    select.style.border = '1px solid #bdc3c7';
+                    select.style.borderRadius = '4px';
+                    select.style.fontSize = '0.8em';
+                    select.style.minHeight = '32px';
+                    
+                    select.style.background = getShiftColor(shiftValue);
+
+                    const groups = {
+                        'L': '📅 Días de Descanso',
+                        'V': '🏖️ Vacaciones',
+                        'F': '📆 Feriados',
+                        'M': '🌅 Turnos Mañana',
+                        'T': '🌇 Turnos Tarde',
+                        'P': '🔄 Turnos Partido'
+                    };
+
+                    const typeOrder = ['L', 'V', 'F', 'M', 'T', 'P'];
+                    typeOrder.forEach(type => {
+                        const groupLabel = document.createElement('optgroup');
+                        groupLabel.label = groups[type];
+                        
+                        allShifts.filter(s => s.type === type).forEach(shift => {
+                            const option = document.createElement('option');
+                            option.value = shift.code;
+                            if (shift.code === '') {
+                                option.textContent = `🔴 ${shift.hours}`;
+                            } else if (shift.type === 'V') {
+                                option.textContent = `🏖️ ${shift.code}: ${shift.hours}`;
+                            } else if (shift.type === 'F') {
+                                option.textContent = `📆 ${shift.code}: ${shift.hours}`;
+                            } else {
+                                option.textContent = `${shift.code}: ${shift.hours}`;
+                            }
+                            if (shiftValue === shift.code) {
+                                option.selected = true;
+                            }
+                            groupLabel.appendChild(option);
+                        });
+                        
+                        select.appendChild(groupLabel);
+                    });
+
+                    select.addEventListener('change', function(e) {
+                        emp.schedule[day] = this.value;
+                        this.style.background = getShiftColor(this.value);
+                        updateCounters();
+                    });
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.textContent = '✕';
+                    deleteBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        deleteEmployee(emp.id);
+                    };
+
+                    cell.appendChild(select);
+                    cell.appendChild(deleteBtn);
+                    row.appendChild(cell);
+                });
+
+                tbody.appendChild(row);
+            });
+
+            updateCounters();
+        }
+
+        function updateCounters() {
+            const total = state.employees.length;
+            const morning = state.employees.filter(e => e.type === 'M').length;
+            const evening = state.employees.filter(e => e.type === 'T').length;
+            const partTime = state.employees.filter(e => e.type === 'P').length;
+            
+            let restCount = 0;
+            state.employees.forEach(emp => {
+                days.forEach(day => {
+                    if (emp.schedule[day] === '' || emp.schedule[day] === 'LIB' || 
+                        emp.schedule[day] === 'VAC' || emp.schedule[day] === 'REC' || 
+                        emp.schedule[day] === 'FER') {
+                        restCount++;
+                    }
+                });
+            });
+
+            document.getElementById('totalStaff').textContent = total;
+            document.getElementById('morningStaff').textContent = morning;
+            document.getElementById('eveningStaff').textContent = evening;
+            document.getElementById('partTimeStaff').textContent = partTime;
+            document.getElementById('restDays').textContent = restCount;
+        }
+
+        function changeWeek(delta) {
+            state.weekOffset += delta;
+            updateWeekDisplay();
+            renderTable();
+        }
+
+        function resetWeek() {
+            state.weekOffset = 0;
+            updateWeekDisplay();
+            renderTable();
+        }
+
+        function updateWeekDisplay() {
+            const weekNum = state.weekOffset + 1;
+            document.getElementById('weekDisplay').textContent = `Semana ${weekNum}`;
+            
+            const weekDates = getWeekDates();
+            if (weekDates.length > 0) {
+                const startDate = weekDates[0];
+                const endDate = weekDates[6];
+                const month = monthNames[startDate.getMonth()];
+                const year = startDate.getFullYear();
+                document.getElementById('monthYearDisplay').textContent = 
+                    `${month} ${year} (${startDate.getDate()} - ${endDate.getDate()})`;
+            }
+        }
+
+        function fillDefaultEmployees() {
+            if (state.employees.length > 0) {
+                if (!confirm('Esto reemplazará todos los empleados actuales. ¿Continuar?')) {
+                    return;
+                }
+            }
+            state.employees = [];
+            nextId = 1;
+            loadDefaultEmployees();
+            renderTable();
+        }
+
+        function autoAssignShifts() {
+            const shiftCodes = allShifts.filter(s => s.type === 'M' || s.type === 'T' || s.type === 'P').map(s => s.code);
+            
+            state.employees.forEach((emp, index) => {
+                days.forEach((day, dayIndex) => {
+                    const shiftIndex = (index + dayIndex) % shiftCodes.length;
+                    emp.schedule[day] = shiftCodes[shiftIndex];
+                });
+            });
+
+            renderTable();
+            alert('✅ Turnos asignados automáticamente.');
+        }
+
+        function autoAssignRestDays() {
+            state.employees.forEach(emp => {
+                const shuffled = [...days];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                
+                const restDays = shuffled.slice(0, 2);
+                
+                days.forEach(day => {
+                    if (restDays.includes(day)) {
+                        emp.schedule[day] = '';
+                    } else {
+                        if (!emp.schedule[day] || emp.schedule[day] === '' || 
+                            emp.schedule[day] === 'VAC' || emp.schedule[day] === 'LIB' || 
+                            emp.schedule[day] === 'REC' || emp.schedule[day] === 'FER') {
+                            const shiftCodes = allShifts.filter(s => s.type === 'M' || s.type === 'T' || s.type === 'P').map(s => s.code);
+                            const randomShift = shiftCodes[Math.floor(Math.random() * shiftCodes.length)];
+                            emp.schedule[day] = randomShift;
+                        }
+                    }
+                });
+            });
+
+            renderTable();
+            alert('✅ Asignados 2 días de descanso a cada empleado.');
+        }
+
+        function validateSchedule() {
+            let warnings = [];
+            let errors = [];
+
+            days.forEach(day => {
+                const assignedShifts = state.employees.filter(e => e.schedule[day] && e.schedule[day] !== '');
+                const morningShifts = state.employees.filter(e => {
+                    const shift = allShifts.find(s => s.code === e.schedule[day]);
+                    return shift && shift.type === 'M';
+                });
+                const eveningShifts = state.employees.filter(e => {
+                    const shift = allShifts.find(s => s.code === e.schedule[day]);
+                    return shift && shift.type === 'T';
+                });
+
+                if (assignedShifts.length === 0) {
+                    errors.push(`❌ ${dayLabels[days.indexOf(day)]}: Sin personal asignado`);
+                }
+                if (morningShifts.length < 1 && day !== 'sábado' && day !== 'domingo') {
+                    warnings.push(`⚠️ ${dayLabels[days.indexOf(day)]}: Sin turnos de mañana`);
+                }
+                if (eveningShifts.length < 1 && day !== 'sábado' && day !== 'domingo') {
+                    warnings.push(`⚠️ ${dayLabels[days.indexOf(day)]}: Sin turnos de tarde`);
+                }
+            });
+
+            let message = '📋 Validación del Horario:\n\n';
+            if (errors.length === 0 && warnings.length === 0) {
+                message += '✅ ¡El horario está completo y bien distribuido!';
+            } else {
+                if (errors.length > 0) {
+                    message += '🔴 ERRORS:\n' + errors.join('\n') + '\n\n';
+                }
+                if (warnings.length > 0) {
+                    message += '🟡 ADVERTENCIAS:\n' + warnings.join('\n');
+                }
+            }
+
+            alert(message);
+        }
+
+        function printSchedule() {
+            window.print();
+        }
+
+        function exportData() {
+            const data = {
+                employees: state.employees,
+                weekOffset: state.weekOffset,
+                nextId: nextId,
+                currentDate: state.currentDate
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `horario_cocina_${monthNames[state.currentDate.getMonth()]}_${state.currentDate.getFullYear()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.employees && Array.isArray(data.employees)) {
+                        state.employees = data.employees;
+                        state.weekOffset = data.weekOffset || 0;
+                        nextId = data.nextId || 1;
+                        if (data.currentDate) {
+                            state.currentDate = new Date(data.currentDate);
+                            document.getElementById('monthSelect').value = state.currentDate.getMonth();
+                            document.getElementById('yearInput').value = state.currentDate.getFullYear();
+                        }
+                        updateWeekDisplay();
+                        renderTable();
+                        alert('✅ Datos importados correctamente.');
+                    } else {
+                        alert('❌ Formato de archivo inválido.');
+                    }
+                } catch (error) {
+                    alert('❌ Error al leer el archivo: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function clearAll() {
+            if (confirm('¿Estás seguro de que quieres eliminar todos los empleados?')) {
+                state.employees = [];
+                nextId = 1;
+                renderTable();
+                updateCounters();
+            }
+        }
+
+        function init() {
+            // Inicializar con el mes y año actual
+            const today = new Date();
+            document.getElementById('monthSelect').value = today.getMonth();
+            document.getElementById('yearInput').value = today.getFullYear();
+            state.currentDate = today;
+            
+            loadDefaultEmployees();
+            updateWeekDisplay();
+            renderTable();
+            
+            document.getElementById('employeeName').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addEmployee();
+                }
+            });
+            document.getElementById('employeeRole').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addEmployee();
+                }
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
