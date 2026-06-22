@@ -494,6 +494,63 @@
             border-radius: 8px;
         }
 
+        /* ===== NUEVOS ESTILOS PARA ADVERTENCIAS DE COBERTURA ===== */
+        .coverage-warning {
+            background: #fff3cd !important;
+            border: 2px solid #ffc107 !important;
+        }
+
+        .coverage-error {
+            background: #f8d7da !important;
+            border: 2px solid #dc3545 !important;
+        }
+
+        .coverage-ok {
+            background: #d4edda !important;
+            border: 2px solid #28a745 !important;
+        }
+
+        .coverage-bar {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 5px 0 10px 0;
+            font-size: 0.85em;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .coverage-bar .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        .badge-ok { background: #28a745; color: white; }
+        .badge-warning { background: #ffc107; color: #212529; }
+        .badge-danger { background: #dc3545; color: white; }
+
+        .coverage-detail {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .coverage-detail span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .staff-required {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-left: 3px;
+        }
+
         /* Estilos para impresión */
         @media print {
             body {
@@ -585,6 +642,10 @@
                 padding: 3px 2px !important;
             }
 
+            .coverage-bar {
+                display: none !important;
+            }
+
             /* Asegurar que los colores se impriman */
             .turno-mañana, .turno-tarde, .turno-partido, 
             .descanso, .vacaciones, .libre, .recuperado, .feriado,
@@ -605,7 +666,7 @@
     <div class="container" id="printArea">
         <h1>
             🍳 Gestión de Horarios - Cocina
-            <span style="font-size:0.6em; color:#7f8c8d;">v5.0 - Con calendario mensual</span>
+            <span style="font-size:0.6em; color:#7f8c8d;">v5.1 - Con control de cobertura</span>
         </h1>
         <p class="subtitle">Planificación semanal del equipo de cocina</p>
 
@@ -640,6 +701,9 @@
             <button onclick="resetWeek()" style="background:#95a5a6;">Hoy</button>
             <button onclick="printSchedule()" class="btn-print" style="margin-left:auto;">🖨️ Imprimir PDF</button>
         </div>
+
+        <!-- ===== NUEVA BARRA DE COBERTURA POR DÍA ===== -->
+        <div id="coverageContainer" style="margin: 10px 0 15px 0;"></div>
 
         <div class="legend">
             <div class="legend-item">
@@ -710,8 +774,9 @@
         <div class="quick-actions no-print">
             <button onclick="fillDefaultEmployees()">📋 Cargar Equipo por Defecto</button>
             <button onclick="autoAssignShifts()">🤖 Asignar Turnos Automáticamente</button>
-            <button onclick="autoAssignRestDays()">📅 Asignar 2 Días Libres</button>
+            <button onclick="autoAssignConsecutiveRestDays()">📅 Asignar 2 Días Libres Seguidos</button>
             <button onclick="validateSchedule()">✅ Validar Horario</button>
+            <button onclick="checkCoverage()">🔍 Verificar Cobertura</button>
         </div>
 
         <div class="schedule-table">
@@ -783,6 +848,40 @@
         const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
                            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
+        // ===== CONFIGURACIÓN DE COBERTURA =====
+        // Para cada día: [mañana (6-14), mediodía (14-20), noche (20-24)]
+        // Por defecto: 2 en mañana, 3 en mediodía, 3 en noche
+        const COVERAGE_NEEDS = {
+            'lunes': { morning: 2, midday: 3, night: 3 },
+            'martes': { morning: 2, midday: 3, night: 3 },
+            'miércoles': { morning: 2, midday: 3, night: 3 },
+            'jueves': { morning: 2, midday: 3, night: 3 },
+            'viernes': { morning: 2, midday: 3, night: 3 },
+            'sábado': { morning: 2, midday: 3, night: 3 },
+            'domingo': { morning: 2, midday: 3, night: 3 }
+        };
+
+        // Mapeo de turnos a franjas horarias
+        function getShiftCoverage(shiftCode) {
+            const shift = allShifts.find(s => s.code === shiftCode);
+            if (!shift || shift.type === 'L' || shift.type === 'V' || shift.type === 'F') {
+                return { morning: false, midday: false, night: false };
+            }
+            // Turnos de mañana cubren mañana y mediodía
+            if (shift.type === 'M') {
+                return { morning: true, midday: true, night: false };
+            }
+            // Turnos de tarde cubren mediodía y noche
+            if (shift.type === 'T') {
+                return { morning: false, midday: true, night: true };
+            }
+            // Turnos partido cubren mediodía y noche (o todo según código)
+            if (shift.type === 'P') {
+                return { morning: false, midday: true, night: true };
+            }
+            return { morning: false, midday: false, night: false };
+        }
+
         const allShifts = [
             { code: '', hours: 'Descanso', type: 'L' },
             { code: 'VAC', hours: 'Vacaciones', type: 'V' },
@@ -813,7 +912,6 @@
             const today = new Date(state.currentDate);
             const currentDay = today.getDay(); // 0=domingo, 1=lunes, ...
             
-            // Ajustar para que la semana empiece en lunes
             const diff = (currentDay === 0) ? 6 : currentDay - 1;
             const monday = new Date(today);
             monday.setDate(today.getDate() - diff + (state.weekOffset * 7));
@@ -827,17 +925,13 @@
             return weekDates;
         }
 
-        // Actualizar el calendario
         function updateCalendar() {
             const month = parseInt(document.getElementById('monthSelect').value);
             const year = parseInt(document.getElementById('yearInput').value);
             
             state.currentDate = new Date(year, month, 1);
-            
-            // Actualizar el display del mes
             document.getElementById('monthYearDisplay').textContent = `${monthNames[month]} ${year}`;
             
-            // Actualizar la semana
             state.weekOffset = 0;
             updateWeekDisplay();
             renderTable();
@@ -942,11 +1036,89 @@
             }
         }
 
+        // ===== NUEVA FUNCIÓN: Calcular cobertura por día =====
+        function calculateDayCoverage(day) {
+            let morningCount = 0;
+            let middayCount = 0;
+            let nightCount = 0;
+
+            state.employees.forEach(emp => {
+                const shiftCode = emp.schedule[day] || '';
+                const coverage = getShiftCoverage(shiftCode);
+                if (coverage.morning) morningCount++;
+                if (coverage.midday) middayCount++;
+                if (coverage.night) nightCount++;
+            });
+
+            const needs = COVERAGE_NEEDS[day] || { morning: 2, midday: 3, night: 3 };
+            
+            const morningOk = morningCount >= needs.morning;
+            const middayOk = middayCount >= needs.midday;
+            const nightOk = nightCount >= needs.night;
+            const allOk = morningOk && middayOk && nightOk;
+
+            return {
+                morning: morningCount,
+                midday: middayCount,
+                night: nightCount,
+                needs: needs,
+                morningOk: morningOk,
+                middayOk: middayOk,
+                nightOk: nightOk,
+                allOk: allOk
+            };
+        }
+
+        // ===== NUEVA FUNCIÓN: Renderizar barra de cobertura =====
+        function renderCoverageBar() {
+            const container = document.getElementById('coverageContainer');
+            container.innerHTML = '';
+
+            const weekDates = getWeekDates();
+            const bar = document.createElement('div');
+            bar.style.cssText = 'display: grid; grid-template-columns: 120px repeat(7, 1fr); gap: 2px; font-size: 0.75em;';
+
+            // Encabezado
+            const header = document.createElement('div');
+            header.style.cssText = 'font-weight: bold; padding: 5px; display: flex; align-items: center; background: #2c3e50; color: white; border-radius: 4px 0 0 4px;';
+            header.textContent = 'Cobertura';
+            bar.appendChild(header);
+
+            days.forEach((day, index) => {
+                const coverage = calculateDayCoverage(day);
+                const cell = document.createElement('div');
+                cell.style.cssText = 'padding: 4px 2px; text-align: center; border-radius: 4px; cursor: default;';
+                cell.style.background = coverage.allOk ? '#d4edda' : (coverage.morningOk && coverage.middayOk ? '#fff3cd' : '#f8d7da');
+                cell.style.border = coverage.allOk ? '1px solid #28a745' : (coverage.morningOk && coverage.middayOk ? '1px solid #ffc107' : '1px solid #dc3545');
+                
+                const date = weekDates[index];
+                const dayNum = date ? date.getDate() : '';
+                
+                cell.innerHTML = `
+                    <div style="font-weight: bold;">${dayLabels[index].substring(0,3)} ${dayNum}</div>
+                    <div style="font-size: 0.7em;">
+                        🌅 ${coverage.morning}/${coverage.needs.morning}
+                        ${coverage.morningOk ? '✅' : '❌'}
+                    </div>
+                    <div style="font-size: 0.7em;">
+                        🌇 ${coverage.midday}/${coverage.needs.midday}
+                        ${coverage.middayOk ? '✅' : '❌'}
+                    </div>
+                    <div style="font-size: 0.7em;">
+                        🌙 ${coverage.night}/${coverage.needs.night}
+                        ${coverage.nightOk ? '✅' : '❌'}
+                    </div>
+                `;
+                bar.appendChild(cell);
+            });
+
+            container.appendChild(bar);
+        }
+
         function renderTable() {
             const tbody = document.getElementById('scheduleBody');
             tbody.innerHTML = '';
 
-            // Actualizar las fechas en los encabezados
             const weekDates = getWeekDates();
             const month = state.currentDate.getMonth();
             const year = state.currentDate.getFullYear();
@@ -958,7 +1130,6 @@
                 if (dateElement) {
                     dateElement.textContent = `${dayNum} ${monthName}`;
                 }
-                // Marcar el día actual
                 const headerElement = document.getElementById(`dayHeader${index}`);
                 if (headerElement) {
                     const today = new Date();
@@ -1063,6 +1234,7 @@
                         emp.schedule[day] = this.value;
                         this.style.background = getShiftColor(this.value);
                         updateCounters();
+                        renderCoverageBar();
                     });
 
                     const deleteBtn = document.createElement('button');
@@ -1082,6 +1254,7 @@
             });
 
             updateCounters();
+            renderCoverageBar();
         }
 
         function updateCounters() {
@@ -1161,33 +1334,45 @@
             alert('✅ Turnos asignados automáticamente.');
         }
 
-        function autoAssignRestDays() {
+        // ===== NUEVA FUNCIÓN: Asignar 2 días libres CONSECUTIVOS =====
+        function autoAssignConsecutiveRestDays() {
+            if (state.employees.length === 0) {
+                alert('❌ No hay empleados para asignar días libres.');
+                return;
+            }
+
+            // Para cada empleado, asignar 2 días consecutivos aleatorios
             state.employees.forEach(emp => {
-                const shuffled = [...days];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-                
-                const restDays = shuffled.slice(0, 2);
-                
+                // Primero, limpiar días libres previos
                 days.forEach(day => {
-                    if (restDays.includes(day)) {
+                    if (emp.schedule[day] === '' || emp.schedule[day] === 'LIB' || 
+                        emp.schedule[day] === 'VAC' || emp.schedule[day] === 'REC' || 
+                        emp.schedule[day] === 'FER') {
                         emp.schedule[day] = '';
-                    } else {
-                        if (!emp.schedule[day] || emp.schedule[day] === '' || 
-                            emp.schedule[day] === 'VAC' || emp.schedule[day] === 'LIB' || 
-                            emp.schedule[day] === 'REC' || emp.schedule[day] === 'FER') {
-                            const shiftCodes = allShifts.filter(s => s.type === 'M' || s.type === 'T' || s.type === 'P').map(s => s.code);
-                            const randomShift = shiftCodes[Math.floor(Math.random() * shiftCodes.length)];
-                            emp.schedule[day] = randomShift;
-                        }
+                    }
+                });
+
+                // Elegir un día de inicio aleatorio para los 2 días libres (lunes a sábado)
+                // para asegurar que sean consecutivos
+                const startDayIndex = Math.floor(Math.random() * 6); // 0=lunes, 5=sábado
+                const day1 = days[startDayIndex];
+                const day2 = days[startDayIndex + 1];
+                
+                emp.schedule[day1] = '';
+                emp.schedule[day2] = '';
+
+                // Asignar turnos aleatorios a los días restantes
+                const shiftCodes = allShifts.filter(s => s.type === 'M' || s.type === 'T' || s.type === 'P').map(s => s.code);
+                days.forEach(day => {
+                    if (emp.schedule[day] === '') {
+                        const randomShift = shiftCodes[Math.floor(Math.random() * shiftCodes.length)];
+                        emp.schedule[day] = randomShift;
                     }
                 });
             });
 
             renderTable();
-            alert('✅ Asignados 2 días de descanso a cada empleado.');
+            alert('✅ Asignados 2 días libres CONSECUTIVOS a cada empleado.');
         }
 
         function validateSchedule() {
@@ -1226,6 +1411,54 @@
                 if (warnings.length > 0) {
                     message += '🟡 ADVERTENCIAS:\n' + warnings.join('\n');
                 }
+            }
+
+            alert(message);
+        }
+
+        // ===== NUEVA FUNCIÓN: Verificar cobertura detallada =====
+        function checkCoverage() {
+            let results = [];
+            let allGood = true;
+
+            days.forEach(day => {
+                const coverage = calculateDayCoverage(day);
+                const dayLabel = dayLabels[days.indexOf(day)];
+                let status = '✅';
+                let issues = [];
+
+                if (!coverage.morningOk) {
+                    status = '❌';
+                    allGood = false;
+                    issues.push(`🌅 Mañana: ${coverage.morning}/${coverage.needs.morning}`);
+                }
+                if (!coverage.middayOk) {
+                    status = '❌';
+                    allGood = false;
+                    issues.push(`🌇 Mediodía: ${coverage.midday}/${coverage.needs.midday}`);
+                }
+                if (!coverage.nightOk) {
+                    status = '❌';
+                    allGood = false;
+                    issues.push(`🌙 Noche: ${coverage.night}/${coverage.needs.night}`);
+                }
+
+                if (issues.length === 0) {
+                    results.push(`✅ ${dayLabel}: Completo (M:${coverage.morning}/${coverage.needs.morning}, Md:${coverage.midday}/${coverage.needs.midday}, N:${coverage.night}/${coverage.needs.night})`);
+                } else {
+                    results.push(`❌ ${dayLabel}: FALTAN - ${issues.join(' | ')}`);
+                }
+            });
+
+            let message = '📊 VERIFICACIÓN DE COBERTURA\n';
+            message += '='.repeat(40) + '\n\n';
+            message += results.join('\n') + '\n\n';
+            message += '📌 REQUISITOS POR DÍA: 🌅 2 mañana | 🌇 3 mediodía | 🌙 3 noche\n';
+            
+            if (allGood) {
+                message += '\n✅ ¡TODOS LOS DÍAS ESTÁN CUBIERTOS CORRECTAMENTE!';
+            } else {
+                message += '\n⚠️ Hay días con personal insuficiente. Revisa la barra de cobertura.';
             }
 
             alert(message);
@@ -1292,7 +1525,6 @@
         }
 
         function init() {
-            // Inicializar con el mes y año actual
             const today = new Date();
             document.getElementById('monthSelect').value = today.getMonth();
             document.getElementById('yearInput').value = today.getFullYear();
