@@ -8,110 +8,123 @@
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; }
         body { background: #f1f5f9; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { max-width: 1000px; width: 100%; background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .container { max-width: 1100px; width: 100%; background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h1, h2 { color: #0f172a; font-weight: 700; }
         h1 { font-size: 1.8rem; border-bottom: 4px solid #3b82f6; padding-bottom: 8px; display: inline-block; }
-        .filtros { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; }
-        .filtros select, .filtros input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; }
-        .btn { padding: 8px 16px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; background: #e2e8f0; color: #1e293b; transition: 0.2s; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .badge-jefe { background: #8b5cf6; color: white; padding: 4px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .filtros { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+        .filtros select, .filtros input { padding: 8px 14px; border: 1px solid #cbd5e1; border-radius: 10px; background: white; font-size: 0.95rem; }
+        .btn { padding: 8px 18px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
         .btn-success { background: #22c55e; color: white; }
         .btn-success:hover { background: #16a34a; }
         .btn-danger { background: #ef4444; color: white; }
         .btn-danger:hover { background: #dc2626; }
-        .btn-outline { background: transparent; border: 1px solid #cbd5e1; }
+        .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #1e293b; }
         .btn-outline:hover { background: #f1f5f9; }
         .btn-primary { background: #3b82f6; color: white; }
         .btn-primary:hover { background: #2563eb; }
+        .btn-sm { padding: 4px 12px; font-size: 0.75rem; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
         .resumen-personas { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 12px; }
         .resumen-personas table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .resumen-personas th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #cbd5e1; }
-        .resumen-personas td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; }
-        .total-general { font-weight: 700; font-size: 1.1rem; border-top: 2px solid #94a3b8; padding-top: 10px; margin-top: 4px; }
-        .registro-item { background: #f8fafc; border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; border-left: 4px solid #3b82f6; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+        .resumen-personas th { text-align: left; padding: 10px 8px; border-bottom: 2px solid #cbd5e1; }
+        .resumen-personas td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; }
+        .total-general { font-weight: 700; font-size: 1.1rem; border-top: 2px solid #94a3b8; padding-top: 12px; margin-top: 8px; }
+        .registro-item { background: #f8fafc; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; border-left: 4px solid #3b82f6; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; transition: 0.2s; }
+        .registro-item:hover { background: #f1f5f9; }
         .registro-info { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; flex: 1; }
-        .registro-info .nombre { font-weight: 700; background: #dbeafe; padding: 0 10px; border-radius: 20px; font-size: 0.85rem; }
-        .registro-info .fecha { font-weight: 500; }
-        .registro-info .horas { background: #dbeafe; padding: 0 12px; border-radius: 20px; font-weight: 600; color: #1e40af; }
-        .registro-info .foto-preview { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid #e2e8f0; }
-        .foto-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.75); justify-content: center; align-items: center; z-index: 999; }
+        .registro-info .nombre { font-weight: 700; background: #dbeafe; padding: 2px 14px; border-radius: 20px; font-size: 0.85rem; color: #1e40af; }
+        .registro-info .fecha { font-weight: 500; color: #475569; }
+        .registro-info .horas { background: #dbeafe; padding: 2px 14px; border-radius: 20px; font-weight: 600; color: #1e40af; }
+        .registro-info .comentario { color: #64748b; font-style: italic; font-size: 0.85rem; }
+        .registro-info .foto-preview { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 2px solid #e2e8f0; transition: 0.2s; }
+        .registro-info .foto-preview:hover { border-color: #3b82f6; transform: scale(1.05); }
+        .foto-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 999; }
         .foto-modal.active { display: flex; }
-        .foto-modal img { max-width: 90%; max-height: 90%; border-radius: 16px; }
-        .empty-state { color: #94a3b8; text-align: center; padding: 30px 0; font-style: italic; }
-        .badge { background: #e2e8f0; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; color: #1e293b; }
-        .header-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .badge-jefe { background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
-        .btn-sm { padding: 4px 10px; font-size: 0.7rem; }
+        .foto-modal img { max-width: 90%; max-height: 90%; border-radius: 16px; object-fit: contain; }
+        .foto-modal .cerrar-modal { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; font-weight: 300; }
+        .empty-state { color: #94a3b8; text-align: center; padding: 40px 0; font-style: italic; font-size: 1.1rem; }
+        .badge-count { background: #e2e8f0; padding: 2px 12px; border-radius: 20px; font-size: 0.75rem; color: #475569; margin-left: 8px; }
+        .error-box { background: #fee2e2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin: 12px 0; color: #991b1b; display: none; }
+        .error-box.show { display: block; }
         .admin-personal { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 16px; border: 1px solid #e2e8f0; }
         .admin-personal .lista-nombres { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
         .admin-personal .lista-nombres .nombre-tag { background: #dbeafe; padding: 2px 12px 2px 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; }
         .admin-personal .lista-nombres .nombre-tag button { background: none; border: none; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 1rem; padding: 0 2px; }
-        .error-box { background: #fee2e2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin: 12px 0; color: #991b1b; display: none; }
-        .error-box.show { display: block; }
-        .badge-count { background: #e2e8f0; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; color: #475569; margin-left: 8px; }
-        .btn-recargar { background: #8b5cf6; color: white; }
-        .btn-recargar:hover { background: #7c3aed; }
         .mensaje-flotante { position: fixed; top: 20px; right: 20px; padding: 16px 24px; border-radius: 12px; color: white; font-weight: 600; z-index: 1000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 400px; }
         .mensaje-flotante.exito { background: #22c55e; display: block; }
         .mensaje-flotante.error { background: #ef4444; display: block; }
         .mensaje-flotante.info { background: #3b82f6; display: block; }
-        .btn-warning { background: #f59e0b; color: white; }
-        .btn-warning:hover { background: #d97706; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
+        .stat-card { background: white; border-radius: 12px; padding: 12px 16px; border: 1px solid #e2e8f0; text-align: center; }
+        .stat-card .numero { font-size: 1.8rem; font-weight: 700; color: #0f172a; }
+        .stat-card .label { font-size: 0.8rem; color: #64748b; }
+        .loading { text-align: center; padding: 20px; color: #94a3b8; }
+        .registros-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+        .registros-header .total-registros { font-size: 0.9rem; color: #64748b; }
+        @media (max-width: 600px) {
+            .container { padding: 16px; }
+            .registro-info { gap: 6px; }
+            .filtros select, .filtros input { font-size: 0.85rem; padding: 6px 10px; }
+            .btn { padding: 6px 14px; font-size: 0.8rem; }
+        }
     </style>
 </head>
 <body>
 
     <div id="mensajeFlotante" class="mensaje-flotante"></div>
 
-    <div class="container" style="max-width: 1000px;">
+    <div class="container">
         <div class="header-actions">
             <h1>📊 Panel de Horas Extras</h1>
-            <span class="badge-jefe">🔒 Acceso restringido - Jefe</span>
+            <span class="badge-jefe">🔒 Acceso Jefe</span>
         </div>
-        <p style="color: #64748b; margin-top: -8px;">Resumen mensual y gestión de registros</p>
+        <p style="color: #64748b; margin-top: -8px;">Resumen mensual y gestión de registros de cocineros</p>
 
         <div id="errorBox" class="error-box"></div>
 
         <div class="filtros">
             <label>Mes: <select id="mesSelector"></select></label>
             <label>Año: <select id="anioSelector"></select></label>
-            <button id="btnCalcularTotal" class="btn btn-success">Calcular total</button>
+            <button id="btnActualizar" class="btn btn-primary">🔄 Actualizar</button>
             <button id="btnExportarCSV" class="btn btn-outline">⬇️ CSV</button>
-            <button id="btnEliminarTodos" class="btn btn-danger">🗑️ Eliminar todos</button>
+            <button id="btnEliminarTodos" class="btn btn-danger">🗑️ Eliminar mes</button>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card"><div class="numero" id="totalRegistros">0</div><div class="label">Registros</div></div>
+            <div class="stat-card"><div class="numero" id="totalPersonas">0</div><div class="label">Personas</div></div>
+            <div class="stat-card"><div class="numero" id="totalHoras">0</div><div class="label">Horas totales</div></div>
         </div>
 
         <div class="resumen-personas">
-            <div style="font-weight: 600; margin-bottom: 6px;">Total por persona</div>
+            <div style="font-weight: 600; margin-bottom: 8px;">👥 Resumen por persona</div>
             <table>
-                <thead><tr><th>Persona</th><th>Horas extras</th></tr></thead>
-                <tbody id="cuerpoResumen"></tbody>
+                <thead><tr><th>Persona</th><th>Horas extras</th><th>Registros</th></tr></thead>
+                <tbody id="cuerpoResumen">
+                    <tr><td colspan="3" style="text-align:center; color:#94a3b8;">Cargando...</td></tr>
+                </tbody>
             </table>
             <div class="total-general" id="totalGeneral">Total general: 0.0 h</div>
         </div>
+    </div>
 
-        <div class="admin-personal">
-            <div style="font-weight: 600; margin-bottom: 8px;">👥 Gestionar personal (cocineros y picas)</div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <input type="text" id="inputNuevoNombre" placeholder="Nuevo nombre" style="flex:1; min-width:150px; padding:8px 12px; border:1px solid #cbd5e1; border-radius:10px;">
-                <button id="btnAgregarNombre" class="btn btn-success">➕ Añadir</button>
-                <button id="btnInsertarNombres" class="btn btn-primary">📥 Insertar lista</button>
-                <button id="btnEliminarTodosNombres" class="btn btn-danger">🗑️ Eliminar todos</button>
-            </div>
-            <div class="lista-nombres" id="listaNombres">
-                <span style="color:#94a3b8; font-size:0.9rem;">Cargando...</span>
-            </div>
-            <div style="font-size:0.8rem; color:#64748b; margin-top:6px;">
-                Los nombres aparecerán en el desplegable para los cocineros.
-                <button id="btnRecargarPersonal" class="btn btn-recargar btn-sm" style="margin-left:8px;">🔄 Recargar</button>
-            </div>
+    <div class="container">
+        <div class="registros-header">
+            <h2>📋 Todos los registros</h2>
+            <span class="total-registros" id="totalRegistrosLabel">0 registros</span>
+        </div>
+        <div id="listaRegistros">
+            <div class="loading">Cargando registros...</div>
         </div>
     </div>
 
-    <div class="container" style="max-width: 1000px;">
-        <h2>📋 Todos los registros</h2>
-        <div id="listaRegistros"></div>
-    </div>
-
+    <!-- Modal para fotos -->
     <div id="fotoModal" class="foto-modal" onclick="cerrarFoto()">
+        <span class="cerrar-modal">&times;</span>
         <img id="fotoModalImg" src="" alt="Foto ampliada">
     </div>
 
@@ -122,15 +135,7 @@
             const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
 
-            console.log('🔍 Conectando a Supabase...');
-            console.log('URL:', SUPABASE_URL);
-
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-            const NOMBRES_POR_DEFECTO = [
-                'Antonio', 'Remedios', 'Rafael', 'Andrea', 'Ines',
-                'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
-            ];
 
             // ------------------------------------------------------------
             // FUNCIONES DE MENSAJES
@@ -154,186 +159,23 @@
             }
 
             // ------------------------------------------------------------
-            // FUNCIONES DE PERSONAL
-            // ------------------------------------------------------------
-            async function cargarPersonal() {
-                try {
-                    console.log('📥 Cargando personal...');
-                    const { data, error } = await supabase
-                        .from('horas_personal')
-                        .select('nombre')
-                        .order('nombre');
-
-                    if (error) {
-                        console.error('❌ Error:', error);
-                        mostrarError('Error al cargar personal: ' + error.message);
-                        return;
-                    }
-
-                    console.log('✅ Personal cargado:', data);
-
-                    if (!data || data.length === 0) {
-                        document.getElementById('listaNombres').innerHTML =
-                            '<span style="color:#94a3b8; font-size:0.9rem;">No hay nombres.</span>';
-                        return;
-                    }
-
-                    const contenedor = document.getElementById('listaNombres');
-                    let html = '';
-                    data.forEach(item => {
-                        html += `<span class="nombre-tag">${item.nombre} <button onclick="eliminarNombre('${item.nombre}')" title="Eliminar">✕</button></span>`;
-                    });
-                    html += `<span class="badge-count" style="margin-left:8px;">${data.length} nombres</span>`;
-                    contenedor.innerHTML = html;
-
-                } catch (error) {
-                    console.error('❌ Error en cargarPersonal:', error);
-                    mostrarError('Error de conexión: ' + error.message);
-                }
-            }
-
-            // ELIMINAR NOMBRE - con manejo de errores detallado
-            window.eliminarNombre = async function(nombre) {
-                if (!confirm(`¿Eliminar a "${nombre}" de la lista?`)) return;
-
-                try {
-                    console.log(`🗑️ Eliminando "${nombre}"...`);
-
-                    const { data, error } = await supabase
-                        .from('horas_personal')
-                        .delete()
-                        .eq('nombre', nombre)
-                        .select();
-
-                    if (error) {
-                        console.error('❌ Error de Supabase:', error);
-                        // Si el error es de RLS, mostrar mensaje claro
-                        if (error.code === '42501') {
-                            mostrarMensaje('❌ Error de permisos. Configura políticas RLS en Supabase.', 'error');
-                            mostrarError('ERROR: No tienes permisos para eliminar. Ve a Authentication > Policies y crea una política DELETE para horas_personal.');
-                        } else {
-                            mostrarMensaje('❌ Error al eliminar: ' + error.message, 'error');
-                        }
-                        return;
-                    }
-
-                    console.log('✅ Eliminado correctamente:', data);
-                    await cargarPersonal();
-                    mostrarMensaje(`✅ "${nombre}" eliminado`, 'exito');
-
-                } catch (error) {
-                    console.error('❌ Error inesperado:', error);
-                    mostrarMensaje('❌ Error: ' + error.message, 'error');
-                }
-            };
-
-            // AGREGAR NOMBRE
-            document.getElementById('btnAgregarNombre').addEventListener('click', async function() {
-                const input = document.getElementById('inputNuevoNombre');
-                const nombre = input.value.trim();
-                if (!nombre) {
-                    mostrarMensaje('Escribe un nombre.', 'error');
-                    return;
-                }
-                try {
-                    const { error } = await supabase
-                        .from('horas_personal')
-                        .insert([{ nombre }]);
-                    if (error) throw error;
-                    input.value = '';
-                    await cargarPersonal();
-                    mostrarMensaje(`✅ "${nombre}" agregado`, 'exito');
-                } catch (error) {
-                    console.error('Error al agregar:', error);
-                    if (error.code === '42501') {
-                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
-                    } else {
-                        mostrarMensaje('❌ Error: ' + error.message, 'error');
-                    }
-                }
-            });
-
-            // INSERTAR LISTA COMPLETA
-            document.getElementById('btnInsertarNombres').addEventListener('click', async function() {
-                if (!confirm(`¿Insertar todos los nombres (${NOMBRES_POR_DEFECTO.length})?`)) return;
-                try {
-                    const { error: deleteError } = await supabase
-                        .from('horas_personal')
-                        .delete()
-                        .neq('id', '00000000-0000-0000-0000-000000000000');
-                    if (deleteError) throw deleteError;
-
-                    const inserts = NOMBRES_POR_DEFECTO.map(nombre => ({ nombre }));
-                    const { error: insertError } = await supabase
-                        .from('horas_personal')
-                        .insert(inserts);
-                    if (insertError) throw insertError;
-
-                    await cargarPersonal();
-                    mostrarMensaje(`✅ ${NOMBRES_POR_DEFECTO.length} nombres insertados`, 'exito');
-                } catch (error) {
-                    console.error('Error:', error);
-                    if (error.code === '42501') {
-                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
-                    } else {
-                        mostrarMensaje('❌ Error: ' + error.message, 'error');
-                    }
-                }
-            });
-
-            // ELIMINAR TODOS LOS NOMBRES
-            document.getElementById('btnEliminarTodosNombres').addEventListener('click', async function() {
-                if (!confirm('⚠️ ¿Eliminar TODOS los nombres?')) return;
-                try {
-                    const { error } = await supabase
-                        .from('horas_personal')
-                        .delete()
-                        .neq('id', '00000000-0000-0000-0000-000000000000');
-                    if (error) throw error;
-                    await cargarPersonal();
-                    mostrarMensaje('🗑️ Todos los nombres eliminados', 'info');
-                } catch (error) {
-                    console.error('Error:', error);
-                    if (error.code === '42501') {
-                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
-                    } else {
-                        mostrarMensaje('❌ Error: ' + error.message, 'error');
-                    }
-                }
-            });
-
-            // RECARGAR PERSONAL
-            document.getElementById('btnRecargarPersonal').addEventListener('click', function() {
-                this.textContent = '⏳...';
-                cargarPersonal().finally(() => {
-                    this.textContent = '🔄 Recargar';
-                });
-            });
-
-            document.getElementById('inputNuevoNombre').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    document.getElementById('btnAgregarNombre').click();
-                }
-            });
-
-            // ------------------------------------------------------------
-            // FUNCIONES DE REGISTROS
+            // INICIALIZAR SELECTORES DE MES/AÑO
             // ------------------------------------------------------------
             function inicializarSelectores() {
                 const mesSel = document.getElementById('mesSelector');
                 const anioSel = document.getElementById('anioSelector');
                 mesSel.innerHTML = '';
                 anioSel.innerHTML = '';
-                for (let m = 1; m <= 12; m++) {
+                const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                for (let m = 0; m < 12; m++) {
                     const opt = document.createElement('option');
-                    opt.value = m;
-                    opt.textContent = m.toString().padStart(2, '0');
+                    opt.value = m + 1;
+                    opt.textContent = meses[m];
                     mesSel.appendChild(opt);
                 }
                 const actual = new Date();
                 const anioActual = actual.getFullYear();
-                for (let a = 2020; a <= anioActual + 1; a++) {
+                for (let a = anioActual - 3; a <= anioActual + 1; a++) {
                     const opt = document.createElement('option');
                     opt.value = a;
                     opt.textContent = a;
@@ -343,7 +185,11 @@
                 anioSel.value = anioActual;
             }
 
+            // ------------------------------------------------------------
+            // FUNCIÓN PARA CALCULAR HORAS
+            // ------------------------------------------------------------
             function calcularHoras(inicio, fin) {
+                if (!inicio || !fin) return 0;
                 const [hI, mI] = inicio.split(':').map(Number);
                 const [hF, mF] = fin.split(':').map(Number);
                 const totalMin = (hF * 60 + mF) - (hI * 60 + mI);
@@ -351,47 +197,97 @@
                 return parseFloat((totalMin / 60).toFixed(2));
             }
 
+            // ------------------------------------------------------------
+            // FORMATEAR FECHA
+            // ------------------------------------------------------------
             function formatearFecha(fechaStr) {
-                const d = new Date(fechaStr + 'T00:00:00');
-                return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+                if (!fechaStr) return 'Fecha no disponible';
+                try {
+                    const d = new Date(fechaStr + 'T00:00:00');
+                    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+                } catch {
+                    return fechaStr;
+                }
             }
 
+            // ------------------------------------------------------------
+            // CARGAR REGISTROS - FUNCIÓN PRINCIPAL
+            // ------------------------------------------------------------
             async function cargarRegistros() {
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
+                
+                // Validar mes y año
+                if (!mes || !anio) {
+                    mostrarError('Selecciona un mes y año válidos');
+                    return;
+                }
+
+                const mesStr = String(mes).padStart(2, '0');
+                const start = `${anio}-${mesStr}-01`;
                 const ultimoDia = new Date(anio, mes, 0).getDate();
-                const start = `${anio}-${String(mes).padStart(2, '0')}-01`;
-                const end = `${anio}-${String(mes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
+                const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
 
                 try {
+                    console.log(`📥 Cargando registros: ${start} → ${end}`);
+
                     const { data, error } = await supabase
                         .from('horas_registros')
                         .select('*')
                         .gte('fecha', start)
                         .lte('fecha', end)
-                        .order('created_at', { ascending: false });
+                        .order('fecha', { ascending: false });
+
                     if (error) throw error;
 
-                    const contenedor = document.getElementById('listaRegistros');
+                    console.log(`✅ ${data ? data.length : 0} registros encontrados`);
+
                     if (!data || data.length === 0) {
-                        contenedor.innerHTML = '<div class="empty-state">No hay registros en este mes.</div>';
+                        document.getElementById('listaRegistros').innerHTML = 
+                            '<div class="empty-state">📭 No hay registros para este mes</div>';
+                        document.getElementById('cuerpoResumen').innerHTML = 
+                            '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Sin datos</td></tr>';
+                        document.getElementById('totalGeneral').textContent = 'Total general: 0.0 h';
+                        document.getElementById('totalRegistros').textContent = '0';
+                        document.getElementById('totalPersonas').textContent = '0';
+                        document.getElementById('totalHoras').textContent = '0';
+                        document.getElementById('totalRegistrosLabel').textContent = '0 registros';
                         return;
                     }
 
+                    // ===== MOSTRAR LISTA DE REGISTROS =====
+                    const contenedor = document.getElementById('listaRegistros');
                     let html = '';
+                    let totalHorasGlobal = 0;
+
                     data.forEach(reg => {
                         const horas = calcularHoras(reg.hora_inicio, reg.hora_fin);
-                        const fotoHtml = reg.foto_url ?
-                            `<img src="${reg.foto_url}" class="foto-preview" onclick="event.stopPropagation(); abrirFoto('${reg.foto_url}')" alt="foto">` :
-                            '<span class="badge">Sin foto</span>';
+                        totalHorasGlobal += horas;
+                        const nombre = reg.nombre || 'Anónimo';
+                        const fecha = formatearFecha(reg.fecha);
+                        
+                        // Foto
+                        let fotoHtml = '';
+                        if (reg.foto_url && reg.foto_url.startsWith('http')) {
+                            fotoHtml = `<img src="${reg.foto_url}" class="foto-preview" onclick="event.stopPropagation(); abrirFoto('${reg.foto_url}')" alt="foto" loading="lazy">`;
+                        } else {
+                            fotoHtml = '<span class="badge-count">📷 sin foto</span>';
+                        }
+
+                        // Comentarios
+                        let comentHtml = '';
+                        if (reg.comentarios && reg.comentarios.trim()) {
+                            comentHtml = `<span class="comentario">💬 ${reg.comentarios}</span>`;
+                        }
+
                         html += `
                             <div class="registro-item">
                                 <div class="registro-info">
-                                    <span class="nombre">${reg.nombre || 'Anónimo'}</span>
-                                    <span class="fecha">📅 ${formatearFecha(reg.fecha)}</span>
-                                    <span>⏱️ ${reg.hora_inicio} → ${reg.hora_fin}</span>
+                                    <span class="nombre">${nombre}</span>
+                                    <span class="fecha">📅 ${fecha}</span>
+                                    <span>⏱️ ${reg.hora_inicio || '--:--'} → ${reg.hora_fin || '--:--'}</span>
                                     <span class="horas">${horas.toFixed(2)} h</span>
-                                    ${reg.comentarios ? `<span>💬 ${reg.comentarios}</span>` : ''}
+                                    ${comentHtml}
                                     ${fotoHtml}
                                 </div>
                                 <div>
@@ -402,34 +298,52 @@
                     });
                     contenedor.innerHTML = html;
 
-                    // Actualizar resumen
+                    // ===== ACTUALIZAR ESTADÍSTICAS =====
+                    document.getElementById('totalRegistros').textContent = data.length;
+                    document.getElementById('totalRegistrosLabel').textContent = `${data.length} registros`;
+                    document.getElementById('totalHoras').textContent = totalHorasGlobal.toFixed(1) + 'h';
+
+                    // ===== RESUMEN POR PERSONA =====
                     const mapa = {};
                     data.forEach(r => {
                         const nom = r.nombre || 'Anónimo';
                         const horas = calcularHoras(r.hora_inicio, r.hora_fin);
-                        mapa[nom] = (mapa[nom] || 0) + horas;
+                        if (!mapa[nom]) {
+                            mapa[nom] = { horas: 0, registros: 0 };
+                        }
+                        mapa[nom].horas += horas;
+                        mapa[nom].registros += 1;
                     });
+
                     const tbody = document.getElementById('cuerpoResumen');
                     let totalGeneral = 0;
                     let htmlResumen = '';
-                    Object.keys(mapa).sort().forEach(nom => {
-                        const h = mapa[nom];
+                    const personasOrdenadas = Object.keys(mapa).sort();
+                    personasOrdenadas.forEach(nom => {
+                        const h = mapa[nom].horas;
+                        const count = mapa[nom].registros;
                         totalGeneral += h;
-                        htmlResumen += `<tr><td>${nom}</td><td>${h.toFixed(2)} h</td></tr>`;
+                        htmlResumen += `<tr><td>${nom}</td><td>${h.toFixed(2)} h</td><td>${count}</td></tr>`;
                     });
-                    if (Object.keys(mapa).length === 0) {
-                        htmlResumen = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Sin datos</td></tr>';
+                    
+                    if (personasOrdenadas.length === 0) {
+                        htmlResumen = '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Sin datos</td></tr>';
                     }
                     tbody.innerHTML = htmlResumen;
                     document.getElementById('totalGeneral').textContent = `Total general: ${totalGeneral.toFixed(2)} h`;
+                    document.getElementById('totalPersonas').textContent = personasOrdenadas.length;
 
                 } catch (error) {
-                    console.error('Error al cargar registros:', error);
+                    console.error('❌ Error al cargar registros:', error);
                     mostrarError('Error al cargar registros: ' + error.message);
+                    document.getElementById('listaRegistros').innerHTML = 
+                        `<div class="empty-state">❌ Error: ${error.message}</div>`;
                 }
             }
 
-            // ELIMINAR REGISTRO
+            // ------------------------------------------------------------
+            // ELIMINAR REGISTRO INDIVIDUAL
+            // ------------------------------------------------------------
             window.eliminarRegistro = async function(id) {
                 if (!confirm('¿Eliminar este registro?')) return;
                 try {
@@ -438,22 +352,27 @@
                         .delete()
                         .eq('id', id);
                     if (error) throw error;
-                    await cargarRegistros();
                     mostrarMensaje('✅ Registro eliminado', 'exito');
+                    cargarRegistros();
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('❌ Error:', error);
                     mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             };
 
+            // ------------------------------------------------------------
             // ELIMINAR TODOS LOS REGISTROS DEL MES
+            // ------------------------------------------------------------
             document.getElementById('btnEliminarTodos').addEventListener('click', async function() {
-                if (!confirm('⚠️ ¿Eliminar TODOS los registros del mes?')) return;
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
+                const mesStr = String(mes).padStart(2, '0');
                 const ultimoDia = new Date(anio, mes, 0).getDate();
-                const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
-                const end = `${anio}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
+                const start = `${anio}-${mesStr}-01`;
+                const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
+                
+                if (!confirm(`⚠️ ¿Eliminar TODOS los registros de ${start} al ${end}?`)) return;
+                
                 try {
                     const { error } = await supabase
                         .from('horas_registros')
@@ -461,39 +380,47 @@
                         .gte('fecha', start)
                         .lte('fecha', end);
                     if (error) throw error;
-                    await cargarRegistros();
                     mostrarMensaje('🗑️ Registros eliminados', 'info');
+                    cargarRegistros();
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('❌ Error:', error);
                     mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             });
 
+            // ------------------------------------------------------------
             // EXPORTAR CSV
+            // ------------------------------------------------------------
             document.getElementById('btnExportarCSV').addEventListener('click', async function() {
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
+                const mesStr = String(mes).padStart(2, '0');
                 const ultimoDia = new Date(anio, mes, 0).getDate();
-                const start = `${anio}-${String(mes).padStart(2,'0')}-01`;
-                const end = `${anio}-${String(mes).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}`;
+                const start = `${anio}-${mesStr}-01`;
+                const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
+                
                 try {
                     const { data, error } = await supabase
                         .from('horas_registros')
                         .select('*')
                         .gte('fecha', start)
-                        .lte('fecha', end);
+                        .lte('fecha', end)
+                        .order('fecha', { ascending: true });
                     if (error) throw error;
+                    
                     if (!data || data.length === 0) {
                         mostrarMensaje('No hay registros para exportar.', 'info');
                         return;
                     }
+                    
                     let csv = 'Persona,Fecha,Hora Inicio,Hora Fin,Horas Extras,Comentarios\n';
                     data.forEach(r => {
                         const horas = calcularHoras(r.hora_inicio, r.hora_fin);
                         const fecha = formatearFecha(r.fecha);
-                        const coment = (r.comentarios || '').replace(/,/g, ';');
-                        csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio},${r.hora_fin},${horas.toFixed(2)},${coment}\n`;
+                        const coment = (r.comentarios || '').replace(/,/g, ';').replace(/\n/g, ' ');
+                        csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio || ''},${r.hora_fin || ''},${horas.toFixed(2)},${coment}\n`;
                     });
+                    
                     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(blob);
@@ -501,16 +428,30 @@
                     link.click();
                     mostrarMensaje(`✅ CSV exportado (${data.length} registros)`, 'exito');
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('❌ Error:', error);
                     mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             });
 
-            document.getElementById('btnCalcularTotal').addEventListener('click', cargarRegistros);
+            // ------------------------------------------------------------
+            // ACTUALIZAR (botón)
+            // ------------------------------------------------------------
+            document.getElementById('btnActualizar').addEventListener('click', function() {
+                this.textContent = '⏳...';
+                cargarRegistros().finally(() => {
+                    this.textContent = '🔄 Actualizar';
+                });
+            });
+
+            // ------------------------------------------------------------
+            // CAMBIOS EN SELECTORES
+            // ------------------------------------------------------------
             document.getElementById('mesSelector').addEventListener('change', cargarRegistros);
             document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
 
+            // ------------------------------------------------------------
             // MODAL FOTO
+            // ------------------------------------------------------------
             window.abrirFoto = function(src) {
                 document.getElementById('fotoModalImg').src = src;
                 document.getElementById('fotoModal').classList.add('active');
@@ -520,10 +461,13 @@
             };
             document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
 
+            // ------------------------------------------------------------
             // INICIALIZAR
+            // ------------------------------------------------------------
             inicializarSelectores();
             cargarRegistros();
-            cargarPersonal();
+
+            console.log('✅ Panel de jefe inicializado correctamente');
 
         })();
     </script>
