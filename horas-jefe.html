@@ -27,6 +27,8 @@
         .btn-sm { padding: 4px 12px; font-size: 0.75rem; }
         .btn-warning { background: #f59e0b; color: white; }
         .btn-warning:hover { background: #d97706; }
+        .btn-recargar { background: #8b5cf6; color: white; }
+        .btn-recargar:hover { background: #7c3aed; }
         .resumen-personas { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 12px; }
         .resumen-personas table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         .resumen-personas th { text-align: left; padding: 10px 8px; border-bottom: 2px solid #cbd5e1; }
@@ -64,6 +66,8 @@
         .loading { text-align: center; padding: 20px; color: #94a3b8; }
         .registros-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
         .registros-header .total-registros { font-size: 0.9rem; color: #64748b; }
+        .input-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .input-group input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; }
         @media (max-width: 600px) {
             .container { padding: 16px; }
             .registro-info { gap: 6px; }
@@ -110,6 +114,24 @@
             </table>
             <div class="total-general" id="totalGeneral">Total general: 0.0 h</div>
         </div>
+
+        <!-- ===== GESTIÓN DE PERSONAL ===== -->
+        <div class="admin-personal">
+            <div style="font-weight: 600; margin-bottom: 8px;">👥 Gestionar personal (cocineros y picas)</div>
+            <div class="input-group">
+                <input type="text" id="inputNuevoNombre" placeholder="Nuevo nombre">
+                <button id="btnAgregarNombre" class="btn btn-success">➕ Añadir</button>
+                <button id="btnInsertarNombres" class="btn btn-primary">📥 Insertar lista</button>
+                <button id="btnEliminarTodosNombres" class="btn btn-danger">🗑️ Eliminar todos</button>
+            </div>
+            <div class="lista-nombres" id="listaNombres">
+                <span style="color:#94a3b8; font-size:0.9rem;">Cargando...</span>
+            </div>
+            <div style="font-size:0.8rem; color:#64748b; margin-top:6px;">
+                Los nombres aparecerán en el desplegable para los cocineros.
+                <button id="btnRecargarPersonal" class="btn btn-recargar btn-sm" style="margin-left:8px;">🔄 Recargar</button>
+            </div>
+        </div>
     </div>
 
     <div class="container">
@@ -137,6 +159,11 @@
 
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+            const NOMBRES_POR_DEFECTO = [
+                'Antonio', 'Remedios', 'Rafael', 'Andrea', 'Ines',
+                'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
+            ];
+
             // ------------------------------------------------------------
             // FUNCIONES DE MENSAJES
             // ------------------------------------------------------------
@@ -157,6 +184,155 @@
                     box.className = 'error-box';
                 }, 8000);
             }
+
+            // ------------------------------------------------------------
+            // FUNCIONES DE PERSONAL
+            // ------------------------------------------------------------
+            async function cargarPersonal() {
+                try {
+                    const { data, error } = await supabase
+                        .from('horas_personal')
+                        .select('nombre')
+                        .order('nombre');
+
+                    if (error) throw error;
+
+                    if (!data || data.length === 0) {
+                        document.getElementById('listaNombres').innerHTML =
+                            '<span style="color:#94a3b8; font-size:0.9rem;">No hay nombres. Añade algunos.</span>';
+                        return;
+                    }
+
+                    const contenedor = document.getElementById('listaNombres');
+                    let html = '';
+                    data.forEach(item => {
+                        html += `<span class="nombre-tag">${item.nombre} <button onclick="eliminarNombre('${item.nombre}')" title="Eliminar">✕</button></span>`;
+                    });
+                    html += `<span class="badge-count" style="margin-left:8px;">${data.length} nombres</span>`;
+                    contenedor.innerHTML = html;
+
+                } catch (error) {
+                    console.error('❌ Error en cargarPersonal:', error);
+                    mostrarError('Error al cargar personal: ' + error.message);
+                }
+            }
+
+            // ELIMINAR NOMBRE
+            window.eliminarNombre = async function(nombre) {
+                if (!confirm(`¿Eliminar a "${nombre}" de la lista?`)) return;
+
+                try {
+                    const { error } = await supabase
+                        .from('horas_personal')
+                        .delete()
+                        .eq('nombre', nombre);
+
+                    if (error) throw error;
+
+                    await cargarPersonal();
+                    mostrarMensaje(`✅ "${nombre}" eliminado`, 'exito');
+
+                } catch (error) {
+                    console.error('❌ Error inesperado:', error);
+                    if (error.code === '42501') {
+                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS en Supabase.', 'error');
+                    } else {
+                        mostrarMensaje('❌ Error: ' + error.message, 'error');
+                    }
+                }
+            };
+
+            // AGREGAR NOMBRE
+            document.getElementById('btnAgregarNombre').addEventListener('click', async function() {
+                const input = document.getElementById('inputNuevoNombre');
+                const nombre = input.value.trim();
+                if (!nombre) {
+                    mostrarMensaje('Escribe un nombre.', 'error');
+                    return;
+                }
+                try {
+                    const { error } = await supabase
+                        .from('horas_personal')
+                        .insert([{ nombre }]);
+                    if (error) throw error;
+                    input.value = '';
+                    await cargarPersonal();
+                    mostrarMensaje(`✅ "${nombre}" agregado`, 'exito');
+                } catch (error) {
+                    console.error('Error al agregar:', error);
+                    if (error.code === '42501') {
+                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
+                    } else {
+                        mostrarMensaje('❌ Error: ' + error.message, 'error');
+                    }
+                }
+            });
+
+            // INSERTAR LISTA COMPLETA
+            document.getElementById('btnInsertarNombres').addEventListener('click', async function() {
+                if (!confirm(`¿Insertar todos los nombres (${NOMBRES_POR_DEFECTO.length})? Esto eliminará los existentes.`)) return;
+                try {
+                    // Primero eliminar todos
+                    const { error: deleteError } = await supabase
+                        .from('horas_personal')
+                        .delete()
+                        .neq('id', '00000000-0000-0000-0000-000000000000');
+                    if (deleteError) throw deleteError;
+
+                    // Insertar la lista
+                    const inserts = NOMBRES_POR_DEFECTO.map(nombre => ({ nombre }));
+                    const { error: insertError } = await supabase
+                        .from('horas_personal')
+                        .insert(inserts);
+                    if (insertError) throw insertError;
+
+                    await cargarPersonal();
+                    mostrarMensaje(`✅ ${NOMBRES_POR_DEFECTO.length} nombres insertados`, 'exito');
+                } catch (error) {
+                    console.error('Error:', error);
+                    if (error.code === '42501') {
+                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
+                    } else {
+                        mostrarMensaje('❌ Error: ' + error.message, 'error');
+                    }
+                }
+            });
+
+            // ELIMINAR TODOS LOS NOMBRES
+            document.getElementById('btnEliminarTodosNombres').addEventListener('click', async function() {
+                if (!confirm('⚠️ ¿Eliminar TODOS los nombres?')) return;
+                try {
+                    const { error } = await supabase
+                        .from('horas_personal')
+                        .delete()
+                        .neq('id', '00000000-0000-0000-0000-000000000000');
+                    if (error) throw error;
+                    await cargarPersonal();
+                    mostrarMensaje('🗑️ Todos los nombres eliminados', 'info');
+                } catch (error) {
+                    console.error('Error:', error);
+                    if (error.code === '42501') {
+                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
+                    } else {
+                        mostrarMensaje('❌ Error: ' + error.message, 'error');
+                    }
+                }
+            });
+
+            // RECARGAR PERSONAL
+            document.getElementById('btnRecargarPersonal').addEventListener('click', function() {
+                this.textContent = '⏳...';
+                cargarPersonal().finally(() => {
+                    this.textContent = '🔄 Recargar';
+                });
+            });
+
+            document.getElementById('inputNuevoNombre').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('btnAgregarNombre').click();
+                }
+            });
 
             // ------------------------------------------------------------
             // INICIALIZAR SELECTORES DE MES/AÑO
@@ -217,7 +393,6 @@
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
                 
-                // Validar mes y año
                 if (!mes || !anio) {
                     mostrarError('Selecciona un mes y año válidos');
                     return;
@@ -229,8 +404,6 @@
                 const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
 
                 try {
-                    console.log(`📥 Cargando registros: ${start} → ${end}`);
-
                     const { data, error } = await supabase
                         .from('horas_registros')
                         .select('*')
@@ -239,8 +412,6 @@
                         .order('fecha', { ascending: false });
 
                     if (error) throw error;
-
-                    console.log(`✅ ${data ? data.length : 0} registros encontrados`);
 
                     if (!data || data.length === 0) {
                         document.getElementById('listaRegistros').innerHTML = 
@@ -266,7 +437,6 @@
                         const nombre = reg.nombre || 'Anónimo';
                         const fecha = formatearFecha(reg.fecha);
                         
-                        // Foto
                         let fotoHtml = '';
                         if (reg.foto_url && reg.foto_url.startsWith('http')) {
                             fotoHtml = `<img src="${reg.foto_url}" class="foto-preview" onclick="event.stopPropagation(); abrirFoto('${reg.foto_url}')" alt="foto" loading="lazy">`;
@@ -274,7 +444,6 @@
                             fotoHtml = '<span class="badge-count">📷 sin foto</span>';
                         }
 
-                        // Comentarios
                         let comentHtml = '';
                         if (reg.comentarios && reg.comentarios.trim()) {
                             comentHtml = `<span class="comentario">💬 ${reg.comentarios}</span>`;
@@ -465,6 +634,7 @@
             // INICIALIZAR
             // ------------------------------------------------------------
             inicializarSelectores();
+            cargarPersonal();
             cargarRegistros();
 
             console.log('✅ Panel de jefe inicializado correctamente');
