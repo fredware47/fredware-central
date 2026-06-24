@@ -2,60 +2,188 @@ import os
 import sys
 import json
 import threading
+import time
+import queue
+import sqlite3
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from datetime import datetime
+from functools import wraps
 
 # ============================================================
 # 🛠️ FUNCIÓN DE RUTA PARA PYINSTALLER
 # ============================================================
 def ruta_recurso(relative_path):
-    """Obtiene la ruta absoluta al recurso para dev y PyInstaller"""
     try:
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-# 🔒 ESCUDO MAESTRO DE CONCURRENCIA: Evita que escrituras simultáneas corrompan el JSON
-json_lock = threading.Lock()
+# ============================================================
+# 📂 DEFINIR DATA_FILE Y FUNCIONES DE CARGA/GUARDADO
+# ============================================================
+DATA_FILE = ruta_recurso("fredware_compras_db.json")
+JSON_LOCK = threading.Lock()
 
-# 🔌 INTEGRACIÓN NATIVA Y OBLIGATORIA DE MÓDULOS DE LA COCINA
+def cargar_datos_compras():
+    for attempt in range(3):
+        try:
+            if os.path.exists(DATA_FILE):
+                with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            return {"cesta": [], "faltas": [], "proveedores": []}
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(0.5 * (attempt + 1))
+                continue
+            print(f"⚠️ Error cargando datos: {e}")
+            return {"cesta": [], "faltas": [], "proveedores": []}
+
+def guardar_datos_compras(datos):
+    with JSON_LOCK:
+        try:
+            temp_file = DATA_FILE + '.tmp'
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                json.dump(datos, f, ensure_ascii=False, indent=4)
+            os.replace(temp_file, DATA_FILE)
+            return True
+        except Exception as e:
+            print(f"❌ Error guardando datos: {e}")
+            return False
+
+# ============================================================
+# 🔧 CONFIGURACIÓN
+# ============================================================
+MAX_RETRIES = 3
+RETRY_DELAY = 0.5
+
+# ============================================================
+# 🔒 SISTEMA DE LOCKS
+# ============================================================
+class LockManager:
+    def __init__(self):
+        self._locks = {}
+        self._global_lock = threading.Lock()
+    
+    def get_lock(self, resource_name):
+        with self._global_lock:
+            if resource_name not in self._locks:
+                self._locks[resource_name] = threading.Lock()
+            return self._locks[resource_name]
+
+lock_manager = LockManager()
+json_lock = lock_manager.get_lock('json_file')
+sqlite_lock = lock_manager.get_lock('sqlite')
+
+# ============================================================
+# ⏱️ DECORADOR DE RETRY
+# ============================================================
+def with_retry(max_retries=MAX_RETRIES, delay=RETRY_DELAY):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_error = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_error = e
+                    if attempt < max_retries - 1:
+                        time.sleep(delay * (attempt + 1))
+                        continue
+                    raise last_error
+            raise last_error
+        return wrapper
+    return decorator
+
+# ============================================================
+# 🔌 INTEGRACIÓN DE MÓDULOS
+# ============================================================
 try:
     import base_datos
     import generador_pdf
     print("✅ Módulos 'base_datos' y 'generador_pdf' detectados e integrados correctamente.")
 except ImportError as e:
-    print(f"❌ ERROR CRÍTICO DE ARCHIVOS: No se encuentra '{e.name}.py' en esta carpeta.")
-    print("El servidor no puede arrancar sin sus módulos base.")
+    print(f"❌ ERROR CRÍTICO: No se encuentra '{e.name}.py'")
     sys.exit(1)
 
+# ============================================================
+# 🗄️ POOL DE CONEXIONES SQLITE
+# ============================================================
+class SQLiteConnectionPool:
+    def __init__(self, db_path, max_connections=5):
+        self.db_path = db_path
+        self.max_connections = max_connections
+        self._connections = []
+        self._lock = threading.Lock()
+    
+    def get_connection(self):
+        with self._lock:
+            if self._connections:
+                return self._connections.pop()
+            conn = sqlite3.connect(self.db_path, timeout=10.0)
+            conn.execute("PRAGMA busy_timeout = 5000")
+            conn.execute("PRAGMA journal_mode = WAL")
+            return conn
+    
+    def return_connection(self, conn):
+        if conn:
+            with self._lock:
+                if len(self._connections) < self.max_connections:
+                    self._connections.append(conn)
+                else:
+                    conn.close()
+
+db_pool = SQLiteConnectionPool('fredware.db')
+
+def conectar_bd_parchada():
+    return db_pool.get_connection()
+
+if hasattr(base_datos, 'conectar'):
+    base_datos.conectar = conectar_bd_parchada
+
+# ============================================================
 # 🔌 CONEXIÓN A SUPABASE
+# ============================================================
 try:
     from supabase import create_client
     SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co"
     SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y"
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
     print("✅ Conexión a Supabase establecida correctamente.")
-except ImportError:
-    print("❌ Módulo 'supabase' no instalado. Las funciones de Supabase no estarán disponibles.")
-    supabase = None
 except Exception as e:
     print(f"⚠️ Error al conectar con Supabase: {e}")
     supabase = None
 
 app = Flask(__name__)
 
-# 🔓 APERTURA MAESTRA DE CORS: Configuración global con after_request
+# ============================================================
+# 🔓 CONFIGURACIÓN CORS
+# ============================================================
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "*")
+        response.headers.add("Access-Control-Allow-Methods", "*")
+        response.headers.add("Access-Control-Max-Age", "86400")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+
 @app.after_request
 def add_cors_headers(response):
-    """Añade cabeceras CORS a todas las respuestas automáticamente."""
     response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, ngrok-skip-browser-warning"
-    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS, DELETE"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Expose-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
-# 🎨 CABECERA CORPORATIVA DE ARTE ASCII
+# ============================================================
+# 🎨 LOGO
+# ============================================================
 def mostrar_logo_fredware():
     logo = """
     #################################################################
@@ -75,13 +203,62 @@ def mostrar_logo_fredware():
     print("  📡 Escuchando peticiones de Cocina y Oficina...\n")
 
 # ============================================================
-# 🗑️ ENDPOINT: ELIMINAR MERCANCÍAS (CON SUPABASE)
+# 📦 ENDPOINT: OBTENER MERCANCÍAS (CORREGIDO)
+# ============================================================
+@app.route('/obtener_mercancias', methods=['GET', 'OPTIONS'])
+def obtener_mercancias():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        # ✅ AHORA USA LA TABLA CORRECTA: mercancia_recibida
+        if supabase:
+            result = supabase.table('mercancia_recibida').select("*").order('id', desc=True).execute()
+            print(f"📦 Obtenidas {len(result.data) if result.data else 0} mercancías de Supabase")
+            return jsonify(result.data if result.data else []), 200
+        else:
+            # FALLBACK a SQLite si Supabase no está disponible
+            conn = None
+            try:
+                conn = base_datos.conectar()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, producto, proveedor, conservacion, temperatura, cantidad, fecha_registro 
+                    FROM mercancias_entradas 
+                    ORDER BY id DESC
+                """)
+                filas = cursor.fetchall()
+                mercancias = []
+                for fila in filas:
+                    mercancias.append({
+                        "id": fila[0],
+                        "producto": fila[1],
+                        "proveedor": fila[2],
+                        "conservacion": fila[3],
+                        "temperatura": fila[4],
+                        "cantidad": fila[5],
+                        "fecha_registro": fila[6]
+                    })
+                return jsonify(mercancias), 200
+            except Exception as e:
+                print(f"⚠️ Error en SQLite: {e}")
+                return jsonify([]), 200
+            finally:
+                if conn:
+                    db_pool.return_connection(conn)
+                    
+    except Exception as e:
+        print(f"❌ Error en obtener_mercancias: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ============================================================
+# 🗑️ ENDPOINT: ELIMINAR MERCANCÍAS (CORREGIDO)
 # ============================================================
 @app.route('/eliminar_mercancia', methods=['POST', 'OPTIONS'])
+@with_retry(max_retries=3)
 def eliminar_mercancia():
-    """
-    Elimina productos de la base de datos SQLite y de Supabase
-    """
     if request.method == 'OPTIONS':
         return '', 200
     
@@ -94,69 +271,48 @@ def eliminar_mercancia():
         if not ids_a_eliminar or not isinstance(ids_a_eliminar, list):
             return jsonify({"status": "error", "message": "Se esperaba una lista de IDs"}), 400
         
-        print(f"🗑️ [Túnel Online] Eliminando {len(ids_a_eliminar)} producto(s) de la base de datos...")
+        print(f"🗑️ Eliminando {len(ids_a_eliminar)} producto(s)...")
         
-        # 1️⃣ ELIMINAR DE SQLITE LOCAL
-        eliminados_sqlite = 0
-        try:
-            conn = base_datos.conectar()
-            cursor = conn.cursor()
-            
-            # Primero, obtener los productos a eliminar para mostrarlos en el log
-            placeholders = ','.join(['?'] * len(ids_a_eliminar))
-            cursor.execute(f"SELECT producto, proveedor FROM mercancias_entradas WHERE id IN ({placeholders})", ids_a_eliminar)
-            productos_a_eliminar = cursor.fetchall()
-            
-            # Eliminar de SQLite
-            cursor.execute(f"DELETE FROM mercancias_entradas WHERE id IN ({placeholders})", ids_a_eliminar)
-            eliminados_sqlite = cursor.rowcount
-            conn.commit()
-            conn.close()
-            
-            print(f"  ↳ ✅ SQLite: {eliminados_sqlite} producto(s) eliminado(s)")
-            if productos_a_eliminar:
-                for prod in productos_a_eliminar:
-                    print(f"    - {prod[0]} ({prod[1]})")
-                    
-        except Exception as e:
-            print(f"  ↳ ⚠️ Error en SQLite: {e}")
-            # Continuamos con Supabase aunque SQLite falle
-        
-        # 2️⃣ ELIMINAR DE SUPABASE (si está disponible)
+        # ✅ ELIMINAR DE SUPABASE (TABLA CORRECTA)
         eliminados_supabase = 0
         if supabase:
             try:
-                # Intentar eliminar de Supabase
-                # NOTA: Asumiendo que tienes una tabla 'mercancias_entradas' en Supabase con columna 'id'
-                result = supabase.table('mercancias_entradas').delete().in_('id', ids_a_eliminar).execute()
-                
-                # Si la tabla no existe, intentar con 'mercancias'
-                if not result.data and hasattr(result, 'error'):
-                    result = supabase.table('mercancias').delete().in_('id', ids_a_eliminar).execute()
-                
+                result = supabase.table('mercancia_recibida').delete().in_('id', ids_a_eliminar).execute()
                 eliminados_supabase = len(result.data) if result.data else 0
-                print(f"  ↳ ✅ Supabase: {eliminados_supabase} producto(s) eliminado(s)")
-                
+                print(f"  ↳ ✅ Supabase: {eliminados_supabase} eliminados")
             except Exception as e:
-                print(f"  ↳ ⚠️ Error en Supabase: {e}")
-                # Continuamos, no fallamos por Supabase
-        else:
-            print("  ↳ ⚠️ Supabase no disponible - omitiendo eliminación en la nube")
+                print(f"  ↳ ⚠️ Error Supabase: {e}")
         
-        # 3️⃣ TAMBIÉN ELIMINAR DE LA CESTA LOCAL (archivo JSON)
+        # ELIMINAR DE SQLITE LOCAL
+        eliminados_sqlite = 0
+        conn = None
+        try:
+            conn = base_datos.conectar()
+            cursor = conn.cursor()
+            placeholders = ','.join(['?'] * len(ids_a_eliminar))
+            cursor.execute(f"DELETE FROM mercancias_entradas WHERE id IN ({placeholders})", ids_a_eliminar)
+            eliminados_sqlite = cursor.rowcount
+            conn.commit()
+            print(f"  ↳ ✅ SQLite: {eliminados_sqlite} eliminados")
+        except Exception as e:
+            print(f"  ↳ ⚠️ Error SQLite: {e}")
+        finally:
+            if conn:
+                db_pool.return_connection(conn)
+        
+        # ELIMINAR DE LA CESTA LOCAL
         eliminados_cesta = 0
         try:
             datos_compras = cargar_datos_compras()
             cesta_original = datos_compras.get('cesta', [])
-            # Convertir IDs a string para comparación
             ids_str = [str(id) for id in ids_a_eliminar]
             nueva_cesta = [item for item in cesta_original if str(item.get('id', '')) not in ids_str]
             eliminados_cesta = len(cesta_original) - len(nueva_cesta)
             datos_compras['cesta'] = nueva_cesta
             guardar_datos_compras(datos_compras)
-            print(f"  ↳ ✅ Cesta local: {eliminados_cesta} producto(s) eliminado(s)")
+            print(f"  ↳ ✅ Cesta local: {eliminados_cesta} eliminados")
         except Exception as e:
-            print(f"  ↳ ⚠️ Error en cesta local: {e}")
+            print(f"  ↳ ⚠️ Error cesta: {e}")
         
         return jsonify({
             "status": "success",
@@ -169,80 +325,51 @@ def eliminar_mercancia():
         }), 200
         
     except Exception as e:
-        print(f"  ↳ ❌ ERROR EN ELIMINACIÓN: {str(e)}")
+        print(f"❌ ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # ============================================================
-# 📦 ENDPOINT: OBTENER MERCANCÍAS RECIBIDAS DESDE SQLITE
-# ============================================================
-@app.route('/obtener_mercancias', methods=['GET', 'OPTIONS'])
-def obtener_mercancias():
-    if request.method == 'OPTIONS':
-        return '', 200
-    try:
-        conn = base_datos.conectar()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id, producto, proveedor, conservacion, temperatura, cantidad, fecha_registro 
-            FROM mercancias_entradas 
-            ORDER BY id DESC
-        """)
-        filas = cursor.fetchall()
-        conn.close()
-        
-        mercancias = []
-        for fila in filas:
-            mercancias.append({
-                "id": fila[0],
-                "producto": fila[1],
-                "proveedor": fila[2],
-                "conservacion": fila[3],
-                "temperatura": fila[4],
-                "cantidad": fila[5],
-                "fecha_registro": fila[6]
-            })
-        
-        return jsonify(mercancias), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-# ============================================================
-# 🚚 RUTA: guardar_mercancia
+# 🚚 RUTA: guardar_mercancia (CORREGIDO)
 # ============================================================
 @app.route('/guardar_mercancia', methods=['POST', 'OPTIONS'])
+@with_retry(max_retries=3)
 def guardar_mercancia():
     if request.method == 'OPTIONS':
         return '', 200
     try:
         datos = request.get_json(silent=True)
         if not datos:
-            return jsonify({"status": "error", "message": "Falta el cuerpo JSON o el formato es incorrecto"}), 400
+            return jsonify({"status": "error", "message": "Falta el cuerpo JSON"}), 400
 
         producto = datos.get('producto', '').upper()
         proveedor = datos.get('proveedor', 'S/P').upper()
         conservacion = datos.get('conservacion', 'NEVERA').upper()
-        
-        try:
-            temperatura = float(datos.get('temperatura', 4.0))
-        except (ValueError, TypeError):
-            temperatura = 4.0
-        
-        try:
-            cantidad = int(datos.get('cantidad_total', datos.get('cantidad', 1)))
-        except (ValueError, TypeError):
-            cantidad = 1
-            
-        fecha_iso = datos.get('fecha_registro')
+        temperatura = float(datos.get('temperatura', 4.0))
+        cantidad = int(datos.get('cantidad_total', datos.get('cantidad', 1)))
+        fecha_formateada = datetime.now().strftime("%d/%m/%Y")
 
-        try:
-            dt = datetime.fromisoformat(fecha_iso.replace("Z", "+00:00"))
-            fecha_formateada = dt.strftime("%d/%m/%Y")
-        except:
-            fecha_formateada = datetime.now().strftime("%d/%m/%Y")
+        print(f"🚚 Recibido: {cantidad}x {producto} de {proveedor}")
 
-        print(f"🚚 [Túnel Online] Recibido camión: {cantidad}x {producto} de {proveedor}")
+        # ✅ GUARDAR EN SUPABASE (TABLA CORRECTA)
+        if supabase:
+            try:
+                data = {
+                    "producto": producto,
+                    "proveedor": proveedor,
+                    "conservacion": conservacion,
+                    "temperatura": temperatura,
+                    "cantidad_total": cantidad,
+                    "fecha_registro": datetime.now().isoformat()
+                }
+                result = supabase.table('mercancia_recibida').insert(data).execute()
+                print(f"  ↳ ✅ Supabase: Registrado con ID: {result.data[0]['id'] if result.data else 'N/A'}")
+            except Exception as e:
+                print(f"  ↳ ⚠️ Error Supabase: {e}")
 
-        # 📦 Registro 1: Tabla interna del Almacén Oculto
+        # GUARDAR EN SQLITE LOCAL
+        conn = None
         try:
             conn = base_datos.conectar()
             cursor = conn.cursor()
@@ -262,23 +389,24 @@ def guardar_mercancia():
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (producto, proveedor, conservacion, temperatura, cantidad, fecha_formateada))
             conn.commit()
-            # Obtener el ID del registro insertado
-            nuevo_id = cursor.lastrowid
-            conn.close()
-            print(f"  ↳ 📦 Fichado en el historial del Almacén Oculto (ID: {nuevo_id})")
-        except Exception as err_sql:
-            print(f"  ↳ ⚠️ Nota al inyectar en mercancias_entradas: {err_sql}")
+            print(f"  ↳ ✅ SQLite: Registrado con ID: {cursor.lastrowid}")
+        except Exception as e:
+            print(f"  ↳ ⚠️ Error SQL: {e}")
+        finally:
+            if conn:
+                db_pool.return_connection(conn)
 
-        # 📝 Registro 2: Vinculación con las fichas de producción
         try:
             base_datos.registrar_entrada_mercancia(producto, proveedor, fecha_formateada)
-            print("  ↳ 📝 Vinculado en la tabla de fichas de producción.")
-        except Exception as err_bd:
-            print(f"  ↳ ⚠️ Nota al registrar en tabla de fichas: {err_bd}")
+            print("  ↳ ✅ Vinculado en fichas de producción.")
+        except Exception as e:
+            print(f"  ↳ ⚠️ Error en fichas: {e}")
 
         return jsonify({"status": "success", "message": "Materia prima registrada con éxito"}), 200
     except Exception as e:
-        print(f"  ↳ ❌ ERROR CRÍTICO EN RUTA: {str(e)}")
+        print(f"❌ ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # ============================================================
@@ -297,7 +425,7 @@ def imprimir_lote():
         if not etiquetas: 
             return jsonify({"status": "error", "message": "Lote de stickers vacío"}), 400
 
-        print(f"🖨️  [Túnel Online] Procesando {len(etiquetas)} stickers contra el generador de PDF...")
+        print(f"🖨️ Procesando {len(etiquetas)} stickers...")
         lote_rec_pdf = []
         for etiq in etiquetas:
             lote_rec_pdf.append({
@@ -308,11 +436,12 @@ def imprimir_lote():
             })
 
         generador_pdf.generar_etiquetas_recepcion(lote_rec_pdf)
-        print("  ↳ 🚀 ¡PDF generado y visor ejecutado con éxito!")
-        
+        print("  ↳ ✅ PDF generado")
         return jsonify({"status": "success", "message": "Pegatinas enviadas al rodillo"}), 200
     except Exception as e:
-        print(f"  ↳ ❌ ERROR EN IMPRESIÓN: {str(e)}")
+        print(f"❌ ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # ============================================================
@@ -326,6 +455,7 @@ def obtener_catalogo():
     productos_ya_vistos = set(["ATÚN ROJO", "PIMIENTOS DE PIQUILLO", "KETCHUP", "HARINA DE TRIGO"])
     proveedores_ya_vistos = set(["MAKRO", "PESCASA", "DISTRIBUCIONES GALICIA", "FRUTAS PEPE"])
     
+    conn = None
     try:
         conn = base_datos.conectar()
         cursor = conn.cursor()
@@ -333,15 +463,17 @@ def obtener_catalogo():
         for fila in cursor.fetchall():
             if fila[0]: 
                 productos_ya_vistos.add(fila[0].replace("ENTRADA MERCANCÍA: ", "").upper())
-        conn.close()
-    except: 
-        pass
+    except Exception as e:
+        print(f"⚠️ Error obteniendo catálogo: {e}")
+    finally:
+        if conn:
+            db_pool.return_connection(conn)
     
     return jsonify({"status": "success", "productos": sorted(list(productos_ya_vistos)), "proveedores": sorted(list(proveedores_ya_vistos))}), 200
 
-# =====================================================================
-# 🆕 ENDPOINTS: RESUMEN DIARIO Y CONTADOR DE ETIQUETAS
-# =====================================================================
+# ============================================================
+# 🆕 ENDPOINTS: RESUMEN DIARIO
+# ============================================================
 @app.route('/api/resumen_dia', methods=['POST', 'OPTIONS'])
 def resumen_dia():
     if request.method == 'OPTIONS':
@@ -360,16 +492,17 @@ def resumen_dia():
 def contador_dia():
     if request.method == 'OPTIONS':
         return '', 200
-    etiquetas = generador_pdf.cargar_etiquetas_dia()
-    return jsonify({"total": len(etiquetas)}), 200
+    try:
+        etiquetas = generador_pdf.cargar_etiquetas_dia()
+        return jsonify({"total": len(etiquetas)}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-# =====================================================================
-# 🆕 ENDPOINTS PARA GESTIÓN DE ETIQUETAS (NUEVOS)
-# =====================================================================
-
+# ============================================================
+# 🆕 ENDPOINTS: ETIQUETAS
+# ============================================================
 @app.route('/api/etiquetas/total_dia', methods=['GET', 'OPTIONS'])
 def total_etiquetas_dia():
-    """Devuelve el número de etiquetas acumuladas hoy."""
     if request.method == 'OPTIONS':
         return '', 200
     try:
@@ -380,7 +513,6 @@ def total_etiquetas_dia():
 
 @app.route('/api/etiquetas/imprimir_resumen', methods=['POST', 'OPTIONS'])
 def imprimir_resumen_etiquetas():
-    """Genera e imprime un PDF con TODAS las etiquetas acumuladas del día."""
     if request.method == 'OPTIONS':
         return '', 200
     try:
@@ -395,7 +527,6 @@ def imprimir_resumen_etiquetas():
 
 @app.route('/api/etiquetas/guardar_supabase', methods=['POST', 'OPTIONS'])
 def guardar_etiquetas_supabase():
-    """Guarda las etiquetas del día en Supabase."""
     if request.method == 'OPTIONS':
         return '', 200
     try:
@@ -414,13 +545,11 @@ def guardar_etiquetas_supabase():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# =====================================================================
-# 🆕🆕🆕 NUEVOS ENDPOINTS PARA FICHAS TÉCNICAS (AÑADIDOS)
-# =====================================================================
-
+# ============================================================
+# 🆕 ENDPOINTS: FICHAS TÉCNICAS
+# ============================================================
 @app.route('/generar_ficha_a4', methods=['POST', 'OPTIONS'])
 def generar_ficha_a4():
-    """Genera una ficha A4 con QR para un producto."""
     if request.method == 'OPTIONS':
         return '', 200
     try:
@@ -432,7 +561,6 @@ def generar_ficha_a4():
 
 @app.route('/generar_sticker', methods=['POST', 'OPTIONS'])
 def generar_sticker():
-    """Genera un sticker para la Brother."""
     if request.method == 'OPTIONS':
         return '', 200
     try:
@@ -444,7 +572,6 @@ def generar_sticker():
 
 @app.route('/generar_ficha_a4_masiva', methods=['POST', 'OPTIONS'])
 def generar_ficha_a4_masiva():
-    """Genera múltiples fichas A4 en lote."""
     if request.method == 'OPTIONS':
         return '', 200
     try:
@@ -461,7 +588,6 @@ def generar_ficha_a4_masiva():
 
 @app.route('/generar_sticker_masivo', methods=['POST', 'OPTIONS'])
 def generar_sticker_masivo():
-    """Genera múltiples stickers en lote."""
     if request.method == 'OPTIONS':
         return '', 200
     try:
@@ -475,25 +601,9 @@ def generar_sticker_masivo():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# =====================================================================
-# 🛒 EXTENSIÓN ONLINE: GESTIÓN DE COMPRAS Y FALTAS DE COCINA
-# =====================================================================
-DATA_FILE = ruta_recurso("fredware_compras_db.json")
-
-def cargar_datos_compras():
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, 'r', encoding='utf-8') as f: 
-                return json.load(f)
-        except: 
-            pass
-    return {"cesta": [], "faltas": [], "proveedores": []}
-
-def guardar_datos_compras(datos):
-    with json_lock:
-        with open(DATA_FILE, 'w', encoding='utf-8') as f: 
-            json.dump(datos, f, ensure_ascii=False, indent=4)
-
+# ============================================================
+# 🛒 EXTENSIÓN ONLINE: GESTIÓN DE COMPRAS
+# ============================================================
 @app.route('/api/datos', methods=['GET', 'OPTIONS'])
 def obtener_datos_compras():
     if request.method == 'OPTIONS':
@@ -512,7 +622,7 @@ def actualizar_cesta():
         datos = cargar_datos_compras()
         datos["cesta"] = nueva_cesta
         guardar_datos_compras(datos)
-        print("🛒 [Túnel Online] Cesta de la compra actualizada con éxito.")
+        print("🛒 Cesta actualizada con éxito.")
         return jsonify({"status": "success"}), 200
     except Exception as e: 
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -529,7 +639,7 @@ def actualizar_faltas():
         datos = cargar_datos_compras()
         datos["faltas"] = nuevas_faltas
         guardar_datos_compras(datos)
-        print("⚠️ [Túnel Online] Lista de faltas modificada por el equipo.")
+        print("⚠️ Lista de faltas actualizada.")
         return jsonify({"status": "success"}), 200
     except Exception as e: 
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -546,19 +656,38 @@ def actualizar_proveedores():
         datos = cargar_datos_compras()
         datos["proveedores"] = nuevos_prov
         guardar_datos_compras(datos)
-        print("🏢 [Túnel Online] Lista de proveedores unificada en disco.")
+        print("🏢 Lista de proveedores actualizada.")
         return jsonify({"status": "success"}), 200
     except Exception as e: 
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# ➕ ENDPOINT DE CONTROL
-@app.route('/health', methods=['GET'])
+# ============================================================
+# 📊 ENDPOINT DE CONTROL
+# ============================================================
+@app.route('/health', methods=['GET', 'OPTIONS'])
 def health_check():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    conn_status = "unknown"
+    try:
+        conn = base_datos.conectar()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+        db_pool.return_connection(conn)
+        conn_status = "ok"
+    except:
+        conn_status = "error"
+    
     return jsonify({
         "status": "online",
         "timestamp": datetime.now().isoformat(),
-        "version": "5.5-Stable",
-        "supabase": "connected" if supabase else "disconnected"
+        "version": "5.6-Stable",
+        "supabase": "connected" if supabase else "disconnected",
+        "database": conn_status,
+        "threads": threading.active_count(),
+        "pool_size": len(db_pool._connections)
     }), 200
 
 # ============================================================
@@ -572,17 +701,23 @@ if __name__ == '__main__':
         print("✅ Base de datos inicializada correctamente.")
     except Exception as e:
         print(f"⚠️ Nota al iniciar BD global: {e}")
-        print("⚠️ El servidor arrancará igualmente, pero algunas funciones podrían fallar.")
     
-    # 🔥 PROGRAMAR GUARDADO AUTOMÁTICO A LAS 00:00
     if supabase:
         try:
-            generador_pdf.programar_guardado_automatico(supabase)
-            print("⏰ Guardado automático programado para las 00:00")
+            if hasattr(generador_pdf, 'programar_guardado_automatico'):
+                generador_pdf.programar_guardado_automatico(supabase)
+                print("⏰ Guardado automático programado para las 00:00")
+            else:
+                print("⚠️ Función 'programar_guardado_automatico' no encontrada")
         except Exception as e:
             print(f"⚠️ Error programando guardado automático: {e}")
-    else:
-        print("⚠️ Supabase no disponible. Guardado automático desactivado.")
     
     print("🚀 Iniciando servidor Fredware en http://0.0.0.0:8000")
-    app.run(host='0.0.0.0', port=8000, debug=False, threaded=True)
+    print(f"🔧 Pool de conexiones SQLite: {db_pool.max_connections} conexiones")
+    
+    app.run(
+        host='0.0.0.0', 
+        port=8000, 
+        debug=False, 
+        threaded=True
+    )
