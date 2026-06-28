@@ -25,8 +25,8 @@
         .btn-primary { background: #3b82f6; color: white; }
         .btn-primary:hover { background: #2563eb; }
         .btn-sm { padding: 4px 12px; font-size: 0.75rem; }
-        .btn-warning { background: #f59e0b; color: white; }
-        .btn-warning:hover { background: #d97706; }
+        .btn-hoy { background: #10b981; color: white; }
+        .btn-hoy:hover { background: #059669; }
         .btn-recargar { background: #8b5cf6; color: white; }
         .btn-recargar:hover { background: #7c3aed; }
         .resumen-personas { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 12px; }
@@ -93,6 +93,7 @@
             <label>Mes: <select id="mesSelector"></select></label>
             <label>Año: <select id="anioSelector"></select></label>
             <button id="btnActualizar" class="btn btn-primary">🔄 Actualizar</button>
+            <button id="btnHoy" class="btn btn-hoy">📅 Hoy</button>
             <button id="btnExportarCSV" class="btn btn-outline">⬇️ CSV</button>
             <button id="btnEliminarTodos" class="btn btn-danger">🗑️ Eliminar mes</button>
         </div>
@@ -156,7 +157,6 @@
 
             const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
-
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             const NOMBRES_POR_DEFECTO = [
@@ -164,45 +164,33 @@
                 'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
             ];
 
-            // ------------------------------------------------------------
-            // FUNCIONES DE MENSAJES
-            // ------------------------------------------------------------
             function mostrarMensaje(texto, tipo) {
                 const div = document.getElementById('mensajeFlotante');
                 div.textContent = texto;
                 div.className = 'mensaje-flotante ' + tipo;
-                setTimeout(() => {
-                    div.className = 'mensaje-flotante';
-                }, 5000);
+                setTimeout(() => { div.className = 'mensaje-flotante'; }, 5000);
             }
 
             function mostrarError(mensaje) {
                 const box = document.getElementById('errorBox');
                 box.textContent = '❌ ' + mensaje;
                 box.className = 'error-box show';
-                setTimeout(() => {
-                    box.className = 'error-box';
-                }, 8000);
+                setTimeout(() => { box.className = 'error-box'; }, 8000);
             }
 
-            // ------------------------------------------------------------
-            // FUNCIONES DE PERSONAL
-            // ------------------------------------------------------------
+            // ===== PERSONAL =====
             async function cargarPersonal() {
                 try {
                     const { data, error } = await supabase
                         .from('horas_personal')
                         .select('nombre')
                         .order('nombre');
-
                     if (error) throw error;
-
                     if (!data || data.length === 0) {
                         document.getElementById('listaNombres').innerHTML =
                             '<span style="color:#94a3b8; font-size:0.9rem;">No hay nombres. Añade algunos.</span>';
                         return;
                     }
-
                     const contenedor = document.getElementById('listaNombres');
                     let html = '';
                     data.forEach(item => {
@@ -210,46 +198,31 @@
                     });
                     html += `<span class="badge-count" style="margin-left:8px;">${data.length} nombres</span>`;
                     contenedor.innerHTML = html;
-
                 } catch (error) {
                     console.error('❌ Error en cargarPersonal:', error);
                     mostrarError('Error al cargar personal: ' + error.message);
                 }
             }
 
-            // ELIMINAR NOMBRE
             window.eliminarNombre = async function(nombre) {
                 if (!confirm(`¿Eliminar a "${nombre}" de la lista?`)) return;
-
                 try {
                     const { error } = await supabase
                         .from('horas_personal')
                         .delete()
                         .eq('nombre', nombre);
-
                     if (error) throw error;
-
                     await cargarPersonal();
                     mostrarMensaje(`✅ "${nombre}" eliminado`, 'exito');
-
                 } catch (error) {
-                    console.error('❌ Error inesperado:', error);
-                    if (error.code === '42501') {
-                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS en Supabase.', 'error');
-                    } else {
-                        mostrarMensaje('❌ Error: ' + error.message, 'error');
-                    }
+                    mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             };
 
-            // AGREGAR NOMBRE
             document.getElementById('btnAgregarNombre').addEventListener('click', async function() {
                 const input = document.getElementById('inputNuevoNombre');
                 const nombre = input.value.trim();
-                if (!nombre) {
-                    mostrarMensaje('Escribe un nombre.', 'error');
-                    return;
-                }
+                if (!nombre) { mostrarMensaje('Escribe un nombre.', 'error'); return; }
                 try {
                     const { error } = await supabase
                         .from('horas_personal')
@@ -259,72 +232,38 @@
                     await cargarPersonal();
                     mostrarMensaje(`✅ "${nombre}" agregado`, 'exito');
                 } catch (error) {
-                    console.error('Error al agregar:', error);
-                    if (error.code === '42501') {
-                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
-                    } else {
-                        mostrarMensaje('❌ Error: ' + error.message, 'error');
-                    }
+                    mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             });
 
-            // INSERTAR LISTA COMPLETA
             document.getElementById('btnInsertarNombres').addEventListener('click', async function() {
-                if (!confirm(`¿Insertar todos los nombres (${NOMBRES_POR_DEFECTO.length})? Esto eliminará los existentes.`)) return;
+                if (!confirm(`¿Insertar todos los nombres (${NOMBRES_POR_DEFECTO.length})?`)) return;
                 try {
-                    // Primero eliminar todos
-                    const { error: deleteError } = await supabase
-                        .from('horas_personal')
-                        .delete()
-                        .neq('id', '00000000-0000-0000-0000-000000000000');
-                    if (deleteError) throw deleteError;
-
-                    // Insertar la lista
+                    await supabase.from('horas_personal').delete().neq('id', '00000000-0000-0000-0000-000000000000');
                     const inserts = NOMBRES_POR_DEFECTO.map(nombre => ({ nombre }));
-                    const { error: insertError } = await supabase
-                        .from('horas_personal')
-                        .insert(inserts);
+                    const { error: insertError } = await supabase.from('horas_personal').insert(inserts);
                     if (insertError) throw insertError;
-
                     await cargarPersonal();
                     mostrarMensaje(`✅ ${NOMBRES_POR_DEFECTO.length} nombres insertados`, 'exito');
                 } catch (error) {
-                    console.error('Error:', error);
-                    if (error.code === '42501') {
-                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
-                    } else {
-                        mostrarMensaje('❌ Error: ' + error.message, 'error');
-                    }
+                    mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             });
 
-            // ELIMINAR TODOS LOS NOMBRES
             document.getElementById('btnEliminarTodosNombres').addEventListener('click', async function() {
                 if (!confirm('⚠️ ¿Eliminar TODOS los nombres?')) return;
                 try {
-                    const { error } = await supabase
-                        .from('horas_personal')
-                        .delete()
-                        .neq('id', '00000000-0000-0000-0000-000000000000');
-                    if (error) throw error;
+                    await supabase.from('horas_personal').delete().neq('id', '00000000-0000-0000-0000-000000000000');
                     await cargarPersonal();
                     mostrarMensaje('🗑️ Todos los nombres eliminados', 'info');
                 } catch (error) {
-                    console.error('Error:', error);
-                    if (error.code === '42501') {
-                        mostrarMensaje('❌ Error de permisos. Configura políticas RLS.', 'error');
-                    } else {
-                        mostrarMensaje('❌ Error: ' + error.message, 'error');
-                    }
+                    mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             });
 
-            // RECARGAR PERSONAL
             document.getElementById('btnRecargarPersonal').addEventListener('click', function() {
                 this.textContent = '⏳...';
-                cargarPersonal().finally(() => {
-                    this.textContent = '🔄 Recargar';
-                });
+                cargarPersonal().finally(() => { this.textContent = '🔄 Recargar'; });
             });
 
             document.getElementById('inputNuevoNombre').addEventListener('keypress', function(e) {
@@ -334,9 +273,7 @@
                 }
             });
 
-            // ------------------------------------------------------------
-            // INICIALIZAR SELECTORES DE MES/AÑO
-            // ------------------------------------------------------------
+            // ===== SELECTORES =====
             function inicializarSelectores() {
                 const mesSel = document.getElementById('mesSelector');
                 const anioSel = document.getElementById('anioSelector');
@@ -361,9 +298,16 @@
                 anioSel.value = anioActual;
             }
 
-            // ------------------------------------------------------------
-            // FUNCIÓN PARA CALCULAR HORAS
-            // ------------------------------------------------------------
+            // ===== BOTÓN HOY =====
+            document.getElementById('btnHoy').addEventListener('click', function() {
+                const ahora = new Date();
+                document.getElementById('mesSelector').value = ahora.getMonth() + 1;
+                document.getElementById('anioSelector').value = ahora.getFullYear();
+                mostrarMensaje('📅 Mostrando mes actual', 'info');
+                cargarRegistros();
+            });
+
+            // ===== CALCULAR HORAS =====
             function calcularHoras(inicio, fin) {
                 if (!inicio || !fin) return 0;
                 const [hI, mI] = inicio.split(':').map(Number);
@@ -373,9 +317,6 @@
                 return parseFloat((totalMin / 60).toFixed(2));
             }
 
-            // ------------------------------------------------------------
-            // FORMATEAR FECHA
-            // ------------------------------------------------------------
             function formatearFecha(fechaStr) {
                 if (!fechaStr) return 'Fecha no disponible';
                 try {
@@ -386,9 +327,7 @@
                 }
             }
 
-            // ------------------------------------------------------------
-            // CARGAR REGISTROS - FUNCIÓN PRINCIPAL
-            // ------------------------------------------------------------
+            // ===== CARGAR REGISTROS (CORREGIDO) =====
             async function cargarRegistros() {
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
@@ -403,16 +342,20 @@
                 const ultimoDia = new Date(anio, mes, 0).getDate();
                 const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
 
+                console.log('🔍 Buscando registros entre:', start, 'y', end);
+
                 try {
-                    // ✅ CORREGIDO: usando la tabla correcta horas_extra_registros
+                    // ✅ CORREGIDO: usando created_at en lugar de fecha
                     const { data, error } = await supabase
                         .from('horas_extra_registros')
                         .select('*')
-                        .gte('fecha', start)
-                        .lte('fecha', end)
-                        .order('fecha', { ascending: false });
+                        .gte('created_at', start + 'T00:00:00')
+                        .lte('created_at', end + 'T23:59:59')
+                        .order('created_at', { ascending: false });
 
                     if (error) throw error;
+
+                    console.log(`📊 Registros encontrados: ${data ? data.length : 0}`);
 
                     if (!data || data.length === 0) {
                         document.getElementById('listaRegistros').innerHTML = 
@@ -427,7 +370,7 @@
                         return;
                     }
 
-                    // ===== MOSTRAR LISTA DE REGISTROS =====
+                    // ===== MOSTRAR LISTA =====
                     const contenedor = document.getElementById('listaRegistros');
                     let html = '';
                     let totalHorasGlobal = 0;
@@ -468,7 +411,7 @@
                     });
                     contenedor.innerHTML = html;
 
-                    // ===== ACTUALIZAR ESTADÍSTICAS =====
+                    // ===== ESTADÍSTICAS =====
                     document.getElementById('totalRegistros').textContent = data.length;
                     document.getElementById('totalRegistrosLabel').textContent = `${data.length} registros`;
                     document.getElementById('totalHoras').textContent = totalHorasGlobal.toFixed(1) + 'h';
@@ -511,13 +454,10 @@
                 }
             }
 
-            // ------------------------------------------------------------
-            // ELIMINAR REGISTRO INDIVIDUAL
-            // ------------------------------------------------------------
+            // ===== ELIMINAR REGISTRO =====
             window.eliminarRegistro = async function(id) {
                 if (!confirm('¿Eliminar este registro?')) return;
                 try {
-                    // ✅ CORREGIDO: usando la tabla correcta horas_extra_registros
                     const { error } = await supabase
                         .from('horas_extra_registros')
                         .delete()
@@ -526,14 +466,11 @@
                     mostrarMensaje('✅ Registro eliminado', 'exito');
                     cargarRegistros();
                 } catch (error) {
-                    console.error('❌ Error:', error);
                     mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             };
 
-            // ------------------------------------------------------------
-            // ELIMINAR TODOS LOS REGISTROS DEL MES
-            // ------------------------------------------------------------
+            // ===== ELIMINAR TODOS =====
             document.getElementById('btnEliminarTodos').addEventListener('click', async function() {
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
@@ -545,24 +482,20 @@
                 if (!confirm(`⚠️ ¿Eliminar TODOS los registros de ${start} al ${end}?`)) return;
                 
                 try {
-                    // ✅ CORREGIDO: usando la tabla correcta horas_extra_registros
                     const { error } = await supabase
                         .from('horas_extra_registros')
                         .delete()
-                        .gte('fecha', start)
-                        .lte('fecha', end);
+                        .gte('created_at', start + 'T00:00:00')
+                        .lte('created_at', end + 'T23:59:59');
                     if (error) throw error;
                     mostrarMensaje('🗑️ Registros eliminados', 'info');
                     cargarRegistros();
                 } catch (error) {
-                    console.error('❌ Error:', error);
                     mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             });
 
-            // ------------------------------------------------------------
-            // EXPORTAR CSV
-            // ------------------------------------------------------------
+            // ===== EXPORTAR CSV =====
             document.getElementById('btnExportarCSV').addEventListener('click', async function() {
                 const mes = parseInt(document.getElementById('mesSelector').value);
                 const anio = parseInt(document.getElementById('anioSelector').value);
@@ -572,13 +505,12 @@
                 const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
                 
                 try {
-                    // ✅ CORREGIDO: usando la tabla correcta horas_extra_registros
                     const { data, error } = await supabase
                         .from('horas_extra_registros')
                         .select('*')
-                        .gte('fecha', start)
-                        .lte('fecha', end)
-                        .order('fecha', { ascending: true });
+                        .gte('created_at', start + 'T00:00:00')
+                        .lte('created_at', end + 'T23:59:59')
+                        .order('created_at', { ascending: true });
                     if (error) throw error;
                     
                     if (!data || data.length === 0) {
@@ -601,30 +533,20 @@
                     link.click();
                     mostrarMensaje(`✅ CSV exportado (${data.length} registros)`, 'exito');
                 } catch (error) {
-                    console.error('❌ Error:', error);
                     mostrarMensaje('❌ Error: ' + error.message, 'error');
                 }
             });
 
-            // ------------------------------------------------------------
-            // ACTUALIZAR (botón)
-            // ------------------------------------------------------------
+            // ===== ACTUALIZAR =====
             document.getElementById('btnActualizar').addEventListener('click', function() {
                 this.textContent = '⏳...';
-                cargarRegistros().finally(() => {
-                    this.textContent = '🔄 Actualizar';
-                });
+                cargarRegistros().finally(() => { this.textContent = '🔄 Actualizar'; });
             });
 
-            // ------------------------------------------------------------
-            // CAMBIOS EN SELECTORES
-            // ------------------------------------------------------------
             document.getElementById('mesSelector').addEventListener('change', cargarRegistros);
             document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
 
-            // ------------------------------------------------------------
-            // MODAL FOTO
-            // ------------------------------------------------------------
+            // ===== MODAL FOTO =====
             window.abrirFoto = function(src) {
                 document.getElementById('fotoModalImg').src = src;
                 document.getElementById('fotoModal').classList.add('active');
@@ -634,9 +556,7 @@
             };
             document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
 
-            // ------------------------------------------------------------
-            // INICIALIZAR
-            // ------------------------------------------------------------
+            // ===== INICIALIZAR =====
             inicializarSelectores();
             cargarPersonal();
             cargarRegistros();
