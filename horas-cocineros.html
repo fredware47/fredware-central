@@ -421,8 +421,9 @@
 
                 try {
                     console.log('💾 Guardando registro...');
+                    // ✅ CORREGIDO: usando la tabla correcta horas_extra_registros
                     const { error } = await supabase
-                        .from('horas_registros')
+                        .from('horas_extra_registros')
                         .insert([{
                             nombre,
                             fecha,
