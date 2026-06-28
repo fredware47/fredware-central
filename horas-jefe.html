@@ -545,4 +545,71 @@
                     const { data, error } = await supabase
                         .from('horas_extra_registros')
                         .select('*')
-                        .gte('fecha', start
+                        .gte('fecha', start)
+                        .lte('fecha', end)
+                        .order('fecha', { ascending: true });
+                    if (error) throw error;
+                    
+                    if (!data || data.length === 0) {
+                        mostrarMensaje('No hay registros para exportar.', 'info');
+                        return;
+                    }
+                    
+                    let csv = 'Persona,Fecha,Hora Inicio,Hora Fin,Horas Extras,Comentarios\n';
+                    data.forEach(r => {
+                        const horas = calcularHoras(r.hora_inicio, r.hora_fin);
+                        const fecha = formatearFecha(r.fecha);
+                        const coment = (r.comentarios || '').replace(/,/g, ';').replace(/\n/g, ' ');
+                        csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio || ''},${r.hora_fin || ''},${horas.toFixed(2)},${coment}\n`;
+                    });
+                    
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `horas_extras_${mes}_${anio}.csv`;
+                    link.click();
+                    mostrarMensaje(`✅ CSV exportado (${data.length} registros)`, 'exito');
+                } catch (error) {
+                    mostrarMensaje('❌ Error: ' + error.message, 'error');
+                }
+            });
+
+            // ===== ACTUALIZAR =====
+            document.getElementById('btnActualizar').addEventListener('click', function() {
+                this.textContent = '⏳...';
+                cargarRegistros().finally(() => { this.textContent = '🔄 Actualizar'; });
+            });
+
+            document.getElementById('mesSelector').addEventListener('change', function() {
+                modoTodos = false;
+                cargarRegistros();
+            });
+            document.getElementById('anioSelector').addEventListener('change', function() {
+                modoTodos = false;
+                cargarRegistros();
+            });
+
+            // ===== MODAL FOTO =====
+            window.abrirFoto = function(src) {
+                document.getElementById('fotoModalImg').src = src;
+                document.getElementById('fotoModal').classList.add('active');
+            };
+            window.cerrarFoto = function() {
+                document.getElementById('fotoModal').classList.remove('active');
+            };
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
+
+            // ===== INICIALIZAR =====
+            inicializarSelectores();
+            cargarPersonal();
+            
+            modoTodos = false;
+            cargarRegistros();
+
+            console.log('✅ Panel de jefe inicializado correctamente');
+            console.log('📌 IMPORTANTE: Ahora filtra por la columna "fecha" (la que elige el cocinero)');
+
+        })();
+    </script>
+</body>
+</html>
