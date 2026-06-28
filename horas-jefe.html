@@ -379,7 +379,7 @@
                             .lte('fecha', end);
                     }
 
-                    // ✅ CORREGIDO: Ordenar por "fecha"
+                    // Ordenar por fecha
                     const { data: result, error } = await query.order('fecha', { ascending: false });
 
                     if (error) throw error;
