@@ -165,6 +165,10 @@
             const SUPABASE_ANON_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+            // ✅ AHORA USA EL MISMO SISTEMA QUE EL COCINERO
+            const TABLA_REGISTROS = 'horas_extra_registros';
+            const TABLA_PERSONAL = 'horas_extra_personal';
+
             const NOMBRES_POR_DEFECTO = [
                 'Antonio', 'Remedios', 'Rafael', 'Andrea', 'Ines',
                 'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
@@ -186,11 +190,11 @@
                 setTimeout(() => { box.className = 'error-box'; }, 8000);
             }
 
-            // ===== PERSONAL =====
+            // ===== PERSONAL (USA TABLA CORRECTA) =====
             async function cargarPersonal() {
                 try {
                     const { data, error } = await supabase
-                        .from('horas_personal')
+                        .from(TABLA_PERSONAL)
                         .select('nombre')
                         .order('nombre');
                     if (error) throw error;
@@ -216,7 +220,7 @@
                 if (!confirm(`¿Eliminar a "${nombre}" de la lista?`)) return;
                 try {
                     const { error } = await supabase
-                        .from('horas_personal')
+                        .from(TABLA_PERSONAL)
                         .delete()
                         .eq('nombre', nombre);
                     if (error) throw error;
@@ -233,7 +237,7 @@
                 if (!nombre) { mostrarMensaje('Escribe un nombre.', 'error'); return; }
                 try {
                     const { error } = await supabase
-                        .from('horas_personal')
+                        .from(TABLA_PERSONAL)
                         .insert([{ nombre }]);
                     if (error) throw error;
                     input.value = '';
@@ -247,9 +251,9 @@
             document.getElementById('btnInsertarNombres').addEventListener('click', async function() {
                 if (!confirm(`¿Insertar todos los nombres (${NOMBRES_POR_DEFECTO.length})?`)) return;
                 try {
-                    await supabase.from('horas_personal').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    await supabase.from(TABLA_PERSONAL).delete().neq('id', '00000000-0000-0000-0000-000000000000');
                     const inserts = NOMBRES_POR_DEFECTO.map(nombre => ({ nombre }));
-                    const { error: insertError } = await supabase.from('horas_personal').insert(inserts);
+                    const { error: insertError } = await supabase.from(TABLA_PERSONAL).insert(inserts);
                     if (insertError) throw insertError;
                     await cargarPersonal();
                     mostrarMensaje(`✅ ${NOMBRES_POR_DEFECTO.length} nombres insertados`, 'exito');
@@ -261,7 +265,7 @@
             document.getElementById('btnEliminarTodosNombres').addEventListener('click', async function() {
                 if (!confirm('⚠️ ¿Eliminar TODOS los nombres?')) return;
                 try {
-                    await supabase.from('horas_personal').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    await supabase.from(TABLA_PERSONAL).delete().neq('id', '00000000-0000-0000-0000-000000000000');
                     await cargarPersonal();
                     mostrarMensaje('🗑️ Todos los nombres eliminados', 'info');
                 } catch (error) {
@@ -343,14 +347,14 @@
                 }
             }
 
-            // ===== CARGAR REGISTROS (CORREGIDO - USA horas_extra_registros) =====
+            // ===== CARGAR REGISTROS (USA TABLA CORRECTA) =====
             async function cargarRegistros() {
                 const debugDiv = document.getElementById('debugInfo');
                 const debugText = document.getElementById('debugText');
                 
                 try {
-                    // ✅ CORREGIDO: Usar la tabla correcta (horas_extra_registros)
-                    let query = supabase.from('horas_extra_registros').select('*');
+                    console.log(`📊 Usando tabla: ${TABLA_REGISTROS}`);
+                    let query = supabase.from(TABLA_REGISTROS).select('*');
 
                     if (modoTodos) {
                         console.log('🔍 Cargando TODOS los registros...');
@@ -493,7 +497,7 @@
                 if (!confirm('¿Eliminar este registro?')) return;
                 try {
                     const { error } = await supabase
-                        .from('horas_extra_registros')
+                        .from(TABLA_REGISTROS)
                         .delete()
                         .eq('id', id);
                     if (error) throw error;
@@ -517,7 +521,7 @@
                 
                 try {
                     const { error } = await supabase
-                        .from('horas_extra_registros')
+                        .from(TABLA_REGISTROS)
                         .delete()
                         .gte('fecha', start)
                         .lte('fecha', end);
@@ -540,7 +544,7 @@
                 
                 try {
                     const { data, error } = await supabase
-                        .from('horas_extra_registros')
+                        .from(TABLA_REGISTROS)
                         .select('*')
                         .gte('fecha', start)
                         .lte('fecha', end)
@@ -604,7 +608,8 @@
             cargarRegistros();
 
             console.log('✅ Panel de jefe inicializado correctamente');
-            console.log('📌 IMPORTANTE: Ahora busca en horas_extra_registros (la tabla correcta)');
+            console.log(`📌 Usando tabla: ${TABLA_REGISTROS}`);
+            console.log(`📌 Usando personal: ${TABLA_PERSONAL}`);
 
         })();
     </script>
