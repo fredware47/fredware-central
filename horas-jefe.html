@@ -27,6 +27,8 @@
         .btn-sm { padding: 4px 12px; font-size: 0.75rem; }
         .btn-hoy { background: #10b981; color: white; }
         .btn-hoy:hover { background: #059669; }
+        .btn-todos { background: #8b5cf6; color: white; }
+        .btn-todos:hover { background: #7c3aed; }
         .btn-recargar { background: #8b5cf6; color: white; }
         .btn-recargar:hover { background: #7c3aed; }
         .resumen-personas { background: #f8fafc; border-radius: 14px; padding: 16px; margin-top: 12px; }
@@ -68,14 +70,14 @@
         .registros-header .total-registros { font-size: 0.9rem; color: #64748b; }
         .input-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         .input-group input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; }
+        .debug-info { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 0.8rem; color: #92400e; display: none; }
+        .debug-info.show { display: block; }
         @media (max-width: 600px) {
             .container { padding: 16px; }
             .registro-info { gap: 6px; }
             .filtros select, .filtros input { font-size: 0.85rem; padding: 6px 10px; }
             .btn { padding: 6px 14px; font-size: 0.8rem; }
         }
-        .debug-info { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 0.8rem; color: #92400e; display: none; }
-        .debug-info.show { display: block; }
     </style>
 </head>
 <body>
@@ -96,17 +98,15 @@
             <label>Año: <select id="anioSelector"></select></label>
             <button id="btnActualizar" class="btn btn-primary">🔄 Actualizar</button>
             <button id="btnHoy" class="btn btn-hoy">📅 Hoy</button>
-            <button id="btnTodos" class="btn btn-outline" style="background: #8b5cf6; color: white;">📋 Todos</button>
+            <button id="btnTodos" class="btn btn-todos">📋 Todos</button>
             <button id="btnExportarCSV" class="btn btn-outline">⬇️ CSV</button>
             <button id="btnEliminarTodos" class="btn btn-danger">🗑️ Eliminar mes</button>
         </div>
 
-        <!-- ===== DEBUG ===== -->
         <div id="debugInfo" class="debug-info">
             <strong>🔍 Depuración:</strong> <span id="debugText">Cargando...</span>
         </div>
 
-        <!-- Estadísticas -->
         <div class="stats-grid" id="statsGrid">
             <div class="stat-card"><div class="numero" id="totalRegistros">0</div><div class="label">Registros</div></div>
             <div class="stat-card"><div class="numero" id="totalPersonas">0</div><div class="label">Personas</div></div>
@@ -124,7 +124,6 @@
             <div class="total-general" id="totalGeneral">Total general: 0.0 h</div>
         </div>
 
-        <!-- ===== GESTIÓN DE PERSONAL ===== -->
         <div class="admin-personal">
             <div style="font-weight: 600; margin-bottom: 8px;">👥 Gestionar personal (cocineros y picas)</div>
             <div class="input-group">
@@ -153,7 +152,6 @@
         </div>
     </div>
 
-    <!-- Modal para fotos -->
     <div id="fotoModal" class="foto-modal" onclick="cerrarFoto()">
         <span class="cerrar-modal">&times;</span>
         <img id="fotoModalImg" src="" alt="Foto ampliada">
@@ -172,7 +170,6 @@
                 'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
             ];
 
-            // Variable para saber si estamos en modo "todos"
             let modoTodos = false;
 
             function mostrarMensaje(texto, tipo) {
@@ -346,22 +343,19 @@
                 }
             }
 
-            // ===== CARGAR REGISTROS (CORREGIDO) =====
+            // ===== CARGAR REGISTROS (CORREGIDO - FILTRA POR "fecha") =====
             async function cargarRegistros() {
                 const debugDiv = document.getElementById('debugInfo');
                 const debugText = document.getElementById('debugText');
                 
                 try {
-                    let data = [];
                     let query = supabase.from('horas_extra_registros').select('*');
 
                     if (modoTodos) {
-                        // ✅ SIN FILTRO - muestra todos
                         console.log('🔍 Cargando TODOS los registros...');
                         debugDiv.className = 'debug-info show';
                         debugText.textContent = 'Mostrando TODOS los registros (sin filtro)';
                     } else {
-                        // Con filtro de mes
                         const mes = parseInt(document.getElementById('mesSelector').value);
                         const anio = parseInt(document.getElementById('anioSelector').value);
                         
@@ -375,22 +369,22 @@
                         const ultimoDia = new Date(anio, mes, 0).getDate();
                         const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
 
-                        console.log(`🔍 Buscando registros entre: ${start} y ${end}`);
+                        console.log(`🔍 Buscando registros con FECHA entre: ${start} y ${end}`);
                         debugDiv.className = 'debug-info show';
-                        debugText.textContent = `Filtrando por: ${start} → ${end}`;
+                        debugText.textContent = `Filtrando por FECHA: ${start} → ${end}`;
 
+                        // ✅ CORREGIDO: Filtrar por "fecha" (la que elige el cocinero)
                         query = query
-                            .gte('created_at', start + 'T00:00:00')
-                            .lte('created_at', end + 'T23:59:59');
+                            .gte('fecha', start)
+                            .lte('fecha', end);
                     }
 
-                    // Ordenar por fecha de creación (más reciente primero)
-                    const { data: result, error } = await query.order('created_at', { ascending: false });
+                    // ✅ CORREGIDO: Ordenar por "fecha"
+                    const { data: result, error } = await query.order('fecha', { ascending: false });
 
                     if (error) throw error;
 
-                    data = result || [];
-
+                    const data = result || [];
                     console.log(`📊 Registros encontrados: ${data.length}`);
                     debugText.textContent += ` | Encontrados: ${data.length} registros`;
 
@@ -430,14 +424,11 @@
                             comentHtml = `<span class="comentario">💬 ${reg.comentarios}</span>`;
                         }
 
-                        const creado = reg.created_at ? new Date(reg.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-
                         html += `
                             <div class="registro-item">
                                 <div class="registro-info">
                                     <span class="nombre">${nombre}</span>
                                     <span class="fecha">📅 ${fecha}</span>
-                                    <span style="font-size:0.65rem; color:#94a3b8;">🕐 ${creado}</span>
                                     <span>⏱️ ${reg.hora_inicio || '--:--'} → ${reg.hora_fin || '--:--'}</span>
                                     <span class="horas">${horas.toFixed(2)} h</span>
                                     ${comentHtml}
@@ -486,7 +477,6 @@
                     document.getElementById('totalGeneral').textContent = `Total general: ${totalGeneral.toFixed(2)} h`;
                     document.getElementById('totalPersonas').textContent = personasOrdenadas.length;
 
-                    // Ocultar debug después de 5 segundos
                     setTimeout(() => {
                         debugDiv.className = 'debug-info';
                     }, 5000);
@@ -524,14 +514,15 @@
                 const start = `${anio}-${mesStr}-01`;
                 const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
                 
-                if (!confirm(`⚠️ ¿Eliminar TODOS los registros de ${start} al ${end}?`)) return;
+                if (!confirm(`⚠️ ¿Eliminar TODOS los registros con FECHA entre ${start} y ${end}?`)) return;
                 
                 try {
+                    // ✅ CORREGIDO: Filtrar por "fecha"
                     const { error } = await supabase
                         .from('horas_extra_registros')
                         .delete()
-                        .gte('created_at', start + 'T00:00:00')
-                        .lte('created_at', end + 'T23:59:59');
+                        .gte('fecha', start)
+                        .lte('fecha', end);
                     if (error) throw error;
                     mostrarMensaje('🗑️ Registros eliminados', 'info');
                     cargarRegistros();
@@ -550,75 +541,8 @@
                 const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
                 
                 try {
+                    // ✅ CORREGIDO: Filtrar por "fecha"
                     const { data, error } = await supabase
                         .from('horas_extra_registros')
                         .select('*')
-                        .gte('created_at', start + 'T00:00:00')
-                        .lte('created_at', end + 'T23:59:59')
-                        .order('created_at', { ascending: true });
-                    if (error) throw error;
-                    
-                    if (!data || data.length === 0) {
-                        mostrarMensaje('No hay registros para exportar.', 'info');
-                        return;
-                    }
-                    
-                    let csv = 'Persona,Fecha,Hora Inicio,Hora Fin,Horas Extras,Comentarios,Creado\n';
-                    data.forEach(r => {
-                        const horas = calcularHoras(r.hora_inicio, r.hora_fin);
-                        const fecha = formatearFecha(r.fecha);
-                        const coment = (r.comentarios || '').replace(/,/g, ';').replace(/\n/g, ' ');
-                        const creado = r.created_at ? new Date(r.created_at).toLocaleDateString('es-ES') : '';
-                        csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio || ''},${r.hora_fin || ''},${horas.toFixed(2)},${coment},${creado}\n`;
-                    });
-                    
-                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = `horas_extras_${mes}_${anio}.csv`;
-                    link.click();
-                    mostrarMensaje(`✅ CSV exportado (${data.length} registros)`, 'exito');
-                } catch (error) {
-                    mostrarMensaje('❌ Error: ' + error.message, 'error');
-                }
-            });
-
-            // ===== ACTUALIZAR =====
-            document.getElementById('btnActualizar').addEventListener('click', function() {
-                this.textContent = '⏳...';
-                cargarRegistros().finally(() => { this.textContent = '🔄 Actualizar'; });
-            });
-
-            document.getElementById('mesSelector').addEventListener('change', function() {
-                modoTodos = false;
-                cargarRegistros();
-            });
-            document.getElementById('anioSelector').addEventListener('change', function() {
-                modoTodos = false;
-                cargarRegistros();
-            });
-
-            // ===== MODAL FOTO =====
-            window.abrirFoto = function(src) {
-                document.getElementById('fotoModalImg').src = src;
-                document.getElementById('fotoModal').classList.add('active');
-            };
-            window.cerrarFoto = function() {
-                document.getElementById('fotoModal').classList.remove('active');
-            };
-            document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarFoto(); });
-
-            // ===== INICIALIZAR =====
-            inicializarSelectores();
-            cargarPersonal();
-            
-            // Cargar registros con filtro del mes actual
-            modoTodos = false;
-            cargarRegistros();
-
-            console.log('✅ Panel de jefe inicializado correctamente');
-
-        })();
-    </script>
-</body>
-</html>
+                        .gte('fecha', start
