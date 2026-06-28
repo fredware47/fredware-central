@@ -74,6 +74,8 @@
             .filtros select, .filtros input { font-size: 0.85rem; padding: 6px 10px; }
             .btn { padding: 6px 14px; font-size: 0.8rem; }
         }
+        .debug-info { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 0.8rem; color: #92400e; display: none; }
+        .debug-info.show { display: block; }
     </style>
 </head>
 <body>
@@ -94,8 +96,14 @@
             <label>Año: <select id="anioSelector"></select></label>
             <button id="btnActualizar" class="btn btn-primary">🔄 Actualizar</button>
             <button id="btnHoy" class="btn btn-hoy">📅 Hoy</button>
+            <button id="btnTodos" class="btn btn-outline" style="background: #8b5cf6; color: white;">📋 Todos</button>
             <button id="btnExportarCSV" class="btn btn-outline">⬇️ CSV</button>
             <button id="btnEliminarTodos" class="btn btn-danger">🗑️ Eliminar mes</button>
+        </div>
+
+        <!-- ===== DEBUG ===== -->
+        <div id="debugInfo" class="debug-info">
+            <strong>🔍 Depuración:</strong> <span id="debugText">Cargando...</span>
         </div>
 
         <!-- Estadísticas -->
@@ -163,6 +171,9 @@
                 'Antonio', 'Remedios', 'Rafael', 'Andrea', 'Ines',
                 'Ignacio', 'Leticia', 'Cristian', 'Daniel', 'Francisco'
             ];
+
+            // Variable para saber si estamos en modo "todos"
+            let modoTodos = false;
 
             function mostrarMensaje(texto, tipo) {
                 const div = document.getElementById('mensajeFlotante');
@@ -303,7 +314,15 @@
                 const ahora = new Date();
                 document.getElementById('mesSelector').value = ahora.getMonth() + 1;
                 document.getElementById('anioSelector').value = ahora.getFullYear();
+                modoTodos = false;
                 mostrarMensaje('📅 Mostrando mes actual', 'info');
+                cargarRegistros();
+            });
+
+            // ===== BOTÓN TODOS =====
+            document.getElementById('btnTodos').addEventListener('click', function() {
+                modoTodos = true;
+                mostrarMensaje('📋 Mostrando TODOS los registros', 'info');
                 cargarRegistros();
             });
 
@@ -329,37 +348,55 @@
 
             // ===== CARGAR REGISTROS (CORREGIDO) =====
             async function cargarRegistros() {
-                const mes = parseInt(document.getElementById('mesSelector').value);
-                const anio = parseInt(document.getElementById('anioSelector').value);
+                const debugDiv = document.getElementById('debugInfo');
+                const debugText = document.getElementById('debugText');
                 
-                if (!mes || !anio) {
-                    mostrarError('Selecciona un mes y año válidos');
-                    return;
-                }
-
-                const mesStr = String(mes).padStart(2, '0');
-                const start = `${anio}-${mesStr}-01`;
-                const ultimoDia = new Date(anio, mes, 0).getDate();
-                const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
-
-                console.log('🔍 Buscando registros entre:', start, 'y', end);
-
                 try {
-                    // ✅ CORREGIDO: usando created_at en lugar de fecha
-                    const { data, error } = await supabase
-                        .from('horas_extra_registros')
-                        .select('*')
-                        .gte('created_at', start + 'T00:00:00')
-                        .lte('created_at', end + 'T23:59:59')
-                        .order('created_at', { ascending: false });
+                    let data = [];
+                    let query = supabase.from('horas_extra_registros').select('*');
+
+                    if (modoTodos) {
+                        // ✅ SIN FILTRO - muestra todos
+                        console.log('🔍 Cargando TODOS los registros...');
+                        debugDiv.className = 'debug-info show';
+                        debugText.textContent = 'Mostrando TODOS los registros (sin filtro)';
+                    } else {
+                        // Con filtro de mes
+                        const mes = parseInt(document.getElementById('mesSelector').value);
+                        const anio = parseInt(document.getElementById('anioSelector').value);
+                        
+                        if (!mes || !anio) {
+                            mostrarError('Selecciona un mes y año válidos');
+                            return;
+                        }
+
+                        const mesStr = String(mes).padStart(2, '0');
+                        const start = `${anio}-${mesStr}-01`;
+                        const ultimoDia = new Date(anio, mes, 0).getDate();
+                        const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
+
+                        console.log(`🔍 Buscando registros entre: ${start} y ${end}`);
+                        debugDiv.className = 'debug-info show';
+                        debugText.textContent = `Filtrando por: ${start} → ${end}`;
+
+                        query = query
+                            .gte('created_at', start + 'T00:00:00')
+                            .lte('created_at', end + 'T23:59:59');
+                    }
+
+                    // Ordenar por fecha de creación (más reciente primero)
+                    const { data: result, error } = await query.order('created_at', { ascending: false });
 
                     if (error) throw error;
 
-                    console.log(`📊 Registros encontrados: ${data ? data.length : 0}`);
+                    data = result || [];
 
-                    if (!data || data.length === 0) {
+                    console.log(`📊 Registros encontrados: ${data.length}`);
+                    debugText.textContent += ` | Encontrados: ${data.length} registros`;
+
+                    if (data.length === 0) {
                         document.getElementById('listaRegistros').innerHTML = 
-                            '<div class="empty-state">📭 No hay registros para este mes</div>';
+                            '<div class="empty-state">📭 No hay registros' + (modoTodos ? ' en la base de datos' : ' para este mes') + '</div>';
                         document.getElementById('cuerpoResumen').innerHTML = 
                             '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Sin datos</td></tr>';
                         document.getElementById('totalGeneral').textContent = 'Total general: 0.0 h';
@@ -393,11 +430,14 @@
                             comentHtml = `<span class="comentario">💬 ${reg.comentarios}</span>`;
                         }
 
+                        const creado = reg.created_at ? new Date(reg.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+
                         html += `
                             <div class="registro-item">
                                 <div class="registro-info">
                                     <span class="nombre">${nombre}</span>
                                     <span class="fecha">📅 ${fecha}</span>
+                                    <span style="font-size:0.65rem; color:#94a3b8;">🕐 ${creado}</span>
                                     <span>⏱️ ${reg.hora_inicio || '--:--'} → ${reg.hora_fin || '--:--'}</span>
                                     <span class="horas">${horas.toFixed(2)} h</span>
                                     ${comentHtml}
@@ -445,6 +485,11 @@
                     tbody.innerHTML = htmlResumen;
                     document.getElementById('totalGeneral').textContent = `Total general: ${totalGeneral.toFixed(2)} h`;
                     document.getElementById('totalPersonas').textContent = personasOrdenadas.length;
+
+                    // Ocultar debug después de 5 segundos
+                    setTimeout(() => {
+                        debugDiv.className = 'debug-info';
+                    }, 5000);
 
                 } catch (error) {
                     console.error('❌ Error al cargar registros:', error);
@@ -518,12 +563,13 @@
                         return;
                     }
                     
-                    let csv = 'Persona,Fecha,Hora Inicio,Hora Fin,Horas Extras,Comentarios\n';
+                    let csv = 'Persona,Fecha,Hora Inicio,Hora Fin,Horas Extras,Comentarios,Creado\n';
                     data.forEach(r => {
                         const horas = calcularHoras(r.hora_inicio, r.hora_fin);
                         const fecha = formatearFecha(r.fecha);
                         const coment = (r.comentarios || '').replace(/,/g, ';').replace(/\n/g, ' ');
-                        csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio || ''},${r.hora_fin || ''},${horas.toFixed(2)},${coment}\n`;
+                        const creado = r.created_at ? new Date(r.created_at).toLocaleDateString('es-ES') : '';
+                        csv += `${r.nombre || 'Anónimo'},${fecha},${r.hora_inicio || ''},${r.hora_fin || ''},${horas.toFixed(2)},${coment},${creado}\n`;
                     });
                     
                     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -543,8 +589,14 @@
                 cargarRegistros().finally(() => { this.textContent = '🔄 Actualizar'; });
             });
 
-            document.getElementById('mesSelector').addEventListener('change', cargarRegistros);
-            document.getElementById('anioSelector').addEventListener('change', cargarRegistros);
+            document.getElementById('mesSelector').addEventListener('change', function() {
+                modoTodos = false;
+                cargarRegistros();
+            });
+            document.getElementById('anioSelector').addEventListener('change', function() {
+                modoTodos = false;
+                cargarRegistros();
+            });
 
             // ===== MODAL FOTO =====
             window.abrirFoto = function(src) {
@@ -559,6 +611,9 @@
             // ===== INICIALIZAR =====
             inicializarSelectores();
             cargarPersonal();
+            
+            // Cargar registros con filtro del mes actual
+            modoTodos = false;
             cargarRegistros();
 
             console.log('✅ Panel de jefe inicializado correctamente');
