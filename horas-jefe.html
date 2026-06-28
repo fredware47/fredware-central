@@ -404,8 +404,9 @@
                 const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
 
                 try {
+                    // ✅ CORREGIDO: usando la tabla correcta horas_extra_registros
                     const { data, error } = await supabase
-                        .from('horas_registros')
+                        .from('horas_extra_registros')
                         .select('*')
                         .gte('fecha', start)
                         .lte('fecha', end)
@@ -516,8 +517,9 @@
             window.eliminarRegistro = async function(id) {
                 if (!confirm('¿Eliminar este registro?')) return;
                 try {
+                    // ✅ CORREGIDO: usando la tabla correcta horas_extra_registros
                     const { error } = await supabase
-                        .from('horas_registros')
+                        .from('horas_extra_registros')
                         .delete()
                         .eq('id', id);
                     if (error) throw error;
@@ -543,8 +545,9 @@
                 if (!confirm(`⚠️ ¿Eliminar TODOS los registros de ${start} al ${end}?`)) return;
                 
                 try {
+                    // ✅ CORREGIDO: usando la tabla correcta horas_extra_registros
                     const { error } = await supabase
-                        .from('horas_registros')
+                        .from('horas_extra_registros')
                         .delete()
                         .gte('fecha', start)
                         .lte('fecha', end);
@@ -569,8 +572,9 @@
                 const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
                 
                 try {
+                    // ✅ CORREGIDO: usando la tabla correcta horas_extra_registros
                     const { data, error } = await supabase
-                        .from('horas_registros')
+                        .from('horas_extra_registros')
                         .select('*')
                         .gte('fecha', start)
                         .lte('fecha', end)
