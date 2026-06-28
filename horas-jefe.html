@@ -343,12 +343,13 @@
                 }
             }
 
-            // ===== CARGAR REGISTROS (CORREGIDO - FILTRA POR "fecha") =====
+            // ===== CARGAR REGISTROS (CORREGIDO - USA horas_extra_registros) =====
             async function cargarRegistros() {
                 const debugDiv = document.getElementById('debugInfo');
                 const debugText = document.getElementById('debugText');
                 
                 try {
+                    // ✅ CORREGIDO: Usar la tabla correcta (horas_extra_registros)
                     let query = supabase.from('horas_extra_registros').select('*');
 
                     if (modoTodos) {
@@ -373,13 +374,11 @@
                         debugDiv.className = 'debug-info show';
                         debugText.textContent = `Filtrando por FECHA: ${start} → ${end}`;
 
-                        // ✅ CORREGIDO: Filtrar por "fecha" (la que elige el cocinero)
                         query = query
                             .gte('fecha', start)
                             .lte('fecha', end);
                     }
 
-                    // Ordenar por fecha
                     const { data: result, error } = await query.order('fecha', { ascending: false });
 
                     if (error) throw error;
@@ -517,7 +516,6 @@
                 if (!confirm(`⚠️ ¿Eliminar TODOS los registros con FECHA entre ${start} y ${end}?`)) return;
                 
                 try {
-                    // ✅ CORREGIDO: Filtrar por "fecha"
                     const { error } = await supabase
                         .from('horas_extra_registros')
                         .delete()
@@ -541,7 +539,6 @@
                 const end = `${anio}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
                 
                 try {
-                    // ✅ CORREGIDO: Filtrar por "fecha"
                     const { data, error } = await supabase
                         .from('horas_extra_registros')
                         .select('*')
@@ -607,7 +604,7 @@
             cargarRegistros();
 
             console.log('✅ Panel de jefe inicializado correctamente');
-            console.log('📌 IMPORTANTE: Ahora filtra por la columna "fecha" (la que elige el cocinero)');
+            console.log('📌 IMPORTANTE: Ahora busca en horas_extra_registros (la tabla correcta)');
 
         })();
     </script>
