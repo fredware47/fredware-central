@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Horas Extras - Cocina</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 24px;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .time-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .time-group label {
+            font-weight: 400;
+            font-size: 12px;
+            color: #888;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 5px;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+            font-weight: 500;
+        }
+        .message.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .foto-input {
+            border: 2px dashed #e0e0e0;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: border-color 0.3s, background 0.3s;
+        }
+        .foto-input:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        #fotoPreview {
+            max-width: 100%;
+            margin-top: 10px;
+            border-radius: 10px;
+            max-height: 200px;
+            object-fit: cover;
+        }
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+        .required {
+            color: #e74c3c;
+        }
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            .time-group {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍳 Registro de Horas Extras</h1>
+        <p class="subtitle">Registra tus horas extra de trabajo en la cocina</p>
+
+        <form id="horasExtraForm" novalidate>
+            <div class="form-group">
+                <label for="nombre">👤 Tu Nombre <span class="required">*</span></label>
+                <input type="text" id="nombre" placeholder="Ej: Juan Pérez" required autocomplete="name">
+            </div>
+
+            <div class="form-group">
+                <label for="fecha">📅 Fecha <span class="required">*</span></label>
+                <input type="date" id="fecha" required>
+            </div>
+
+            <div class="form-group">
+                <label>⏰ Horario <span class="required">*</span></label>
+                <div class="time-group">
+                    <div>
+                        <label for="horaInicio">Hora de inicio</label>
+                        <input type="time" id="horaInicio" required>
+                    </div>
+                    <div>
+                        <label for="horaFin">Hora de fin</label>
+                        <input type="time" id="horaFin" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="comentarios">📝 Comentarios <span style="font-weight:400;color:#999;">(opcional)</span></label>
+                <textarea id="comentarios" placeholder="Describe las tareas realizadas..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="foto">📸 Foto <span style="font-weight:400;color:#999;">(opcional)</span></label>
+                <div class="foto-input" id="fotoUpload">
+                    <p>📷 Haz clic para seleccionar una foto</p>
+                    <p style="font-size:12px;color:#999;margin-top:5px;">JPG, PNG, GIF - Máx 5MB</p>
+                    <input type="file" id="foto" accept="image/*" style="display:none;">
+                    <img id="fotoPreview" style="display:none;">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">
+                ✅ Registrar Horas Extra
+            </button>
+        </form>
+
+        <div id="message" class="message"></div>
+        <div id="loading" class="loading" style="display:none;">⏳ Enviando registro...</div>
+        <div class="footer">Todos los registros son almacenados de forma segura</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.10/dist/umd/supabase.min.js">
+    </script>
+    <script>
+        // ✅ CONFIGURACIÓN DE SUPABASE
+        const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
+
+        // Crear cliente de Supabase
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Configurar fecha por defecto (hoy)
+        document.addEventListener('DOMContentLoaded', function() {
+            const hoy = new Date();
+            const year = hoy.getFullYear();
+            const month = String(hoy.getMonth() + 1).padStart(2, '0');
+            const day = String(hoy.getDate()).padStart(2, '0');
+            document.getElementById('fecha').value = `${year}-${month}-${day}`;
+        });
+
+        // Manejar carga de foto
+        const fotoUpload = document.getElementById('fotoUpload');
+        const fotoInput = document.getElementById('foto');
+        const fotoPreview = document.getElementById('fotoPreview');
+
+        fotoUpload.addEventListener('click', () => {
+            fotoInput.click();
+        });
+
+        fotoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Validar tamaño (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('❌ La foto es demasiado grande. Máximo 5MB.');
+                    fotoInput.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    fotoPreview.src = e.target.result;
+                    fotoPreview.style.display = 'block';
+                    fotoPreview.style.maxWidth = '100%';
+                    fotoPreview.style.marginTop = '10px';
+                    fotoPreview.style.borderRadius = '10px';
+                    fotoPreview.style.maxHeight = '200px';
+                    fotoPreview.style.objectFit = 'cover';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Manejar envío del formulario
+        document.getElementById('horasExtraForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const messageDiv = document.getElementById('message');
+            const loadingDiv = document.getElementById('loading');
+
+            // Obtener datos del formulario
+            const nombre = document.getElementById('nombre').value.trim();
+            const fecha = document.getElementById('fecha').value;
+            const horaInicio = document.getElementById('horaInicio').value;
+            const horaFin = document.getElementById('horaFin').value;
+            const comentarios = document.getElementById('comentarios').value.trim();
+            const fotoFile = document.getElementById('foto').files[0];
+
+            // Validaciones
+            if (!nombre) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '⚠️ Por favor, ingresa tu nombre.';
+                messageDiv.style.display = 'block';
+                document.getElementById('nombre').focus();
+                return;
+            }
+
+            if (!fecha) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '⚠️ Por favor, selecciona una fecha.';
+                messageDiv.style.display = 'block';
+                document.getElementById('fecha').focus();
+                return;
+            }
+
+            if (!horaInicio || !horaFin) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '⚠️ Por favor, completa las horas de inicio y fin.';
+                messageDiv.style.display = 'block';
+                return;
+            }
+
+            // Validar que hora inicio sea menor que hora fin
+            if (horaInicio >= horaFin) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '⚠️ La hora de inicio debe ser menor que la hora de fin.';
+                messageDiv.style.display = 'block';
+                return;
+            }
+
+            // Deshabilitar botón
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Registrando...';
+            loadingDiv.style.display = 'block';
+            messageDiv.style.display = 'none';
+
+            try {
+                let fotoUrl = null;
+
+                // Subir foto si existe
+                if (fotoFile) {
+                    const fileExt = fotoFile.name.split('.').pop();
+                    const timestamp = Date.now();
+                    const nombreLimpio = nombre.replace(/\s/g, '_').toLowerCase();
+                    const fileName = `${timestamp}_${nombreLimpio}.${fileExt}`;
+
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('horas-extra-fotos')
+                        .upload(fileName, fotoFile);
+
+                    if (uploadError) {
+                        console.warn('Error al subir foto (continuando sin foto):', uploadError.message);
+                    } else {
+                        const { data: urlData } = supabase.storage
+                            .from('horas-extra-fotos')
+                            .getPublicUrl(fileName);
+                        fotoUrl = urlData.publicUrl;
+                    }
+                }
+
+                // Preparar datos para insertar
+                const registroData = {
+                    nombre: nombre,
+                    fecha: fecha,
+                    hora_inicio: horaInicio,
+                    hora_fin: horaFin,
+                    comentarios: comentarios || null,
+                    foto_url: fotoUrl,
+                    created_at: new Date().toISOString()
+                };
+
+                // Insertar en Supabase
+                const { data, error } = await supabase
+                    .from('horas_extra_registros')
+                    .insert([registroData])
+                    .select();
+
+                if (error) {
+                    throw new Error(error.message);
+                }
+
+                // Éxito
+                messageDiv.className = 'message success';
+                messageDiv.textContent = '✅ ¡Horas extra registradas exitosamente!';
+                messageDiv.style.display = 'block';
+
+                // Resetear formulario (mantener nombre y fecha)
+                const nombreActual = document.getElementById('nombre').value;
+                document.getElementById('horaInicio').value = '';
+                document.getElementById('horaFin').value = '';
+                document.getElementById('comentarios').value = '';
+                fotoPreview.style.display = 'none';
+                fotoPreview.src = '';
+                document.getElementById('foto').value = '';
+                document.getElementById('nombre').value = nombreActual;
+
+                // Resetear fecha a hoy
+                const hoy = new Date();
+                const year = hoy.getFullYear();
+                const month = String(hoy.getMonth() + 1).padStart(2, '0');
+                const day = String(hoy.getDate()).padStart(2, '0');
+                document.getElementById('fecha').value = `${year}-${month}-${day}`;
+
+            } catch (error) {
+                console.error('Error:', error);
+                messageDiv.className = 'message error';
+                messageDiv.textContent = `❌ Error al registrar: ${error.message}`;
+                messageDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '✅ Registrar Horas Extra';
+                loadingDiv.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
