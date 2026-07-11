@@ -171,6 +171,18 @@
             background: #f8d7da;
             color: #721c24;
         }
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .info-box p {
+            font-size: 13px;
+            color: #555;
+            margin: 0;
+        }
         @media (max-width: 480px) {
             .container {
                 padding: 20px;
@@ -189,6 +201,11 @@
         
         <div style="text-align:center;margin-bottom:15px;">
             <span class="status-badge online" id="statusBadge">🟢 Conectado</span>
+        </div>
+
+        <div class="info-box">
+            <p>⏱️ Los minutos se acumulan automáticamente. <br>
+            <strong>60 minutos = 1 hora</strong> (ej: 30min + 45min = 1h 15min)</p>
         </div>
 
         <form id="horasExtraForm" novalidate>
@@ -214,6 +231,12 @@
                         <input type="time" id="horaFin" required>
                     </div>
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="minutosExtra">⏱️ Minutos extras <span class="required">*</span></label>
+                <input type="number" id="minutosExtra" placeholder="Ej: 30" min="1" max="1440" required>
+                <small style="color:#999;font-size:12px;">Ingresa los minutos que trabajaste de más (1-1440)</small>
             </div>
 
             <div class="form-group">
@@ -326,6 +349,7 @@
             const fecha = document.getElementById('fecha').value;
             const horaInicio = document.getElementById('horaInicio').value;
             const horaFin = document.getElementById('horaFin').value;
+            const minutosExtra = parseInt(document.getElementById('minutosExtra').value);
             const comentarios = document.getElementById('comentarios').value.trim();
             const fotoFile = document.getElementById('foto').files[0];
 
@@ -360,6 +384,14 @@
                 return;
             }
 
+            if (!minutosExtra || minutosExtra < 1 || minutosExtra > 1440) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '⚠️ Ingresa los minutos extras (1-1440).';
+                messageDiv.style.display = 'block';
+                document.getElementById('minutosExtra').focus();
+                return;
+            }
+
             submitBtn.disabled = true;
             submitBtn.textContent = '⏳ Registrando...';
             loadingDiv.style.display = 'block';
@@ -380,7 +412,6 @@
 
                     if (uploadError) {
                         console.warn('Error al subir foto:', uploadError.message);
-                        // Si es error de bucket, continuamos sin foto
                     } else {
                         const { data: urlData } = supabaseClient.storage
                             .from('horas-extra-fotos')
@@ -389,11 +420,13 @@
                     }
                 }
 
+                // ✅ Guardamos los minutos directamente
                 const registroData = {
                     nombre: nombre,
                     fecha: fecha,
                     hora_inicio: horaInicio,
                     hora_fin: horaFin,
+                    minutos_extra: minutosExtra,  // ✅ Campo nuevo
                     comentarios: comentarios || null,
                     foto_url: fotoUrl,
                     created_at: new Date().toISOString()
@@ -408,8 +441,6 @@
 
                 if (error) {
                     console.error('❌ Error de Supabase:', error);
-                    
-                    // Mensaje específico para error de RLS
                     if (error.message.includes('row-level security policy')) {
                         throw new Error('Error de permisos. El administrador debe configurar las políticas de seguridad en Supabase.');
                     }
@@ -419,13 +450,27 @@
                 console.log('✅ Registro exitoso:', data);
 
                 messageDiv.className = 'message success';
-                messageDiv.textContent = '✅ ¡Horas extra registradas exitosamente!';
+                
+                // Mostrar mensaje con el total acumulado
+                const horas = Math.floor(minutosExtra / 60);
+                const minutos = minutosExtra % 60;
+                let tiempoTexto = '';
+                if (horas > 0 && minutos > 0) {
+                    tiempoTexto = `${horas}h ${minutos}min`;
+                } else if (horas > 0) {
+                    tiempoTexto = `${horas}h`;
+                } else {
+                    tiempoTexto = `${minutos}min`;
+                }
+                
+                messageDiv.textContent = `✅ ¡${tiempoTexto} registrados exitosamente!`;
                 messageDiv.style.display = 'block';
 
                 // Resetear formulario
                 const nombreActual = document.getElementById('nombre').value;
                 document.getElementById('horaInicio').value = '';
                 document.getElementById('horaFin').value = '';
+                document.getElementById('minutosExtra').value = '';
                 document.getElementById('comentarios').value = '';
                 fotoPreview.style.display = 'none';
                 fotoPreview.src = '';

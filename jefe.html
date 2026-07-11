@@ -340,6 +340,10 @@
         .toast.success { background: #27ae60; }
         .toast.error { background: #e74c3c; }
         .toast.info { background: #3498db; }
+        .highlight-total {
+            background: #fff3cd;
+            font-weight: bold;
+        }
         @keyframes slideIn {
             from { transform: translateX(100px); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
@@ -399,8 +403,8 @@
                     <div class="label">📋 Total Registros</div>
                 </div>
                 <div class="stat-card">
-                    <div class="number" id="totalHoras">0h</div>
-                    <div class="label">⏱️ Total Horas</div>
+                    <div class="number" id="totalHoras">0h 0min</div>
+                    <div class="label">⏱️ Total Acumulado</div>
                 </div>
                 <div class="stat-card">
                     <div class="number" id="personasUnicas">0</div>
@@ -438,7 +442,7 @@
                             <th>📅 Fecha</th>
                             <th>⏰ Inicio</th>
                             <th>⏰ Fin</th>
-                            <th>⏱️ Total</th>
+                            <th>⏱️ Minutos</th>
                             <th>📝 Comentarios</th>
                             <th>📸 Foto</th>
                             <th>📅 Registro</th>
@@ -536,10 +540,11 @@
 
                 if (todosLosRegistros.length > 0) {
                     tbody.innerHTML = todosLosRegistros.map(registro => {
-                        // ✅ Asegurar que el ID existe y es válido
                         const idValido = registro.id || '';
                         const nombreEscapado = escapeHtml(registro.nombre);
                         const fechaFormateada = formatearFecha(registro.fecha);
+                        const minutos = registro.minutos_extra || 0;
+                        const tiempoTexto = formatearTiempo(minutos);
                         
                         return `
                             <tr data-id="${idValido}">
@@ -547,7 +552,7 @@
                                 <td>${fechaFormateada}</td>
                                 <td>${registro.hora_inicio}</td>
                                 <td>${registro.hora_fin}</td>
-                                <td><span class="total-horas-badge">${calcularHoras(registro.hora_inicio, registro.hora_fin)}h</span></td>
+                                <td><span class="total-horas-badge">${tiempoTexto}</span></td>
                                 <td>${escapeHtml(registro.comentarios) || '-'}</td>
                                 <td>${registro.foto_url ? `<img src="${registro.foto_url}" alt="Foto" class="foto-thumb" onclick="window.open('${registro.foto_url}', '_blank')" title="Haz clic para ampliar">` : '❌ No'}</td>
                                 <td>${formatearFechaHora(registro.created_at)}</td>
@@ -594,12 +599,23 @@
             }
         }
 
+        // ========== FORMATEAR TIEMPO ==========
+
+        function formatearTiempo(minutosTotales) {
+            const horas = Math.floor(minutosTotales / 60);
+            const minutos = minutosTotales % 60;
+            
+            if (horas === 0 && minutos === 0) return '0min';
+            if (horas === 0) return `${minutos}min`;
+            if (minutos === 0) return `${horas}h`;
+            return `${horas}h ${minutos}min`;
+        }
+
         // ========== ELIMINAR REGISTROS ==========
 
         function confirmarEliminar(id, nombre, fecha) {
             console.log('🗑️ Confirmando eliminación de:', { id, nombre, fecha });
             
-            // ✅ Validación más estricta del ID
             if (!id || id === 'null' || id === 'undefined' || id === '') {
                 mostrarToast('❌ Error: ID de registro inválido', 'error');
                 console.error('❌ ID inválido recibido:', id);
@@ -612,7 +628,6 @@
                 `¿Estás seguro de que quieres eliminar el registro de ${nombre} del ${formatearFecha(fecha)}?`;
             document.getElementById('modalConfirm').classList.add('active');
             
-            // ✅ Asignar el evento click con el ID capturado
             document.getElementById('btnConfirmDelete').onclick = function() {
                 ejecutarEliminar();
             };
@@ -642,10 +657,6 @@
 
             try {
                 if (modoEliminacion === 'single') {
-                    // ✅ ELIMINAR UN REGISTRO ESPECÍFICO
-                    console.log('🗑️ Eliminando registro ID:', registroAEliminar);
-                    
-                    // ✅ Verificar que tenemos un ID válido
                     if (!registroAEliminar || registroAEliminar === 'null' || registroAEliminar === '') {
                         throw new Error('ID de registro inválido para eliminar');
                     }
@@ -659,7 +670,6 @@
                     mostrarToast('✅ Registro eliminado correctamente', 'success');
 
                 } else if (modoEliminacion === 'all') {
-                    // ✅ ELIMINAR TODOS LOS REGISTROS
                     const ids = todosLosRegistros
                         .map(r => r.id)
                         .filter(id => id && id !== 'null' && id !== '');
@@ -669,8 +679,6 @@
                         return;
                     }
 
-                    console.log('🗑️ Eliminando todos los registros:', ids.length);
-                    
                     const { error } = await supabaseClient
                         .from('horas_extra_registros')
                         .delete()
@@ -680,10 +688,7 @@
                     mostrarToast(`✅ Se eliminaron ${ids.length} registros`, 'success');
                 }
 
-                // ✅ Limpiar la variable
                 registroAEliminar = null;
-                
-                // ✅ Recargar la tabla
                 await cargarRegistros();
 
             } catch (error) {
@@ -714,7 +719,7 @@
         function actualizarEstadisticas(registros) {
             if (!registros || registros.length === 0) {
                 document.getElementById('totalRegistros').textContent = '0';
-                document.getElementById('totalHoras').textContent = '0h';
+                document.getElementById('totalHoras').textContent = '0h 0min';
                 document.getElementById('personasUnicas').textContent = '0';
                 document.getElementById('registrosHoy').textContent = '0';
                 return;
@@ -722,10 +727,12 @@
 
             document.getElementById('totalRegistros').textContent = registros.length;
 
-            const totalHoras = registros.reduce((total, r) => {
-                return total + parseFloat(calcularHoras(r.hora_inicio, r.hora_fin));
+            // ✅ Calcular total de minutos
+            const totalMinutos = registros.reduce((total, r) => {
+                return total + (r.minutos_extra || 0);
             }, 0);
-            document.getElementById('totalHoras').textContent = totalHoras.toFixed(1) + 'h';
+            
+            document.getElementById('totalHoras').textContent = formatearTiempo(totalMinutos);
 
             const personasUnicas = new Set(registros.map(r => r.nombre));
             document.getElementById('personasUnicas').textContent = personasUnicas.size;
@@ -744,18 +751,6 @@
         }
 
         // ========== UTILIDADES ==========
-
-        function calcularHoras(inicio, fin) {
-            const [h1, m1] = inicio.split(':').map(Number);
-            const [h2, m2] = fin.split(':').map(Number);
-            let horas = h2 - h1;
-            let minutos = m2 - m1;
-            if (minutos < 0) {
-                horas--;
-                minutos += 60;
-            }
-            return (horas + minutos / 60).toFixed(1);
-        }
 
         function formatearFecha(fecha) {
             if (!fecha) return '-';
@@ -799,20 +794,22 @@
                 return;
             }
 
-            const headers = ['Nombre', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Total Horas', 'Comentarios', 'Foto URL',
-                'Fecha Registro'
-            ];
+            const headers = ['Nombre', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Minutos Extra', 'Tiempo Formateado', 'Comentarios', 'Foto URL', 'Fecha Registro'];
 
-            const rows = todosLosRegistros.map(r => [
-                r.nombre,
-                formatearFecha(r.fecha),
-                r.hora_inicio,
-                r.hora_fin,
-                calcularHoras(r.hora_inicio, r.hora_fin),
-                r.comentarios || '',
-                r.foto_url || '',
-                formatearFechaHora(r.created_at)
-            ]);
+            const rows = todosLosRegistros.map(r => {
+                const minutos = r.minutos_extra || 0;
+                return [
+                    r.nombre,
+                    formatearFecha(r.fecha),
+                    r.hora_inicio,
+                    r.hora_fin,
+                    minutos,
+                    formatearTiempo(minutos),
+                    r.comentarios || '',
+                    r.foto_url || '',
+                    formatearFechaHora(r.created_at)
+                ];
+            });
 
             let csv = headers.join(',') + '\n';
             rows.forEach(row => {
