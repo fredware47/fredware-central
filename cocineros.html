@@ -183,6 +183,16 @@
             color: #555;
             margin: 0;
         }
+        .tiempo-calculado {
+            background: #e8f0fe;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 5px;
+        }
         @media (max-width: 480px) {
             .container {
                 padding: 20px;
@@ -237,6 +247,7 @@
                 <label for="minutosExtra">⏱️ Minutos extras <span class="required">*</span></label>
                 <input type="number" id="minutosExtra" placeholder="Ej: 30" min="1" max="1440" required>
                 <small style="color:#999;font-size:12px;">Ingresa los minutos que trabajaste de más (1-1440)</small>
+                <div class="tiempo-calculado" id="tiempoCalculado">⏱️ 0 minutos</div>
             </div>
 
             <div class="form-group">
@@ -298,6 +309,27 @@
             const day = String(hoy.getDate()).padStart(2, '0');
             document.getElementById('fecha').value = `${year}-${month}-${day}`;
         });
+
+        // Mostrar tiempo calculado en tiempo real
+        document.getElementById('minutosExtra').addEventListener('input', function() {
+            const minutos = parseInt(this.value) || 0;
+            const tiempoDiv = document.getElementById('tiempoCalculado');
+            if (minutos === 0) {
+                tiempoDiv.textContent = '⏱️ 0 minutos';
+            } else {
+                tiempoDiv.textContent = `⏱️ ${formatearTiempo(minutos)}`;
+            }
+        });
+
+        function formatearTiempo(minutosTotales) {
+            const horas = Math.floor(minutosTotales / 60);
+            const minutos = minutosTotales % 60;
+            
+            if (horas === 0 && minutos === 0) return '0 minutos';
+            if (horas === 0) return `${minutos} minutos`;
+            if (minutos === 0) return `${horas} hora${horas > 1 ? 's' : ''}`;
+            return `${horas}h ${minutos}min`;
+        }
 
         // Manejar carga de foto
         const fotoUpload = document.getElementById('fotoUpload');
@@ -420,13 +452,13 @@
                     }
                 }
 
-                // ✅ Guardamos los minutos directamente
+                // ✅ Guardamos los minutos en la columna minutos_extra
                 const registroData = {
                     nombre: nombre,
                     fecha: fecha,
                     hora_inicio: horaInicio,
                     hora_fin: horaFin,
-                    minutos_extra: minutosExtra,  // ✅ Campo nuevo
+                    minutos_extra: minutosExtra,
                     comentarios: comentarios || null,
                     foto_url: fotoUrl,
                     created_at: new Date().toISOString()
@@ -441,6 +473,12 @@
 
                 if (error) {
                     console.error('❌ Error de Supabase:', error);
+                    
+                    // Si el error es por la columna minutos_extra, mostrar mensaje claro
+                    if (error.message.includes('column "minutos_extra" does not exist')) {
+                        throw new Error('La tabla no tiene la columna "minutos_extra". Ejecuta el SQL en Supabase para agregarla.');
+                    }
+                    
                     if (error.message.includes('row-level security policy')) {
                         throw new Error('Error de permisos. El administrador debe configurar las políticas de seguridad en Supabase.');
                     }
@@ -450,20 +488,7 @@
                 console.log('✅ Registro exitoso:', data);
 
                 messageDiv.className = 'message success';
-                
-                // Mostrar mensaje con el total acumulado
-                const horas = Math.floor(minutosExtra / 60);
-                const minutos = minutosExtra % 60;
-                let tiempoTexto = '';
-                if (horas > 0 && minutos > 0) {
-                    tiempoTexto = `${horas}h ${minutos}min`;
-                } else if (horas > 0) {
-                    tiempoTexto = `${horas}h`;
-                } else {
-                    tiempoTexto = `${minutos}min`;
-                }
-                
-                messageDiv.textContent = `✅ ¡${tiempoTexto} registrados exitosamente!`;
+                messageDiv.textContent = `✅ ¡${formatearTiempo(minutosExtra)} registrados exitosamente!`;
                 messageDiv.style.display = 'block';
 
                 // Resetear formulario
@@ -471,6 +496,7 @@
                 document.getElementById('horaInicio').value = '';
                 document.getElementById('horaFin').value = '';
                 document.getElementById('minutosExtra').value = '';
+                document.getElementById('tiempoCalculado').textContent = '⏱️ 0 minutos';
                 document.getElementById('comentarios').value = '';
                 fotoPreview.style.display = 'none';
                 fotoPreview.src = '';
