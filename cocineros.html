@@ -176,22 +176,15 @@
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 15px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #27ae60;
         }
         .info-box p {
             font-size: 13px;
             color: #555;
             margin: 0;
         }
-        .tiempo-calculado {
-            background: #e8f0fe;
-            padding: 12px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            color: #667eea;
-            margin-top: 5px;
+        .info-box strong {
+            color: #2c3e50;
         }
         @media (max-width: 480px) {
             .container {
@@ -214,8 +207,8 @@
         </div>
 
         <div class="info-box">
-            <p>⏱️ Los minutos se acumulan automáticamente. <br>
-            <strong>60 minutos = 1 hora</strong> (ej: 30min + 45min = 1h 15min)</p>
+            <p>⏱️ El sistema calculará automáticamente los minutos entre la hora de inicio y fin.<br>
+            <strong>Ejemplo:</strong> 14:00 a 15:30 = 90 minutos</p>
         </div>
 
         <form id="horasExtraForm" novalidate>
@@ -243,11 +236,10 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="minutosExtra">⏱️ Minutos extras <span class="required">*</span></label>
-                <input type="number" id="minutosExtra" placeholder="Ej: 30" min="1" max="1440" required>
-                <small style="color:#999;font-size:12px;">Ingresa los minutos que trabajaste de más (1-1440)</small>
-                <div class="tiempo-calculado" id="tiempoCalculado">⏱️ 0 minutos</div>
+            <div class="form-group" style="background:#f0f4ff;padding:15px;border-radius:10px;text-align:center;">
+                <label style="color:#667eea;">⏱️ Minutos calculados</label>
+                <div style="font-size:28px;font-weight:bold;color:#667eea;" id="minutosCalculados">0 min</div>
+                <small style="color:#999;">Se calcula automáticamente al seleccionar las horas</small>
             </div>
 
             <div class="form-group">
@@ -310,26 +302,58 @@
             document.getElementById('fecha').value = `${year}-${month}-${day}`;
         });
 
-        // Mostrar tiempo calculado en tiempo real
-        document.getElementById('minutosExtra').addEventListener('input', function() {
-            const minutos = parseInt(this.value) || 0;
-            const tiempoDiv = document.getElementById('tiempoCalculado');
-            if (minutos === 0) {
-                tiempoDiv.textContent = '⏱️ 0 minutos';
-            } else {
-                tiempoDiv.textContent = `⏱️ ${formatearTiempo(minutos)}`;
-            }
-        });
+        // Calcular minutos automáticamente
+        function calcularMinutos() {
+            const horaInicio = document.getElementById('horaInicio').value;
+            const horaFin = document.getElementById('horaFin').value;
+            const display = document.getElementById('minutosCalculados');
 
-        function formatearTiempo(minutosTotales) {
-            const horas = Math.floor(minutosTotales / 60);
-            const minutos = minutosTotales % 60;
+            if (!horaInicio || !horaFin) {
+                display.textContent = '⏳ Esperando horas...';
+                display.style.color = '#999';
+                return;
+            }
+
+            const [h1, m1] = horaInicio.split(':').map(Number);
+            const [h2, m2] = horaFin.split(':').map(Number);
             
-            if (horas === 0 && minutos === 0) return '0 minutos';
-            if (horas === 0) return `${minutos} minutos`;
-            if (minutos === 0) return `${horas} hora${horas > 1 ? 's' : ''}`;
-            return `${horas}h ${minutos}min`;
+            let minutos = (h2 * 60 + m2) - (h1 * 60 + m1);
+            
+            if (minutos < 0) {
+                display.textContent = '❌ La hora de fin debe ser mayor';
+                display.style.color = '#e74c3c';
+                return;
+            }
+
+            if (minutos === 0) {
+                display.textContent = '0 minutos';
+                display.style.color = '#999';
+                return;
+            }
+
+            const horas = Math.floor(minutos / 60);
+            const mins = minutos % 60;
+            
+            let texto = '';
+            if (horas > 0 && mins > 0) {
+                texto = `${horas}h ${mins}min`;
+            } else if (horas > 0) {
+                texto = `${horas}h`;
+            } else {
+                texto = `${mins}min`;
+            }
+            
+            display.textContent = texto;
+            display.style.color = '#27ae60';
+            
+            return minutos;
         }
+
+        // Escuchar cambios en horas
+        document.getElementById('horaInicio').addEventListener('change', calcularMinutos);
+        document.getElementById('horaFin').addEventListener('change', calcularMinutos);
+        document.getElementById('horaInicio').addEventListener('input', calcularMinutos);
+        document.getElementById('horaFin').addEventListener('input', calcularMinutos);
 
         // Manejar carga de foto
         const fotoUpload = document.getElementById('fotoUpload');
@@ -381,7 +405,6 @@
             const fecha = document.getElementById('fecha').value;
             const horaInicio = document.getElementById('horaInicio').value;
             const horaFin = document.getElementById('horaFin').value;
-            const minutosExtra = parseInt(document.getElementById('minutosExtra').value);
             const comentarios = document.getElementById('comentarios').value.trim();
             const fotoFile = document.getElementById('foto').files[0];
 
@@ -416,11 +439,12 @@
                 return;
             }
 
-            if (!minutosExtra || minutosExtra < 1 || minutosExtra > 1440) {
+            // Calcular minutos
+            const minutos = calcularMinutos();
+            if (!minutos || minutos <= 0) {
                 messageDiv.className = 'message error';
-                messageDiv.textContent = '⚠️ Ingresa los minutos extras (1-1440).';
+                messageDiv.textContent = '⚠️ El tiempo debe ser mayor a 0 minutos.';
                 messageDiv.style.display = 'block';
-                document.getElementById('minutosExtra').focus();
                 return;
             }
 
@@ -452,13 +476,13 @@
                     }
                 }
 
-                // ✅ Guardamos los minutos en la columna minutos_extra
+                // ✅ Guardamos los minutos calculados automáticamente
                 const registroData = {
                     nombre: nombre,
                     fecha: fecha,
                     hora_inicio: horaInicio,
                     hora_fin: horaFin,
-                    minutos_extra: minutosExtra,
+                    minutos_extra: minutos,  // Calculado automáticamente
                     comentarios: comentarios || null,
                     foto_url: fotoUrl,
                     created_at: new Date().toISOString()
@@ -474,29 +498,39 @@
                 if (error) {
                     console.error('❌ Error de Supabase:', error);
                     
-                    // Si el error es por la columna minutos_extra, mostrar mensaje claro
                     if (error.message.includes('column "minutos_extra" does not exist')) {
-                        throw new Error('La tabla no tiene la columna "minutos_extra". Ejecuta el SQL en Supabase para agregarla.');
+                        throw new Error('Error: La tabla no tiene la columna "minutos_extra". Ejecuta el SQL en Supabase para agregarla.');
                     }
                     
                     if (error.message.includes('row-level security policy')) {
-                        throw new Error('Error de permisos. El administrador debe configurar las políticas de seguridad en Supabase.');
+                        throw new Error('Error de permisos. El administrador debe configurar las políticas de seguridad.');
                     }
                     throw new Error(error.message);
                 }
 
                 console.log('✅ Registro exitoso:', data);
 
+                const horas = Math.floor(minutos / 60);
+                const mins = minutos % 60;
+                let tiempoTexto = '';
+                if (horas > 0 && mins > 0) {
+                    tiempoTexto = `${horas}h ${mins}min`;
+                } else if (horas > 0) {
+                    tiempoTexto = `${horas}h`;
+                } else {
+                    tiempoTexto = `${mins}min`;
+                }
+
                 messageDiv.className = 'message success';
-                messageDiv.textContent = `✅ ¡${formatearTiempo(minutosExtra)} registrados exitosamente!`;
+                messageDiv.textContent = `✅ ¡${tiempoTexto} registrados exitosamente!`;
                 messageDiv.style.display = 'block';
 
                 // Resetear formulario
                 const nombreActual = document.getElementById('nombre').value;
                 document.getElementById('horaInicio').value = '';
                 document.getElementById('horaFin').value = '';
-                document.getElementById('minutosExtra').value = '';
-                document.getElementById('tiempoCalculado').textContent = '⏱️ 0 minutos';
+                document.getElementById('minutosCalculados').textContent = '0 min';
+                document.getElementById('minutosCalculados').style.color = '#999';
                 document.getElementById('comentarios').value = '';
                 fotoPreview.style.display = 'none';
                 fotoPreview.src = '';
