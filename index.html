@@ -8,16 +8,9 @@
     <!-- ========================================================== -->
     <!-- 🔥 FAVICON PARA PC Y MÓVIL (ICONO FREDWARE) -->
     <!-- ========================================================== -->
-    <!-- SVG como favicon (funciona en todos los navegadores modernos) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E👨‍🍳%3C/text%3E%3C/svg%3E">
-    
-    <!-- Favicon para iOS / Safari -->
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E👨‍🍳%3C/text%3E%3C/svg%3E">
-    
-    <!-- Favicon para navegadores antiguos -->
     <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231e293b'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23fbbf24'%3E🍳%3C/text%3E%3C/svg%3E">
-    
-    <!-- Tema de color para la barra de navegación en móvil -->
     <meta name="theme-color" content="#1e293b">
     
     <style>
@@ -38,6 +31,8 @@
         .badge-activo { background: #22c55e; color: white; font-size: 9px; padding: 1px 8px; border-radius: 20px; margin-left: 5px; display: inline-block; vertical-align: middle; }
         .card-destacado { border-color: #10b981 !important; background: #f0fdf4 !important; }
         .card-destacado:hover { background: #dcfce7 !important; }
+        .card-mise-jefe { border-color: #8b5cf6 !important; background: #f5f3ff !important; }
+        .card-mise-jefe:hover { background: #ede9fe !important; }
         
         @media (max-width: 640px) {
             .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -60,6 +55,13 @@
         </h1>
         <p class="sub">Selecciona una herramienta para empezar</p>
         <div class="grid">
+            <!-- ===== MISE AND PLACE JEFE (NUEVO) ===== -->
+            <a href="miseandplacejefe.html" class="card card-mise-jefe">
+                <span class="icono">📊</span>
+                <span class="nombre">Mise and Place Jefe <span class="badge-nuevo">Nuevo</span></span>
+                <span class="desc">Supervisión de timbres</span>
+            </a>
+
             <!-- Herramientas existentes -->
             <a href="Inventario.html" class="card">
                 <span class="icono">📊</span>
@@ -82,7 +84,7 @@
                 <span class="desc">Cocina y recepción</span>
             </a>
             
-            <!-- ⭐ NUEVO: FICHAS DE PRODUCCIÓN (reemplaza a Inspector) -->
+            <!-- ⭐ FICHAS DE PRODUCCIÓN -->
             <a href="fichas_tecnicas.html" class="card card-destacado">
                 <span class="icono">📄</span>
                 <span class="nombre">Fichas de Producción <span class="badge-activo">Activo</span></span>
@@ -107,7 +109,7 @@
                 <span class="desc">Productos recibidos</span>
             </a>
 
-            <!-- NUEVAS APLICACIONES DE HORAS EXTRAS -->
+            <!-- HORAS EXTRAS -->
             <a href="horas-cocineros.html" class="card" style="border-color: #22c55e; background: #f0fdf4;">
                 <span class="icono">🕒</span>
                 <span class="nombre">Horas Extra <span class="badge-nuevo">Nuevo</span></span>
@@ -115,7 +117,7 @@
             </a>
             <a href="horas-jefe.html" class="card" style="border-color: #8b5cf6; background: #f5f3ff;">
                 <span class="icono">📊</span>
-                <span class="nombre">Horas Extra <span class="badge-nuevo">Nuevo</span></span>
+                <span class="nombre">Horas Extra Jefe <span class="badge-nuevo">Nuevo</span></span>
                 <span class="desc">Panel de control (Jefe)</span>
             </a>
         </div>
