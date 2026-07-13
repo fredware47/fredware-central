@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Panel de Control · Timbres</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            padding: 2rem;
+            color: #e8e4e0;
+        }
+        .app {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #333;
+            padding-bottom: 1.2rem;
+        }
+        .header h1 {
+            font-weight: 600;
+            font-size: 2rem;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+        .header h1 small {
+            font-weight: 400;
+            font-size: 0.9rem;
+            color: #888;
+            margin-left: 0.5rem;
+        }
+        .day-selector {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .day-btn {
+            background: #2a2a2a;
+            border: none;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #aaa;
+        }
+        .day-btn.active {
+            background: #fff;
+            color: #1a1a1a;
+        }
+        .day-btn:hover { background: #3a3a3a; }
+        .day-btn.active:hover { background: #eee; }
+
+        .turno-tabs {
+            display: flex;
+            gap: 0.3rem;
+            background: #2a2a2a;
+            border-radius: 40px;
+            padding: 0.2rem;
+            margin-bottom: 1.5rem;
+        }
+        .turno-tab {
+            background: transparent;
+            border: none;
+            padding: 0.5rem 2rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #888;
+        }
+        .turno-tab.active {
+            background: #fff;
+            color: #1a1a1a;
+        }
+        .turno-tab:hover { color: #fff; }
+        .turno-tab.active:hover { color: #1a1a1a; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: #252525;
+            border-radius: 16px;
+            padding: 1.2rem 1.5rem;
+            border: 1px solid #333;
+        }
+        .stat-card .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 0.2rem;
+        }
+        .stat-card .value.green { color: #4caf50; }
+        .stat-card .value.red { color: #ef5350; }
+        .stat-card .value.orange { color: #ffa726; }
+        .stat-card .value.blue { color: #42a5f5; }
+
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        @media (max-width: 900px) { .panel-grid { grid-template-columns: 1fr; } }
+
+        .panel-card {
+            background: #252525;
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid #333;
+        }
+        .panel-card h3 {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .panel-card h3 .badge {
+            background: #3a3a3a;
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: #aaa;
+        }
+        .panel-card .empty {
+            color: #666;
+            font-style: italic;
+            padding: 0.5rem 0;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #333;
+            font-size: 0.9rem;
+        }
+        .log-item:last-child { border-bottom: none; }
+        .log-item .cocinero { font-weight: 600; color: #fff; }
+        .log-item .fecha { color: #888; font-size: 0.8rem; margin-left: auto; }
+        .log-item .turno-tag {
+            background: #3a3a3a;
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+        .log-item .turno-tag.mediodia { background: #1e7e34; color: #fff; }
+        .log-item .turno-tag.noche { background: #2b6f8a; color: #fff; }
+
+        .pending-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #333;
+            font-size: 0.85rem;
+        }
+        .pending-item:last-child { border-bottom: none; }
+        .pending-item .item-name { color: #ddd; flex: 1; }
+        .pending-item .shelf-tag {
+            background: #333;
+            padding: 0.1rem 0.5rem;
+            border-radius: 30px;
+            font-size: 0.6rem;
+            color: #888;
+        }
+        .pending-item .status-tag {
+            font-size: 0.6rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 30px;
+        }
+        .status-tag.elaborar { background: #c97d2b; color: #fff; }
+        .status-tag.descongelar { background: #2b6f8a; color: #fff; }
+        .status-tag.no { background: #b13e3e; color: #fff; }
+
+        .btn-refresh {
+            background: #333;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 40px;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.15s;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        .btn-refresh:hover { background: #444; }
+
+        .footer {
+            margin-top: 2.5rem;
+            font-size: 0.75rem;
+            color: #555;
+            text-align: center;
+            border-top: 1px solid #333;
+            padding-top: 1.2rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #333;
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .sync-status {
+            font-size: 0.75rem;
+            color: #888;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            background: #2a2a2a;
+            margin-left: 1rem;
+        }
+        .sync-status.error { background: #5a2a2a; color: #ef5350; }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <div class="header">
+        <h1>📊 Panel de Control <small>supervisión de timbres</small></h1>
+        <div class="day-selector">
+            <button class="day-btn" v-for="d in days" :key="d" :class="{ active: currentDay === d }" @click="setDay(d)">{{ d }}</button>
+        </div>
+    </div>
+
+    <div class="turno-tabs">
+        <button class="turno-tab" :class="{ active: turno === 'mediodia' }" @click="turno = 'mediodia'">☀️ Mediodía</button>
+        <button class="turno-tab" :class="{ active: turno === 'noche' }" @click="turno = 'noche'">🌙 Noche</button>
+    </div>
+
+    <div v-if="loading" class="loading">
+        <div class="spinner"></div>
+        <p style="margin-top:1rem;color:#888;">Cargando datos de Supabase...</p>
+    </div>
+
+    <div v-else>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">👨‍🍳 Último cocinero</div>
+                <div class="value" style="font-size:1.4rem;">{{ ultimoCocinero || '—' }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">📦 Total revisados</div>
+                <div class="value">{{ totalRevisados }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">✅ Completados</div>
+                <div class="value green">{{ completados }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">⏳ Pendientes</div>
+                <div class="value orange">{{ pendientes }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">⚡ Elaborar</div>
+                <div class="value orange">{{ stats.elaborar }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">❄️ Descongelar</div>
+                <div class="value blue">{{ stats.descongelar }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">❌ No hay</div>
+                <div class="value red">{{ stats.no }}</div>
+            </div>
+        </div>
+
+        <div class="panel-grid">
+            <div class="panel-card">
+                <h3>📋 Registro de revisiones <span class="badge">{{ logs.length }}</span></h3>
+                <div v-if="logs.length === 0" class="empty">Aún no hay revisiones registradas</div>
+                <div v-for="log in logs" :key="log.fecha" class="log-item">
+                    <span class="cocinero">{{ log.cocinero }}</span>
+                    <span class="turno-tag" :class="log.turno">{{ log.turno === 'mediodia' ? '☀️' : '🌙' }}</span>
+                    <span class="fecha">{{ formatFecha(log.fecha) }}</span>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <h3>⏳ Pendientes por hacer <span class="badge">{{ pendingItems.length }}</span></h3>
+                <div v-if="pendingItems.length === 0" class="empty">🎉 ¡Todo completado!</div>
+                <div v-for="item in pendingItems" :key="item.id" class="pending-item">
+                    <span class="item-name">{{ item.item_name }}</span>
+                    <span class="shelf-tag">{{ item.balda }}</span>
+                    <span class="status-tag" :class="item.status">{{ item.status === 'elaborar' ? '⚡ Elaborar' : item.status === 'descongelar' ? '❄️ Descongelar' : '❌ No hay' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-card" style="margin-top:1.5rem; background:#252525; border-radius:20px; padding:1.5rem; border:1px solid #333;">
+            <h3>📦 Resumen por balda</h3>
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap:0.8rem; margin-top:0.5rem;">
+                <div v-for="(data, shelf) in shelfSummary" :key="shelf" style="background:#1e1e1e; border-radius:12px; padding:0.8rem 1rem;">
+                    <div style="font-weight:600; font-size:0.85rem; color:#ddd;">{{ shelf }}</div>
+                    <div style="font-size:0.75rem; color:#888; margin-top:0.2rem;">
+                        ✅ {{ data.hay }} · ❌ {{ data.no }} · ⚡ {{ data.elaborar }} · ❄️ {{ data.descongelar }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-refresh" @click="refresh">🔄 Actualizar datos</button>
+        <span class="sync-status" :class="{ error: syncStatus === 'error' }">{{ syncStatusText }}</span>
+    </div>
+
+    <div class="footer">
+        📊 Panel de control · Datos sincronizados con Supabase en tiempo real
+        <br>Los cocineros registran su nombre al hacer la revisión.
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ============================================================
+//  CONFIGURACIÓN DE SUPABASE - CON TUS CREDENCIALES
+// ============================================================
+const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
+
+// ============================================================
+
+(function() {
+    const DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+
+    new Vue({
+        el: '#app',
+        data: {
+            days: DAYS,
+            currentDay: 'Lunes',
+            turno: 'mediodia',
+            logs: [],
+            pendingItems: [],
+            shelfSummary: {},
+            stats: { hay: 0, no: 0, elaborar: 0, descongelar: 0 },
+            ultimoCocinero: '',
+            loading: false,
+            syncStatus: 'idle',
+            supabase: null,
+            allData: [],
+        },
+        computed: {
+            totalRevisados() {
+                let count = 0;
+                for (const item of this.allData) {
+                    if (!item.bold && item.status) count++;
+                }
+                return count;
+            },
+            completados() {
+                let count = 0;
+                for (const item of this.allData) {
+                    if (!item.bold && item.status === 'hay') count++;
+                }
+                return count;
+            },
+            pendientes() {
+                let count = 0;
+                for (const item of this.allData) {
+                    if (!item.bold && item.status && item.status !== 'hay') count++;
+                }
+                return count;
+            },
+            syncStatusText() {
+                const map = {
+                    idle: '📡 Cargando...',
+                    syncing: '🔄 Sincronizando...',
+                    synced: '✅ Sincronizado',
+                    error: '❌ Error de conexión'
+                };
+                return map[this.syncStatus] || '📡';
+            }
+        },
+        methods: {
+            setDay(day) {
+                this.currentDay = day;
+                this.refresh();
+            },
+            formatFecha(fecha) {
+                if (!fecha) return '';
+                const d = new Date(fecha);
+                return d.toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+            },
+            async refresh() {
+                if (!this.supabase) return;
+                this.loading = true;
+                this.syncStatus = 'syncing';
+                try {
+                    const { data: revisionData, error: revError } = await this.supabase
+                        .from('timbres_revision')
+                        .select('*')
+                        .eq('turno', this.turno)
+                        .eq('dia', this.currentDay);
+
+                    if (revError) throw revError;
+
+                    this.allData = revisionData || [];
+
+                    const { data: logData, error: logError } = await this.supabase
+                        .from('timbres_log')
+                        .select('*')
+                        .eq('turno', this.turno)
+                        .eq('dia', this.currentDay);
+
+                    if (logError) throw logError;
+
+                    this.logs = logData || [];
+
+                    if (this.logs.length > 0) {
+                        this.ultimoCocinero = this.logs[this.logs.length - 1].cocinero;
+                    }
+
+                    this.pendingItems = this.allData.filter(item => !item.bold && item.status && item.status !== 'hay');
+
+                    const stats = { hay: 0, no: 0, elaborar: 0, descongelar: 0 };
+                    for (const item of this.allData) {
+                        if (item.bold) continue;
+                        if (item.status === 'hay') stats.hay++;
+                        else if (item.status === 'no') stats.no++;
+                        else if (item.status === 'elaborar') stats.elaborar++;
+                        else if (item.status === 'descongelar') stats.descongelar++;
+                    }
+                    this.stats = stats;
+
+                    const summary = {};
+                    for (const item of this.allData) {
+                        if (item.bold) continue;
+                        if (!summary[item.balda]) {
+                            summary[item.balda] = { hay: 0, no: 0, elaborar: 0, descongelar: 0 };
+                        }
+                        if (item.status === 'hay') summary[item.balda].hay++;
+                        else if (item.status === 'no') summary[item.balda].no++;
+                        else if (item.status === 'elaborar') summary[item.balda].elaborar++;
+                        else if (item.status === 'descongelar') summary[item.balda].descongelar++;
+                    }
+                    this.shelfSummary = summary;
+
+                    this.syncStatus = 'synced';
+                } catch (error) {
+                    console.error('Error al refrescar:', error);
+                    this.syncStatus = 'error';
+                } finally {
+                    this.loading = false;
+                }
+            }
+        },
+        watch: {
+            turno() { this.refresh(); }
+        },
+        async mounted() {
+            try {
+                const { createClient } = supabase;
+                this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+            } catch (e) {
+                console.error('Error al inicializar Supabase:', e);
+                alert('Error al inicializar Supabase. Verifica las credenciales.');
+                return;
+            }
+
+            await this.refresh();
+
+            setInterval(() => {
+                if (this.syncStatus !== 'syncing') {
+                    this.refresh();
+                }
+            }, 10000);
+        }
+    });
+})();
+</script>
+</body>
+</html>

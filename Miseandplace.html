@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🍽️ Timbres · Revisión de cocina</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             background: #f5f2ee;
@@ -90,9 +86,6 @@
         .day-btn:hover {
             background: #d5cdc3;
         }
-        .day-btn.active:hover {
-            background: #333;
-        }
         .turno-selector {
             display: flex;
             gap: 0.3rem;
@@ -119,7 +112,16 @@
         .turno-btn:hover {
             background: rgba(255,255,255,0.5);
         }
-
+        .sync-status {
+            font-size: 0.75rem;
+            color: #7a726a;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            background: #f0ebe5;
+        }
+        .sync-status.synced { background: #d4e6d9; color: #1d6b3c; }
+        .sync-status.syncing { background: #f7e3d4; color: #914d2a; }
+        .sync-status.error { background: #f5d6d6; color: #b13e3e; }
         .tabs {
             display: flex;
             gap: 0.2rem;
@@ -160,7 +162,6 @@
             from { opacity: 0.5; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -240,9 +241,6 @@
             margin: 0.2rem 0;
             border-bottom: 1px solid #e0d7cd;
         }
-        .item-row.bold-item .item-name {
-            font-weight: 700;
-        }
         .item-name {
             flex: 1;
             color: #1f1d1b;
@@ -267,29 +265,12 @@
             color: #3d3833;
             white-space: nowrap;
         }
-        .status-btn.active-hay {
-            background: #1e7e34;
-            color: white;
-        }
-        .status-btn.active-no {
-            background: #b13e3e;
-            color: white;
-        }
-        .status-btn.active-elaborar {
-            background: #c97d2b;
-            color: white;
-        }
-        .status-btn.active-descongelar {
-            background: #2b6f8a;
-            color: white;
-        }
-        .status-btn:hover {
-            opacity: 0.8;
-        }
-        .status-btn.bold-item-btn {
-            opacity: 0.3;
-            pointer-events: none;
-        }
+        .status-btn.active-hay { background: #1e7e34; color: white; }
+        .status-btn.active-no { background: #b13e3e; color: white; }
+        .status-btn.active-elaborar { background: #c97d2b; color: white; }
+        .status-btn.active-descongelar { background: #2b6f8a; color: white; }
+        .status-btn:hover { opacity: 0.8; }
+        .status-btn.bold-item-btn { opacity: 0.3; pointer-events: none; }
         .item-edit-input {
             border: 1px solid #d5cdc3;
             border-radius: 8px;
@@ -330,10 +311,7 @@
             font-size: 0.8rem;
             cursor: pointer;
         }
-        .add-item-row .btn-add:hover {
-            background: #333;
-        }
-
+        .add-item-row .btn-add:hover { background: #333; }
         .stats-bar {
             display: flex;
             flex-wrap: wrap;
@@ -343,13 +321,8 @@
             border-radius: 60px;
             margin-bottom: 1.5rem;
         }
-        .stats-bar span {
-            font-size: 0.85rem;
-        }
-        .stats-bar .num {
-            font-weight: 700;
-            margin-left: 0.2rem;
-        }
+        .stats-bar span { font-size: 0.85rem; }
+        .stats-bar .num { font-weight: 700; margin-left: 0.2rem; }
         .stats-bar .num.hay { color: #1e7e34; }
         .stats-bar .num.no { color: #b13e3e; }
         .stats-bar .num.elaborar { color: #c97d2b; }
@@ -360,9 +333,7 @@
             grid-template-columns: 1fr 1fr;
             gap: 2rem;
         }
-        @media (max-width: 700px) {
-            .action-list { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 700px) { .action-list { grid-template-columns: 1fr; } }
         .action-card {
             background: #fcfaf8;
             border-radius: 24px;
@@ -391,9 +362,6 @@
             padding: 0.4rem 0;
             border-bottom: 1px solid #ede8e1;
         }
-        .action-item .item-name {
-            font-weight: 500;
-        }
         .action-item .shelf-tag {
             font-size: 0.65rem;
             background: #e0d7cd;
@@ -401,11 +369,7 @@
             border-radius: 30px;
             color: #3d3833;
         }
-        .empty-state {
-            color: #8f8982;
-            font-style: italic;
-            padding: 0.5rem 0;
-        }
+        .empty-state { color: #8f8982; font-style: italic; padding: 0.5rem 0; }
 
         .order-list {
             display: flex;
@@ -437,7 +401,6 @@
             font-weight: 600;
             font-size: 1.1rem;
         }
-
         .toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -457,9 +420,7 @@
             transition: 0.15s;
             font-size: 0.9rem;
         }
-        .btn-primary:hover {
-            background: #33312e;
-        }
+        .btn-primary:hover { background: #33312e; }
         .btn-outline {
             background: transparent;
             border: 1px solid #b9b0a6;
@@ -470,9 +431,7 @@
             transition: 0.1s;
             font-size: 0.9rem;
         }
-        .btn-outline:hover {
-            background: #e5dfd8;
-        }
+        .btn-outline:hover { background: #e5dfd8; }
         .btn-danger {
             background: #b13e3e;
             border: none;
@@ -482,9 +441,7 @@
             font-weight: 500;
             cursor: pointer;
         }
-        .btn-danger:hover {
-            background: #8f2f2f;
-        }
+        .btn-danger:hover { background: #8f2f2f; }
 
         .registro {
             background: #f0ebe5;
@@ -547,11 +504,27 @@
             outline: 2px solid #1e1e1e;
             outline-offset: 1px;
         }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #7a726a;
+        }
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f0ebe5;
+            border-top-color: #1e1e1e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
 <div class="app" id="app">
-    <!-- HEADER -->
     <div class="header">
         <h1>🍽️ Timbres <small>mise & place · 2025</small></h1>
         <div class="user-area">
@@ -564,6 +537,7 @@
             <div class="day-selector">
                 <button class="day-btn" v-for="d in days" :key="d" :class="{ active: currentDay === d }" @click="setDay(d)">{{ d }}</button>
             </div>
+            <span class="sync-status" :class="syncStatusClass">{{ syncStatusText }}</span>
         </div>
     </div>
 
@@ -573,593 +547,618 @@
         <span style="font-size:0.8rem;color:#5e5a55;">{{ new Date().toLocaleDateString() }}</span>
     </div>
 
-    <!-- TABS -->
     <div class="tabs">
         <button class="tab-btn" :class="{ active: tab === 'revision' }" @click="tab = 'revision'">📋 Revisión</button>
         <button class="tab-btn" :class="{ active: tab === 'accion' }" @click="tab = 'accion'">⚡ Listas de acción</button>
         <button class="tab-btn" :class="{ active: tab === 'pedido' }" @click="tab = 'pedido'">🛒 Pedido (falta)</button>
     </div>
 
-    <!-- TAB: REVISIÓN -->
-    <div class="tab-content" :class="{ active: tab === 'revision' }">
-        <div class="add-shelf-area">
-            <input type="text" v-model="newShelfName" placeholder="Nombre de nueva balda..." @keyup.enter="addShelf">
-            <button class="btn-primary" @click="addShelf">➕ Añadir balda</button>
-            <button class="btn-outline" @click="resetDay">🔄 Reiniciar día</button>
-        </div>
+    <div v-if="loading" class="loading">
+        <div class="spinner"></div>
+        <p style="margin-top:1rem;">Cargando datos de Supabase...</p>
+    </div>
 
-        <div class="stats-bar">
-            <span>✅ Hay: <span class="num hay">{{ stats.hay }}</span></span>
-            <span>❌ No hay: <span class="num no">{{ stats.no }}</span></span>
-            <span>⚡ Elaborar: <span class="num elaborar">{{ stats.elaborar }}</span></span>
-            <span>❄️ Descongelar: <span class="num descongelar">{{ stats.descongelar }}</span></span>
-            <span>📦 Total: {{ totalItems }}</span>
-        </div>
-
-        <div class="grid">
-            <div class="shelf-card" v-for="(shelf, name) in shelfItems" :key="name">
-                <div class="shelf-header">
-                    <div class="shelf-title">
-                        <template v-if="editingShelf === name">
-                            <input class="shelf-edit-input" v-model="shelfEditName" @keyup.enter="saveShelfEdit(name)" @blur="saveShelfEdit(name)" ref="shelfEditInput">
+    <div v-else>
+        <div class="tab-content" :class="{ active: tab === 'revision' }">
+            <div class="add-shelf-area">
+                <input type="text" v-model="newShelfName" placeholder="Nombre de nueva balda..." @keyup.enter="addShelf">
+                <button class="btn-primary" @click="addShelf">➕ Añadir balda</button>
+                <button class="btn-outline" @click="resetDay">🔄 Reiniciar día</button>
+                <button class="btn-outline" @click="syncFromSupabase">🔄 Sincronizar</button>
+            </div>
+            <div class="stats-bar">
+                <span>✅ Hay: <span class="num hay">{{ stats.hay }}</span></span>
+                <span>❌ No hay: <span class="num no">{{ stats.no }}</span></span>
+                <span>⚡ Elaborar: <span class="num elaborar">{{ stats.elaborar }}</span></span>
+                <span>❄️ Descongelar: <span class="num descongelar">{{ stats.descongelar }}</span></span>
+                <span>📦 Total: {{ totalItems }}</span>
+            </div>
+            <div class="grid">
+                <div class="shelf-card" v-for="(shelf, name) in shelfItems" :key="name">
+                    <div class="shelf-header">
+                        <div class="shelf-title">
+                            <template v-if="editingShelf === name">
+                                <input class="shelf-edit-input" v-model="shelfEditName" @keyup.enter="saveShelfEdit(name)" @blur="saveShelfEdit(name)" ref="shelfEditInput">
+                            </template>
+                            <template v-else>
+                                {{ name }}
+                                <span class="badge">{{ shelf.filter(it => !it.bold).length }} items</span>
+                            </template>
+                        </div>
+                        <div class="shelf-actions">
+                            <button class="icon-btn" @click="startEditShelf(name)" title="Editar nombre">✏️</button>
+                            <button class="icon-btn danger" @click="deleteShelf(name)" title="Eliminar balda">🗑️</button>
+                        </div>
+                    </div>
+                    <div v-for="item in shelf" :key="item.id" class="item-row" :class="{ 'bold-item': item.bold }">
+                        <template v-if="editingItem === item.id">
+                            <input class="item-edit-input" v-model="itemEditName" @keyup.enter="saveItemEdit(item)" @blur="saveItemEdit(item)" ref="itemEditInput">
+                            <button class="icon-btn" @click="saveItemEdit(item)">💾</button>
                         </template>
                         <template v-else>
-                            {{ name }}
-                            <span class="badge">{{ shelf.filter(it => !it.bold).length }} items</span>
+                            <span class="item-name">{{ item.name }}</span>
+                            <div class="item-actions">
+                                <button class="icon-btn" @click="startEditItem(item)" title="Editar nombre">✏️</button>
+                                <button class="icon-btn danger" @click="deleteItem(item)" title="Eliminar">✕</button>
+                                <button class="status-btn" :class="{ 'active-hay': item.status === 'hay' }" @click="setStatus(item, 'hay')" :disabled="item.bold">✅</button>
+                                <button class="status-btn" :class="{ 'active-no': item.status === 'no' }" @click="setStatus(item, 'no')" :disabled="item.bold">❌</button>
+                                <button class="status-btn" :class="{ 'active-elaborar': item.status === 'elaborar' }" @click="setStatus(item, 'elaborar')" :disabled="item.bold">⚡</button>
+                                <button class="status-btn" :class="{ 'active-descongelar': item.status === 'descongelar' }" @click="setStatus(item, 'descongelar')" :disabled="item.bold">❄️</button>
+                            </div>
                         </template>
                     </div>
-                    <div class="shelf-actions">
-                        <button class="icon-btn" @click="startEditShelf(name)" title="Editar nombre">✏️</button>
-                        <button class="icon-btn danger" @click="deleteShelf(name)" title="Eliminar balda">🗑️</button>
+                    <div class="add-item-row">
+                        <input type="text" v-model="newItemNames[name]" :placeholder="'Nuevo item...'" @keyup.enter="addItem(name)">
+                        <button class="btn-add" @click="addItem(name)">+</button>
                     </div>
                 </div>
+            </div>
+            <div class="toolbar">
+                <button class="btn-primary" @click="tab = 'accion'">📊 Ver listas de acción</button>
+            </div>
+        </div>
 
-                <div v-for="item in shelf" :key="item.id" class="item-row" :class="{ 'bold-item': item.bold }">
-                    <template v-if="editingItem === item.id">
-                        <input class="item-edit-input" v-model="itemEditName" @keyup.enter="saveItemEdit(item)" @blur="saveItemEdit(item)" ref="itemEditInput">
-                        <button class="icon-btn" @click="saveItemEdit(item)">💾</button>
-                    </template>
-                    <template v-else>
+        <div class="tab-content" :class="{ active: tab === 'accion' }">
+            <div class="action-list">
+                <div class="action-card">
+                    <h3>⚡ Elaborar <span class="count">{{ elaborarList.length }}</span></h3>
+                    <div v-if="elaborarList.length === 0" class="empty-state">✅ No hay nada que elaborar</div>
+                    <div v-for="item in elaborarList" :key="item.id" class="action-item">
+                        <input type="checkbox" v-model="item.hecho" @change="updateHecho(item)">
                         <span class="item-name">{{ item.name }}</span>
-                        <div class="item-actions">
-                            <button class="icon-btn" @click="startEditItem(item)" title="Editar nombre">✏️</button>
-                            <button class="icon-btn danger" @click="deleteItem(item)" title="Eliminar">✕</button>
-                            <button class="status-btn" :class="{ 'active-hay': item.status === 'hay' }" @click="setStatus(item, 'hay')" :disabled="item.bold">✅</button>
-                            <button class="status-btn" :class="{ 'active-no': item.status === 'no' }" @click="setStatus(item, 'no')" :disabled="item.bold">❌</button>
-                            <button class="status-btn" :class="{ 'active-elaborar': item.status === 'elaborar' }" @click="setStatus(item, 'elaborar')" :disabled="item.bold">⚡</button>
-                            <button class="status-btn" :class="{ 'active-descongelar': item.status === 'descongelar' }" @click="setStatus(item, 'descongelar')" :disabled="item.bold">❄️</button>
-                        </div>
-                    </template>
+                        <span class="shelf-tag">{{ item.shelf }}</span>
+                    </div>
                 </div>
-
-                <div class="add-item-row">
-                    <input type="text" v-model="newItemNames[name]" :placeholder="'Nuevo item...'" @keyup.enter="addItem(name)">
-                    <button class="btn-add" @click="addItem(name)">+</button>
+                <div class="action-card">
+                    <h3>❄️ Descongelar <span class="count">{{ descongelarList.length }}</span></h3>
+                    <div v-if="descongelarList.length === 0" class="empty-state">✅ No hay que descongelar</div>
+                    <div v-for="item in descongelarList" :key="item.id" class="action-item">
+                        <input type="checkbox" v-model="item.hecho" @change="updateHecho(item)">
+                        <span class="item-name">{{ item.name }}</span>
+                        <span class="shelf-tag">{{ item.shelf }}</span>
+                    </div>
                 </div>
             </div>
+            <div class="toolbar">
+                <button class="btn-outline" @click="tab = 'revision'">← Volver a revisión</button>
+                <button class="btn-primary" @click="tab = 'pedido'">🛒 Ir a pedido (falta)</button>
+            </div>
         </div>
-        <div class="toolbar">
-            <button class="btn-primary" @click="tab = 'accion'">📊 Ver listas de acción</button>
-        </div>
-    </div>
 
-    <!-- TAB: LISTAS DE ACCIÓN -->
-    <div class="tab-content" :class="{ active: tab === 'accion' }">
-        <div class="action-list">
-            <div class="action-card">
-                <h3>⚡ Elaborar <span class="count">{{ elaborarList.length }}</span></h3>
-                <div v-if="elaborarList.length === 0" class="empty-state">✅ No hay nada que elaborar</div>
-                <div v-for="item in elaborarList" :key="item.id" class="action-item">
-                    <input type="checkbox" v-model="item.hecho" @change="updateHecho(item)">
+        <div class="tab-content" :class="{ active: tab === 'pedido' }">
+            <div style="margin-bottom:1rem;">
+                <h3>🛒 Lo que falta para pedir</h3>
+                <p style="color:#5e5a55;font-size:0.9rem;">Items marcados como "No hay" o añadidos manualmente</p>
+            </div>
+            <div class="order-list">
+                <div v-for="item in pedidoList" :key="item.id" class="order-item">
+                    <input type="checkbox" v-model="item.pedidoHecho" @change="updatePedido">
                     <span class="item-name">{{ item.name }}</span>
                     <span class="shelf-tag">{{ item.shelf }}</span>
+                    <input type="number" class="qty-input" v-model="item.cantidad" min="1" @change="updatePedido">
+                    <button class="remove-btn" @click="quitarDePedido(item)">✕</button>
                 </div>
+                <div v-if="pedidoList.length === 0" class="empty-state" style="padding:1rem;">🎉 No hay nada que pedir, ¡todo está completo!</div>
             </div>
-            <div class="action-card">
-                <h3>❄️ Descongelar <span class="count">{{ descongelarList.length }}</span></h3>
-                <div v-if="descongelarList.length === 0" class="empty-state">✅ No hay que descongelar</div>
-                <div v-for="item in descongelarList" :key="item.id" class="action-item">
-                    <input type="checkbox" v-model="item.hecho" @change="updateHecho(item)">
-                    <span class="item-name">{{ item.name }}</span>
-                    <span class="shelf-tag">{{ item.shelf }}</span>
-                </div>
+            <div class="toolbar">
+                <button class="btn-outline" @click="tab = 'accion'">← Volver a listas</button>
+                <button class="btn-outline" @click="exportPedido">📋 Copiar pedido</button>
+                <button class="btn-danger" @click="limpiarPedido">🗑️ Limpiar pedido</button>
             </div>
-        </div>
-        <div class="toolbar">
-            <button class="btn-outline" @click="tab = 'revision'">← Volver a revisión</button>
-            <button class="btn-primary" @click="tab = 'pedido'">🛒 Ir a pedido (falta)</button>
-        </div>
-    </div>
-
-    <!-- TAB: PEDIDO -->
-    <div class="tab-content" :class="{ active: tab === 'pedido' }">
-        <div style="margin-bottom:1rem;">
-            <h3>🛒 Lo que falta para pedir</h3>
-            <p style="color:#5e5a55;font-size:0.9rem;">Items marcados como "No hay" o añadidos manualmente</p>
-        </div>
-        <div class="order-list">
-            <div v-for="item in pedidoList" :key="item.id" class="order-item">
-                <input type="checkbox" v-model="item.pedidoHecho" @change="updatePedido">
-                <span class="item-name">{{ item.name }}</span>
-                <span class="shelf-tag">{{ item.shelf }}</span>
-                <input type="number" class="qty-input" v-model="item.cantidad" min="1" @change="updatePedido">
-                <button class="remove-btn" @click="quitarDePedido(item)">✕</button>
-            </div>
-            <div v-if="pedidoList.length === 0" class="empty-state" style="padding:1rem;">🎉 No hay nada que pedir, ¡todo está completo!</div>
-        </div>
-        <div class="toolbar">
-            <button class="btn-outline" @click="tab = 'accion'">← Volver a listas</button>
-            <button class="btn-outline" @click="exportPedido">📋 Copiar pedido</button>
-            <button class="btn-danger" @click="limpiarPedido">🗑️ Limpiar pedido</button>
         </div>
     </div>
 
     <div class="footer">
         📌 Items en <strong>negrita</strong> son encabezados de balda. ✏️ Edita nombres, 🗑️ elimina, ➕ añade.
-        <br>☀️ Mediodía y 🌙 Noche tienen revisiones independientes.
+        <br>☀️ Mediodía y 🌙 Noche tienen revisiones independientes · Datos sincronizados con Supabase
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    (function() {
-        const BASE_SHELF_DATA = {
-            "Balda 1 Puerta A": [
-                { name: "Ensalada Fredie", bold: true },
-                { name: "mezclum" },
-                { name: "langostinos (pqt3)" },
-                { name: "salmon marinado (80 grm)" },
-                { name: "tomates cherrys confitados (4)" },
-                { name: "trigueros (3)" },
-                { name: "pan multicereal(cuarto frio)" },
-                { name: "Aguacate" },
-                { name: "vinagreta de miel (Mesado)" }
-            ],
-            "Balda 2 (Ensalada Ventresca)": [
-                { name: "Ensalada de Ventresca", bold: true },
-                { name: "Ventresca (100 grm)" },
-                { name: "Tomate azul" },
-                { name: "Rucula" },
-                { name: "Huevo cocido 1" }
-            ],
-            "Balda 3 (Ensaladilla langostinos)": [
-                { name: "Ensaladilla de langostinos", bold: true },
-                { name: "Ensaladilla" },
-                { name: "langostinos (3 unidades)" },
-                { name: "wakame" },
-                { name: "Lechuga" },
-                { name: "Cebolla roja osmotizada" },
-                { name: "zumo de limon" },
-                { name: "Verduras bruinose (ceviche)" }
-            ],
-            "Balda 1 Puerta B (especias)": [
-                { name: "Especiero (hb, al, cil, per, cebollino)", bold: true },
-                { name: "Setas" },
-                { name: "Micro mezclum" },
-                { name: "Espinaca" },
-                { name: "ajo laminado" }
-            ],
-            "Balda 2 Puerta B (salsas)": [
-                { name: "salsero", bold: true },
-                { name: "kimchinesa" },
-                { name: "alioli de lima y perejil" },
-                { name: "salsa rosa" },
-                { name: "Romescu" },
-                { name: "aliño de tarta" },
-                { name: "mojo rojo" },
-                { name: "mojo verde" },
-                { name: "Tapanade" }
-            ],
-            "Balda 1 Puerta C (pastas)": [
-                { name: "Pastas", bold: true },
-                { name: "Tagliatelle" },
-                { name: "Boloñesa (160 grm)" },
-                { name: "Alfredo" },
-                { name: "Napole" },
-                { name: "Parmesano" }
-            ],
-            "Balda 2 Puerta C (carnes)": [
-                { name: "Carnes cocidas", bold: true },
-                { name: "Carne bao (80 grm)" },
-                { name: "Carne asada (180 grm)" },
-                { name: "Carne cubano (160 grm)" },
-                { name: "Salchichas" }
-            ],
-            "Balda 3 Puerta C (salsas calientes)": [
-                { name: "Salsa calientes", bold: true },
-                { name: "Salsa de queso san simon" },
-                { name: "Salsa de queso chedar" },
-                { name: "Mantequilla de salvia" },
-                { name: "Huevos Poche" }
-            ],
-            "Balda 1 Puerta D (fast food)": [
-                { name: "Fast food", bold: true },
-                { name: "Jamon" },
-                { name: "Queso Edam Lomchas" },
-                { name: "Bacon" },
-                { name: "Cebolla caramelizada" },
-                { name: "Relish" },
-                { name: "tomate en rodajas" },
-                { name: "Arzua" }
-            ],
-            "Balda 2 Puerta D": [
-                { name: "Patata Baby" },
-                { name: "Brocoli" },
-                { name: "Paleta" },
-                { name: "San simon" },
-                { name: "Tempura" }
-            ],
-            "Balda 3 Puerta D": [
-                { name: "Hamburguesas (200 grm)" },
-                { name: "Croca (200 grm)" },
-                { name: "Pollo club (80 grm)" }
-            ],
-            "Balda 1 Puerta E": [
-                { name: "Garbanzos", bold: true },
-                { name: "Pil Pil" },
-                { name: "Marca de arroz" },
-                { name: "mantequilla" }
-            ],
-            "Balda 2 Puerta E (pescados)": [
-                { name: "Pescados", bold: true },
-                { name: "Pargo (150gr)" },
-                { name: "Bacalao (180 grm)" },
-                { name: "Chipis bao (80 grm)" },
-                { name: "Chipis fritos (250" },
-                { name: "Salmón (150 grm)" },
-                { name: "Pulpo (150 Gr)" },
-                { name: "Langostinos 6" }
-            ],
-            "Balda 3 Puerta E": [
-                { name: "Croquetas (10)" }
-            ],
-            "Balda 1 Puerta F": [
-                { name: "Tarta de queso", bold: true }
-            ],
-            "Balda 2 Puerta F": [
-                { name: "Torrijas", bold: true },
-                { name: "Filloas" },
-                { name: "Mermelada" },
-                { name: "Crema pastelera" },
-                { name: "Mantequilla" },
-                { name: "Phisalys" },
-                { name: "Fresas" },
-                { name: "Arandanos" },
-                { name: "nutella" },
-                { name: "peta setas" }
-            ],
-            "Congelador": [
-                { name: "Helado de vainilla", bold: true },
-                { name: "Helado de café" },
-                { name: "Taper con Baos Negros" },
-                { name: "Taper con Baos Blancos" },
-                { name: "Taper con Almejas" },
-                { name: "Taper con Langostinos crujientes" },
-                { name: "Taper con Gnochis" }
-            ],
-            "Mesado / Cocina": [
-                { name: "Chips de platano", bold: true },
-                { name: "Chips de yuca" },
-                { name: "Vinagreta" },
-                { name: "Tostas Tartar" },
-                { name: "Merengues" },
-                { name: "Cramble Negro" },
-                { name: "Cramble Blanco" },
-                { name: "Dulce de leche" },
-                { name: "Harina de fritos" },
-                { name: "Fumet" }
-            ]
-        };
+// ============================================================
+//  CONFIGURACIÓN DE SUPABASE - CON TUS CREDENCIALES
+// ============================================================
+const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
 
-        const DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
-        const TURNOS = ['mediodia', 'noche'];
+// ============================================================
 
-        new Vue({
-            el: '#app',
-            data: {
-                days: DAYS,
-                turno: 'mediodia',
-                currentDay: 'Lunes',
-                cocinero: '',
-                tab: 'revision',
-                shelfItems: {},
-                storage: {},
-                elaborarList: [],
-                descongelarList: [],
-                pedidoList: [],
-                editingShelf: null,
-                shelfEditName: '',
-                editingItem: null,
-                itemEditName: '',
-                newShelfName: '',
-                newItemNames: {},
+(function() {
+    const DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+    const TURNOS = ['mediodia', 'noche'];
+
+    const BASE_SHELF_DATA = {
+        "Balda 1 Puerta A": [
+            { name: "Ensalada Fredie", bold: true },
+            { name: "mezclum" }, { name: "langostinos (pqt3)" }, { name: "salmon marinado (80 grm)" },
+            { name: "tomates cherrys confitados (4)" }, { name: "trigueros (3)" },
+            { name: "pan multicereal(cuarto frio)" }, { name: "Aguacate" }, { name: "vinagreta de miel (Mesado)" }
+        ],
+        "Balda 2 (Ensalada Ventresca)": [
+            { name: "Ensalada de Ventresca", bold: true },
+            { name: "Ventresca (100 grm)" }, { name: "Tomate azul" }, { name: "Rucula" }, { name: "Huevo cocido 1" }
+        ],
+        "Balda 3 (Ensaladilla langostinos)": [
+            { name: "Ensaladilla de langostinos", bold: true },
+            { name: "Ensaladilla" }, { name: "langostinos (3 unidades)" }, { name: "wakame" },
+            { name: "Lechuga" }, { name: "Cebolla roja osmotizada" }, { name: "zumo de limon" },
+            { name: "Verduras bruinose (ceviche)" }
+        ],
+        "Balda 1 Puerta B (especias)": [
+            { name: "Especiero (hb, al, cil, per, cebollino)", bold: true },
+            { name: "Setas" }, { name: "Micro mezclum" }, { name: "Espinaca" }, { name: "ajo laminado" }
+        ],
+        "Balda 2 Puerta B (salsas)": [
+            { name: "salsero", bold: true },
+            { name: "kimchinesa" }, { name: "alioli de lima y perejil" }, { name: "salsa rosa" },
+            { name: "Romescu" }, { name: "aliño de tarta" }, { name: "mojo rojo" },
+            { name: "mojo verde" }, { name: "Tapanade" }
+        ],
+        "Balda 1 Puerta C (pastas)": [
+            { name: "Pastas", bold: true },
+            { name: "Tagliatelle" }, { name: "Boloñesa (160 grm)" }, { name: "Alfredo" },
+            { name: "Napole" }, { name: "Parmesano" }
+        ],
+        "Balda 2 Puerta C (carnes)": [
+            { name: "Carnes cocidas", bold: true },
+            { name: "Carne bao (80 grm)" }, { name: "Carne asada (180 grm)" },
+            { name: "Carne cubano (160 grm)" }, { name: "Salchichas" }
+        ],
+        "Balda 3 Puerta C (salsas calientes)": [
+            { name: "Salsa calientes", bold: true },
+            { name: "Salsa de queso san simon" }, { name: "Salsa de queso chedar" },
+            { name: "Mantequilla de salvia" }, { name: "Huevos Poche" }
+        ],
+        "Balda 1 Puerta D (fast food)": [
+            { name: "Fast food", bold: true },
+            { name: "Jamon" }, { name: "Queso Edam Lomchas" }, { name: "Bacon" },
+            { name: "Cebolla caramelizada" }, { name: "Relish" }, { name: "tomate en rodajas" }, { name: "Arzua" }
+        ],
+        "Balda 2 Puerta D": [
+            { name: "Patata Baby" }, { name: "Brocoli" }, { name: "Paleta" }, { name: "San simon" }, { name: "Tempura" }
+        ],
+        "Balda 3 Puerta D": [
+            { name: "Hamburguesas (200 grm)" }, { name: "Croca (200 grm)" }, { name: "Pollo club (80 grm)" }
+        ],
+        "Balda 1 Puerta E": [
+            { name: "Garbanzos", bold: true }, { name: "Pil Pil" }, { name: "Marca de arroz" }, { name: "mantequilla" }
+        ],
+        "Balda 2 Puerta E (pescados)": [
+            { name: "Pescados", bold: true },
+            { name: "Pargo (150gr)" }, { name: "Bacalao (180 grm)" }, { name: "Chipis bao (80 grm)" },
+            { name: "Chipis fritos (250" }, { name: "Salmón (150 grm)" }, { name: "Pulpo (150 Gr)" },
+            { name: "Langostinos 6" }
+        ],
+        "Balda 3 Puerta E": [ { name: "Croquetas (10)" } ],
+        "Balda 1 Puerta F": [ { name: "Tarta de queso", bold: true } ],
+        "Balda 2 Puerta F": [
+            { name: "Torrijas", bold: true },
+            { name: "Filloas" }, { name: "Mermelada" }, { name: "Crema pastelera" }, { name: "Mantequilla" },
+            { name: "Phisalys" }, { name: "Fresas" }, { name: "Arandanos" }, { name: "nutella" }, { name: "peta setas" }
+        ],
+        "Congelador": [
+            { name: "Helado de vainilla", bold: true }, { name: "Helado de café" },
+            { name: "Taper con Baos Negros" }, { name: "Taper con Baos Blancos" },
+            { name: "Taper con Almejas" }, { name: "Taper con Langostinos crujientes" }, { name: "Taper con Gnochis" }
+        ],
+        "Mesado / Cocina": [
+            { name: "Chips de platano", bold: true }, { name: "Chips de yuca" }, { name: "Vinagreta" },
+            { name: "Tostas Tartar" }, { name: "Merengues" }, { name: "Cramble Negro" },
+            { name: "Cramble Blanco" }, { name: "Dulce de leche" }, { name: "Harina de fritos" }, { name: "Fumet" }
+        ]
+    };
+
+    function generateBaseItems() {
+        const data = {};
+        for (const [shelf, items] of Object.entries(BASE_SHELF_DATA)) {
+            data[shelf] = items.map((item, idx) => ({
+                id: `${shelf}-${idx}-${item.name.replace(/\s/g,'')}`,
+                name: item.name,
+                bold: item.bold || false,
+                status: null,
+                hecho: false,
+                pedidoHecho: false,
+                cantidad: 1,
+            }));
+        }
+        return data;
+    }
+
+    new Vue({
+        el: '#app',
+        data: {
+            days: DAYS,
+            turno: 'mediodia',
+            currentDay: 'Lunes',
+            cocinero: '',
+            tab: 'revision',
+            shelfItems: {},
+            elaborarList: [],
+            descongelarList: [],
+            pedidoList: [],
+            editingShelf: null,
+            shelfEditName: '',
+            editingItem: null,
+            itemEditName: '',
+            newShelfName: '',
+            newItemNames: {},
+            loading: false,
+            syncStatus: 'idle',
+            supabase: null,
+        },
+        computed: {
+            totalItems() {
+                let count = 0;
+                for (const shelf of Object.values(this.shelfItems)) {
+                    count += shelf.filter(it => !it.bold).length;
+                }
+                return count;
             },
-            computed: {
-                storageKey() {
-                    return `timbres_${this.turno}_${this.currentDay}`;
-                },
-                totalItems() {
-                    let count = 0;
-                    for (const shelf of Object.values(this.shelfItems)) {
-                        count += shelf.filter(it => !it.bold).length;
+            stats() {
+                let hay = 0, no = 0, elaborar = 0, descongelar = 0;
+                for (const shelf of Object.values(this.shelfItems)) {
+                    for (const item of shelf) {
+                        if (item.bold) continue;
+                        if (item.status === 'hay') hay++;
+                        else if (item.status === 'no') no++;
+                        else if (item.status === 'elaborar') elaborar++;
+                        else if (item.status === 'descongelar') descongelar++;
                     }
-                    return count;
-                },
-                stats() {
-                    let hay = 0, no = 0, elaborar = 0, descongelar = 0;
-                    for (const shelf of Object.values(this.shelfItems)) {
-                        for (const item of shelf) {
-                            if (item.bold) continue;
-                            if (item.status === 'hay') hay++;
-                            else if (item.status === 'no') no++;
-                            else if (item.status === 'elaborar') elaborar++;
-                            else if (item.status === 'descongelar') descongelar++;
+                }
+                return { hay, no, elaborar, descongelar };
+            },
+            syncStatusText() {
+                const map = {
+                    idle: '📡 Cargando...',
+                    syncing: '🔄 Sincronizando...',
+                    synced: '✅ Sincronizado',
+                    error: '❌ Error'
+                };
+                return map[this.syncStatus] || '📡';
+            },
+            syncStatusClass() {
+                if (this.syncStatus === 'synced') return 'synced';
+                if (this.syncStatus === 'syncing') return 'syncing';
+                if (this.syncStatus === 'error') return 'error';
+                return '';
+            }
+        },
+        methods: {
+            getTurnoLabel() { return this.turno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche'; },
+
+            async syncFromSupabase() {
+                if (!this.supabase) {
+                    alert('Error: Supabase no inicializado.');
+                    return;
+                }
+                this.syncStatus = 'syncing';
+                try {
+                    const { data, error } = await this.supabase
+                        .from('timbres_revision')
+                        .select('*')
+                        .eq('turno', this.turno)
+                        .eq('dia', this.currentDay);
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        const newItems = {};
+                        for (const row of data) {
+                            if (!newItems[row.balda]) newItems[row.balda] = [];
+                            newItems[row.balda].push({
+                                id: row.item_id,
+                                name: row.item_name,
+                                bold: row.bold || false,
+                                status: row.status || null,
+                                hecho: row.hecho || false,
+                                pedidoHecho: row.pedido_hecho || false,
+                                cantidad: row.cantidad || 1,
+                            });
                         }
+                        this.shelfItems = newItems;
+                    } else {
+                        this.shelfItems = generateBaseItems();
+                        await this.uploadToSupabase();
                     }
-                    return { hay, no, elaborar, descongelar };
+
+                    this.syncStatus = 'synced';
+                    this.actualizarListas();
+                } catch (error) {
+                    console.error('Error al sincronizar:', error);
+                    this.syncStatus = 'error';
+                    alert('Error al sincronizar con Supabase. Revisa la consola.');
                 }
             },
-            methods: {
-                getTurnoLabel() {
-                    return this.turno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche';
-                },
-                setDay(day) {
-                    this.currentDay = day;
-                    this.loadDay();
-                    this.actualizarListas();
-                },
-                loadDay() {
-                    const key = this.storageKey;
-                    if (!this.storage[key]) {
-                        this.storage[key] = this.cloneBaseData();
-                        this.saveStorage();
-                    }
-                    const stored = this.storage[key];
-                    this.shelfItems = {};
-                    for (const [shelf, items] of Object.entries(stored)) {
-                        this.shelfItems[shelf] = items.map(it => ({ ...it }));
-                    }
-                    this.newItemNames = {};
-                    for (const shelf of Object.keys(this.shelfItems)) {
-                        this.newItemNames[shelf] = '';
-                    }
-                    this.actualizarListas();
-                },
-                cloneBaseData() {
-                    const data = {};
-                    for (const [shelf, items] of Object.entries(BASE_SHELF_DATA)) {
-                        data[shelf] = items.map((item, idx) => ({
-                            id: `${shelf}-${idx}-${item.name.replace(/\s/g,'')}-${Date.now()}-${Math.random()}`,
-                            name: item.name,
-                            bold: item.bold || false,
-                            status: null,
-                            hecho: false,
-                            pedidoHecho: false,
-                            cantidad: 1,
-                        }));
-                    }
-                    return data;
-                },
-                saveStorage() {
-                    try {
-                        localStorage.setItem('timbres_turnos_v2', JSON.stringify(this.storage));
-                    } catch(e) {}
-                },
-                persistDay() {
-                    const key = this.storageKey;
-                    this.storage[key] = {};
-                    for (const [shelf, items] of Object.entries(this.shelfItems)) {
-                        this.storage[key][shelf] = items.map(it => ({ ...it }));
-                    }
-                    this.saveStorage();
-                },
 
-                setStatus(item, status) {
-                    if (item.bold) return;
-                    if (item.status === status) {
-                        item.status = null;
-                    } else {
-                        item.status = status;
-                    }
-                    this.persistDay();
-                    this.actualizarListas();
-                },
-
-                actualizarListas() {
-                    const elaborar = [];
-                    const descongelar = [];
-                    for (const [shelf, items] of Object.entries(this.shelfItems)) {
-                        for (const item of items) {
-                            if (item.bold) continue;
-                            if (item.status === 'elaborar') {
-                                elaborar.push({ ...item, shelf });
-                            } else if (item.status === 'descongelar') {
-                                descongelar.push({ ...item, shelf });
-                            }
-                        }
-                    }
-                    this.elaborarList = elaborar;
-                    this.descongelarList = descongelar;
-                    this.actualizarPedido();
-                },
-                actualizarPedido() {
-                    const base = [];
-                    for (const [shelf, items] of Object.entries(this.shelfItems)) {
-                        for (const item of items) {
-                            if (item.bold) continue;
-                            if (item.status === 'no') {
-                                const existente = this.pedidoList.find(p => p.id === item.id);
-                                if (existente) {
-                                    base.push(existente);
-                                } else {
-                                    base.push({ ...item, shelf, cantidad: item.cantidad || 1, pedidoHecho: false });
-                                }
-                            }
-                        }
-                    }
-                    for (const p of this.pedidoList) {
-                        if (!base.find(b => b.id === p.id)) {
-                            let existe = false;
-                            for (const [shelf, items] of Object.entries(this.shelfItems)) {
-                                if (items.find(it => it.id === p.id)) existe = true;
-                            }
-                            if (existe) base.push(p);
-                        }
-                    }
-                    this.pedidoList = base;
-                },
-                updateHecho() { this.persistDay(); },
-                updatePedido() { this.persistDay(); },
-                quitarDePedido(item) {
-                    this.pedidoList = this.pedidoList.filter(p => p.id !== item.id);
-                    this.persistDay();
-                },
-                limpiarPedido() {
-                    if (confirm('¿Eliminar todos los items del pedido?')) {
-                        this.pedidoList = [];
-                        this.persistDay();
-                    }
-                },
-                resetDay() {
-                    if (!confirm(`Reiniciar todos los estados para ${this.currentDay} (${this.getTurnoLabel()})?`)) return;
-                    for (const shelf of Object.values(this.shelfItems)) {
+            async uploadToSupabase() {
+                if (!this.supabase) return;
+                try {
+                    const items = [];
+                    for (const [balda, shelf] of Object.entries(this.shelfItems)) {
                         for (const item of shelf) {
-                            if (!item.bold) {
-                                item.status = null;
-                                item.hecho = false;
-                                item.pedidoHecho = false;
-                            }
+                            items.push({
+                                turno: this.turno,
+                                dia: this.currentDay,
+                                balda: balda,
+                                item_id: item.id,
+                                item_name: item.name,
+                                bold: item.bold,
+                                status: item.status || null,
+                                hecho: item.hecho || false,
+                                pedido_hecho: item.pedidoHecho || false,
+                                cantidad: item.cantidad || 1,
+                            });
                         }
                     }
+
+                    await this.supabase
+                        .from('timbres_revision')
+                        .delete()
+                        .eq('turno', this.turno)
+                        .eq('dia', this.currentDay);
+
+                    if (items.length > 0) {
+                        const { error } = await this.supabase
+                            .from('timbres_revision')
+                            .insert(items);
+                        if (error) throw error;
+                    }
+
+                    if (this.cocinero) {
+                        await this.supabase
+                            .from('timbres_log')
+                            .upsert({
+                                turno: this.turno,
+                                dia: this.currentDay,
+                                cocinero: this.cocinero,
+                                fecha: new Date().toISOString(),
+                            }, { onConflict: 'turno, dia' });
+                    }
+
+                    this.syncStatus = 'synced';
+                } catch (error) {
+                    console.error('Error al subir a Supabase:', error);
+                    this.syncStatus = 'error';
+                    throw error;
+                }
+            },
+
+            async saveToSupabase() {
+                if (!this.supabase) return;
+                try {
+                    this.syncStatus = 'syncing';
+                    await this.uploadToSupabase();
+                    this.syncStatus = 'synced';
+                } catch (error) {
+                    console.error('Error al guardar:', error);
+                    this.syncStatus = 'error';
+                }
+            },
+
+            setDay(day) {
+                this.currentDay = day;
+                this.syncFromSupabase();
+            },
+
+            async setStatus(item, status) {
+                if (item.bold) return;
+                if (item.status === status) {
+                    item.status = null;
+                } else {
+                    item.status = status;
+                }
+                this.actualizarListas();
+                await this.saveToSupabase();
+            },
+
+            actualizarListas() {
+                const elaborar = [], descongelar = [];
+                for (const [shelf, items] of Object.entries(this.shelfItems)) {
+                    for (const item of items) {
+                        if (item.bold) continue;
+                        if (item.status === 'elaborar') elaborar.push({ ...item, shelf });
+                        else if (item.status === 'descongelar') descongelar.push({ ...item, shelf });
+                    }
+                }
+                this.elaborarList = elaborar;
+                this.descongelarList = descongelar;
+                this.actualizarPedido();
+            },
+
+            actualizarPedido() {
+                const base = [];
+                for (const [shelf, items] of Object.entries(this.shelfItems)) {
+                    for (const item of items) {
+                        if (item.bold) continue;
+                        if (item.status === 'no') {
+                            const existente = this.pedidoList.find(p => p.id === item.id);
+                            if (existente) base.push(existente);
+                            else base.push({ ...item, shelf, cantidad: item.cantidad || 1, pedidoHecho: false });
+                        }
+                    }
+                }
+                for (const p of this.pedidoList) {
+                    if (!base.find(b => b.id === p.id)) {
+                        let existe = false;
+                        for (const [shelf, items] of Object.entries(this.shelfItems)) {
+                            if (items.find(it => it.id === p.id)) existe = true;
+                        }
+                        if (existe) base.push(p);
+                    }
+                }
+                this.pedidoList = base;
+            },
+
+            async updateHecho() { await this.saveToSupabase(); },
+            async updatePedido() { await this.saveToSupabase(); },
+
+            async quitarDePedido(item) {
+                this.pedidoList = this.pedidoList.filter(p => p.id !== item.id);
+                await this.saveToSupabase();
+            },
+
+            async limpiarPedido() {
+                if (confirm('¿Eliminar todos los items del pedido?')) {
                     this.pedidoList = [];
-                    this.persistDay();
-                    this.actualizarListas();
-                },
+                    await this.saveToSupabase();
+                }
+            },
 
-                startEditShelf(name) {
-                    this.editingShelf = name;
-                    this.shelfEditName = name;
-                    this.$nextTick(() => {
-                        if (this.$refs.shelfEditInput) {
-                            const el = Array.isArray(this.$refs.shelfEditInput) ? this.$refs.shelfEditInput[0] : this.$refs.shelfEditInput;
-                            if (el) { el.focus(); el.select(); }
+            async resetDay() {
+                if (!confirm(`Reiniciar todos los estados para ${this.currentDay} (${this.getTurnoLabel()})?`)) return;
+                for (const shelf of Object.values(this.shelfItems)) {
+                    for (const item of shelf) {
+                        if (!item.bold) {
+                            item.status = null;
+                            item.hecho = false;
+                            item.pedidoHecho = false;
                         }
-                    });
-                },
-                saveShelfEdit(oldName) {
-                    if (!this.shelfEditName.trim()) {
-                        this.editingShelf = null;
-                        return;
                     }
-                    const newName = this.shelfEditName.trim();
-                    if (newName === oldName) {
-                        this.editingShelf = null;
-                        return;
-                    }
-                    if (this.shelfItems[newName] && newName !== oldName) {
-                        alert('Ya existe una balda con ese nombre');
-                        return;
-                    }
-                    const items = this.shelfItems[oldName];
-                    delete this.shelfItems[oldName];
-                    this.shelfItems[newName] = items;
-                    this.newItemNames[newName] = this.newItemNames[oldName] || '';
-                    delete this.newItemNames[oldName];
-                    this.editingShelf = null;
-                    this.persistDay();
-                    this.actualizarListas();
-                },
-                deleteShelf(name) {
-                    if (!confirm(`¿Eliminar la balda "${name}" y todos sus items?`)) return;
-                    delete this.shelfItems[name];
-                    delete this.newItemNames[name];
-                    this.pedidoList = this.pedidoList.filter(p => p.shelf !== name);
-                    this.persistDay();
-                    this.actualizarListas();
-                },
-                addShelf() {
-                    const name = this.newShelfName.trim();
-                    if (!name) return;
-                    if (this.shelfItems[name]) {
-                        alert('Ya existe una balda con ese nombre');
-                        return;
-                    }
-                    this.shelfItems[name] = [];
-                    this.newItemNames[name] = '';
-                    this.newShelfName = '';
-                    this.persistDay();
-                },
+                }
+                this.pedidoList = [];
+                this.actualizarListas();
+                await this.saveToSupabase();
+            },
 
-                startEditItem(item) {
-                    this.editingItem = item.id;
-                    this.itemEditName = item.name;
-                    this.$nextTick(() => {
-                        if (this.$refs.itemEditInput) {
-                            const refs = this.$refs.itemEditInput;
-                            const el = Array.isArray(refs) ? refs[refs.length - 1] : refs;
-                            if (el) { el.focus(); el.select(); }
-                        }
-                    });
-                },
-                saveItemEdit(item) {
-                    const newName = this.itemEditName.trim();
-                    if (!newName) {
-                        this.editingItem = null;
-                        return;
+            startEditShelf(name) {
+                this.editingShelf = name;
+                this.shelfEditName = name;
+                this.$nextTick(() => {
+                    if (this.$refs.shelfEditInput) {
+                        const el = Array.isArray(this.$refs.shelfEditInput) ? this.$refs.shelfEditInput[0] : this.$refs.shelfEditInput;
+                        if (el) { el.focus(); el.select(); }
                     }
-                    item.name = newName;
-                    this.editingItem = null;
-                    this.persistDay();
-                    this.actualizarListas();
-                },
-                deleteItem(item) {
-                    if (!confirm(`¿Eliminar "${item.name}"?`)) return;
-                    for (const shelf of Object.values(this.shelfItems)) {
-                        const idx = shelf.findIndex(it => it.id === item.id);
-                        if (idx !== -1) {
-                            shelf.splice(idx, 1);
-                            break;
-                        }
-                    }
-                    this.pedidoList = this.pedidoList.filter(p => p.id !== item.id);
-                    this.persistDay();
-                    this.actualizarListas();
-                },
-                addItem(shelfName) {
-                    const name = this.newItemNames[shelfName]?.trim();
-                    if (!name) return;
-                    const shelf = this.shelfItems[shelfName];
-                    if (!shelf) return;
-                    shelf.push({
-                        id: `${shelfName}-${Date.now()}-${Math.random()}`,
-                        name: name,
-                        bold: false,
-                        status: null,
-                        hecho: false,
-                        pedidoHecho: false,
-                        cantidad: 1,
-                    });
-                    this.newItemNames[shelfName] = '';
-                    this.persistDay();
-                    this.actualizarListas();
-                },
+                });
+            },
 
-                exportPedido() {
-                    const lines = [];
-                    lines.push(`🛒 PEDIDO · ${this.currentDay} · ${this.getTurnoLabel()} · ${this.cocinero || 'cocinero'}`);
-                    lines.push('----------------------------------------');
-                    if (this.pedidoList.length === 0) {
-                        lines.push('✅ No hay nada que pedir');
-                    } else {
-                        for (const item of this.pedidoList) {
-                            const qty = item.cantidad || 1;
-                            lines.push(`  ${qty}x  ${item.name}  (${item.shelf})`);
-                        }
+            async saveShelfEdit(oldName) {
+                if (!this.shelfEditName.trim()) { this.editingShelf = null; return; }
+                const newName = this.shelfEditName.trim();
+                if (newName === oldName) { this.editingShelf = null; return; }
+                if (this.shelfItems[newName] && newName !== oldName) {
+                    alert('Ya existe una balda con ese nombre');
+                    return;
+                }
+                const items = this.shelfItems[oldName];
+                delete this.shelfItems[oldName];
+                this.shelfItems[newName] = items;
+                this.newItemNames[newName] = this.newItemNames[oldName] || '';
+                delete this.newItemNames[oldName];
+                this.editingShelf = null;
+                this.actualizarListas();
+                await this.saveToSupabase();
+            },
+
+            async deleteShelf(name) {
+                if (!confirm(`¿Eliminar la balda "${name}" y todos sus items?`)) return;
+                delete this.shelfItems[name];
+                delete this.newItemNames[name];
+                this.pedidoList = this.pedidoList.filter(p => p.shelf !== name);
+                this.actualizarListas();
+                await this.saveToSupabase();
+            },
+
+            async addShelf() {
+                const name = this.newShelfName.trim();
+                if (!name) return;
+                if (this.shelfItems[name]) {
+                    alert('Ya existe una balda con ese nombre');
+                    return;
+                }
+                this.shelfItems[name] = [];
+                this.newItemNames[name] = '';
+                this.newShelfName = '';
+                await this.saveToSupabase();
+            },
+
+            startEditItem(item) {
+                this.editingItem = item.id;
+                this.itemEditName = item.name;
+                this.$nextTick(() => {
+                    if (this.$refs.itemEditInput) {
+                        const refs = this.$refs.itemEditInput;
+                        const el = Array.isArray(refs) ? refs[refs.length - 1] : refs;
+                        if (el) { el.focus(); el.select(); }
                     }
-                    const texto = lines.join('\n');
-                    navigator.clipboard?.writeText(texto).then(() => {
-                        alert('📋 Pedido copiado al portapapeles');
-                    }).catch(() => {
+                });
+            },
+
+            async saveItemEdit(item) {
+                const newName = this.itemEditName.trim();
+                if (!newName) { this.editingItem = null; return; }
+                item.name = newName;
+                this.editingItem = null;
+                this.actualizarListas();
+                await this.saveToSupabase();
+            },
+
+            async deleteItem(item) {
+                if (!confirm(`¿Eliminar "${item.name}"?`)) return;
+                for (const shelf of Object.values(this.shelfItems)) {
+                    const idx = shelf.findIndex(it => it.id === item.id);
+                    if (idx !== -1) { shelf.splice(idx, 1); break; }
+                }
+                this.pedidoList = this.pedidoList.filter(p => p.id !== item.id);
+                this.actualizarListas();
+                await this.saveToSupabase();
+            },
+
+            async addItem(shelfName) {
+                const name = this.newItemNames[shelfName]?.trim();
+                if (!name) return;
+                const shelf = this.shelfItems[shelfName];
+                if (!shelf) return;
+                shelf.push({
+                    id: `${shelfName}-${Date.now()}-${Math.random()}`,
+                    name: name,
+                    bold: false,
+                    status: null,
+                    hecho: false,
+                    pedidoHecho: false,
+                    cantidad: 1,
+                });
+                this.newItemNames[shelfName] = '';
+                this.actualizarListas();
+                await this.saveToSupabase();
+            },
+
+            exportPedido() {
+                const lines = [];
+                lines.push(`🛒 PEDIDO · ${this.currentDay} · ${this.getTurnoLabel()} · ${this.cocinero || 'cocinero'}`);
+                lines.push('----------------------------------------');
+                if (this.pedidoList.length === 0) {
+                    lines.push('✅ No hay nada que pedir');
+                } else {
+                    for (const item of this.pedidoList) {
+                        const qty = item.cantidad || 1;
+                        lines.push(`  ${qty}x  ${item.name}  (${item.shelf})`);
+                    }
+                }
+                const texto = lines.join('\n');
+                navigator.clipboard?.writeText(texto).then(() => alert('📋 Pedido copiado al portapapeles'))
+                    .catch(() => {
                         const ta = document.createElement('textarea');
                         ta.value = texto;
                         document.body.appendChild(ta);
@@ -1168,41 +1167,43 @@
                         ta.remove();
                         alert('📋 Copiado!');
                     });
-                }
-            },
-            watch: {
-                turno() {
-                    this.loadDay();
-                },
-                shelfItems: {
-                    deep: true,
-                    handler() {
-                        this.persistDay();
-                        this.actualizarListas();
-                    }
-                }
-            },
-            mounted() {
-                const stored = localStorage.getItem('timbres_turnos_v2');
-                if (stored) {
-                    try {
-                        this.storage = JSON.parse(stored);
-                    } catch(e) {}
-                }
-                // Inicializar todos los turnos y días
-                for (const turno of TURNOS) {
-                    for (const day of DAYS) {
-                        const key = `timbres_${turno}_${day}`;
-                        if (!this.storage[key]) {
-                            this.storage[key] = this.cloneBaseData();
-                        }
-                    }
-                }
-                this.saveStorage();
-                this.loadDay();
             }
-        });
-    })();
+        },
+        watch: {
+            turno() { this.syncFromSupabase(); },
+            shelfItems: {
+                deep: true,
+                handler() {
+                    this.actualizarListas();
+                }
+            }
+        },
+        async mounted() {
+            try {
+                const { createClient } = supabase;
+                this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+            } catch (e) {
+                console.error('Error al inicializar Supabase:', e);
+                alert('Error al inicializar Supabase. Verifica las credenciales.');
+                return;
+            }
+
+            this.loading = true;
+            await this.syncFromSupabase();
+            this.loading = false;
+
+            for (const shelf of Object.keys(this.shelfItems)) {
+                if (!this.newItemNames[shelf]) this.newItemNames[shelf] = '';
+            }
+
+            setInterval(() => {
+                if (this.syncStatus !== 'syncing') {
+                    this.syncFromSupabase();
+                }
+            }, 30000);
+        }
+    });
+})();
 </script>
 </body>
 </html>
