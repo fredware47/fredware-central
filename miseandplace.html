@@ -2,14 +2,16 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍽️ Timbres · Revisión de cocina</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>🍽️ Mise and Place · Cocina</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E🍽️%3C/text%3E%3C/svg%3E">
+    <meta name="theme-color" content="#1e293b">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             background: #f5f2ee;
-            padding: 1.5rem;
+            padding: 1rem;
             color: #1e1e1e;
         }
         .app {
@@ -17,7 +19,7 @@
             margin: 0 auto;
             background: white;
             border-radius: 32px;
-            padding: 2rem;
+            padding: 1.5rem;
             box-shadow: 0 10px 40px rgba(0,0,0,0.06);
         }
         .header {
@@ -25,97 +27,76 @@
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            gap: 1rem;
+            gap: 0.8rem;
             border-bottom: 2px solid #eee8e0;
-            padding-bottom: 1.2rem;
-            margin-bottom: 1.8rem;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
         .header h1 {
             font-weight: 600;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             letter-spacing: -0.3px;
         }
         .header h1 small {
             font-weight: 400;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #7a726a;
             margin-left: 0.5rem;
         }
         .user-area {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.6rem;
             flex-wrap: wrap;
         }
-        .user-area label {
-            font-weight: 500;
-            color: #3d3833;
-        }
         .user-area input {
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 0.8rem;
             border: 1px solid #d5cdc3;
             border-radius: 40px;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             background: #faf8f6;
-            width: 150px;
+            width: 130px;
         }
-        .user-area input:focus {
-            outline: 2px solid #1e1e1e;
-            outline-offset: 1px;
-        }
+        .user-area input:focus { outline: 2px solid #1e1e1e; outline-offset: 1px; }
         .day-selector {
             display: flex;
-            gap: 0.4rem;
+            gap: 0.3rem;
             flex-wrap: wrap;
         }
         .day-btn {
             background: #ece7e1;
             border: none;
-            padding: 0.4rem 1.2rem;
+            padding: 0.3rem 0.9rem;
             border-radius: 40px;
             font-weight: 500;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             cursor: pointer;
             transition: 0.15s;
             color: #2f2b27;
         }
-        .day-btn.active {
-            background: #1e1e1e;
-            color: white;
-        }
-        .day-btn:hover {
-            background: #d5cdc3;
-        }
+        .day-btn.active { background: #1e1e1e; color: white; }
+        .day-btn:hover { background: #d5cdc3; }
         .turno-selector {
             display: flex;
-            gap: 0.3rem;
+            gap: 0.2rem;
             background: #f0ebe5;
             border-radius: 40px;
-            padding: 0.2rem;
+            padding: 0.15rem;
         }
         .turno-btn {
             background: transparent;
             border: none;
-            padding: 0.3rem 1.2rem;
+            padding: 0.2rem 1rem;
             border-radius: 30px;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             cursor: pointer;
-            transition: 0.15s;
             color: #4b4540;
         }
-        .turno-btn.active {
-            background: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-            color: #1e1e1e;
-        }
-        .turno-btn:hover {
-            background: rgba(255,255,255,0.5);
-        }
+        .turno-btn.active { background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.06); color: #1e1e1e; }
         .sync-status {
-            font-size: 0.75rem;
-            color: #7a726a;
-            padding: 0.2rem 0.8rem;
+            font-size: 0.65rem;
+            padding: 0.15rem 0.6rem;
             border-radius: 30px;
             background: #f0ebe5;
         }
@@ -127,64 +108,46 @@
             gap: 0.2rem;
             background: #f0ebe5;
             border-radius: 60px;
-            padding: 0.3rem;
-            margin-bottom: 1.5rem;
+            padding: 0.2rem;
+            margin-bottom: 1.2rem;
             flex-wrap: wrap;
         }
         .tab-btn {
             background: transparent;
             border: none;
-            padding: 0.6rem 1.8rem;
+            padding: 0.4rem 1.2rem;
             border-radius: 40px;
             font-weight: 500;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             cursor: pointer;
-            transition: 0.15s;
             color: #4b4540;
             flex: 1 1 auto;
         }
-        .tab-btn.active {
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            color: #1e1e1e;
-        }
-        .tab-btn:hover {
-            background: rgba(255,255,255,0.5);
-        }
-        .tab-content {
-            display: none;
-            animation: fade 0.2s ease;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        @keyframes fade {
-            from { opacity: 0.5; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.2rem;
-        }
+        .tab-btn.active { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.06); color: #1e1e1e; }
+        .tab-content { display: none; animation: fade 0.2s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fade { from { opacity: 0.5; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
         .shelf-card {
             background: #fcfaf8;
-            border-radius: 20px;
-            padding: 1rem 1rem 0.6rem;
+            border-radius: 16px;
+            padding: 0.8rem 0.8rem 0.5rem;
             border: 1px solid #e8e1d9;
+            transition: all 0.2s;
         }
+        .shelf-card:hover { border-color: #c5bdb3; }
         .shelf-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-bottom: 0.4rem;
+            padding-bottom: 0.3rem;
             border-bottom: 2px solid #e0d7cd;
-            margin-bottom: 0.6rem;
-            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+            gap: 0.3rem;
         }
         .shelf-title {
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             color: #1e1e1e;
             display: flex;
             align-items: center;
@@ -193,74 +156,45 @@
         }
         .shelf-title .badge {
             font-weight: 400;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             background: #e0d7cd;
-            padding: 0.1rem 0.6rem;
+            padding: 0.05rem 0.5rem;
             border-radius: 30px;
             color: #3d3833;
         }
-        .shelf-actions {
-            display: flex;
-            gap: 0.3rem;
-            flex-shrink: 0;
-        }
+        .shelf-actions { display: flex; gap: 0.15rem; flex-shrink: 0; }
         .icon-btn {
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 0.9rem;
-            padding: 0.1rem 0.3rem;
-            border-radius: 6px;
-            transition: 0.1s;
+            font-size: 0.75rem;
+            padding: 0.1rem 0.25rem;
+            border-radius: 4px;
             color: #5e5a55;
+            transition: 0.15s;
         }
-        .icon-btn:hover {
-            background: #e8e1d9;
-            color: #1e1e1e;
-        }
-        .icon-btn.danger:hover {
-            background: #f5d6d6;
-            color: #b13e3e;
-        }
+        .icon-btn:hover { background: #e8e1d9; color: #1e1e1e; }
+        .icon-btn.danger:hover { background: #f5d6d6; color: #b13e3e; }
+        .icon-btn.move:hover { background: #d4e6d9; color: #1d6b3c; }
         .item-row {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.3rem 0.1rem;
+            gap: 0.3rem;
+            padding: 0.2rem 0.05rem;
             border-bottom: 1px solid #f0ebe5;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
-        .item-row:last-child {
-            border-bottom: none;
-        }
-        .item-row.bold-item {
-            font-weight: 700;
-            background: #f3efe9;
-            border-radius: 8px;
-            padding: 0.3rem 0.6rem;
-            margin: 0.2rem 0;
-            border-bottom: 1px solid #e0d7cd;
-        }
-        .item-name {
-            flex: 1;
-            color: #1f1d1b;
-            min-width: 0;
-            word-break: break-word;
-        }
-        .item-actions {
-            display: flex;
-            gap: 0.2rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
+        .item-row:last-child { border-bottom: none; }
+        .item-row.bold-item { font-weight: 700; background: #f3efe9; border-radius: 6px; padding: 0.2rem 0.4rem; margin: 0.15rem 0; border-bottom: 1px solid #e0d7cd; }
+        .item-name { flex: 1; color: #1f1d1b; min-width: 0; word-break: break-word; font-size: 0.8rem; }
+        .item-actions { display: flex; gap: 0.15rem; flex-wrap: wrap; align-items: center; }
         .status-btn {
             border: none;
-            padding: 0.15rem 0.5rem;
+            padding: 0.1rem 0.4rem;
             border-radius: 30px;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.1s;
             background: #ece7e1;
             color: #3d3833;
             white-space: nowrap;
@@ -270,128 +204,111 @@
         .status-btn.active-elaborar { background: #c97d2b; color: white; }
         .status-btn.active-descongelar { background: #2b6f8a; color: white; }
         .status-btn:hover { opacity: 0.8; }
-        .status-btn.bold-item-btn { opacity: 0.3; pointer-events: none; }
         .item-edit-input {
             border: 1px solid #d5cdc3;
-            border-radius: 8px;
-            padding: 0.1rem 0.4rem;
-            font-size: 0.85rem;
+            border-radius: 6px;
+            padding: 0.05rem 0.3rem;
+            font-size: 0.8rem;
             background: white;
             flex: 1;
-            min-width: 80px;
-        }
-        .item-edit-input:focus {
-            outline: 2px solid #1e1e1e;
-            outline-offset: 1px;
+            min-width: 60px;
         }
         .add-item-row {
             display: flex;
-            gap: 0.4rem;
-            margin-top: 0.5rem;
-            padding-top: 0.5rem;
+            gap: 0.3rem;
+            margin-top: 0.3rem;
+            padding-top: 0.3rem;
             border-top: 1px dashed #d5cdc3;
         }
         .add-item-row input {
             flex: 1;
             border: 1px solid #d5cdc3;
-            border-radius: 8px;
-            padding: 0.2rem 0.6rem;
-            font-size: 0.85rem;
-        }
-        .add-item-row input:focus {
-            outline: 2px solid #1e1e1e;
-            outline-offset: 1px;
+            border-radius: 6px;
+            padding: 0.15rem 0.4rem;
+            font-size: 0.75rem;
         }
         .add-item-row .btn-add {
             background: #1e1e1e;
             color: white;
             border: none;
-            padding: 0.2rem 1rem;
+            padding: 0.1rem 0.8rem;
             border-radius: 30px;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             cursor: pointer;
         }
         .add-item-row .btn-add:hover { background: #333; }
         .stats-bar {
             display: flex;
             flex-wrap: wrap;
-            gap: 1.2rem 2rem;
+            gap: 0.8rem 1.5rem;
             background: #f5f2ee;
-            padding: 0.6rem 1.5rem;
+            padding: 0.4rem 1rem;
             border-radius: 60px;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
+            font-size: 0.75rem;
         }
-        .stats-bar span { font-size: 0.85rem; }
-        .stats-bar .num { font-weight: 700; margin-left: 0.2rem; }
+        .stats-bar .num { font-weight: 700; margin-left: 0.1rem; }
         .stats-bar .num.hay { color: #1e7e34; }
         .stats-bar .num.no { color: #b13e3e; }
         .stats-bar .num.elaborar { color: #c97d2b; }
         .stats-bar .num.descongelar { color: #2b6f8a; }
-
-        .action-list {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-        }
+        .action-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         @media (max-width: 700px) { .action-list { grid-template-columns: 1fr; } }
         .action-card {
             background: #fcfaf8;
-            border-radius: 24px;
-            padding: 1.2rem 1.5rem;
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
             border: 1px solid #e8e1d9;
         }
         .action-card h3 {
             font-weight: 600;
-            font-size: 1.2rem;
-            margin-bottom: 0.8rem;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.3rem;
         }
         .action-card h3 .count {
             background: #1e1e1e;
             color: white;
-            font-size: 0.7rem;
-            padding: 0.1rem 0.6rem;
+            font-size: 0.65rem;
+            padding: 0.05rem 0.5rem;
             border-radius: 30px;
         }
         .action-item {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
-            padding: 0.4rem 0;
+            gap: 0.4rem;
+            padding: 0.25rem 0;
             border-bottom: 1px solid #ede8e1;
+            font-size: 0.8rem;
         }
         .action-item .shelf-tag {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             background: #e0d7cd;
-            padding: 0.1rem 0.5rem;
+            padding: 0.05rem 0.4rem;
             border-radius: 30px;
             color: #3d3833;
         }
-        .empty-state { color: #8f8982; font-style: italic; padding: 0.5rem 0; }
-
-        .order-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.3rem;
-        }
+        .empty-state { color: #8f8982; font-style: italic; padding: 0.3rem 0; font-size: 0.8rem; }
+        .order-list { display: flex; flex-direction: column; gap: 0.2rem; }
         .order-item {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
-            padding: 0.4rem 0.8rem;
+            gap: 0.5rem;
+            padding: 0.3rem 0.6rem;
             background: #fcfaf8;
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid #e8e1d9;
+            font-size: 0.8rem;
         }
         .order-item .qty-input {
-            width: 50px;
-            padding: 0.2rem 0.4rem;
+            width: 40px;
+            padding: 0.1rem 0.2rem;
             border: 1px solid #d5cdc3;
-            border-radius: 8px;
+            border-radius: 6px;
             text-align: center;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
         .order-item .remove-btn {
             background: none;
@@ -399,179 +316,197 @@
             color: #b13e3e;
             cursor: pointer;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
         .toolbar {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.8rem;
-            margin-top: 1.5rem;
-            padding-top: 1.2rem;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 0.8rem;
             border-top: 1px solid #eee8e0;
         }
         .btn-primary {
             background: #1e1e1e;
             border: none;
-            padding: 0.6rem 2rem;
+            padding: 0.4rem 1.5rem;
             border-radius: 60px;
             color: white;
             font-weight: 500;
             cursor: pointer;
-            transition: 0.15s;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
         .btn-primary:hover { background: #33312e; }
         .btn-outline {
             background: transparent;
             border: 1px solid #b9b0a6;
-            padding: 0.5rem 1.5rem;
+            padding: 0.4rem 1.2rem;
             border-radius: 60px;
             font-weight: 500;
             cursor: pointer;
-            transition: 0.1s;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
         .btn-outline:hover { background: #e5dfd8; }
         .btn-danger {
             background: #b13e3e;
             border: none;
-            padding: 0.5rem 1.5rem;
+            padding: 0.4rem 1.2rem;
             border-radius: 60px;
             color: white;
             font-weight: 500;
             cursor: pointer;
+            font-size: 0.8rem;
         }
         .btn-danger:hover { background: #8f2f2f; }
-
         .registro {
             background: #f0ebe5;
-            padding: 0.6rem 1.2rem;
+            padding: 0.4rem 1rem;
             border-radius: 40px;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #2f2b27;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1rem;
             display: flex;
             flex-wrap: wrap;
-            gap: 0.5rem 1.5rem;
+            gap: 0.3rem 1rem;
             align-items: center;
         }
         .registro .turno-badge {
             background: #1e1e1e;
             color: white;
-            padding: 0.1rem 0.8rem;
+            padding: 0.05rem 0.6rem;
             border-radius: 30px;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             font-weight: 600;
             text-transform: uppercase;
         }
         .footer {
-            margin-top: 2rem;
-            font-size: 0.75rem;
+            margin-top: 1.5rem;
+            font-size: 0.65rem;
             color: #7a726a;
             text-align: center;
             border-top: 1px solid #eee8e0;
-            padding-top: 1.2rem;
+            padding-top: 0.8rem;
         }
         .shelf-edit-input {
             border: 1px solid #d5cdc3;
-            border-radius: 8px;
-            padding: 0.1rem 0.4rem;
-            font-size: 0.85rem;
+            border-radius: 6px;
+            padding: 0.05rem 0.3rem;
+            font-size: 0.8rem;
             background: white;
             flex: 1;
             font-weight: 700;
         }
-        .shelf-edit-input:focus {
-            outline: 2px solid #1e1e1e;
-            outline-offset: 1px;
-        }
         .add-shelf-area {
             display: flex;
-            gap: 0.8rem;
-            margin-bottom: 1.2rem;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
             flex-wrap: wrap;
             align-items: center;
         }
         .add-shelf-area input {
-            padding: 0.4rem 1rem;
+            padding: 0.3rem 0.8rem;
             border: 1px solid #d5cdc3;
             border-radius: 40px;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             flex: 1;
-            min-width: 200px;
+            min-width: 150px;
         }
-        .add-shelf-area input:focus {
-            outline: 2px solid #1e1e1e;
-            outline-offset: 1px;
-        }
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #7a726a;
-        }
+        .loading { text-align: center; padding: 1.5rem; color: #7a726a; }
         .spinner {
             display: inline-block;
-            width: 30px;
-            height: 30px;
+            width: 25px;
+            height: 25px;
             border: 3px solid #f0ebe5;
             border-top-color: #1e1e1e;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 0.8rem;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        .back-link:hover { color: #1e1e1e; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e1e1e;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            z-index: 999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+        .toast.success { background: #1e7e34; }
+        .toast.error { background: #b13e3e; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .move-btn-group { display: flex; gap: 0.1rem; }
+        @media (max-width: 500px) {
+            .app { padding: 0.8rem; }
+            .grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.2rem; }
+            .user-area input { width: 100px; font-size: 0.75rem; }
+            .shelf-actions .icon-btn { font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
 <div class="app" id="app">
+    <a href="personal.html" class="back-link">← Volver a Personal</a>
     <div class="header">
-        <h1>🍽️ Timbres <small>mise & place · 2025</small></h1>
+        <h1>🍽️ Mise and Place <small>timbres · 2025</small></h1>
         <div class="user-area">
-            <label>👨‍🍳 Cocinero</label>
+            <label style="font-size:0.75rem;font-weight:500;">👨‍🍳</label>
             <input type="text" v-model="cocinero" placeholder="Tu nombre">
             <div class="turno-selector">
-                <button class="turno-btn" :class="{ active: turno === 'mediodia' }" @click="turno = 'mediodia'">☀️ Mediodía</button>
-                <button class="turno-btn" :class="{ active: turno === 'noche' }" @click="turno = 'noche'">🌙 Noche</button>
+                <button class="turno-btn" :class="{ active: turno === 'mediodia' }" @click="turno = 'mediodia'">☀️</button>
+                <button class="turno-btn" :class="{ active: turno === 'noche' }" @click="turno = 'noche'">🌙</button>
             </div>
             <div class="day-selector">
-                <button class="day-btn" v-for="d in days" :key="d" :class="{ active: currentDay === d }" @click="setDay(d)">{{ d }}</button>
+                <button class="day-btn" v-for="d in days" :key="d" :class="{ active: currentDay === d }" @click="setDay(d)">{{ d.slice(0,3) }}</button>
             </div>
             <span class="sync-status" :class="syncStatusClass">{{ syncStatusText }}</span>
         </div>
     </div>
 
     <div class="registro" v-if="cocinero">
-        <span>✅ Revisión de <strong>{{ currentDay }}</strong> · <span class="turno-badge">{{ turno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche' }}</span></span>
+        <span>✅ <strong>{{ currentDay }}</strong> · <span class="turno-badge">{{ turno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche' }}</span></span>
         <span>👨‍🍳 {{ cocinero }}</span>
-        <span style="font-size:0.8rem;color:#5e5a55;">{{ new Date().toLocaleDateString() }}</span>
+        <span style="font-size:0.7rem;color:#5e5a55;">{{ new Date().toLocaleDateString() }}</span>
     </div>
 
     <div class="tabs">
         <button class="tab-btn" :class="{ active: tab === 'revision' }" @click="tab = 'revision'">📋 Revisión</button>
-        <button class="tab-btn" :class="{ active: tab === 'accion' }" @click="tab = 'accion'">⚡ Listas de acción</button>
-        <button class="tab-btn" :class="{ active: tab === 'pedido' }" @click="tab = 'pedido'">🛒 Pedido (falta)</button>
+        <button class="tab-btn" :class="{ active: tab === 'accion' }" @click="tab = 'accion'">⚡ Listas</button>
+        <button class="tab-btn" :class="{ active: tab === 'pedido' }" @click="tab = 'pedido'">🛒 Pedido</button>
     </div>
 
-    <div v-if="loading" class="loading">
-        <div class="spinner"></div>
-        <p style="margin-top:1rem;">Cargando datos de Supabase...</p>
-    </div>
+    <div v-if="loading" class="loading"><div class="spinner"></div><p style="margin-top:0.8rem;">Cargando...</p></div>
 
     <div v-else>
         <div class="tab-content" :class="{ active: tab === 'revision' }">
             <div class="add-shelf-area">
-                <input type="text" v-model="newShelfName" placeholder="Nombre de nueva balda..." @keyup.enter="addShelf">
-                <button class="btn-primary" @click="addShelf">➕ Añadir balda</button>
-                <button class="btn-outline" @click="resetDay">🔄 Reiniciar día</button>
-                <button class="btn-outline" @click="syncFromSupabase">🔄 Sincronizar</button>
+                <input type="text" v-model="newShelfName" placeholder="Nueva balda..." @keyup.enter="addShelf">
+                <button class="btn-primary" @click="addShelf">➕ Añadir</button>
+                <button class="btn-outline" @click="resetDay">🔄 Reiniciar</button>
+                <button class="btn-outline" @click="syncFromSupabase">📡 Sincronizar</button>
             </div>
             <div class="stats-bar">
-                <span>✅ Hay: <span class="num hay">{{ stats.hay }}</span></span>
-                <span>❌ No hay: <span class="num no">{{ stats.no }}</span></span>
-                <span>⚡ Elaborar: <span class="num elaborar">{{ stats.elaborar }}</span></span>
-                <span>❄️ Descongelar: <span class="num descongelar">{{ stats.descongelar }}</span></span>
-                <span>📦 Total: {{ totalItems }}</span>
+                <span>✅ <span class="num hay">{{ stats.hay }}</span></span>
+                <span>❌ <span class="num no">{{ stats.no }}</span></span>
+                <span>⚡ <span class="num elaborar">{{ stats.elaborar }}</span></span>
+                <span>❄️ <span class="num descongelar">{{ stats.descongelar }}</span></span>
+                <span>📦 {{ totalItems }}</span>
             </div>
             <div class="grid">
                 <div class="shelf-card" v-for="(shelf, name) in shelfItems" :key="name">
@@ -582,10 +517,14 @@
                             </template>
                             <template v-else>
                                 {{ name }}
-                                <span class="badge">{{ shelf.filter(it => !it.bold).length }} items</span>
+                                <span class="badge">{{ shelf.filter(it => !it.bold).length }}</span>
                             </template>
                         </div>
                         <div class="shelf-actions">
+                            <div class="move-btn-group">
+                                <button class="icon-btn move" @click="moveShelfUp(name)" title="Mover arriba">⬆️</button>
+                                <button class="icon-btn move" @click="moveShelfDown(name)" title="Mover abajo">⬇️</button>
+                            </div>
                             <button class="icon-btn" @click="startEditShelf(name)" title="Editar nombre">✏️</button>
                             <button class="icon-btn danger" @click="deleteShelf(name)" title="Eliminar balda">🗑️</button>
                         </div>
@@ -608,13 +547,13 @@
                         </template>
                     </div>
                     <div class="add-item-row">
-                        <input type="text" v-model="newItemNames[name]" :placeholder="'Nuevo item...'" @keyup.enter="addItem(name)">
+                        <input type="text" v-model="newItemNames[name]" :placeholder="'Nuevo...'" @keyup.enter="addItem(name)">
                         <button class="btn-add" @click="addItem(name)">+</button>
                     </div>
                 </div>
             </div>
             <div class="toolbar">
-                <button class="btn-primary" @click="tab = 'accion'">📊 Ver listas de acción</button>
+                <button class="btn-primary" @click="tab = 'accion'">📊 Listas</button>
             </div>
         </div>
 
@@ -622,7 +561,7 @@
             <div class="action-list">
                 <div class="action-card">
                     <h3>⚡ Elaborar <span class="count">{{ elaborarList.length }}</span></h3>
-                    <div v-if="elaborarList.length === 0" class="empty-state">✅ No hay nada que elaborar</div>
+                    <div v-if="elaborarList.length === 0" class="empty-state">✅ Completado</div>
                     <div v-for="item in elaborarList" :key="item.id" class="action-item">
                         <input type="checkbox" v-model="item.hecho" @change="updateHecho(item)">
                         <span class="item-name">{{ item.name }}</span>
@@ -631,7 +570,7 @@
                 </div>
                 <div class="action-card">
                     <h3>❄️ Descongelar <span class="count">{{ descongelarList.length }}</span></h3>
-                    <div v-if="descongelarList.length === 0" class="empty-state">✅ No hay que descongelar</div>
+                    <div v-if="descongelarList.length === 0" class="empty-state">✅ Completado</div>
                     <div v-for="item in descongelarList" :key="item.id" class="action-item">
                         <input type="checkbox" v-model="item.hecho" @change="updateHecho(item)">
                         <span class="item-name">{{ item.name }}</span>
@@ -640,15 +579,15 @@
                 </div>
             </div>
             <div class="toolbar">
-                <button class="btn-outline" @click="tab = 'revision'">← Volver a revisión</button>
-                <button class="btn-primary" @click="tab = 'pedido'">🛒 Ir a pedido (falta)</button>
+                <button class="btn-outline" @click="tab = 'revision'">← Revisión</button>
+                <button class="btn-primary" @click="tab = 'pedido'">🛒 Pedido</button>
             </div>
         </div>
 
         <div class="tab-content" :class="{ active: tab === 'pedido' }">
-            <div style="margin-bottom:1rem;">
-                <h3>🛒 Lo que falta para pedir</h3>
-                <p style="color:#5e5a55;font-size:0.9rem;">Items marcados como "No hay" o añadidos manualmente</p>
+            <div style="margin-bottom:0.8rem;">
+                <h3 style="font-size:1rem;">🛒 Lo que falta para pedir</h3>
+                <p style="color:#5e5a55;font-size:0.8rem;">Items marcados como "No hay"</p>
             </div>
             <div class="order-list">
                 <div v-for="item in pedidoList" :key="item.id" class="order-item">
@@ -658,37 +597,33 @@
                     <input type="number" class="qty-input" v-model="item.cantidad" min="1" @change="updatePedido">
                     <button class="remove-btn" @click="quitarDePedido(item)">✕</button>
                 </div>
-                <div v-if="pedidoList.length === 0" class="empty-state" style="padding:1rem;">🎉 No hay nada que pedir, ¡todo está completo!</div>
+                <div v-if="pedidoList.length === 0" class="empty-state" style="padding:0.8rem;">🎉 ¡Todo completo!</div>
             </div>
             <div class="toolbar">
-                <button class="btn-outline" @click="tab = 'accion'">← Volver a listas</button>
-                <button class="btn-outline" @click="exportPedido">📋 Copiar pedido</button>
-                <button class="btn-danger" @click="limpiarPedido">🗑️ Limpiar pedido</button>
+                <button class="btn-outline" @click="tab = 'accion'">← Listas</button>
+                <button class="btn-outline" @click="exportPedido">📋 Copiar</button>
+                <button class="btn-danger" @click="limpiarPedido">🗑️ Limpiar</button>
             </div>
         </div>
     </div>
 
+    <div v-if="toast.show" class="toast" :class="toast.type">
+        {{ toast.message }}
+    </div>
+
     <div class="footer">
-        📌 Items en <strong>negrita</strong> son encabezados de balda. ✏️ Edita nombres, 🗑️ elimina, ➕ añade.
-        <br>☀️ Mediodía y 🌙 Noche tienen revisiones independientes · Datos sincronizados con Supabase
+        📌 En negrita: encabezados · ⬆️⬇️ Mover baldas · ✏️ Edita · 🗑️ Elimina · ➕ Añade · Datos en Supabase
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ============================================================
-//  CONFIGURACIÓN DE SUPABASE - CON TUS CREDENCIALES
-// ============================================================
 const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
 
-// ============================================================
-
 (function() {
     const DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
-    const TURNOS = ['mediodia', 'noche'];
-
     const BASE_SHELF_DATA = {
         "Balda 1 Puerta A": [
             { name: "Ensalada Fredie", bold: true },
@@ -807,6 +742,7 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
             loading: false,
             syncStatus: 'idle',
             supabase: null,
+            toast: { show: false, message: '', type: '' },
         },
         computed: {
             totalItems() {
@@ -830,12 +766,7 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                 return { hay, no, elaborar, descongelar };
             },
             syncStatusText() {
-                const map = {
-                    idle: '📡 Cargando...',
-                    syncing: '🔄 Sincronizando...',
-                    synced: '✅ Sincronizado',
-                    error: '❌ Error'
-                };
+                const map = { idle: '📡', syncing: '🔄', synced: '✅', error: '❌' };
                 return map[this.syncStatus] || '📡';
             },
             syncStatusClass() {
@@ -846,11 +777,83 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
             }
         },
         methods: {
-            getTurnoLabel() { return this.turno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche'; },
+            showToast(message, type = 'success') {
+                this.toast = { show: true, message, type };
+                clearTimeout(this.toastTimer);
+                this.toastTimer = setTimeout(() => {
+                    this.toast.show = false;
+                }, 3000);
+            },
 
+            // ==================== MOVER BALDAS (OPCIÓN 3) ====================
+            moveShelfUp(name) {
+                const keys = Object.keys(this.shelfItems);
+                const index = keys.indexOf(name);
+                if (index <= 0) {
+                    this.showToast('La balda ya está en la primera posición', 'error');
+                    return;
+                }
+                
+                const prevKey = keys[index - 1];
+                const newItems = {};
+                
+                // Reconstruir en nuevo orden
+                let insertIndex = 0;
+                for (let i = 0; i < keys.length; i++) {
+                    const key = keys[i];
+                    if (key === name) {
+                        // Saltamos esta iteración, la pondremos después
+                        continue;
+                    } else if (key === prevKey) {
+                        // Primero ponemos la que sube, luego la anterior
+                        newItems[name] = this.shelfItems[name];
+                        newItems[prevKey] = this.shelfItems[prevKey];
+                        insertIndex = i + 1;
+                    } else {
+                        newItems[key] = this.shelfItems[key];
+                    }
+                }
+                
+                this.shelfItems = newItems;
+                this.saveToSupabase();
+                this.showToast(`"${name}" movida hacia arriba`, 'success');
+            },
+
+            moveShelfDown(name) {
+                const keys = Object.keys(this.shelfItems);
+                const index = keys.indexOf(name);
+                if (index >= keys.length - 1) {
+                    this.showToast('La balda ya está en la última posición', 'error');
+                    return;
+                }
+                
+                const nextKey = keys[index + 1];
+                const newItems = {};
+                
+                // Reconstruir en nuevo orden
+                for (let i = 0; i < keys.length; i++) {
+                    const key = keys[i];
+                    if (key === name) {
+                        // Saltamos, la pondremos después
+                        continue;
+                    } else if (key === nextKey) {
+                        // Primero la que baja, luego la que sube
+                        newItems[nextKey] = this.shelfItems[nextKey];
+                        newItems[name] = this.shelfItems[name];
+                    } else {
+                        newItems[key] = this.shelfItems[key];
+                    }
+                }
+                
+                this.shelfItems = newItems;
+                this.saveToSupabase();
+                this.showToast(`"${name}" movida hacia abajo`, 'success');
+            },
+
+            // ==================== SUPABASE ====================
             async syncFromSupabase() {
                 if (!this.supabase) {
-                    alert('Error: Supabase no inicializado.');
+                    this.showToast('Error: Supabase no inicializado', 'error');
                     return;
                 }
                 this.syncStatus = 'syncing';
@@ -860,9 +863,8 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                         .select('*')
                         .eq('turno', this.turno)
                         .eq('dia', this.currentDay);
-
                     if (error) throw error;
-
+                    
                     if (data && data.length > 0) {
                         const newItems = {};
                         for (const row of data) {
@@ -882,13 +884,13 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                         this.shelfItems = generateBaseItems();
                         await this.uploadToSupabase();
                     }
-
                     this.syncStatus = 'synced';
                     this.actualizarListas();
+                    this.showToast('Datos sincronizados correctamente', 'success');
                 } catch (error) {
-                    console.error('Error al sincronizar:', error);
+                    console.error(error);
                     this.syncStatus = 'error';
-                    alert('Error al sincronizar con Supabase. Revisa la consola.');
+                    this.showToast('Error al sincronizar: ' + error.message, 'error');
                 }
             },
 
@@ -899,76 +901,51 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                     for (const [balda, shelf] of Object.entries(this.shelfItems)) {
                         for (const item of shelf) {
                             items.push({
-                                turno: this.turno,
-                                dia: this.currentDay,
-                                balda: balda,
-                                item_id: item.id,
-                                item_name: item.name,
-                                bold: item.bold,
-                                status: item.status || null,
-                                hecho: item.hecho || false,
-                                pedido_hecho: item.pedidoHecho || false,
+                                turno: this.turno, dia: this.currentDay, balda, item_id: item.id,
+                                item_name: item.name, bold: item.bold, status: item.status || null,
+                                hecho: item.hecho || false, pedido_hecho: item.pedidoHecho || false,
                                 cantidad: item.cantidad || 1,
                             });
                         }
                     }
-
-                    await this.supabase
-                        .from('timbres_revision')
-                        .delete()
-                        .eq('turno', this.turno)
-                        .eq('dia', this.currentDay);
-
+                    await this.supabase.from('timbres_revision').delete().eq('turno', this.turno).eq('dia', this.currentDay);
                     if (items.length > 0) {
-                        const { error } = await this.supabase
-                            .from('timbres_revision')
-                            .insert(items);
+                        const { error } = await this.supabase.from('timbres_revision').insert(items);
                         if (error) throw error;
                     }
-
                     if (this.cocinero) {
-                        await this.supabase
-                            .from('timbres_log')
-                            .upsert({
-                                turno: this.turno,
-                                dia: this.currentDay,
-                                cocinero: this.cocinero,
-                                fecha: new Date().toISOString(),
-                            }, { onConflict: 'turno, dia' });
+                        await this.supabase.from('timbres_log').upsert({
+                            turno: this.turno, dia: this.currentDay,
+                            cocinero: this.cocinero, fecha: new Date().toISOString(),
+                        }, { onConflict: 'turno, dia' });
                     }
-
-                    this.syncStatus = 'synced';
-                } catch (error) {
-                    console.error('Error al subir a Supabase:', error);
-                    this.syncStatus = 'error';
-                    throw error;
+                } catch (error) { 
+                    console.error(error); 
+                    throw error; 
                 }
             },
 
             async saveToSupabase() {
                 if (!this.supabase) return;
-                try {
-                    this.syncStatus = 'syncing';
-                    await this.uploadToSupabase();
-                    this.syncStatus = 'synced';
-                } catch (error) {
-                    console.error('Error al guardar:', error);
-                    this.syncStatus = 'error';
+                this.syncStatus = 'syncing';
+                try { 
+                    await this.uploadToSupabase(); 
+                    this.syncStatus = 'synced'; 
+                } catch (e) { 
+                    this.syncStatus = 'error'; 
+                    this.showToast('Error al guardar: ' + e.message, 'error');
                 }
             },
 
-            setDay(day) {
-                this.currentDay = day;
-                this.syncFromSupabase();
+            setDay(day) { 
+                this.currentDay = day; 
+                this.syncFromSupabase(); 
             },
 
+            // ==================== ESTADOS ====================
             async setStatus(item, status) {
                 if (item.bold) return;
-                if (item.status === status) {
-                    item.status = null;
-                } else {
-                    item.status = status;
-                }
+                item.status = item.status === status ? null : status;
                 this.actualizarListas();
                 await this.saveToSupabase();
             },
@@ -1014,34 +991,33 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
             async updateHecho() { await this.saveToSupabase(); },
             async updatePedido() { await this.saveToSupabase(); },
 
-            async quitarDePedido(item) {
-                this.pedidoList = this.pedidoList.filter(p => p.id !== item.id);
-                await this.saveToSupabase();
+            async quitarDePedido(item) { 
+                this.pedidoList = this.pedidoList.filter(p => p.id !== item.id); 
+                await this.saveToSupabase(); 
             },
 
-            async limpiarPedido() {
-                if (confirm('¿Eliminar todos los items del pedido?')) {
-                    this.pedidoList = [];
-                    await this.saveToSupabase();
-                }
+            async limpiarPedido() { 
+                if (confirm('¿Limpiar todos los items del pedido?')) { 
+                    this.pedidoList = []; 
+                    await this.saveToSupabase(); 
+                    this.showToast('Pedido limpiado', 'success');
+                } 
             },
 
             async resetDay() {
-                if (!confirm(`Reiniciar todos los estados para ${this.currentDay} (${this.getTurnoLabel()})?`)) return;
+                if (!confirm(`Reiniciar todos los estados para ${this.currentDay} (${this.turno})?`)) return;
                 for (const shelf of Object.values(this.shelfItems)) {
                     for (const item of shelf) {
-                        if (!item.bold) {
-                            item.status = null;
-                            item.hecho = false;
-                            item.pedidoHecho = false;
-                        }
+                        if (!item.bold) { item.status = null; item.hecho = false; item.pedidoHecho = false; }
                     }
                 }
                 this.pedidoList = [];
                 this.actualizarListas();
                 await this.saveToSupabase();
+                this.showToast('Día reiniciado correctamente', 'success');
             },
 
+            // ==================== EDICIÓN BALDAS ====================
             startEditShelf(name) {
                 this.editingShelf = name;
                 this.shelfEditName = name;
@@ -1057,9 +1033,9 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                 if (!this.shelfEditName.trim()) { this.editingShelf = null; return; }
                 const newName = this.shelfEditName.trim();
                 if (newName === oldName) { this.editingShelf = null; return; }
-                if (this.shelfItems[newName] && newName !== oldName) {
-                    alert('Ya existe una balda con ese nombre');
-                    return;
+                if (this.shelfItems[newName] && newName !== oldName) { 
+                    this.showToast('Ya existe una balda con ese nombre', 'error');
+                    return; 
                 }
                 const items = this.shelfItems[oldName];
                 delete this.shelfItems[oldName];
@@ -1069,6 +1045,7 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                 this.editingShelf = null;
                 this.actualizarListas();
                 await this.saveToSupabase();
+                this.showToast('Balda renombrada correctamente', 'success');
             },
 
             async deleteShelf(name) {
@@ -1078,21 +1055,35 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                 this.pedidoList = this.pedidoList.filter(p => p.shelf !== name);
                 this.actualizarListas();
                 await this.saveToSupabase();
+                this.showToast('Balda eliminada correctamente', 'success');
             },
 
             async addShelf() {
                 const name = this.newShelfName.trim();
-                if (!name) return;
-                if (this.shelfItems[name]) {
-                    alert('Ya existe una balda con ese nombre');
-                    return;
+                if (!name) { 
+                    this.showToast('Escribe un nombre para la balda', 'error');
+                    return; 
                 }
-                this.shelfItems[name] = [];
+                if (this.shelfItems[name]) { 
+                    this.showToast('Ya existe una balda con ese nombre', 'error');
+                    return; 
+                }
+                
+                // ✅ Añadir la nueva balda al PRINCIPIO
+                const newShelfItems = {};
+                newShelfItems[name] = [];
+                for (const [key, value] of Object.entries(this.shelfItems)) {
+                    newShelfItems[key] = value;
+                }
+                this.shelfItems = newShelfItems;
+                
                 this.newItemNames[name] = '';
                 this.newShelfName = '';
                 await this.saveToSupabase();
+                this.showToast(`Balda "${name}" añadida al principio`, 'success');
             },
 
+            // ==================== EDICIÓN ITEMS ====================
             startEditItem(item) {
                 this.editingItem = item.id;
                 this.itemEditName = item.name;
@@ -1112,6 +1103,7 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                 this.editingItem = null;
                 this.actualizarListas();
                 await this.saveToSupabase();
+                this.showToast('Item actualizado', 'success');
             },
 
             async deleteItem(item) {
@@ -1123,6 +1115,7 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                 this.pedidoList = this.pedidoList.filter(p => p.id !== item.id);
                 this.actualizarListas();
                 await this.saveToSupabase();
+                this.showToast('Item eliminado', 'success');
             },
 
             async addItem(shelfName) {
@@ -1142,64 +1135,49 @@ const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
                 this.newItemNames[shelfName] = '';
                 this.actualizarListas();
                 await this.saveToSupabase();
+                this.showToast('Item añadido', 'success');
             },
 
+            // ==================== EXPORT ====================
             exportPedido() {
-                const lines = [];
-                lines.push(`🛒 PEDIDO · ${this.currentDay} · ${this.getTurnoLabel()} · ${this.cocinero || 'cocinero'}`);
+                const lines = [`🛒 PEDIDO · ${this.currentDay} · ${this.turno} · ${this.cocinero || 'cocinero'}`];
                 lines.push('----------------------------------------');
-                if (this.pedidoList.length === 0) {
-                    lines.push('✅ No hay nada que pedir');
-                } else {
-                    for (const item of this.pedidoList) {
-                        const qty = item.cantidad || 1;
-                        lines.push(`  ${qty}x  ${item.name}  (${item.shelf})`);
-                    }
-                }
+                if (this.pedidoList.length === 0) lines.push('✅ No hay nada que pedir');
+                else for (const item of this.pedidoList) lines.push(`  ${item.cantidad || 1}x  ${item.name}  (${item.shelf})`);
                 const texto = lines.join('\n');
-                navigator.clipboard?.writeText(texto).then(() => alert('📋 Pedido copiado al portapapeles'))
-                    .catch(() => {
-                        const ta = document.createElement('textarea');
-                        ta.value = texto;
-                        document.body.appendChild(ta);
-                        ta.select();
-                        document.execCommand('copy');
-                        ta.remove();
-                        alert('📋 Copiado!');
-                    });
+                navigator.clipboard?.writeText(texto).then(() => {
+                    this.showToast('📋 Pedido copiado al portapapeles', 'success');
+                }).catch(() => {
+                    const ta = document.createElement('textarea'); 
+                    ta.value = texto; 
+                    document.body.appendChild(ta); 
+                    ta.select(); 
+                    document.execCommand('copy'); 
+                    ta.remove(); 
+                    this.showToast('📋 Pedido copiado', 'success');
+                });
             }
         },
         watch: {
             turno() { this.syncFromSupabase(); },
-            shelfItems: {
-                deep: true,
-                handler() {
-                    this.actualizarListas();
-                }
-            }
+            shelfItems: { deep: true, handler() { this.actualizarListas(); } }
         },
         async mounted() {
             try {
                 const { createClient } = supabase;
                 this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-            } catch (e) {
-                console.error('Error al inicializar Supabase:', e);
-                alert('Error al inicializar Supabase. Verifica las credenciales.');
-                return;
+            } catch (e) { 
+                this.showToast('Error al conectar con Supabase', 'error');
+                return; 
             }
-
             this.loading = true;
             await this.syncFromSupabase();
             this.loading = false;
-
             for (const shelf of Object.keys(this.shelfItems)) {
                 if (!this.newItemNames[shelf]) this.newItemNames[shelf] = '';
             }
-
-            setInterval(() => {
-                if (this.syncStatus !== 'syncing') {
-                    this.syncFromSupabase();
-                }
+            setInterval(() => { 
+                if (this.syncStatus !== 'syncing') this.syncFromSupabase(); 
             }, 30000);
         }
     });
