@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>📊 Fredware - Gestión de Inventario y Mermas</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 🔥 NÚCLEO UNIFICADO -->
+    <script src="shared-core.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f8fafc; color: #1e293b; padding: 15px; }
@@ -41,10 +43,28 @@
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast-success { border-left: 4px solid #10b981; }
         .toast-error { border-left: 4px solid #ef4444; }
+
+        .btn-volver {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+        .btn-volver:hover { background: #475569; }
     </style>
 </head>
 <body>
 <div class="container">
+    <a href="index.html" class="btn-volver">🏠 Volver al Panel</a>
     <h1>📊 Fredware Ecosistema - Inventario y Mermas</h1>
     
     <div class="tabs">
@@ -429,6 +449,7 @@
     }
 
     // 🔵 Guardar el conteo físico final y el consumo neto calculado
+    // ✅ MODIFICADO CON INTEGRACIÓN AL NÚCLEO UNIFICADO
     async function guardarConteoFisicoBase() {
         if(lineasInventarioMes.length === 0) return;
 
@@ -444,11 +465,46 @@
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', lin.id);
+
+            // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
+            if (window.fredware) {
+                try {
+                    await window.fredware.broadcastEvent('cierre_inventario', {
+                        id: lin.id,
+                        articulo: lin.articulo_id,
+                        stock_final: inputVal,
+                        consumo_neto: displayNeto,
+                        mes_anio: lin.mes_anio,
+                        timestamp: new Date().toISOString()
+                    });
+                    console.log('📡 Notificado cierre de inventario al núcleo:', lin.articulo_id);
+                } catch (e) {
+                    console.warn('⚠️ No se pudo notificar al núcleo:', e);
+                }
+            }
         }
 
         lanzarToast("¡Cierre de inventario mensual guardado a fuego en la nube!");
         cargarCuadroInventario();
     }
+
+    // ============================================================
+    // CONEXIÓN AL NÚCLEO UNIFICADO
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.fredware) {
+            console.log('✅ Inventario conectado al núcleo unificado');
+            window.fredware.subscribe((state) => {
+                console.log('📊 Estado global actualizado desde Inventario');
+                // Opcional: refrescar datos si hay nuevas recepciones
+                if (state.recepciones && state.recepciones.length > 0) {
+                    // Podríamos recargar compras si es necesario
+                }
+            });
+        } else {
+            console.warn('⚠️ Núcleo unificado no disponible. Asegúrate de que shared-core.js está cargado.');
+        }
+    });
 
     // ============================================================
     // CARGA INICIAL

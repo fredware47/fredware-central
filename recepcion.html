@@ -6,6 +6,8 @@
     <title>📦 Fredware - Gestión de Recepciones</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- 🔥 NÚCLEO UNIFICADO -->
+    <script src="shared-core.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; }
@@ -98,6 +100,23 @@
         .ingrediente-item .nombre { font-weight: 700; color: #1e293b; }
         .ingrediente-item .detalle { font-size: 12px; color: #94a3b8; }
         
+        .btn-volver {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            margin-bottom: 10px;
+        }
+        .btn-volver:hover { background: #475569; }
+        
         @media (max-width: 640px) {
             .grid-2, .grid-3 { grid-template-columns: 1fr; }
             .grid-cards { grid-template-columns: 1fr; }
@@ -111,6 +130,7 @@
 <div class="container">
     <!-- HEADER -->
     <div class="card" style="padding: 0; border: none; background: transparent;">
+        <a href="index.html" class="btn-volver">🏠 Volver al Panel</a>
         <div class="fredware-header">
             <span style="font-size: 28px;">📦</span>
             <div>
@@ -332,7 +352,6 @@
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
 
-    // ✅ CORRECTO: Usar supabase directamente
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const API_URL = "https://untried-january-thinning.ngrok-free.dev";
 
@@ -350,7 +369,7 @@
     let isDeleting = false;
 
     // ============================================================
-    // UTILIDADES - CORREGIDAS
+    // UTILIDADES
     // ============================================================
     function getFechaHoy() {
         const hoy = new Date();
@@ -590,7 +609,7 @@
     }
 
     // ============================================================
-    // BACKUP DIARIO - CORREGIDO PARA LA ESTRUCTURA EXISTENTE
+    // BACKUP DIARIO (MODIFICADO CON INTEGRACIÓN)
     // ============================================================
     async function generarBackupDiario() {
         try {
@@ -601,7 +620,6 @@
                 return;
             }
             
-            // Obtener fechas únicas
             const fechasDisponibles = [...new Set(recepcionesData.map(r => {
                 const fecha = formatearFechaParaComparar(r.fecha_registro);
                 return fecha;
@@ -614,7 +632,6 @@
                 return;
             }
 
-            // Mostrar selector de fecha con SweetAlert2
             const { value: fechaSeleccionada } = await Swal.fire({
                 title: '📥 Selecciona la fecha del backup',
                 text: 'Elige una fecha con recepciones registradas',
@@ -640,7 +657,6 @@
 
             if (!fechaSeleccionada) return;
 
-            // Filtrar recepciones
             const recepcionesFiltradas = recepcionesData.filter(r => {
                 const fecha = formatearFechaParaComparar(r.fecha_registro);
                 return fecha === fechaSeleccionada;
@@ -653,7 +669,6 @@
 
             toast(`📥 Generando backup de ${recepcionesFiltradas.length} productos...`, 'info');
 
-            // Crear resumen
             const resumen = {
                 fecha: fechaSeleccionada,
                 total_productos: recepcionesFiltradas.length,
@@ -671,7 +686,7 @@
                 generado_en: new Date().toISOString()
             };
 
-            // ✅ GUARDAR EN SUPABASE CON LA ESTRUCTURA CORRECTA
+            // ✅ GUARDAR EN SUPABASE
             try {
                 const datosParaInsertar = {
                     fecha: fechaSeleccionada,
@@ -693,13 +708,29 @@
                 } else {
                     console.log('✅ Backup guardado en Supabase:', data);
                     toast('✅ Backup guardado en Supabase', 'success');
+                    
+                    // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
+                    if (window.fredware) {
+                        await window.fredware.broadcastEvent('nueva_recepcion', {
+                            fecha: fechaSeleccionada,
+                            total_productos: recepcionesFiltradas.length,
+                            proveedores: [...new Set(recepcionesFiltradas.map(r => r.proveedor))],
+                            productos: recepcionesFiltradas.map(r => ({
+                                nombre: r.producto || 'Sin nombre',
+                                proveedor: r.proveedor || 'S/P',
+                                cantidad: r.cantidad || 1
+                            })),
+                            timestamp: new Date().toISOString()
+                        });
+                        console.log('📡 Notificada nueva recepción al núcleo');
+                    }
                 }
             } catch (dbError) {
                 console.error('❌ Error DB:', dbError);
                 toast('⚠️ No se pudo guardar en Supabase, pero el JSON se descargará igualmente', 'warning');
             }
 
-            // ✅ DESCARGAR JSON (siempre)
+            // ✅ DESCARGAR JSON
             try {
                 const blob = new Blob([JSON.stringify(resumen, null, 2)], { type: 'application/json;charset=utf-8' });
                 const a = document.createElement('a');
@@ -732,7 +763,7 @@
     }
 
     // ============================================================
-    // BACKUP COMPLETO - CORREGIDO
+    // BACKUP COMPLETO
     // ============================================================
     async function generarBackupCompleto() {
         try {
@@ -755,7 +786,6 @@
 
             toast('📥 Generando backup completo...', 'info');
 
-            // Agrupar por fecha
             const porFecha = {};
             recepcionesData.forEach(r => {
                 const fecha = formatearFechaParaComparar(r.fecha_registro) || 'S/F';
@@ -801,6 +831,17 @@
                 } else {
                     console.log('✅ Backup completo guardado en Supabase:', data);
                     toast('✅ Backup completo guardado en Supabase', 'success');
+                    
+                    // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
+                    if (window.fredware) {
+                        await window.fredware.broadcastEvent('nueva_recepcion', {
+                            fecha: 'COMPLETO',
+                            total_productos: recepcionesData.length,
+                            proveedores: [...new Set(recepcionesData.map(r => r.proveedor))],
+                            timestamp: new Date().toISOString()
+                        });
+                        console.log('📡 Notificado backup completo al núcleo');
+                    }
                 }
             } catch (dbError) {
                 console.error('❌ Error DB:', dbError);
@@ -829,7 +870,7 @@
     }
 
     // ============================================================
-    // SINCRONIZAR INGREDIENTES DESDE RECEPCIONES
+    // SINCRONIZAR INGREDIENTES (MODIFICADO CON INTEGRACIÓN)
     // ============================================================
     async function sincronizarIngredientesDesdeRecepciones() {
         try {
@@ -876,6 +917,17 @@
                     };
                     await guardarIngredienteMaestroDB(nuevo);
                     nuevos++;
+                    
+                    // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
+                    if (window.fredware) {
+                        await window.fredware.broadcastEvent('nuevo_ingrediente', {
+                            nombre: nuevo.nombre,
+                            proveedor: nuevo.proveedor_habitual || '',
+                            categoria: nuevo.categoria || 'GENERAL',
+                            timestamp: new Date().toISOString()
+                        });
+                        console.log('📡 Notificado nuevo ingrediente al núcleo:', nuevo.nombre);
+                    }
                 }
             }
 
@@ -1159,6 +1211,17 @@
             document.getElementById('ing-proveedor').value = '';
             await cargarIngredientesMaestros();
             await notificarNuevoIngrediente(nombre, proveedor || 'S/P');
+            
+            // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
+            if (window.fredware) {
+                await window.fredware.broadcastEvent('nuevo_ingrediente', {
+                    nombre: nombre,
+                    proveedor: proveedor || '',
+                    categoria: categoria || 'GENERAL',
+                    timestamp: new Date().toISOString()
+                });
+                console.log('📡 Notificado nuevo ingrediente al núcleo desde guardado manual');
+            }
         } else {
             toast('❌ Error al guardar ingrediente', 'error');
         }
@@ -1301,7 +1364,7 @@
     }
 
     // ============================================================
-    // IMPRIMIR RESUMEN DIARIO (VÍA NGROK)
+    // IMPRIMIR RESUMEN DIARIO
     // ============================================================
     async function imprimirResumenDiario() {
         try {
@@ -1389,6 +1452,24 @@
             const text = item.textContent.toUpperCase();
             item.style.display = text.includes(busqueda) ? 'flex' : 'none';
         });
+    });
+
+    // ============================================================
+    // CONEXIÓN AL NÚCLEO UNIFICADO
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.fredware) {
+            console.log('📦 Recepciones conectadas al núcleo unificado');
+            window.fredware.subscribe((state) => {
+                console.log('📊 Estado global actualizado desde Recepciones');
+                // Podemos actualizar estadísticas si hay cambios
+                if (state.inventario && state.inventario.length > 0) {
+                    // Opcional: refrescar algo
+                }
+            });
+        } else {
+            console.warn('⚠️ Núcleo unificado no disponible. Asegúrate de que shared-core.js está cargado.');
+        }
     });
 
     // ============================================================
