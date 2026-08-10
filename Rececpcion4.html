@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>📦 Fredware - Gestión de Recepciones</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; }
@@ -88,6 +89,13 @@
         .toast.info { background: #1e3a5f; border-left: 4px solid #60a5fa; }
         
         @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .checkbox-seleccion { width: 18px; height: 18px; cursor: pointer; accent-color: #10b981; }
+        
+        .ingrediente-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; transition: background 0.2s; }
+        .ingrediente-item:hover { background: #f8fafc; }
+        .ingrediente-item .nombre { font-weight: 700; color: #1e293b; }
+        .ingrediente-item .detalle { font-size: 12px; color: #94a3b8; }
         
         @media (max-width: 640px) {
             .grid-2, .grid-3 { grid-template-columns: 1fr; }
@@ -297,7 +305,7 @@
 
             <div class="flex gap-3 mt-4 flex-wrap">
                 <button onclick="generarBackupDiario()" class="btn btn-download" style="flex:1; padding: 14px;">
-                    📥 Descargar Backup Diario (PDF)
+                    📥 Descargar Backup Diario (JSON)
                 </button>
                 <button onclick="exportarCSV()" class="btn btn-success" style="flex:1; padding: 14px;">
                     📊 Exportar CSV
@@ -312,12 +320,18 @@
 
 <script>
     // ============================================================
-    // CONFIGURACIÓN
+    // CONFIGURACIÓN - CORREGIDA
     // ============================================================
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ✅ CORRECTO: Usar supabase directamente (no window.supabase)
+    // La librería se carga como variable global 'supabase'
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+
+    // Verificación (opcional)
+    console.log('✅ Supabase inicializado correctamente');
 
     // ============================================================
     // ESTADO
@@ -547,7 +561,7 @@
     }
 
     // ============================================================
-    // BACKUP DIARIO (PDF Y JSON)
+    // BACKUP DIARIO (JSON)
     // ============================================================
     async function generarBackupDiario() {
         try {
@@ -596,38 +610,15 @@
                 console.warn('No se pudo guardar backup en Supabase:', error);
             }
 
-            // Generar PDF (vía ngrok)
-            try {
-                const response = await fetch(`${API_URL}/generar_backup_pdf`, {
-                    method: 'POST',
-                    headers: {
-                        'ngrok-skip-browser-warning': 'true',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        fecha: hoy,
-                        recepciones: recepcionesHoy,
-                        resumen: resumen
-                    })
-                });
-
-                if (response.ok) {
-                    toast('✅ PDF de backup generado correctamente', 'success');
-                } else {
-                    toast('⚠️ Error al generar PDF, pero datos guardados', 'warning');
-                }
-            } catch (error) {
-                console.error('Error generando PDF:', error);
-                // Fallback: descargar JSON
-                const blob = new Blob([JSON.stringify(resumen, null, 2)], { type: 'application/json' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `backup_diario_${hoy}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                toast('📥 Backup descargado como JSON', 'success');
-            }
+            // Descargar JSON como fallback
+            const blob = new Blob([JSON.stringify(resumen, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `backup_diario_${hoy}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            toast('📥 Backup descargado como JSON', 'success');
 
         } catch (error) {
             console.error('Error en backup:', error);
@@ -994,10 +985,10 @@
             }
 
             container.innerHTML = data.map(item => `
-                <div class="flex justify-between items-center p-3 border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                <div class="ingrediente-item">
                     <div>
-                        <span class="font-bold text-slate-800">${escapeHtml(item.nombre)}</span>
-                        <div class="text-xs text-slate-500">
+                        <span class="nombre">${escapeHtml(item.nombre)}</span>
+                        <div class="detalle">
                             ${item.unidad_defecto || 'KG'} | ${item.categoria || 'GENERAL'}
                             ${item.proveedor_habitual ? `| 🏢 ${escapeHtml(item.proveedor_habitual)}` : ''}
                             ${item.ultima_recepcion_fecha ? `| 📅 ${formatearFecha(item.ultima_recepcion_fecha)}` : ''}
@@ -1198,7 +1189,7 @@
     document.getElementById('buscar-ingredientes').addEventListener('input', function() {
         const busqueda = this.value.trim().toUpperCase();
         const container = document.getElementById('lista-ingredientes');
-        const items = container.querySelectorAll('.flex.justify-between');
+        const items = container.querySelectorAll('.ingrediente-item');
         items.forEach(item => {
             const text = item.textContent.toUpperCase();
             item.style.display = text.includes(busqueda) ? 'flex' : 'none';
@@ -1228,6 +1219,7 @@
     window.eliminarRecepciones = eliminarRecepciones;
 
     console.log('✅ Recepción unificada inicializada correctamente');
+    console.log('📡 Supabase conectado:', db);
 </script>
 </body>
 </html>
