@@ -29,10 +29,13 @@
         .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
         .badge-nuevo { background: #3b82f6; color: white; font-size: 9px; padding: 1px 8px; border-radius: 20px; margin-left: 5px; display: inline-block; vertical-align: middle; }
         .badge-activo { background: #22c55e; color: white; font-size: 9px; padding: 1px 8px; border-radius: 20px; margin-left: 5px; display: inline-block; vertical-align: middle; }
+        .badge-destacado { background: #8b5cf6; color: white; font-size: 9px; padding: 1px 8px; border-radius: 20px; margin-left: 5px; display: inline-block; vertical-align: middle; }
         .card-destacado { border-color: #10b981 !important; background: #f0fdf4 !important; }
         .card-destacado:hover { background: #dcfce7 !important; }
         .card-mise-jefe { border-color: #8b5cf6 !important; background: #f5f3ff !important; }
         .card-mise-jefe:hover { background: #ede9fe !important; }
+        .card-dashboard { border-color: #8b5cf6 !important; background: #f5f3ff !important; }
+        .card-dashboard:hover { background: #ede9fe !important; }
         
         @media (max-width: 640px) {
             .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -55,29 +58,46 @@
         </h1>
         <p class="sub">Selecciona una herramienta para empezar</p>
         <div class="grid">
-            <!-- ===== MISE AND PLACE JEFE (NUEVO) ===== -->
-            <a href="miseandplacejefe.html" class="card card-mise-jefe">
+            
+            <!-- ========================================================== -->
+            <!-- 🆕 DASHBOARD UNIFICADO (NUEVO) -->
+            <!-- ========================================================== -->
+            <a href="dashboard-unified.html" class="card card-dashboard">
                 <span class="icono">📊</span>
+                <span class="nombre">Dashboard Unificado <span class="badge-nuevo">Nuevo</span></span>
+                <span class="desc">Vista global de recepciones e inventario</span>
+            </a>
+
+            <!-- ========================================================== -->
+            <!-- MISE AND PLACE JEFE -->
+            <!-- ========================================================== -->
+            <a href="miseandplacejefe.html" class="card card-mise-jefe">
+                <span class="icono">⏰</span>
                 <span class="nombre">Mise and Place Jefe <span class="badge-nuevo">Nuevo</span></span>
                 <span class="desc">Supervisión de timbres</span>
             </a>
 
-            <!-- Herramientas existentes -->
+            <!-- ========================================================== -->
+            <!-- HERRAMIENTAS EXISTENTES -->
+            <!-- ========================================================== -->
             <a href="Inventario.html" class="card">
                 <span class="icono">📊</span>
                 <span class="nombre">Inventario</span>
                 <span class="desc">Mermas y costes</span>
             </a>
+            
             <a href="caducidades.html" class="card" style="border-color: #3b82f6; background: #eff6ff;">
                 <span class="icono">📦</span>
                 <span class="nombre">Caducidades</span>
                 <span class="desc">Etiquetado y trazabilidad</span>
             </a>
+            
             <a href="compras.html" class="card">
                 <span class="icono">📥</span>
                 <span class="nombre">Compras</span>
                 <span class="desc">Cesta y pedidos</span>
             </a>
+            
             <a href="faltas.html" class="card">
                 <span class="icono">🚚</span>
                 <span class="nombre">Faltas</span>
@@ -96,6 +116,7 @@
                 <span class="nombre">Listas</span>
                 <span class="desc">Hojas de pedido</span>
             </a>
+            
             <a href="recetario.html" class="card">
                 <span class="icono">🍽️</span>
                 <span class="nombre">Recetario</span>
@@ -115,11 +136,13 @@
                 <span class="nombre">Horas Extra <span class="badge-nuevo">Nuevo</span></span>
                 <span class="desc">Registro para cocineros</span>
             </a>
+            
             <a href="horas-jefe.html" class="card" style="border-color: #8b5cf6; background: #f5f3ff;">
                 <span class="icono">📊</span>
                 <span class="nombre">Horas Extra Jefe <span class="badge-nuevo">Nuevo</span></span>
                 <span class="desc">Panel de control (Jefe)</span>
             </a>
+            
         </div>
         <div class="footer">
             Fredware v2.0 · Todos los datos están en la nube (Supabase)
