@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Fredware - Dashboard Unificado</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="shared-core.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f1f5f9; padding: 16px; }
+        .dashboard { max-width: 1400px; margin: 0 auto; }
+        
+        .header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header h1 { font-size: 24px; font-weight: 900; }
+        .header .stats { display: flex; gap: 24px; flex-wrap: wrap; }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 80px;
+        }
+        .stat-card .number { font-size: 28px; font-weight: 900; }
+        .stat-card .label { font-size: 11px; text-transform: uppercase; opacity: 0.7; }
+        
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .card h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .alert-item {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid;
+        }
+        .alert-item.warning { background: #fef3c7; border-color: #f59e0b; }
+        .alert-item.info { background: #dbeafe; border-color: #3b82f6; }
+        .alert-item.error { background: #fee2e2; border-color: #ef4444; }
+        
+        .badge {
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-high { background: #fee2e2; color: #991b1b; }
+        .badge-medium { background: #fef3c7; color: #92400e; }
+        .badge-low { background: #d1fae5; color: #065f46; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+        .fill-green { background: #10b981; }
+        .fill-yellow { background: #f59e0b; }
+        .fill-red { background: #ef4444; }
+        
+        .refresh-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .refresh-btn:hover { background: rgba(255,255,255,0.25); }
+        
+        .last-update {
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: right;
+            margin-top: 8px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .nav-link:hover { background: rgba(255,255,255,0.2); }
+        
+        .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .item:last-child { border-bottom: none; }
+        
+        @media (max-width: 768px) {
+            .grid-3, .grid-2 { grid-template-columns: 1fr; }
+            .header { flex-direction: column; align-items: stretch; }
+            .header .stats { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard" id="app">
+    <div class="header">
+        <div>
+            <h1>📊 FREDWARE - Dashboard Unificado</h1>
+            <div style="font-size: 13px; opacity: 0.7; margin-top: 4px;">
+                Sistema integrado de recepciones e inventario
+            </div>
+            <div class="nav-links">
+                <a href="Inventario.html" class="nav-link">📊 Inventario</a>
+                <a href="recepcion.html" class="nav-link">📦 Recepciones</a>
+                <a href="index.html" class="nav-link">🏠 Inicio</a>
+            </div>
+        </div>
+        <div class="stats" id="headerStats">
+            <div class="stat-card">
+                <div class="number" id="totalIngredientes">0</div>
+                <div class="label">Ingredientes</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="recepcionesHoy">0</div>
+                <div class="label">Recibidos Hoy</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="alertasCount">0</div>
+                <div class="label">Alertas</div>
+            </div>
+        </div>
+        <button class="refresh-btn" onclick="forzarActualizacion()">🔄 Actualizar</button>
+    </div>
+    
+    <div class="grid-3">
+        <div class="card">
+            <h3>🚨 Alertas Activas</h3>
+            <div id="alertasContainer">
+                <div class="empty-state"><div class="icon">✅</div><div>Cargando alertas...</div></div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>📉 Mermas por Producto</h3>
+            <div id="mermasContainer">
+                <div class="empty-state"><div class="icon">📊</div><div>Cargando datos...</div></div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>📦 Últimas Recepciones</h3>
+            <div id="recepcionesContainer">
+                <div class="empty-state"><div class="icon">📭</div><div>Cargando recepciones...</div></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid-2">
+        <div class="card">
+            <h3>⚠️ Productos Críticos</h3>
+            <div id="criticosContainer">
+                <div class="empty-state"><div class="icon">✅</div><div>Cargando...</div></div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>🔄 Actividad Reciente</h3>
+            <div id="actividadContainer">
+                <div class="empty-state"><div class="icon">⏳</div><div>Esperando actividad...</div></div>
+            </div>
+            <div class="last-update" id="lastUpdate">Última actualización: --</div>
+        </div>
+    </div>
+</div>
+
+<script>
+let estadoActual = null;
+let ultimaActualizacion = null;
+
+fredware.subscribe((state) => {
+    estadoActual = state;
+    ultimaActualizacion = new Date();
+    renderizarDashboard(state);
+});
+
+function renderizarDashboard(state) {
+    document.getElementById('totalIngredientes').textContent = state.ingredientes.length;
+    document.getElementById('recepcionesHoy').textContent = state.estadisticas.totalHoy || 0;
+    document.getElementById('alertasCount').textContent = state.estadisticas.alertas.length;
+    renderizarAlertas(state);
+    renderizarMermas(state);
+    renderizarRecepciones(state);
+    renderizarCriticos(state);
+    renderizarActividad(state);
+    document.getElementById('lastUpdate').textContent = 
+        `Última actualización: ${new Date().toLocaleTimeString()}`;
+}
+
+function renderizarAlertas(state) {
+    const container = document.getElementById('alertasContainer');
+    const alertas = state.estadisticas.alertas;
+    if (alertas.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">✅</div><div>Todo en orden</div></div>`;
+        return;
+    }
+    container.innerHTML = alertas.map(a => `
+        <div class="alert-item ${a.tipo}">
+            <span>${a.mensaje}</span>
+            <span class="badge badge-${a.prioridad}">${a.prioridad.toUpperCase()}</span>
+        </div>
+    `).join('');
+}
+
+function renderizarMermas(state) {
+    const container = document.getElementById('mermasContainer');
+    const sorted = [...state.escandallos].sort((a,b) => b.porcentaje_merma - a.porcentaje_merma);
+    const top5 = sorted.slice(0, 5);
+    if (top5.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div>No hay productos configurados</div></div>`;
+        return;
+    }
+    container.innerHTML = top5.map(esc => {
+        const m = esc.porcentaje_merma || 0;
+        const color = m > 20 ? 'red' : m > 10 ? 'yellow' : 'green';
+        return `
+            <div style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;">
+                    <span><strong>${esc.nombre_articulo}</strong></span>
+                    <span style="font-weight:700;color:${m>20?'#ef4444':m>10?'#f59e0b':'#10b981'}">${m}%</span>
+                </div>
+                <div class="progress-bar"><div class="fill-${color}" style="width:${Math.min(m,100)}%"></div></div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderizarRecepciones(state) {
+    const container = document.getElementById('recepcionesContainer');
+    const ultimas = (state.recepciones || []).slice(0, 5);
+    if (ultimas.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><div>Sin recepciones recientes</div></div>`;
+        return;
+    }
+    container.innerHTML = ultimas.map(r => {
+        const productos = r.data?.productos || [];
+        return `
+            <div class="item">
+                <div>
+                    <strong>📅 ${r.fecha || 'Fecha desconocida'}</strong>
+                    <div style="font-size:12px;color:#64748b;">${productos.length} productos</div>
+                </div>
+                <span class="badge badge-low">✅ Recibido</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderizarCriticos(state) {
+    const container = document.getElementById('criticosContainer');
+    const criticos = state.estadisticas.productosCriticos || [];
+    if (criticos.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">✅</div><div>No hay productos críticos</div></div>`;
+        return;
+    }
+    container.innerHTML = criticos.map(p => `
+        <div class="alert-item error">
+            <span>⚠️ ${p}</span>
+            <span class="badge badge-high">ALTA MERMA</span>
+        </div>
+    `).join('');
+}
+
+function renderizarActividad(state) {
+    const container = document.getElementById('actividadContainer');
+    const actividades = [];
+    if (state.recepciones?.length > 0) {
+        const ultima = state.recepciones[0];
+        if (ultima) actividades.push({
+            mensaje: `📦 Recepción: ${ultima.data?.productos?.length || 0} productos`,
+            tiempo: 'Ahora'
+        });
+    }
+    if (state.estadisticas.alertas?.length > 0) {
+        const ultimaAlerta = state.estadisticas.alertas[0];
+        if (ultimaAlerta) actividades.push({
+            mensaje: ultimaAlerta.mensaje,
+            tiempo: 'Ahora'
+        });
+    }
+    if (actividades.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><div>Esperando actividad...</div></div>`;
+        return;
+    }
+    container.innerHTML = actividades.map(a => `
+        <div class="item"><span>${a.mensaje}</span><span class="badge badge-low">${a.tiempo}</span></div>
+    `).join('');
+}
+
+function forzarActualizacion() {
+    document.getElementById('alertasContainer').innerHTML = 
+        `<div class="empty-state"><div class="icon">🔄</div><div>Actualizando...</div></div>`;
+    fredware.recargarTodo();
+}
+
+setInterval(() => { if (fredware) fredware.recargarTodo(); }, 30000);
+</script>
+</body>
+</html>
