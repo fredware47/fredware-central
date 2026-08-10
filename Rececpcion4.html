@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>📦 Fredware - Gestión de Recepciones</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; }
@@ -123,6 +124,9 @@
                 </button>
                 <button onclick="generarBackupDiario()" class="btn btn-download" style="font-size: 12px; padding: 8px 16px;">
                     📥 Backup Diario
+                </button>
+                <button onclick="generarBackupCompleto()" class="btn btn-success" style="font-size: 12px; padding: 8px 16px;">
+                    📦 Backup Completo
                 </button>
             </div>
         </div>
@@ -305,13 +309,16 @@
 
             <div class="flex gap-3 mt-4 flex-wrap">
                 <button onclick="generarBackupDiario()" class="btn btn-download" style="flex:1; padding: 14px;">
-                    📥 Descargar Backup Diario (JSON)
+                    📥 Backup por Fecha
                 </button>
-                <button onclick="exportarCSV()" class="btn btn-success" style="flex:1; padding: 14px;">
+                <button onclick="generarBackupCompleto()" class="btn btn-success" style="flex:1; padding: 14px;">
+                    📦 Backup Completo
+                </button>
+                <button onclick="exportarCSV()" class="btn btn-warning" style="flex:1; padding: 14px;">
                     📊 Exportar CSV
                 </button>
-                <button onclick="imprimirResumenDiario()" class="btn btn-warning" style="flex:1; padding: 14px;">
-                    🖨️ Imprimir Resumen Diario
+                <button onclick="imprimirResumenDiario()" class="btn btn-purple" style="flex:1; padding: 14px;">
+                    🖨️ Imprimir Resumen
                 </button>
             </div>
         </div>
@@ -320,17 +327,15 @@
 
 <script>
     // ============================================================
-    // CONFIGURACIÓN - CORREGIDA
+    // CONFIGURACIÓN
     // ============================================================
     const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
     const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
 
-    // ✅ CORRECTO: Usar supabase directamente (no window.supabase)
-    // La librería se carga como variable global 'supabase'
+    // ✅ CORRECTO: Usar supabase directamente
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const API_URL = "https://untried-january-thinning.ngrok-free.dev";
 
-    // Verificación (opcional)
     console.log('✅ Supabase inicializado correctamente');
 
     // ============================================================
@@ -345,28 +350,83 @@
     let isDeleting = false;
 
     // ============================================================
-    // UTILIDADES
+    // UTILIDADES - CORREGIDAS
     // ============================================================
-    function getFechaHoy() { return new Date().toISOString().split('T')[0]; }
+    function getFechaHoy() {
+        const hoy = new Date();
+        const anio = hoy.getFullYear();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        return `${anio}-${mes}-${dia}`;
+    }
 
     function formatearFecha(fechaStr) {
         if (!fechaStr) return 'S/F';
         try {
+            if (typeof fechaStr === 'string' && fechaStr.includes(',')) {
+                const partes = fechaStr.split(',');
+                return partes[0].trim();
+            }
+            if (typeof fechaStr === 'string' && fechaStr.includes('/')) {
+                return fechaStr.split(' ')[0];
+            }
             const d = new Date(fechaStr);
             if (!isNaN(d)) {
-                return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                return d.toLocaleDateString('es-ES', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric' 
+                });
             }
             return fechaStr;
-        } catch { return fechaStr; }
+        } catch { 
+            return fechaStr; 
+        }
     }
 
     function formatearFechaParaComparar(fechaStr) {
         if (!fechaStr) return '';
         try {
+            if (typeof fechaStr === 'string') {
+                let limpio = fechaStr.trim();
+                
+                if (limpio.includes(',')) {
+                    const partes = limpio.split(',');
+                    const fechaParte = partes[0].trim();
+                    const partesFecha = fechaParte.split('/');
+                    if (partesFecha.length === 3) {
+                        const dia = partesFecha[0].padStart(2, '0');
+                        const mes = partesFecha[1].padStart(2, '0');
+                        const anio = partesFecha[2];
+                        return `${anio}-${mes}-${dia}`;
+                    }
+                }
+                
+                if (limpio.includes('/')) {
+                    const partes = limpio.split('/');
+                    if (partes.length === 3) {
+                        const dia = partes[0].padStart(2, '0');
+                        const mes = partes[1].padStart(2, '0');
+                        const anio = partes[2];
+                        return `${anio}-${mes}-${dia}`;
+                    }
+                }
+                
+                if (limpio.match(/^\d{4}-\d{2}-\d{2}/)) {
+                    return limpio.split('T')[0];
+                }
+            }
+            
             const d = new Date(fechaStr);
-            if (!isNaN(d)) return d.toISOString().split('T')[0];
-            return fechaStr;
-        } catch { return fechaStr; }
+            if (!isNaN(d)) {
+                return d.toISOString().split('T')[0];
+            }
+            
+            return String(fechaStr);
+        } catch (error) {
+            console.warn('Error parseando fecha:', fechaStr, error);
+            return String(fechaStr);
+        }
     }
 
     function escapeHtml(text) {
@@ -444,19 +504,6 @@
         }
     }
 
-    async function notificarRecepcionNueva(producto, proveedor, cantidad) {
-        try {
-            await broadcastChannel.send({
-                type: 'broadcast',
-                event: 'recepcion-nueva',
-                payload: { producto, proveedor, cantidad, timestamp: new Date().toISOString() }
-            });
-            console.log('✅ Notificación de nueva recepción enviada:', producto);
-        } catch (error) {
-            console.warn('⚠️ No se pudo enviar notificación:', error);
-        }
-    }
-
     // ============================================================
     // FUNCIONES SUPABASE
     // ============================================================
@@ -524,24 +571,6 @@
         }
     }
 
-    async function eliminarRecepcionDB(id) {
-        try {
-            const response = await fetch(`${API_URL}/eliminar_mercancia`, {
-                method: 'POST',
-                headers: {
-                    'ngrok-skip-browser-warning': 'true',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ ids: [id] })
-            });
-            if (!response.ok) throw new Error('Error al eliminar');
-            return true;
-        } catch (error) {
-            console.error('Error eliminando recepción:', error);
-            return false;
-        }
-    }
-
     async function eliminarRecepcionesDB(ids) {
         try {
             const response = await fetch(`${API_URL}/eliminar_mercancia`, {
@@ -561,68 +590,241 @@
     }
 
     // ============================================================
-    // BACKUP DIARIO (JSON)
+    // BACKUP DIARIO - CORREGIDO PARA LA ESTRUCTURA EXISTENTE
     // ============================================================
     async function generarBackupDiario() {
         try {
-            toast('📥 Generando backup diario...', 'info');
+            console.log('📊 DEBUG: Total recepciones:', recepcionesData.length);
             
-            const hoy = getFechaHoy();
-            const recepcionesHoy = recepcionesData.filter(r => {
+            if (recepcionesData.length === 0) {
+                toast('⚠️ No hay recepciones en la base de datos.', 'warning');
+                return;
+            }
+            
+            // Obtener fechas únicas
+            const fechasDisponibles = [...new Set(recepcionesData.map(r => {
                 const fecha = formatearFechaParaComparar(r.fecha_registro);
-                return fecha === hoy;
-            });
+                return fecha;
+            }))].filter(f => f && f !== '' && f !== 'S/F' && f !== 'undefined').sort().reverse();
 
-            if (recepcionesHoy.length === 0) {
-                toast('⚠️ No hay recepciones para hoy', 'warning');
+            console.log('📅 Fechas disponibles:', fechasDisponibles);
+
+            if (fechasDisponibles.length === 0) {
+                toast('⚠️ No se pudieron extraer fechas válidas', 'warning');
                 return;
             }
 
-            // Crear resumen
-            const resumen = {
-                fecha: hoy,
-                total_productos: recepcionesHoy.length,
-                proveedores: [...new Set(recepcionesHoy.map(r => r.proveedor))],
-                productos: recepcionesHoy.map(r => ({
-                    producto: r.producto,
-                    proveedor: r.proveedor,
-                    cantidad: r.cantidad || 1,
-                    temperatura: r.temperatura,
-                    conservacion: r.conservacion,
-                    hora: r.fecha_registro ? new Date(r.fecha_registro).toLocaleTimeString() : '--:--'
-                }))
-            };
+            // Mostrar selector de fecha con SweetAlert2
+            const { value: fechaSeleccionada } = await Swal.fire({
+                title: '📥 Selecciona la fecha del backup',
+                text: 'Elige una fecha con recepciones registradas',
+                input: 'select',
+                inputOptions: (() => {
+                    const opciones = {};
+                    fechasDisponibles.forEach(f => {
+                        const count = recepcionesData.filter(r => {
+                            const fechaItem = formatearFechaParaComparar(r.fecha_registro);
+                            return fechaItem === f;
+                        }).length;
+                        const fechaMostrar = f.split('-').reverse().join('/');
+                        opciones[f] = `${fechaMostrar} (${count} productos)`;
+                    });
+                    return opciones;
+                })(),
+                inputPlaceholder: 'Selecciona una fecha',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                confirmButtonText: '📥 Generar Backup',
+                cancelButtonText: 'Cancelar'
+            });
 
-            // Intentar guardar en Supabase (tabla respaldo_diario_recepciones)
-            try {
-                const { error } = await db
-                    .from('respaldo_diario_recepciones')
-                    .insert([{
-                        fecha: hoy,
-                        total_productos: resumen.total_productos,
-                        total_proveedores: resumen.proveedores.length,
-                        data: resumen
-                    }]);
-                if (!error) {
-                    toast('✅ Backup guardado en Supabase', 'success');
-                }
-            } catch (error) {
-                console.warn('No se pudo guardar backup en Supabase:', error);
+            if (!fechaSeleccionada) return;
+
+            // Filtrar recepciones
+            const recepcionesFiltradas = recepcionesData.filter(r => {
+                const fecha = formatearFechaParaComparar(r.fecha_registro);
+                return fecha === fechaSeleccionada;
+            });
+
+            if (recepcionesFiltradas.length === 0) {
+                toast('⚠️ No hay recepciones para la fecha seleccionada', 'warning');
+                return;
             }
 
-            // Descargar JSON como fallback
-            const blob = new Blob([JSON.stringify(resumen, null, 2)], { type: 'application/json' });
+            toast(`📥 Generando backup de ${recepcionesFiltradas.length} productos...`, 'info');
+
+            // Crear resumen
+            const resumen = {
+                fecha: fechaSeleccionada,
+                total_productos: recepcionesFiltradas.length,
+                total_proveedores: [...new Set(recepcionesFiltradas.map(r => r.proveedor))].length,
+                proveedores: [...new Set(recepcionesFiltradas.map(r => r.proveedor))],
+                productos: recepcionesFiltradas.map(r => ({
+                    producto: r.producto || 'Sin nombre',
+                    proveedor: r.proveedor || 'S/P',
+                    cantidad: r.cantidad || 1,
+                    temperatura: r.temperatura !== null && r.temperatura !== undefined ? r.temperatura : 'N/A',
+                    conservacion: r.conservacion || 'N/A',
+                    hora: r.fecha_registro ? new Date(r.fecha_registro).toLocaleTimeString() : '--:--',
+                    fecha_completa: r.fecha_registro || ''
+                })),
+                generado_en: new Date().toISOString()
+            };
+
+            // ✅ GUARDAR EN SUPABASE CON LA ESTRUCTURA CORRECTA
+            try {
+                const datosParaInsertar = {
+                    fecha: fechaSeleccionada,
+                    total_productos: resumen.total_productos,
+                    total_proveedores: resumen.total_proveedores,
+                    data: resumen
+                };
+
+                console.log('📤 Enviando a Supabase:', datosParaInsertar);
+
+                const { data, error } = await db
+                    .from('respaldo_diario_recepciones')
+                    .insert([datosParaInsertar])
+                    .select();
+
+                if (error) {
+                    console.error('❌ Error Supabase:', error);
+                    toast('⚠️ Error al guardar en Supabase: ' + error.message, 'warning');
+                } else {
+                    console.log('✅ Backup guardado en Supabase:', data);
+                    toast('✅ Backup guardado en Supabase', 'success');
+                }
+            } catch (dbError) {
+                console.error('❌ Error DB:', dbError);
+                toast('⚠️ No se pudo guardar en Supabase, pero el JSON se descargará igualmente', 'warning');
+            }
+
+            // ✅ DESCARGAR JSON (siempre)
+            try {
+                const blob = new Blob([JSON.stringify(resumen, null, 2)], { type: 'application/json;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                const fechaMostrar = fechaSeleccionada.split('-').reverse().join('');
+                a.download = `backup_${fechaMostrar}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                setTimeout(() => {
+                    URL.revokeObjectURL(a.href);
+                }, 100);
+
+                toast(`📥 Backup descargado (${resumen.total_productos} productos)`, 'success');
+            } catch (downloadError) {
+                console.error('❌ Error al descargar:', downloadError);
+                toast('❌ Error al descargar el archivo', 'error');
+            }
+
+            console.log('📊 RESUMEN DEL BACKUP:');
+            console.log(`📅 Fecha: ${fechaSeleccionada}`);
+            console.log(`📦 Productos: ${resumen.total_productos}`);
+            console.log(`🏢 Proveedores: ${resumen.total_proveedores}`);
+
+        } catch (error) {
+            console.error('❌ Error en backup:', error);
+            toast('❌ Error al generar backup: ' + error.message, 'error');
+        }
+    }
+
+    // ============================================================
+    // BACKUP COMPLETO - CORREGIDO
+    // ============================================================
+    async function generarBackupCompleto() {
+        try {
+            if (recepcionesData.length === 0) {
+                toast('⚠️ No hay recepciones en la base de datos', 'warning');
+                return;
+            }
+
+            const confirm = await Swal.fire({
+                title: '📦 Backup Completo',
+                text: `Se van a exportar ${recepcionesData.length} productos. ¿Continuar?`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                confirmButtonText: '✅ Sí, exportar todo',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            toast('📥 Generando backup completo...', 'info');
+
+            // Agrupar por fecha
+            const porFecha = {};
+            recepcionesData.forEach(r => {
+                const fecha = formatearFechaParaComparar(r.fecha_registro) || 'S/F';
+                if (!porFecha[fecha]) porFecha[fecha] = [];
+                porFecha[fecha].push({
+                    producto: r.producto || 'Sin nombre',
+                    proveedor: r.proveedor || 'S/P',
+                    cantidad: r.cantidad || 1,
+                    temperatura: r.temperatura !== null && r.temperatura !== undefined ? r.temperatura : 'N/A',
+                    conservacion: r.conservacion || 'N/A',
+                    hora: r.fecha_registro ? new Date(r.fecha_registro).toLocaleTimeString() : '--:--'
+                });
+            });
+
+            const resumen = {
+                fecha_exportacion: getFechaHoy(),
+                total_productos: recepcionesData.length,
+                total_proveedores: [...new Set(recepcionesData.map(r => r.proveedor))].length,
+                proveedores: [...new Set(recepcionesData.map(r => r.proveedor))],
+                productos_por_fecha: porFecha,
+                generado_en: new Date().toISOString()
+            };
+
+            // ✅ GUARDAR EN SUPABASE
+            try {
+                const datosParaInsertar = {
+                    fecha: 'COMPLETO',
+                    total_productos: resumen.total_productos,
+                    total_proveedores: resumen.total_proveedores,
+                    data: resumen
+                };
+
+                console.log('📤 Enviando backup completo a Supabase:', datosParaInsertar);
+
+                const { data, error } = await db
+                    .from('respaldo_diario_recepciones')
+                    .insert([datosParaInsertar])
+                    .select();
+
+                if (error) {
+                    console.error('❌ Error Supabase:', error);
+                    toast('⚠️ Error al guardar backup completo en Supabase', 'warning');
+                } else {
+                    console.log('✅ Backup completo guardado en Supabase:', data);
+                    toast('✅ Backup completo guardado en Supabase', 'success');
+                }
+            } catch (dbError) {
+                console.error('❌ Error DB:', dbError);
+                toast('⚠️ No se pudo guardar en Supabase', 'warning');
+            }
+
+            // ✅ DESCARGAR JSON
+            const blob = new Blob([JSON.stringify(resumen, null, 2)], { type: 'application/json;charset=utf-8' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `backup_diario_${hoy}.json`;
+            a.download = `backup_completo_${getFechaHoy()}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            toast('📥 Backup descargado como JSON', 'success');
+            
+            setTimeout(() => {
+                URL.revokeObjectURL(a.href);
+            }, 100);
+
+            toast(`📥 Backup completo descargado (${resumen.total_productos} productos)`, 'success');
 
         } catch (error) {
-            console.error('Error en backup:', error);
-            toast('❌ Error al generar backup', 'error');
+            console.error('❌ Error en backup completo:', error);
+            toast('❌ Error al generar backup completo', 'error');
         }
     }
 
@@ -635,7 +837,6 @@
             
             const recepciones = await obtenerRecepciones();
             const ingredientesExistentes = await obtenerIngredientesMaestros();
-            const nombresExistentes = new Set(ingredientesExistentes.map(i => i.nombre.toUpperCase()));
 
             let nuevos = 0;
             let actualizados = 0;
@@ -647,7 +848,6 @@
                 const existente = ingredientesExistentes.find(i => i.nombre.toUpperCase() === nombre);
                 
                 if (existente) {
-                    // Actualizar información si ha cambiado
                     let actualizar = false;
                     if (recepcion.proveedor && existente.proveedor_habitual !== recepcion.proveedor) {
                         existente.proveedor_habitual = recepcion.proveedor;
@@ -666,7 +866,6 @@
                         actualizados++;
                     }
                 } else {
-                    // Nuevo ingrediente
                     const nuevo = {
                         nombre: nombre,
                         unidad_defecto: 'KG',
@@ -706,7 +905,6 @@
             
             actualizarEstadoRed(true);
             
-            // Actualizar UI
             actualizarFiltrosProveedores();
             aplicarFiltros();
             actualizarEstadisticas();
@@ -852,7 +1050,6 @@
             `;
         }).join('');
 
-        // Event listeners
         document.querySelectorAll('.item-checkbox').forEach(cb => {
             cb.addEventListener('change', function() {
                 const id = this.dataset.id;
@@ -1001,7 +1198,6 @@
                 </div>
             `).join('');
 
-            // Actualizar contador en estadísticas
             document.getElementById('stat-ingredientes').textContent = data.length;
 
         } catch (error) {
@@ -1041,7 +1237,6 @@
         document.getElementById('stat-total').textContent = total;
         document.getElementById('stat-proveedores').textContent = proveedores;
 
-        // Top productos (últimos 30 días)
         const hoy = getFechaHoy();
         const hace30Dias = new Date();
         hace30Dias.setDate(hace30Dias.getDate() - 30);
@@ -1213,6 +1408,7 @@
     window.editarIngredienteMaestro = editarIngredienteMaestro;
     window.sincronizarIngredientesDesdeRecepciones = sincronizarIngredientesDesdeRecepciones;
     window.generarBackupDiario = generarBackupDiario;
+    window.generarBackupCompleto = generarBackupCompleto;
     window.exportarCSV = exportarCSV;
     window.imprimirResumenDiario = imprimirResumenDiario;
     window.recargarTodo = recargarTodo;
