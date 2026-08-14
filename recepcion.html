@@ -163,7 +163,6 @@
     <!-- TAB 1: RECEPCIONES -->
     <!-- ============================================================ -->
     <div id="tab-recepciones" class="tab-content active">
-        <!-- Contador y acciones -->
         <div class="card" style="border-left: 4px solid #10b981;">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-3 flex-wrap">
@@ -180,7 +179,6 @@
             </div>
         </div>
 
-        <!-- Filtros -->
         <div class="card">
             <div class="grid-3">
                 <div>
@@ -197,7 +195,6 @@
                 </div>
             </div>
             
-            <!-- Estadísticas -->
             <div class="grid-3 mt-4 pt-4" style="border-top: 1px solid #e2e8f0;">
                 <div class="stat-box">
                     <div class="stat-number text-emerald-600" id="totalCount">0</div>
@@ -214,7 +211,6 @@
             </div>
         </div>
 
-        <!-- Resultados -->
         <div id="resultsContainer" class="grid-cards">
             <div class="col-span-full text-center py-12 text-slate-400">
                 <div style="font-size: 40px; margin-bottom: 12px;">📡</div>
@@ -222,7 +218,6 @@
             </div>
         </div>
 
-        <!-- Paginación -->
         <div id="paginationContainer" class="flex items-center justify-center gap-3 mt-4" style="display: none;">
             <button id="prevPage" class="btn btn-outline">◀ Anterior</button>
             <span id="pageInfo" class="text-sm font-bold text-slate-600">Página 1</span>
@@ -238,7 +233,6 @@
             <h2 class="text-lg font-black text-slate-800 mb-4">🧂 Ingredientes Maestros</h2>
             <p class="text-sm text-slate-500 mb-4">Gestión de ingredientes utilizados en fichas de producción</p>
             
-            <!-- Formulario -->
             <div class="grid-2">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre del Ingrediente *</label>
@@ -285,7 +279,6 @@
             </div>
         </div>
 
-        <!-- Lista de ingredientes -->
         <div class="card">
             <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">📋 Lista de Ingredientes Maestros</h3>
@@ -524,31 +517,84 @@
     }
 
     // ============================================================
-    // FUNCIONES SUPABASE
+    // FUNCIONES SUPABASE - RECEPCIONES
     // ============================================================
     async function obtenerRecepciones() {
         try {
-            const response = await fetch(`${API_URL}/obtener_mercancias`, {
-                headers: { 'ngrok-skip-browser-warning': 'true' }
-            });
-            if (!response.ok) throw new Error('Error al cargar recepciones');
-            const data = await response.json();
-            const productos = Array.isArray(data) ? data : (data.cesta || data.productos || data.items || []);
-            return productos.map((item, index) => ({
-                id: item.id || item._id || `item_${index}_${Date.now()}`,
-                producto: item.producto || item.nombre || item.descripcion || 'Sin nombre',
-                proveedor: item.proveedor || item.proveedor_nombre || 'S/P',
+            // 🔥 LEER DIRECTAMENTE DE SUPABASE
+            const { data, error } = await db
+                .from('recepciones_mercancia')
+                .select('*')
+                .order('fecha_registro', { ascending: false });
+            
+            if (error) {
+                console.error('❌ Error Supabase:', error);
+                throw error;
+            }
+            
+            console.log(`✅ ${data.length} recepciones cargadas desde Supabase`);
+            
+            // Guardar cache local
+            if (data.length > 0) {
+                localStorage.setItem('fredware_recepciones_cache', JSON.stringify(data));
+            }
+            
+            return data.map((item) => ({
+                id: item.id || `item_${Date.now()}_${Math.random()}`,
+                producto: item.producto || 'Sin nombre',
+                proveedor: item.proveedor || 'S/P',
                 temperatura: item.temperatura !== undefined ? item.temperatura : null,
-                conservacion: item.conservacion || item.tipo_conservacion || null,
-                cantidad: item.cantidad || item.unidades || 1,
-                fecha_registro: item.fecha_registro || item.fecha || item.fecha_hora || new Date().toISOString()
+                conservacion: item.conservacion || null,
+                cantidad: item.cantidad || 1,
+                fecha_registro: item.fecha_registro || new Date().toISOString()
             }));
         } catch (error) {
-            console.error('Error obteniendo recepciones:', error);
-            return [];
+            console.error('Error obteniendo recepciones de Supabase:', error);
+            
+            // Fallback a cache local
+            const cache = JSON.parse(localStorage.getItem('fredware_recepciones_cache')) || [];
+            console.log(`📦 Usando cache local: ${cache.length} recepciones`);
+            return cache.map((item) => ({
+                id: item.id || `item_${Date.now()}_${Math.random()}`,
+                producto: item.producto || 'Sin nombre',
+                proveedor: item.proveedor || 'S/P',
+                temperatura: item.temperatura !== undefined ? item.temperatura : null,
+                conservacion: item.conservacion || null,
+                cantidad: item.cantidad || 1,
+                fecha_registro: item.fecha_registro || new Date().toISOString()
+            }));
         }
     }
 
+    async function eliminarRecepcionesDB(ids) {
+        try {
+            // Eliminar de Supabase
+            const { error } = await db
+                .from('recepciones_mercancia')
+                .delete()
+                .in('id', ids);
+            
+            if (error) {
+                console.error('❌ Error eliminando de Supabase:', error);
+                throw error;
+            }
+            
+            // Actualizar cache local
+            const cache = JSON.parse(localStorage.getItem('fredware_recepciones_cache')) || [];
+            const idsSet = new Set(ids);
+            const newCache = cache.filter(item => !idsSet.has(item.id));
+            localStorage.setItem('fredware_recepciones_cache', JSON.stringify(newCache));
+            
+            return true;
+        } catch (error) {
+            console.error('Error eliminando recepciones:', error);
+            return false;
+        }
+    }
+
+    // ============================================================
+    // FUNCIONES SUPABASE - INGREDIENTES
+    // ============================================================
     async function obtenerIngredientesMaestros() {
         try {
             const { data, error } = await db
@@ -590,26 +636,8 @@
         }
     }
 
-    async function eliminarRecepcionesDB(ids) {
-        try {
-            const response = await fetch(`${API_URL}/eliminar_mercancia`, {
-                method: 'POST',
-                headers: {
-                    'ngrok-skip-browser-warning': 'true',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ ids: ids })
-            });
-            if (!response.ok) throw new Error('Error al eliminar');
-            return true;
-        } catch (error) {
-            console.error('Error eliminando recepciones:', error);
-            return false;
-        }
-    }
-
     // ============================================================
-    // BACKUP DIARIO (MODIFICADO CON INTEGRACIÓN)
+    // BACKUP DIARIO
     // ============================================================
     async function generarBackupDiario() {
         try {
@@ -686,7 +714,7 @@
                 generado_en: new Date().toISOString()
             };
 
-            // ✅ GUARDAR EN SUPABASE
+            // Guardar en Supabase
             try {
                 const datosParaInsertar = {
                     fecha: fechaSeleccionada,
@@ -694,8 +722,6 @@
                     total_proveedores: resumen.total_proveedores,
                     data: resumen
                 };
-
-                console.log('📤 Enviando a Supabase:', datosParaInsertar);
 
                 const { data, error } = await db
                     .from('respaldo_diario_recepciones')
@@ -709,7 +735,6 @@
                     console.log('✅ Backup guardado en Supabase:', data);
                     toast('✅ Backup guardado en Supabase', 'success');
                     
-                    // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
                     if (window.fredware) {
                         await window.fredware.broadcastEvent('nueva_recepcion', {
                             fecha: fechaSeleccionada,
@@ -730,7 +755,7 @@
                 toast('⚠️ No se pudo guardar en Supabase, pero el JSON se descargará igualmente', 'warning');
             }
 
-            // ✅ DESCARGAR JSON
+            // Descargar JSON
             try {
                 const blob = new Blob([JSON.stringify(resumen, null, 2)], { type: 'application/json;charset=utf-8' });
                 const a = document.createElement('a');
@@ -750,11 +775,6 @@
                 console.error('❌ Error al descargar:', downloadError);
                 toast('❌ Error al descargar el archivo', 'error');
             }
-
-            console.log('📊 RESUMEN DEL BACKUP:');
-            console.log(`📅 Fecha: ${fechaSeleccionada}`);
-            console.log(`📦 Productos: ${resumen.total_productos}`);
-            console.log(`🏢 Proveedores: ${resumen.total_proveedores}`);
 
         } catch (error) {
             console.error('❌ Error en backup:', error);
@@ -809,7 +829,7 @@
                 generado_en: new Date().toISOString()
             };
 
-            // ✅ GUARDAR EN SUPABASE
+            // Guardar en Supabase
             try {
                 const datosParaInsertar = {
                     fecha: 'COMPLETO',
@@ -817,8 +837,6 @@
                     total_proveedores: resumen.total_proveedores,
                     data: resumen
                 };
-
-                console.log('📤 Enviando backup completo a Supabase:', datosParaInsertar);
 
                 const { data, error } = await db
                     .from('respaldo_diario_recepciones')
@@ -832,7 +850,6 @@
                     console.log('✅ Backup completo guardado en Supabase:', data);
                     toast('✅ Backup completo guardado en Supabase', 'success');
                     
-                    // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
                     if (window.fredware) {
                         await window.fredware.broadcastEvent('nueva_recepcion', {
                             fecha: 'COMPLETO',
@@ -848,7 +865,7 @@
                 toast('⚠️ No se pudo guardar en Supabase', 'warning');
             }
 
-            // ✅ DESCARGAR JSON
+            // Descargar JSON
             const blob = new Blob([JSON.stringify(resumen, null, 2)], { type: 'application/json;charset=utf-8' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
@@ -870,7 +887,7 @@
     }
 
     // ============================================================
-    // SINCRONIZAR INGREDIENTES (MODIFICADO CON INTEGRACIÓN)
+    // SINCRONIZAR INGREDIENTES
     // ============================================================
     async function sincronizarIngredientesDesdeRecepciones() {
         try {
@@ -918,7 +935,6 @@
                     await guardarIngredienteMaestroDB(nuevo);
                     nuevos++;
                     
-                    // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
                     if (window.fredware) {
                         await window.fredware.broadcastEvent('nuevo_ingrediente', {
                             nombre: nuevo.nombre,
@@ -1212,7 +1228,6 @@
             await cargarIngredientesMaestros();
             await notificarNuevoIngrediente(nombre, proveedor || 'S/P');
             
-            // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
             if (window.fredware) {
                 await window.fredware.broadcastEvent('nuevo_ingrediente', {
                     nombre: nombre,
@@ -1462,13 +1477,9 @@
             console.log('📦 Recepciones conectadas al núcleo unificado');
             window.fredware.subscribe((state) => {
                 console.log('📊 Estado global actualizado desde Recepciones');
-                // Podemos actualizar estadísticas si hay cambios
-                if (state.inventario && state.inventario.length > 0) {
-                    // Opcional: refrescar algo
-                }
             });
         } else {
-            console.warn('⚠️ Núcleo unificado no disponible. Asegúrate de que shared-core.js está cargado.');
+            console.warn('⚠️ Núcleo unificado no disponible.');
         }
     });
 
@@ -1496,7 +1507,6 @@
     window.eliminarRecepciones = eliminarRecepciones;
 
     console.log('✅ Recepción unificada inicializada correctamente');
-    console.log('📡 Supabase conectado:', db);
 </script>
 </body>
 </html>
