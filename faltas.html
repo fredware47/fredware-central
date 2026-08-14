@@ -5,20 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🚚 Fredware - Terminal Unificada de Cocina</title>
     
-    <!-- ========================================================== -->
-    <!-- 🔥 FAVICON PARA PC Y MÓVIL (SOLO AÑADIDO ESTO) -->
-    <!-- ========================================================== -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E🚚%3C/text%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E🚚%3C/text%3E%3C/svg%3E">
     <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231e293b'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23fbbf24'%3E🚚%3C/text%3E%3C/svg%3E">
     <meta name="theme-color" content="#1e293b">
-    <!-- ========================================================== -->
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ===== ESTILOS ===== */
         .accordion-header { padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s, transform 0.1s; }
         .accordion-header:active { transform: scale(0.99); }
         .accordion-content { display: block; padding: 4px 0; }
@@ -36,7 +31,6 @@
         .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ===== PESTAÑAS ===== */
         .tabs-container { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
         .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 14px; color: #475569; background: transparent; }
         .tab-btn.active { background: white; color: #1e293b; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -54,7 +48,6 @@
         .btn-foto-mini:hover { background: #7c3aed; transform: scale(1.05); }
         .btn-foto-mini:active { transform: scale(0.95); }
 
-        /* ===== ESTILOS PESTAÑA ETIQUETAS ===== */
         .etiqueta-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
         .etiqueta-card:hover { background: #f1f5f9; border-color: #8b5cf6; }
         .etiqueta-numero { font-size: 24px; font-weight: 900; color: #8b5cf6; }
@@ -78,7 +71,6 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
 
-    <!-- ===== HEADER ===== -->
     <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
         <div class="max-w-2xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -103,14 +95,13 @@
 
     <main class="max-w-2xl mx-auto w-full px-4 mt-6 space-y-6">
 
-        <!-- ===== PESTAÑAS ===== -->
         <div class="tabs-container">
             <button class="tab-btn active" data-tab="tab-faltas">📝 Faltas</button>
             <button class="tab-btn" data-tab="tab-entradas">🚛 Entradas</button>
             <button class="tab-btn" data-tab="tab-etiquetas">🖨️ Etiquetas</button>
         </div>
 
-        <!-- ===== TAB 1: FALTAS ===== -->
+        <!-- TAB 1: FALTAS -->
         <div id="tab-faltas" class="tab-content active">
             <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
@@ -131,7 +122,7 @@
             </div>
         </div>
 
-        <!-- ===== TAB 2: ENTRADAS (CON BOTÓN DE FOTO) ===== -->
+        <!-- TAB 2: ENTRADAS -->
         <div id="tab-entradas" class="tab-content">
             <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
@@ -141,7 +132,7 @@
             </div>
         </div>
 
-        <!-- ===== TAB 3: ETIQUETAS (RESUMEN DÍA) ===== -->
+        <!-- TAB 3: ETIQUETAS -->
         <div id="tab-etiquetas" class="tab-content">
             <div class="bg-white border border-slate-250 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 class="text-sm font-bold text-purple-600 uppercase tracking-wider flex items-center gap-2">
@@ -149,7 +140,6 @@
                 </h2>
                 <p class="text-xs text-slate-500">Aquí puedes gestionar todas las etiquetas acumuladas durante el día</p>
                 
-                <!-- Contador y resumen -->
                 <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 flex justify-between items-center flex-wrap gap-3">
                     <div>
                         <span class="text-sm font-bold text-slate-600">Etiquetas acumuladas hoy:</span>
@@ -162,12 +152,10 @@
                     </div>
                 </div>
 
-                <!-- Lista de etiquetas del día -->
                 <div id="lista-etiquetas-dia" class="max-h-[300px] overflow-y-auto space-y-2">
                     <div class="text-center text-slate-400 py-4 text-sm">No hay etiquetas registradas hoy</div>
                 </div>
 
-                <!-- Botones de acción -->
                 <div class="flex flex-wrap gap-3 pt-2 border-t border-slate-200">
                     <button onclick="imprimirResumenDia()" class="btn-resumen">
                         🖨️ Imprimir Resumen del Día
@@ -208,14 +196,10 @@
             SECO:       { min: 5,   max: 25,  defecto: 20,  alerta: "⚠️ ADVERTENCIA: AMBIENTE MUY ALTO (MÁX RECOMENDADO 25°C)" }
         };
 
-        // ===== PRODUCTOS CRÍTICOS (OPCIONAL - para auto-pedir foto) =====
         const PRODUCTOS_CRITICOS = [
-            'HUEVO', 'HUEVOS',
-            'PAN', 'BOLLO', 'PAN DE MOLDE',
-            'PESCADO', 'PESCADOS',
-            'MARISCO', 'MARISCOS',
-            'CARNE', 'CARNES',
-            'POLLO'
+            'HUEVO', 'HUEVOS', 'PAN', 'BOLLO', 'PAN DE MOLDE',
+            'PESCADO', 'PESCADOS', 'MARISCO', 'MARISCOS',
+            'CARNE', 'CARNES', 'POLLO'
         ];
 
         let cestaGlobal = [];
@@ -223,12 +207,10 @@
         let etiquetasCache = [];
 
         // ============================================================
-        // BROADCAST PARA NOTIFICAR RECEPCIONES A COMPRAS
+        // BROADCAST
         // ============================================================
         const broadcastChannel = db_nube.channel('cocina-broadcast', {
-            config: {
-                broadcast: { self: true }
-            }
+            config: { broadcast: { self: true } }
         });
 
         broadcastChannel
@@ -239,7 +221,6 @@
                 console.log('📡 Canal broadcast suscrito (cocina):', status);
             });
 
-        // Función para notificar recepción a compras2.html
         async function notificarRecepcion(producto, proveedor, cantidad, lote) {
             try {
                 await broadcastChannel.send({
@@ -337,220 +318,6 @@
             div.textContent = text;
             return div.innerHTML;
         }
-
-        // ============================================================
-        // 🖨️ IMPRIMIR RESUMEN DEL DÍA (EN PESTAÑA ETIQUETAS)
-        // ============================================================
-        async function imprimirResumenDia() {
-            const btn = document.querySelector(".btn-resumen");
-            const textoOriginal = btn ? btn.innerHTML : '🖨️ Imprimir Resumen del Día';
-            
-            try {
-                if (btn) {
-                    btn.innerHTML = '<span class="spinner"></span> Generando...';
-                    btn.disabled = true;
-                }
-                
-                const response = await fetch(`${API_URL}/api/etiquetas/imprimir_resumen`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'ngrok-skip-browser-warning': 'true' 
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    lanzarToast(`✅ ${data.message || 'Resumen del día impreso con éxito'}`);
-                    await actualizarContadorEtiquetas();
-                } else {
-                    lanzarToast(data.message || 'No hay etiquetas para hoy', 'warning');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                lanzarToast('Error al imprimir resumen', 'error');
-            } finally {
-                if (btn) {
-                    btn.innerHTML = textoOriginal;
-                    btn.disabled = false;
-                }
-            }
-        }
-
-        // ============================================================
-        // GUARDAR ETIQUETAS EN SUPABASE (VERSIÓN MEJORADA)
-        // ============================================================
-        async function guardarEtiquetasSupabase() {
-            const btn = document.querySelector(".btn-guardar-supabase");
-            const textoOriginal = btn ? btn.innerHTML : '☁️ Guardar en Supabase';
-            
-            try {
-                if (btn) {
-                    btn.innerHTML = '<span class="spinner"></span> Guardando...';
-                    btn.disabled = true;
-                }
-                
-                // Obtener etiquetas locales
-                const etiquetasLocales = obtenerEtiquetasLocales();
-                const noSincronizadas = etiquetasLocales.filter(e => !e.sync_supabase);
-                
-                if (noSincronizadas.length === 0) {
-                    lanzarToast('✅ Todas las etiquetas ya están en Supabase', 'success');
-                    btn.innerHTML = textoOriginal;
-                    btn.disabled = false;
-                    return;
-                }
-                
-                let sincronizadas = 0;
-                let fallidas = 0;
-                
-                for (let etiqueta of noSincronizadas) {
-                    const exito = await guardarEtiquetaSupabase(etiqueta);
-                    if (exito) {
-                        sincronizadas++;
-                        // Marcar como sincronizada en local
-                        let locales = obtenerEtiquetasLocales();
-                        const idx = locales.findIndex(e => e.id_local === etiqueta.id_local);
-                        if (idx !== -1) {
-                            locales[idx].sync_supabase = true;
-                            localStorage.setItem('fredware_etiquetas_locales', JSON.stringify(locales));
-                        }
-                    } else {
-                        fallidas++;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                
-                if (sincronizadas > 0) {
-                    lanzarToast(`✅ ${sincronizadas} etiquetas guardadas en Supabase`, 'success');
-                }
-                if (fallidas > 0) {
-                    lanzarToast(`⚠️ ${fallidas} etiquetas no pudieron sincronizarse`, 'warning');
-                }
-                
-            } catch (error) {
-                console.error('Error:', error);
-                lanzarToast('Error al guardar en Supabase', 'error');
-            } finally {
-                if (btn) {
-                    btn.innerHTML = textoOriginal;
-                    btn.disabled = false;
-                }
-            }
-        }
-
-        // ============================================================
-        // ACTUALIZAR CONTADOR DE ETIQUETAS (MEJORADO)
-        // ============================================================
-        async function actualizarContadorEtiquetas() {
-            try {
-                // Contar etiquetas locales de hoy
-                const localesHoy = obtenerEtiquetasHoyLocal();
-                const totalLocal = localesHoy.length;
-                
-                document.getElementById('total-etiquetas-dia').textContent = totalLocal;
-                
-                // Cargar lista de etiquetas
-                await cargarListaEtiquetas();
-                
-            } catch (error) {
-                console.error('Error actualizando contador:', error);
-                document.getElementById('total-etiquetas-dia').textContent = '?';
-            }
-        }
-
-        // ============================================================
-        // CARGAR LISTA DE ETIQUETAS DEL DÍA (MEJORADO)
-        // ============================================================
-        async function cargarListaEtiquetas() {
-            const container = document.getElementById('lista-etiquetas-dia');
-            try {
-                const etiquetasHoy = obtenerEtiquetasHoyLocal();
-                
-                if (etiquetasHoy.length === 0) {
-                    container.innerHTML = `<div class="text-center text-slate-400 py-4 text-sm">No hay etiquetas registradas hoy</div>`;
-                    return;
-                }
-                
-                // Mostrar lista de etiquetas
-                let html = '';
-                etiquetasHoy.slice(0, 20).forEach((e, index) => {
-                    const sincronizado = e.sync_supabase ? '☁️' : '📡';
-                    html += `
-                        <div class="etiqueta-card">
-                            <div class="flex flex-col">
-                                <span class="etiqueta-producto">${e.producto || 'S/P'}</span>
-                                <span class="etiqueta-fecha">${e.unidad || '1'} - ${e.fecha || ''}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs">${sincronizado}</span>
-                                <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">#${index + 1}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                if (etiquetasHoy.length > 20) {
-                    html += `<div class="text-center text-slate-400 text-xs py-2">... y ${etiquetasHoy.length - 20} más</div>`;
-                }
-                
-                container.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Error cargando lista:', error);
-                container.innerHTML = `<div class="text-center text-red-500 py-4 text-sm">Error al cargar etiquetas</div>`;
-            }
-        }
-
-        // ============================================================
-        // LIMPIAR ETIQUETAS DEL DÍA (MEJORADO)
-        // ============================================================
-        function limpiarEtiquetasDia() {
-            const etiquetasHoy = obtenerEtiquetasHoyLocal();
-            
-            if (etiquetasHoy.length === 0) {
-                lanzarToast('No hay etiquetas para limpiar', 'warning');
-                return;
-            }
-            
-            Swal.fire({
-                title: '¿Limpiar todas las etiquetas del día?',
-                text: `Hay ${etiquetasHoy.length} etiquetas de hoy. Esta acción no se puede deshacer.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Sí, limpiar',
-                cancelButtonText: 'Cancelar'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        limpiarEtiquetasLocalesHoy();
-                        lanzarToast(`🧹 ${etiquetasHoy.length} etiquetas limpiadas`, 'warning');
-                        await actualizarContadorEtiquetas();
-                    } catch (error) {
-                        lanzarToast('Error al limpiar etiquetas', 'error');
-                    }
-                }
-            });
-        }
-
-        // ============================================================
-        // PESTAÑAS
-        // ============================================================
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                this.classList.add('active');
-                document.getElementById(this.dataset.tab).classList.add('active');
-                
-                if (this.dataset.tab === 'tab-etiquetas') {
-                    actualizarContadorEtiquetas();
-                }
-            });
-        });
 
         // ============================================================
         // FUNCIONES SUPABASE
@@ -850,7 +617,7 @@
         }
 
         // ============================================================
-        // SINCRONIZACIÓN CON NGROK
+        // SINCRONIZACIÓN CON NGROK (SOLO PARA IMPRESIÓN)
         // ============================================================
         async function sincronizarConOficina(endpoint, datos) {
             try {
@@ -870,26 +637,20 @@
         // 📦 GUARDAR ETIQUETAS EN LOCAL Y SUPABASE
         // ============================================================
         
-        // Guardar una etiqueta individual
         async function guardarEtiquetaLocal(etiqueta) {
             try {
-                // Obtener etiquetas guardadas en localStorage
                 let etiquetasLocales = JSON.parse(localStorage.getItem('fredware_etiquetas_locales')) || [];
                 
-                // Agregar timestamp si no tiene
                 if (!etiqueta.fecha_registro) {
                     etiqueta.fecha_registro = new Date().toISOString();
                 }
                 
-                // Agregar ID local
                 etiqueta.id_local = Date.now() + '_' + Math.random().toString(36).substring(2, 6);
                 etiqueta.sync_supabase = false;
                 
-                // Guardar en localStorage
                 etiquetasLocales.push(etiqueta);
                 localStorage.setItem('fredware_etiquetas_locales', JSON.stringify(etiquetasLocales));
                 
-                // También guardar en Supabase
                 await guardarEtiquetaSupabase(etiqueta);
                 
                 return true;
@@ -900,7 +661,6 @@
             }
         }
 
-        // Guardar etiqueta en Supabase
         async function guardarEtiquetaSupabase(etiqueta) {
             try {
                 const { error } = await db_nube
@@ -922,7 +682,6 @@
                     return false;
                 }
                 
-                // Marcar como sincronizada en local
                 let locales = obtenerEtiquetasLocales();
                 const idx = locales.findIndex(e => e.id_local === etiqueta.id_local);
                 if (idx !== -1) {
@@ -937,13 +696,11 @@
             }
         }
 
-        // Guardar lote de etiquetas (para cuando se recibe camión completo)
         async function guardarLoteEtiquetas(loteEtiquetas) {
             if (!loteEtiquetas || loteEtiquetas.length === 0) return;
             
             let guardadasLocal = 0;
             
-            // Guardar en localStorage
             try {
                 let etiquetasLocales = JSON.parse(localStorage.getItem('fredware_etiquetas_locales')) || [];
                 
@@ -963,7 +720,6 @@
                 console.error('Error guardando lote local:', error);
             }
             
-            // Guardar en Supabase (una por una para no sobrecargar)
             try {
                 let guardadasNube = 0;
                 for (let etiqueta of loteEtiquetas) {
@@ -981,7 +737,6 @@
             }
         }
 
-        // Obtener etiquetas locales
         function obtenerEtiquetasLocales() {
             try {
                 return JSON.parse(localStorage.getItem('fredware_etiquetas_locales')) || [];
@@ -990,7 +745,6 @@
             }
         }
 
-        // Obtener etiquetas de hoy desde local
         function obtenerEtiquetasHoyLocal() {
             const todas = obtenerEtiquetasLocales();
             const hoy = new Date().toISOString().split('T')[0];
@@ -1000,7 +754,6 @@
             });
         }
 
-        // Sincronizar etiquetas locales con Supabase
         async function sincronizarEtiquetasConSupabase() {
             const etiquetasLocales = obtenerEtiquetasLocales();
             const noSincronizadas = etiquetasLocales.filter(e => !e.sync_supabase);
@@ -1049,7 +802,6 @@
             });
         }
 
-        // Limpiar etiquetas locales (solo las de hoy)
         function limpiarEtiquetasLocalesHoy() {
             try {
                 const todas = obtenerEtiquetasLocales();
@@ -1066,7 +818,6 @@
             }
         }
 
-        // Verificar estado de sincronización
         async function verificarSincronizacionEtiquetas() {
             const locales = obtenerEtiquetasLocales();
             const noSync = locales.filter(e => !e.sync_supabase);
@@ -1147,7 +898,7 @@
         }
 
         // ============================================================
-        // ABRIR FLUJO DE RECEPCIÓN (CON GUARDADO DE ETIQUETAS)
+        // ABRIR FLUJO DE RECEPCIÓN (GUARDA DIRECTO EN SUPABASE)
         // ============================================================
         async function abrirFlujoRecepcion(detalleCompleto, proveedor, uIdUnique) {
             let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
@@ -1258,54 +1009,69 @@
                 await agregarFalta(`${productoLimpio} (FALTARON ${cantidadFaltante} UNID DEL PEDIDO)`);
             }
 
-            const datosBaseDatos = {
-                producto: productoLimpio,
-                temperatura: formValues.temperatura,
-                conservacion: formValues.conservacion,
-                proveedor: proveedor,
-                cantidad_total: formValues.cantidad,
-                fecha_registro: ahora.toISOString(),
-                autorizado_por: autorizador
-            };
-
-            let loteEtiquetas = [];
-            if (formValues.stickers > 0) {
-                for (let i = 1; i <= formValues.stickers; i++) {
-                    const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
-                    loteEtiquetas.push({
-                        producto: productoLimpio,
-                        unidad: formValues.conservacion === "CONGELADOR" ? `🥶 CÁMARA CONGE (${i}/${formValues.stickers})` : `${i} DE ${formValues.stickers}`,
-                        fecha: formValues.conservacion === "CONGELADOR" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
-                        texto_qr: `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}|FIRMA:${autorizador}`,
-                        proveedor: proveedor,
-                        cantidad: 1
-                    });
-                }
-            }
-
-            Swal.fire({ title: '📡 Sincronizando albarán...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
+            // ============================================================
+            // 🔥 GUARDAR DIRECTAMENTE EN SUPABASE (TABLA recepciones_mercancia)
+            // ============================================================
+            Swal.fire({ title: '📡 Guardando en la nube...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
 
             try {
-                const resBD = await fetch(`${API_URL}/guardar_mercancia`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosBaseDatos) });
-                if (!resBD.ok) throw new Error("Error en grabación SQL.");
+                const { error: recepError } = await db_nube
+                    .from('recepciones_mercancia')
+                    .insert({
+                        producto: productoLimpio,
+                        proveedor: proveedor || 'S/P',
+                        temperatura: formValues.temperatura,
+                        conservacion: formValues.conservacion,
+                        cantidad: formValues.cantidad,
+                        fecha_registro: ahora.toISOString(),
+                        autorizado_por: autorizador
+                    });
 
-                if (loteEtiquetas.length > 0) {
-                    try {
-                        await fetch(`${API_URL}/imprimir_lote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiquetas: loteEtiquetas }) });
-                        // GUARDAR ETIQUETA EN LOCAL Y SUPABASE
-                        for (let etiqueta of loteEtiquetas) {
-                            await guardarEtiquetaLocal(etiqueta);
-                        }
-                    } catch (e) {
-                        // Si falla la impresión, igual guardamos las etiquetas
-                        for (let etiqueta of loteEtiquetas) {
-                            await guardarEtiquetaLocal(etiqueta);
-                        }
-                        lanzarToast("Bulto guardado. Impresora Brother desconectada, pero etiqueta guardada.", "warning");
+                if (recepError) {
+                    console.error('❌ Error guardando en Supabase:', recepError);
+                    throw new Error(recepError.message);
+                }
+
+                console.log('✅ Recepción guardada en Supabase:', productoLimpio);
+
+                // ============================================================
+                // 📋 GENERAR ETIQUETAS Y ENVIAR A IMPRESIÓN (SOLO NGROK)
+                // ============================================================
+                let loteEtiquetas = [];
+                if (formValues.stickers > 0) {
+                    for (let i = 1; i <= formValues.stickers; i++) {
+                        const tagOperacion = formValues.conservacion === "CONGELADOR" ? `F.CONGELADO:${fechaString}` : `F.ENTRADA:${fechaString}`;
+                        loteEtiquetas.push({
+                            producto: productoLimpio,
+                            unidad: formValues.conservacion === "CONGELADOR" ? `🥶 CÁMARA CONGE (${i}/${formValues.stickers})` : `${i} DE ${formValues.stickers}`,
+                            fecha: formValues.conservacion === "CONGELADOR" ? `CONGELACIÓN: ${fechaString}` : `RECP: ${fechaString}`,
+                            texto_qr: `PROD:${productoLimpio}|LOTE:${i}_DE_${formValues.stickers}|${tagOperacion}|FIRMA:${autorizador}`,
+                            proveedor: proveedor || 'S/P',
+                            cantidad: 1
+                        });
                     }
                 }
 
-                // 🔥 SOLO SI ES CRÍTICO: ofrecer foto automáticamente
+                if (loteEtiquetas.length > 0) {
+                    try {
+                        await fetch(`${API_URL}/imprimir_lote`, { 
+                            method: 'POST', 
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'ngrok-skip-browser-warning': 'true' 
+                            }, 
+                            body: JSON.stringify({ etiquetas: loteEtiquetas }) 
+                        });
+                        console.log('✅ Etiquetas enviadas a impresión');
+                    } catch (e) {
+                        console.warn('⚠️ Error en impresión Brother:', e);
+                        lanzarToast("⚠️ Impresora Brother no disponible, pero la recepción está guardada.", "warning");
+                    }
+                    
+                    await guardarLoteEtiquetas(loteEtiquetas);
+                }
+
+                // 🔥 SOLO SI ES CRÍTICO: ofrecer foto
                 if (esProductoCritico(productoLimpio)) {
                     Swal.close();
                     const tomarFoto = await Swal.fire({
@@ -1314,9 +1080,8 @@
                         icon: 'info',
                         showCancelButton: true,
                         confirmButtonColor: '#10b981',
-                        cancelButtonColor: '#64748b',
-                        confirmButtonText: '📷 Tomar Foto',
-                        cancelButtonText: 'Ahora no'
+                        cancelButtonText: 'Ahora no',
+                        confirmButtonText: '📷 Tomar Foto'
                     });
                     
                     if (tomarFoto.isConfirmed) {
@@ -1327,21 +1092,25 @@
                 await sincronizarConOficina('cesta', cestaGlobal);
                 await sincronizarConOficina('faltas', await obtenerFaltas());
 
-                lanzarToast("Albarán procesado correctamente.");
+                lanzarToast(`✅ ${productoLimpio} recibido correctamente`);
                 Swal.close();
                 renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
 
-                // 🔥 NOTIFICAR A COMPRAS QUE SE RECIBIÓ UN PRODUCTO
                 await notificarRecepcion(productoLimpio, proveedor, formValues.cantidad, '');
 
             } catch (error) {
-                Swal.fire({ title: '❌ ERROR DE RED', text: 'El PC central de la oficina está apagado.', icon: 'error' });
+                console.error('❌ Error:', error);
+                Swal.fire({ 
+                    title: '❌ ERROR', 
+                    text: 'No se pudo guardar la recepción: ' + error.message, 
+                    icon: 'error' 
+                });
             }
         }
 
         // ============================================================
-        // RECEPCIÓN MASIVA (CON PREGUNTA DE ETIQUETAS Y GUARDADO)
+        // RECEPCIÓN MASIVA (GUARDA DIRECTO EN SUPABASE)
         // ============================================================
         async function recibirTodoElProveedor(provNombre) {
             let bultosPendientes = cestaGlobal.filter(item => 
@@ -1351,9 +1120,6 @@
             
             if(bultosPendientes.length === 0) return;
 
-            // ============================================================
-            // PASO 1: TEMPERATURA DEL CAMIÓN
-            // ============================================================
             const { value: tempMasiva } = await Swal.fire({
                 title: `⚡ Recepción Rápida: ${provNombre}`,
                 text: `Introduce la temperatura general del camión (°C) para procesar las ${bultosPendientes.length} líneas juntas:`,
@@ -1389,13 +1155,9 @@
                 autorizador = confCritica.value;
             }
 
-            // ============================================================
-            // PASO 2: PREGUNTAR ETIQUETAS PARA CADA PRODUCTO ÚNICO
-            // ============================================================
             let configEtiquetas = {};
             let productosUnicos = [];
 
-            // Identificar productos únicos
             for (let item of bultosPendientes) {
                 let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
                 if (!productosUnicos.includes(productoLimpio)) {
@@ -1403,9 +1165,7 @@
                 }
             }
 
-            // Si hay productos, preguntar
             if (productosUnicos.length > 0) {
-                // Opción rápida
                 const { value: opcionRapida } = await Swal.fire({
                     title: '🏷️ Etiquetas para el camión',
                     text: `Hay ${productosUnicos.length} productos diferentes. ¿Cómo quieres gestionar las etiquetas?`,
@@ -1421,17 +1181,14 @@
                 });
 
                 if (opcionRapida === false) {
-                    // Deny: Ninguna etiqueta
                     for (let producto of productosUnicos) {
                         configEtiquetas[producto] = 0;
                     }
                 } else if (opcionRapida === true) {
-                    // Confirm: Una etiqueta por producto
                     for (let producto of productosUnicos) {
                         configEtiquetas[producto] = 1;
                     }
                 } else {
-                    // Cancel: Elegir individualmente
                     for (let producto of productosUnicos) {
                         const { value: numEtiquetas } = await Swal.fire({
                             title: `🏷️ Etiquetas para: ${producto}`,
@@ -1459,15 +1216,11 @@
                 }
             }
 
-            // ============================================================
-            // PASO 3: PROCESAR EL LOTE
-            // ============================================================
             Swal.fire({ 
-                title: '📡 Procesando lote...', 
+                title: '📡 Guardando en la nube...', 
                 background: '#ffffff', 
                 showConfirmButton: false, 
-                allowOutsideClick: false,
-                timer: 500
+                allowOutsideClick: false
             });
 
             const ahora = new Date();
@@ -1476,15 +1229,11 @@
 
             let arrayLoteMercancias = [];
             let loteCompletoEtiquetas = [];
+            let idsAEliminar = [];
 
             for (let item of bultosPendientes) {
-                let idx = cestaGlobal.findIndex(c => c.id === item.id);
-                if (idx !== -1) {
-                    await eliminarItemCesta(item.id);
-                    cestaGlobal.splice(idx, 1);
-                }
-
                 let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+                idsAEliminar.push(item.id);
 
                 arrayLoteMercancias.push({
                     producto: productoLimpio,
@@ -1496,7 +1245,6 @@
                     autorizado_por: autorizador
                 });
 
-                // Generar etiquetas SOLO si el producto tiene configuradas > 0
                 const numStickers = configEtiquetas[productoLimpio] || 0;
                 if (numStickers > 0) {
                     for (let i = 1; i <= numStickers; i++) {
@@ -1513,78 +1261,95 @@
             }
 
             // ============================================================
-            // PASO 4: GUARDAR EN BASE DE DATOS
+            // 🔥 GUARDAR EN SUPABASE (TABLA recepciones_mercancia)
             // ============================================================
             try {
-                await fetch(`${API_URL}/guardar_mercancia_lote`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ lote: arrayLoteMercancias }) 
-                });
-            } catch(e) {
-                for(let datosIndividual of arrayLoteMercancias) {
-                    await fetch(`${API_URL}/guardar_mercancia`, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify(datosIndividual) 
-                    });
-                }
-            }
+                for (let item of arrayLoteMercancias) {
+                    const { error: recepError } = await db_nube
+                        .from('recepciones_mercancia')
+                        .insert({
+                            producto: item.producto,
+                            proveedor: item.proveedor,
+                            temperatura: item.temperatura,
+                            conservacion: item.conservacion,
+                            cantidad: item.cantidad_total || 1,
+                            fecha_registro: item.fecha_registro,
+                            autorizado_por: item.autorizado_por || 'SISTEMA'
+                        });
 
-            // ============================================================
-            // PASO 5: IMPRIMIR ETIQUETAS Y GUARDAR EN LOCAL/SUPABASE
-            // ============================================================
-            if (loteCompletoEtiquetas.length > 0) {
-                try {
-                    await fetch(`${API_URL}/imprimir_lote`, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ etiquetas: loteCompletoEtiquetas }) 
-                    });
-                    
-                    // GUARDAR LOTE DE ETIQUETAS EN LOCAL Y SUPABASE
-                    await guardarLoteEtiquetas(loteCompletoEtiquetas);
-                    
-                    let resumen = Object.entries(configEtiquetas)
-                        .filter(([_, count]) => count > 0)
-                        .map(([prod, count]) => `📌 ${prod}: ${count} etiqueta${count > 1 ? 's' : ''}`)
-                        .join('<br>');
-
-                    Swal.fire({
-                        title: '📦 Recepción completada',
-                        html: `
-                            <div class="text-left">
-                                <p>✅ Productos procesados: ${arrayLoteMercancias.length}</p>
-                                <p>✅ Etiquetas generadas: ${loteCompletoEtiquetas.length}</p>
-                                <p>💾 Guardadas: Local + Nube</p>
-                                <hr class="my-2">
-                                <div class="text-xs text-slate-600">
-                                    ${resumen || 'ℹ️ No se imprimieron etiquetas'}
-                                </div>
-                            </div>
-                        `,
-                        icon: 'success',
-                        confirmButtonColor: '#10b981'
-                    });
-                } catch (e) {
-                    // Si falla la impresión, igual guardamos las etiquetas
-                    await guardarLoteEtiquetas(loteCompletoEtiquetas);
-                    lanzarToast("Bultos guardados. Impresora Brother desconectada, pero etiquetas guardadas.", "warning");
+                    if (recepError) {
+                        console.error('❌ Error guardando en Supabase:', recepError);
+                        throw new Error(recepError.message);
+                    }
                 }
-            } else {
+                console.log(`✅ ${arrayLoteMercancias.length} recepciones guardadas en Supabase`);
+
+                for (let id of idsAEliminar) {
+                    let idx = cestaGlobal.findIndex(c => c.id === id);
+                    if (idx !== -1) {
+                        await eliminarItemCesta(id);
+                        cestaGlobal.splice(idx, 1);
+                    }
+                }
+
+                // ============================================================
+                // 📋 ENVIAR ETIQUETAS A IMPRESIÓN (SOLO NGROK)
+                // ============================================================
+                if (loteCompletoEtiquetas.length > 0) {
+                    try {
+                        await fetch(`${API_URL}/imprimir_lote`, { 
+                            method: 'POST', 
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'ngrok-skip-browser-warning': 'true' 
+                            }, 
+                            body: JSON.stringify({ etiquetas: loteCompletoEtiquetas }) 
+                        });
+                        console.log('✅ Etiquetas enviadas a impresión');
+                    } catch (e) {
+                        console.warn('⚠️ Error en impresión Brother:', e);
+                        lanzarToast("⚠️ Impresora Brother no disponible, pero las recepciones están guardadas.", "warning");
+                    }
+                    
+                    await guardarLoteEtiquetas(loteCompletoEtiquetas);
+                }
+
+                let resumen = Object.entries(configEtiquetas)
+                    .filter(([_, count]) => count > 0)
+                    .map(([prod, count]) => `📌 ${prod}: ${count} etiqueta${count > 1 ? 's' : ''}`)
+                    .join('<br>');
+
                 Swal.fire({
                     title: '📦 Recepción completada',
-                    text: `✅ ${arrayLoteMercancias.length} productos procesados. No se generaron etiquetas.`,
+                    html: `
+                        <div class="text-left">
+                            <p>✅ Productos procesados: ${arrayLoteMercancias.length}</p>
+                            <p>✅ Etiquetas generadas: ${loteCompletoEtiquetas.length}</p>
+                            <p>☁️ Guardado en: Supabase</p>
+                            <hr class="my-2">
+                            <div class="text-xs text-slate-600">
+                                ${resumen || 'ℹ️ No se imprimieron etiquetas'}
+                            </div>
+                        </div>
+                    `,
                     icon: 'success',
                     confirmButtonColor: '#10b981'
                 });
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+                Swal.fire({ 
+                    title: '❌ ERROR', 
+                    text: 'No se pudo guardar la recepción: ' + error.message, 
+                    icon: 'error' 
+                });
+                return;
             }
 
             await sincronizarConOficina('cesta', cestaGlobal);
             renderFaltasLocales();
             renderCheckMercancia(cestaGlobal);
 
-            // 🔥 NOTIFICAR A COMPRAS QUE SE RECIBIÓ UN LOTE
             for (const item of arrayLoteMercancias) {
                 await notificarRecepcion(item.producto, item.proveedor, item.cantidad_total || 1, '');
             }
@@ -1634,7 +1399,7 @@
         }
 
         // ============================================================
-        // RENDERIZADO DE MERCANCÍA (CON BOTÓN DE FOTO MANUAL)
+        // RENDERIZADO DE MERCANCÍA
         // ============================================================
         function renderCheckMercancia(cesta) {
             const container = document.getElementById('visor-repartos-hoy');
@@ -1845,7 +1610,7 @@
         }
 
         // ============================================================
-        // 📸 SISTEMA DE FOTOS (FUNCIONES COMPLETAS)
+        // 📸 SISTEMA DE FOTOS
         // ============================================================
         
         let streamCamara = null;
@@ -2067,13 +1832,215 @@
         }
 
         // ============================================================
+        // 🖨️ IMPRIMIR RESUMEN DEL DÍA
+        // ============================================================
+        async function imprimirResumenDia() {
+            const btn = document.querySelector(".btn-resumen");
+            const textoOriginal = btn ? btn.innerHTML : '🖨️ Imprimir Resumen del Día';
+            
+            try {
+                if (btn) {
+                    btn.innerHTML = '<span class="spinner"></span> Generando...';
+                    btn.disabled = true;
+                }
+                
+                const response = await fetch(`${API_URL}/api/etiquetas/imprimir_resumen`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true' 
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    lanzarToast(`✅ ${data.message || 'Resumen del día impreso con éxito'}`);
+                    await actualizarContadorEtiquetas();
+                } else {
+                    lanzarToast(data.message || 'No hay etiquetas para hoy', 'warning');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                lanzarToast('Error al imprimir resumen', 'error');
+            } finally {
+                if (btn) {
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        // ============================================================
+        // GUARDAR ETIQUETAS EN SUPABASE
+        // ============================================================
+        async function guardarEtiquetasSupabase() {
+            const btn = document.querySelector(".btn-guardar-supabase");
+            const textoOriginal = btn ? btn.innerHTML : '☁️ Guardar en Supabase';
+            
+            try {
+                if (btn) {
+                    btn.innerHTML = '<span class="spinner"></span> Guardando...';
+                    btn.disabled = true;
+                }
+                
+                const etiquetasLocales = obtenerEtiquetasLocales();
+                const noSincronizadas = etiquetasLocales.filter(e => !e.sync_supabase);
+                
+                if (noSincronizadas.length === 0) {
+                    lanzarToast('✅ Todas las etiquetas ya están en Supabase', 'success');
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                let sincronizadas = 0;
+                let fallidas = 0;
+                
+                for (let etiqueta of noSincronizadas) {
+                    const exito = await guardarEtiquetaSupabase(etiqueta);
+                    if (exito) {
+                        sincronizadas++;
+                    } else {
+                        fallidas++;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                if (sincronizadas > 0) {
+                    lanzarToast(`✅ ${sincronizadas} etiquetas guardadas en Supabase`, 'success');
+                }
+                if (fallidas > 0) {
+                    lanzarToast(`⚠️ ${fallidas} etiquetas no pudieron sincronizarse`, 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                lanzarToast('Error al guardar en Supabase', 'error');
+            } finally {
+                if (btn) {
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        // ============================================================
+        // ACTUALIZAR CONTADOR DE ETIQUETAS
+        // ============================================================
+        async function actualizarContadorEtiquetas() {
+            try {
+                const localesHoy = obtenerEtiquetasHoyLocal();
+                const totalLocal = localesHoy.length;
+                
+                document.getElementById('total-etiquetas-dia').textContent = totalLocal;
+                
+                await cargarListaEtiquetas();
+                
+            } catch (error) {
+                console.error('Error actualizando contador:', error);
+                document.getElementById('total-etiquetas-dia').textContent = '?';
+            }
+        }
+
+        // ============================================================
+        // CARGAR LISTA DE ETIQUETAS DEL DÍA
+        // ============================================================
+        async function cargarListaEtiquetas() {
+            const container = document.getElementById('lista-etiquetas-dia');
+            try {
+                const etiquetasHoy = obtenerEtiquetasHoyLocal();
+                
+                if (etiquetasHoy.length === 0) {
+                    container.innerHTML = `<div class="text-center text-slate-400 py-4 text-sm">No hay etiquetas registradas hoy</div>`;
+                    return;
+                }
+                
+                let html = '';
+                etiquetasHoy.slice(0, 20).forEach((e, index) => {
+                    const sincronizado = e.sync_supabase ? '☁️' : '📡';
+                    html += `
+                        <div class="etiqueta-card">
+                            <div class="flex flex-col">
+                                <span class="etiqueta-producto">${e.producto || 'S/P'}</span>
+                                <span class="etiqueta-fecha">${e.unidad || '1'} - ${e.fecha || ''}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs">${sincronizado}</span>
+                                <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">#${index + 1}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if (etiquetasHoy.length > 20) {
+                    html += `<div class="text-center text-slate-400 text-xs py-2">... y ${etiquetasHoy.length - 20} más</div>`;
+                }
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error cargando lista:', error);
+                container.innerHTML = `<div class="text-center text-red-500 py-4 text-sm">Error al cargar etiquetas</div>`;
+            }
+        }
+
+        // ============================================================
+        // LIMPIAR ETIQUETAS DEL DÍA
+        // ============================================================
+        function limpiarEtiquetasDia() {
+            const etiquetasHoy = obtenerEtiquetasHoyLocal();
+            
+            if (etiquetasHoy.length === 0) {
+                lanzarToast('No hay etiquetas para limpiar', 'warning');
+                return;
+            }
+            
+            Swal.fire({
+                title: '¿Limpiar todas las etiquetas del día?',
+                text: `Hay ${etiquetasHoy.length} etiquetas de hoy. Esta acción no se puede deshacer.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, limpiar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        limpiarEtiquetasLocalesHoy();
+                        lanzarToast(`🧹 ${etiquetasHoy.length} etiquetas limpiadas`, 'warning');
+                        await actualizarContadorEtiquetas();
+                    } catch (error) {
+                        lanzarToast('Error al limpiar etiquetas', 'error');
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // PESTAÑAS
+        // ============================================================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+                
+                if (this.dataset.tab === 'tab-etiquetas') {
+                    actualizarContadorEtiquetas();
+                }
+            });
+        });
+
+        // ============================================================
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
             await cargarDatosIniciales();
             suscribirseCambios();
             
-            // Actualizar contador de etiquetas cada 30 segundos
             setInterval(actualizarContadorEtiquetas, 30000);
             
             setInterval(async () => {
