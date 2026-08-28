@@ -36,6 +36,12 @@
         .card-mise-jefe:hover { background: #ede9fe !important; }
         .card-dashboard { border-color: #8b5cf6 !important; background: #f5f3ff !important; }
         .card-dashboard:hover { background: #ede9fe !important; }
+        /* Estilo para la nueva tarjeta de Etiquetas Rápidas */
+        .card-etiquetas { border-color: #f59e0b !important; background: #fffbeb !important; }
+        .card-etiquetas:hover { background: #fef3c7 !important; }
+        /* Estilo para la tarjeta de Personal */
+        .card-personal { border-color: #ec4899 !important; background: #fdf2f8 !important; }
+        .card-personal:hover { background: #fce7f3 !important; }
         
         @media (max-width: 640px) {
             .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -59,6 +65,24 @@
         <p class="sub">Selecciona una herramienta para empezar</p>
         <div class="grid">
             
+            <!-- ========================================================== -->
+            <!-- 👥 PERSONAL (ACCESO DIRECTO) -->
+            <!-- ========================================================== -->
+            <a href="personal.html" class="card card-personal">
+                <span class="icono">👥</span>
+                <span class="nombre">Personal</span>
+                <span class="desc">Herramientas para el equipo</span>
+            </a>
+
+            <!-- ========================================================== -->
+            <!-- 🆕 ETIQUETAS RÁPIDAS (NUEVA) -->
+            <!-- ========================================================== -->
+            <a href="etiquetas.html" class="card card-etiquetas">
+                <span class="icono">🏷️</span>
+                <span class="nombre">Etiquetas Rápidas <span class="badge-nuevo">Nuevo</span></span>
+                <span class="desc">Elaboración y descongelación</span>
+            </a>
+
             <!-- ========================================================== -->
             <!-- 🆕 DASHBOARD UNIFICADO (NUEVO) -->
             <!-- ========================================================== -->
