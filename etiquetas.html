@@ -62,16 +62,14 @@
         .resultado-busqueda .encontrado { font-weight: bold; font-size: 18px; color: #1e293b; }
         .resultado-busqueda .detalle { font-size: 14px; color: #64748b; }
         
-        /* ESTILO DE ETIQUETA REDISEÑADA - IGUAL A LAS OTRAS APPS */
-        #preview { background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; text-align: center; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 400px; margin: 0 auto; }
-        #preview .tipo-etiqueta { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
-        #preview .producto { font-size: 26px; font-weight: 900; color: #1e293b; letter-spacing: 1px; margin: 4px 0; }
-        #preview .linea-info { font-size: 15px; color: #475569; margin: 3px 0; font-weight: 500; }
-        #preview .linea-info .etiqueta { font-weight: 400; color: #94a3b8; }
-        #preview .caducidad { font-size: 20px; color: #dc2626; font-weight: bold; margin: 6px 0; }
-        #preview .separador { border-top: 2px dashed #e2e8f0; margin: 10px 0; }
-        #preview .qr-container { display: flex; justify-content: center; margin: 8px 0; }
-        #preview .texto-pie { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+        #preview { background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; text-align: center; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        #preview .producto { font-size: 28px; font-weight: 900; color: #1e293b; letter-spacing: 1px; }
+        #preview .fecha-origen { font-size: 16px; color: #64748b; margin: 4px 0; }
+        #preview .caducidad { font-size: 24px; color: #dc2626; font-weight: bold; margin: 8px 0; }
+        #preview .fecha-actual { font-size: 13px; color: #94a3b8; }
+        #preview .qr-container { display: flex; justify-content: center; margin: 12px 0; }
+        #preview .separador { border-top: 2px dashed #e2e8f0; margin: 12px 0; }
+        #preview .tipo-etiqueta { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 8px; }
         
         .selector-tipo { display: flex; gap: 8px; margin-bottom: 12px; }
         .selector-tipo .tipo-btn { flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; background: white; font-weight: bold; }
@@ -137,15 +135,6 @@
                 <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
             </div>
 
-            <!-- Lote -->
-            <div class="mt-4">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Lote</label>
-                <div class="flex gap-2">
-                    <input type="text" id="lote-input" placeholder="Ej: LOTE-20260828" class="uppercase" style="flex:1;">
-                    <button onclick="generarLoteAuto()" class="btn btn-primary" style="white-space:nowrap; padding:14px 20px;">⚙️ Auto</button>
-                </div>
-            </div>
-
             <!-- Fecha de origen (Elaboración o Descongelación) -->
             <div class="mt-4">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1" id="fecha-origen-label">Fecha de Elaboración</label>
@@ -164,16 +153,15 @@
                 <div class="text-xs text-slate-400 text-center mt-1" id="cad-info">La caducidad se calcula desde la fecha de elaboración</div>
             </div>
 
-            <!-- PREVISUALIZACIÓN REDISEÑADA -->
+            <!-- PREVISUALIZACIÓN CON QR -->
             <div id="preview" class="mt-4">
                 <div id="preview-tipo" class="tipo-etiqueta">🍳 ELABORACIÓN</div>
                 <div class="producto" id="preview-producto">PRODUCTO</div>
-                <div class="linea-info" id="preview-lote"><span class="etiqueta">Lote:</span> ---</div>
-                <div class="linea-info" id="preview-fecha-origen"><span class="etiqueta">Elaborado:</span> DD/MM/YYYY</div>
+                <div class="fecha-origen" id="preview-fecha-origen">📅 Elaborado: DD/MM/YYYY</div>
                 <div class="caducidad" id="preview-caducidad">⚠️ CAD: DD/MM/YYYY</div>
                 <div class="separador"></div>
                 <div id="preview-qr" class="qr-container"></div>
-                <div class="texto-pie">Escanea el QR para ver los datos</div>
+                <div class="text-xs text-slate-400">Escanea el QR para ver los datos</div>
             </div>
 
             <!-- Botón principal -->
@@ -205,7 +193,6 @@
             <div id="resultado-busqueda" class="resultado-busqueda">
                 <div class="encontrado" id="res-producto">-</div>
                 <div class="detalle" id="res-tipo"></div>
-                <div class="detalle" id="res-lote">📦 Lote: <span id="res-lote-text">-</span></div>
                 <div class="detalle" id="res-fecha-origen">📅 Fecha: <span id="res-elab">-</span></div>
                 <div class="detalle">⚠️ Caducidad: <span id="res-cad">-</span></div>
                 <div class="detalle">📦 Dias: <span id="res-dias">-</span></div>
@@ -294,12 +281,6 @@ function generarId() {
 
 function getFechaHoy() {
     return new Date();
-}
-
-function generarLoteAuto() {
-    const ahora = new Date();
-    const lote = `LOTE-${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}`;
-    document.getElementById('lote-input').value = lote;
 }
 
 // ============================================================
@@ -431,9 +412,6 @@ document.getElementById('producto-input').addEventListener('input', function() {
                 seleccionarTipo(item.tipo);
             }
             document.getElementById('fecha-origen-input').value = formatearFechaInput(item.fecha_origen);
-            if (item.lote) {
-                document.getElementById('lote-input').value = item.lote;
-            }
             actualizarPreview();
             mostrarMarquesina(item);
         });
@@ -492,7 +470,6 @@ function cambiarDias(cambio) {
 
 function actualizarPreview() {
     const producto = document.getElementById('producto-input').value.trim().toUpperCase();
-    const lote = document.getElementById('lote-input').value.trim().toUpperCase() || 'S/L';
     const dias = parseInt(document.getElementById('dias-input').value) || 5;
     const fechaOrigen = document.getElementById('fecha-origen-input').value;
     const fechaOrigenDate = fechaOrigen ? new Date(fechaOrigen) : getFechaHoy();
@@ -503,15 +480,12 @@ function actualizarPreview() {
     if (producto && fechaOrigen) {
         preview.style.display = 'block';
         const tipoLabel = tipoActual === 'descongelacion' ? 'Descongelado' : 'Elaborado';
-        const tipoAbrev = tipoActual === 'descongelacion' ? 'DESC' : 'ELAB';
-        
         document.getElementById('preview-producto').textContent = producto;
-        document.getElementById('preview-lote').innerHTML = `<span class="etiqueta">Lote:</span> ${lote}`;
-        document.getElementById('preview-fecha-origen').innerHTML = `<span class="etiqueta">${tipoLabel}:</span> ${formatearFecha(fechaOrigenDate)}`;
+        document.getElementById('preview-fecha-origen').textContent = `📅 ${tipoLabel}: ${formatearFecha(fechaOrigenDate)}`;
         document.getElementById('preview-caducidad').textContent = `⚠️ CAD: ${formatearFecha(caducidad)}`;
         document.getElementById('preview-tipo').textContent = tipoActual === 'descongelacion' ? '🧊 DESCONGELACIÓN' : '🍳 ELABORACIÓN';
         
-        const qrTexto = `PROD:${producto}|LOTE:${lote}|${tipoAbrev}:${formatearFecha(fechaOrigenDate)}|CAD:${formatearFecha(caducidad)}`;
+        const qrTexto = `PROD:${producto}|${tipoActual === 'descongelacion' ? 'DESC' : 'ELAB'}:${formatearFecha(fechaOrigenDate)}|CAD:${formatearFecha(caducidad)}`;
         generarQRPreview(qrTexto);
     } else {
         preview.style.display = 'none';
@@ -520,7 +494,6 @@ function actualizarPreview() {
 
 function limpiarTodo() {
     document.getElementById('producto-input').value = '';
-    document.getElementById('lote-input').value = '';
     document.getElementById('dias-input').value = '5';
     document.getElementById('fecha-origen-input').value = formatearFechaInput(getFechaHoy());
     document.getElementById('preview').style.display = 'none';
@@ -532,11 +505,10 @@ function limpiarTodo() {
 }
 
 // ============================================================
-// IMPRIMIR ETIQUETA
+// IMPRIMIR ETIQUETA (USA NUEVO ENDPOINT SIMPLE)
 // ============================================================
 async function imprimirEtiqueta() {
     const producto = document.getElementById('producto-input').value.trim().toUpperCase();
-    const lote = document.getElementById('lote-input').value.trim().toUpperCase() || 'S/L';
     const dias = parseInt(document.getElementById('dias-input').value) || 5;
     const fechaOrigen = document.getElementById('fecha-origen-input').value;
     
@@ -559,13 +531,13 @@ async function imprimirEtiqueta() {
     const fechaOrig = formatearFecha(fechaOrigenDate);
     const tipoLabel = tipoActual === 'descongelacion' ? 'DESC' : 'ELAB';
     const tipoTexto = tipoActual === 'descongelacion' ? 'Descongelado' : 'Elaborado';
-    const qrTexto = `PROD:${producto}|LOTE:${lote}|${tipoLabel}:${fechaOrig}|CAD:${fechaCad}`;
+    const qrTexto = `PROD:${producto}|${tipoLabel}:${fechaOrig}|CAD:${fechaCad}`;
     
     const paquete = {
         etiquetas: [{
             producto: producto,
-            unidad: `Lote: ${lote}`,
-            fecha: `${tipoTexto}: ${fechaOrig} | CAD: ${fechaCad}`,
+            unidad: `${tipoTexto}: ${fechaOrig}`,
+            fecha: `CAD: ${fechaCad}`,
             texto_qr: qrTexto
         }]
     };
@@ -573,7 +545,6 @@ async function imprimirEtiqueta() {
     const registro = {
         id: generarId(),
         producto: producto,
-        lote: lote,
         tipo: tipoActual,
         dias_caducidad: dias,
         fecha_origen: fechaOrigenDate.toISOString(),
@@ -585,6 +556,7 @@ async function imprimirEtiqueta() {
         const { error } = await db.from('etiquetas_rapidas').insert([registro]);
         if (error) console.log('Error guardando:', error);
         
+        // ✅ USA EL NUEVO ENDPOINT PARA ETIQUETAS SIMPLES
         const response = await fetch(API_URL + '/imprimir_etiqueta_simple', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -592,7 +564,7 @@ async function imprimirEtiqueta() {
         });
         
         if (response.ok) {
-            toast(`✅ ${producto} | Lote: ${lote} | ${tipoTexto} ${fechaOrig} | CAD: ${fechaCad}`, 'success');
+            toast(`✅ ${producto} | ${tipoTexto} ${fechaOrig} | CAD: ${fechaCad}`, 'success');
             if (navigator.vibrate) navigator.vibrate(50);
             mostrarMarquesina(registro);
         } else {
@@ -606,28 +578,28 @@ async function imprimirEtiqueta() {
 }
 
 // ============================================================
-// REIMPRIMIR
+// REIMPRIMIR (USA NUEVO ENDPOINT SIMPLE)
 // ============================================================
 async function reimprimirEtiqueta(registro) {
     if (!registro) return;
     
     const fechaCad = formatearFecha(registro.fecha_caducidad);
     const fechaOrig = formatearFecha(registro.fecha_origen);
-    const lote = registro.lote || 'S/L';
     const tipoLabel = registro.tipo === 'descongelacion' ? 'DESC' : 'ELAB';
     const tipoTexto = registro.tipo === 'descongelacion' ? 'Descongelado' : 'Elaborado';
-    const qrTexto = `PROD:${registro.producto}|LOTE:${lote}|${tipoLabel}:${fechaOrig}|CAD:${fechaCad}`;
+    const qrTexto = `PROD:${registro.producto}|${tipoLabel}:${fechaOrig}|CAD:${fechaCad}`;
     
     const paquete = {
         etiquetas: [{
             producto: registro.producto,
-            unidad: `Lote: ${lote}`,
-            fecha: `${tipoTexto}: ${fechaOrig} | CAD: ${fechaCad}`,
+            unidad: `${tipoTexto}: ${fechaOrig}`,
+            fecha: `CAD: ${fechaCad}`,
             texto_qr: qrTexto
         }]
     };
     
     try {
+        // ✅ USA EL NUEVO ENDPOINT PARA ETIQUETAS SIMPLES
         const response = await fetch(API_URL + '/imprimir_etiqueta_simple', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -674,7 +646,6 @@ async function buscarUltimaElaboracion() {
             document.getElementById('res-producto').textContent = item.producto;
             const tipoTexto = item.tipo === 'descongelacion' ? '🧊 Descongelado' : '🍳 Elaborado';
             document.getElementById('res-tipo').textContent = tipoTexto;
-            document.getElementById('res-lote-text').textContent = item.lote || 'S/L';
             document.getElementById('res-elab').textContent = formatearFecha(item.fecha_origen);
             document.getElementById('res-cad').textContent = formatearFecha(item.fecha_caducidad);
             document.getElementById('res-dias').textContent = item.dias_caducidad + ' dias';
@@ -731,7 +702,6 @@ async function cargarHistorial() {
             <div class="historial-item">
                 <div>
                     <div class="nombre">${entry.producto}</div>
-                    <div class="info">📦 ${entry.lote || 'S/L'}</div>
                     <div class="info">${tipoTexto} ${formatearFecha(entry.fecha_origen)}</div>
                     <div class="info fecha-cad">⚠️ CAD: ${formatearFecha(entry.fecha_caducidad)}</div>
                 </div>
@@ -768,7 +738,6 @@ function filtrarHistorial() {
         <div class="historial-item">
             <div>
                 <div class="nombre">${entry.producto}</div>
-                <div class="info">📦 ${entry.lote || 'S/L'}</div>
                 <div class="info">${tipoTexto} ${formatearFecha(entry.fecha_origen)}</div>
                 <div class="info fecha-cad">⚠️ CAD: ${formatearFecha(entry.fecha_caducidad)}</div>
             </div>
@@ -781,14 +750,7 @@ function filtrarHistorial() {
 // EVENTOS
 // ============================================================
 document.getElementById('producto-input').addEventListener('input', actualizarPreview);
-document.getElementById('lote-input').addEventListener('input', actualizarPreview);
 document.getElementById('producto-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('lote-input').focus();
-    }
-});
-document.getElementById('lote-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
         imprimirEtiqueta();
@@ -804,7 +766,6 @@ document.getElementById('fecha-origen-input').addEventListener('change', actuali
 cargarHistorial();
 document.getElementById('producto-input').focus();
 seleccionarTipo('elaboracion');
-generarLoteAuto();
 
 fetch(API_URL + '/health', { 
     headers: { 'ngrok-skip-browser-warning': 'true' } 
@@ -832,7 +793,6 @@ window.reimprimirDesdeBusqueda = reimprimirDesdeBusqueda;
 window.cambiarTab = cambiarTab;
 window.filtrarHistorial = filtrarHistorial;
 window.seleccionarTipo = seleccionarTipo;
-window.generarLoteAuto = generarLoteAuto;
 </script>
 </body>
 </html>
