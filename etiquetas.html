@@ -27,6 +27,9 @@
         .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; }
         input, select { width: 100%; padding: 14px; border: 2px solid #cbd5e1; border-radius: 12px; font-size: 18px; background: #f8fafc; text-align: center; font-weight: bold; }
         input:focus, select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        input[type="number"] { -moz-appearance: textfield; }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .badge-online { background: #d1fae5; color: #065f46; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .badge-offline { background: #fee2e2; color: #991b1b; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -75,6 +78,13 @@
         .selector-tipo .tipo-btn.active { border-color: #2563eb; background: #eff6ff; }
         .selector-tipo .tipo-btn .icono { font-size: 20px; display: block; }
         .selector-tipo .tipo-btn .label { font-size: 13px; }
+        
+        .cantidad-selector { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 8px 0; }
+        .cantidad-selector button { width: 40px; height: 40px; font-size: 20px; border-radius: 10px; border: 2px solid #cbd5e1; background: white; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        .cantidad-selector button:hover { background: #f1f5f9; border-color: #2563eb; }
+        .cantidad-selector button:active { transform: scale(0.95); }
+        .cantidad-selector input { width: 70px; text-align: center; font-size: 20px; padding: 8px; }
+        .cantidad-label { font-size: 14px; color: #64748b; font-weight: bold; }
         
         @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
     </style>
@@ -157,6 +167,19 @@
                 <div class="text-xs text-slate-400 text-center mt-1" id="cad-info">La caducidad se calcula desde la fecha de elaboración</div>
             </div>
 
+            <!-- ============================================================ -->
+            <!-- 🔥 CANTIDAD DE ETIQUETAS -->
+            <!-- ============================================================ -->
+            <div class="mt-3">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cantidad de etiquetas</label>
+                <div class="cantidad-selector">
+                    <button onclick="cambiarCantidad(-1)">−</button>
+                    <input type="number" id="cantidad-input" value="1" min="1" max="50">
+                    <button onclick="cambiarCantidad(1)">+</button>
+                    <span class="cantidad-label">unidades</span>
+                </div>
+            </div>
+
             <!-- PREVISUALIZACIÓN -->
             <div id="preview" class="mt-3">
                 <div id="preview-tipo" class="tipo-etiqueta">🍳 ELABORACIÓN</div>
@@ -167,11 +190,12 @@
                 <div class="separador"></div>
                 <div id="preview-qr" class="qr-container"></div>
                 <div class="text-xs text-slate-400">Escanea el QR</div>
+                <div class="text-xs text-slate-400 mt-1" id="preview-cantidad">📄 1 etiqueta</div>
             </div>
 
             <!-- Botón principal -->
             <button onclick="imprimirEtiqueta()" class="btn btn-success mt-4" style="padding:16px; font-size:18px; width:100%;">
-                🖨️ IMPRIMIR ETIQUETA
+                🖨️ IMPRIMIR ETIQUETAS
             </button>
 
             <button onclick="limpiarTodo()" class="btn btn-outline mt-2" style="padding:10px; font-size:14px; width:100%;">
@@ -287,6 +311,17 @@ function generarId() {
 
 function getFechaHoy() {
     return new Date();
+}
+
+// ============================================================
+// CANTIDAD
+// ============================================================
+function cambiarCantidad(cambio) {
+    const input = document.getElementById('cantidad-input');
+    let valor = parseInt(input.value) || 1;
+    valor = Math.max(1, Math.min(50, valor + cambio));
+    input.value = valor;
+    actualizarPreview();
 }
 
 // ============================================================
@@ -481,6 +516,7 @@ function actualizarPreview() {
     const producto = document.getElementById('producto-input').value.trim().toUpperCase();
     const lote = document.getElementById('lote-input').value.trim().toUpperCase() || 'S/L';
     const dias = parseInt(document.getElementById('dias-input').value) || 5;
+    const cantidad = parseInt(document.getElementById('cantidad-input').value) || 1;
     const fechaOrigen = document.getElementById('fecha-origen-input').value;
     const fechaOrigenDate = fechaOrigen ? new Date(fechaOrigen) : getFechaHoy();
     const caducidad = new Date(fechaOrigenDate);
@@ -495,6 +531,7 @@ function actualizarPreview() {
         document.getElementById('preview-fecha-origen').innerHTML = `<span class="etiqueta">${tipoLabel}:</span> ${formatearFecha(fechaOrigenDate)}`;
         document.getElementById('preview-caducidad').textContent = `⚠️ CAD: ${formatearFecha(caducidad)}`;
         document.getElementById('preview-tipo').textContent = tipoActual === 'descongelacion' ? '🧊 DESCONGELACIÓN' : '🍳 ELABORACIÓN';
+        document.getElementById('preview-cantidad').textContent = `📄 ${cantidad} etiqueta${cantidad > 1 ? 's' : ''}`;
         
         const qrTexto = `PROD:${producto}|LOTE:${lote}|${tipoActual === 'descongelacion' ? 'DESC' : 'ELAB'}:${formatearFecha(fechaOrigenDate)}|CAD:${formatearFecha(caducidad)}`;
         generarQRPreview(qrTexto);
@@ -507,6 +544,7 @@ function limpiarTodo() {
     document.getElementById('producto-input').value = '';
     document.getElementById('lote-input').value = '';
     document.getElementById('dias-input').value = '5';
+    document.getElementById('cantidad-input').value = '1';
     document.getElementById('fecha-origen-input').value = formatearFechaInput(getFechaHoy());
     document.getElementById('preview').style.display = 'none';
     document.getElementById('preview-qr').innerHTML = '';
@@ -523,6 +561,7 @@ async function imprimirEtiqueta() {
     const producto = document.getElementById('producto-input').value.trim().toUpperCase();
     const lote = document.getElementById('lote-input').value.trim().toUpperCase() || 'S/L';
     const dias = parseInt(document.getElementById('dias-input').value) || 5;
+    const cantidad = parseInt(document.getElementById('cantidad-input').value) || 1;
     const fechaOrigen = document.getElementById('fecha-origen-input').value;
     
     if (!producto) {
@@ -545,13 +584,19 @@ async function imprimirEtiqueta() {
     const tipoTexto = tipoActual === 'descongelacion' ? 'Descongelado' : 'Elaborado';
     const qrTexto = `PROD:${producto}|LOTE:${lote}|${tipoActual === 'descongelacion' ? 'DESC' : 'ELAB'}:${fechaOrig}|CAD:${fechaCad}`;
     
-    const paquete = {
-        etiquetas: [{
+    // Crear una etiqueta por cada unidad solicitada
+    const etiquetas = [];
+    for (let i = 0; i < cantidad; i++) {
+        etiquetas.push({
             producto: producto,
             unidad: `${lote}`,
             fecha: `${tipoTexto}: ${fechaOrig}`,
             texto_qr: qrTexto
-        }]
+        });
+    }
+    
+    const paquete = {
+        etiquetas: etiquetas
     };
     
     const registro = {
@@ -562,7 +607,8 @@ async function imprimirEtiqueta() {
         dias_caducidad: dias,
         fecha_origen: fechaOrigenDate.toISOString(),
         fecha_caducidad: caducidad.toISOString(),
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        cantidad: cantidad
     };
     
     try {
@@ -571,7 +617,6 @@ async function imprimirEtiqueta() {
             console.log('Error guardando:', error);
         }
         
-        // ✅ USA /imprimir_etiqueta_rapida
         const response = await fetch(API_URL + '/imprimir_etiqueta_rapida', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -579,7 +624,7 @@ async function imprimirEtiqueta() {
         });
         
         if (response.ok) {
-            toast(`✅ ${producto} | ${tipoTexto} ${fechaOrig} | CAD: ${fechaCad}`, 'success');
+            toast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} de ${producto} enviada${cantidad > 1 ? 's' : ''}`, 'success');
             if (navigator.vibrate) navigator.vibrate(50);
             mostrarMarquesina(registro);
         } else {
@@ -604,13 +649,19 @@ async function reimprimirEtiqueta(registro) {
     const tipoTexto = registro.tipo === 'descongelacion' ? 'Descongelado' : 'Elaborado';
     const qrTexto = `PROD:${registro.producto}|LOTE:${lote}|${registro.tipo === 'descongelacion' ? 'DESC' : 'ELAB'}:${fechaOrig}|CAD:${fechaCad}`;
     
-    const paquete = {
-        etiquetas: [{
+    const cantidad = registro.cantidad || 1;
+    const etiquetas = [];
+    for (let i = 0; i < cantidad; i++) {
+        etiquetas.push({
             producto: registro.producto,
             unidad: `${lote}`,
             fecha: `${tipoTexto}: ${fechaOrig}`,
             texto_qr: qrTexto
-        }]
+        });
+    }
+    
+    const paquete = {
+        etiquetas: etiquetas
     };
     
     try {
@@ -620,7 +671,7 @@ async function reimprimirEtiqueta(registro) {
             body: JSON.stringify(paquete)
         });
         if (response.ok) {
-            toast('✅ ' + registro.producto + ' reimpreso', 'success');
+            toast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} de ${registro.producto} reimpresa${cantidad > 1 ? 's' : ''}`, 'success');
         } else {
             toast('❌ Error al reimprimir', 'error');
         }
@@ -713,6 +764,7 @@ async function cargarHistorial() {
         
         container.innerHTML = historialGlobal.map(entry => {
             const tipoTexto = entry.tipo === 'descongelacion' ? '🧊 Descong.' : '🍳 Elab.';
+            const cant = entry.cantidad || 1;
             return `
             <div class="historial-item">
                 <div>
@@ -720,6 +772,7 @@ async function cargarHistorial() {
                     <div class="info">📦 Lote: ${entry.lote || 'S/L'}</div>
                     <div class="info">${tipoTexto} ${formatearFecha(entry.fecha_origen)}</div>
                     <div class="info fecha-cad">⚠️ CAD: ${formatearFecha(entry.fecha_caducidad)}</div>
+                    <div class="info">📄 ${cant} etiqueta${cant > 1 ? 's' : ''}</div>
                 </div>
                 <button onclick="reimprimirEtiqueta(historialGlobal.find(e => e.id === '${entry.id}'))" class="btn btn-success btn-sm">🔄 Reimprimir</button>
             </div>
@@ -750,6 +803,7 @@ function filtrarHistorial() {
     
     container.innerHTML = filtradas.map(entry => {
         const tipoTexto = entry.tipo === 'descongelacion' ? '🧊 Descong.' : '🍳 Elab.';
+        const cant = entry.cantidad || 1;
         return `
         <div class="historial-item">
             <div>
@@ -757,6 +811,7 @@ function filtrarHistorial() {
                 <div class="info">📦 Lote: ${entry.lote || 'S/L'}</div>
                 <div class="info">${tipoTexto} ${formatearFecha(entry.fecha_origen)}</div>
                 <div class="info fecha-cad">⚠️ CAD: ${formatearFecha(entry.fecha_caducidad)}</div>
+                <div class="info">📄 ${cant} etiqueta${cant > 1 ? 's' : ''}</div>
             </div>
             <button onclick="reimprimirEtiqueta(historialGlobal.find(e => e.id === '${entry.id}'))" class="btn btn-success btn-sm">🔄 Reimprimir</button>
         </div>
@@ -777,12 +832,20 @@ document.getElementById('producto-input').addEventListener('keypress', (e) => {
 document.getElementById('lote-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
+        document.getElementById('fecha-origen-input').focus();
+    }
+});
+document.getElementById('fecha-origen-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
         imprimirEtiqueta();
     }
 });
 document.getElementById('dias-input').addEventListener('change', actualizarPreview);
 document.getElementById('dias-input').addEventListener('input', actualizarPreview);
 document.getElementById('fecha-origen-input').addEventListener('change', actualizarPreview);
+document.getElementById('cantidad-input').addEventListener('change', actualizarPreview);
+document.getElementById('cantidad-input').addEventListener('input', actualizarPreview);
 
 // ============================================================
 // INICIALIZAR
@@ -807,6 +870,7 @@ fetch(API_URL + '/health', {
 
 // Exponer funciones
 window.cambiarDias = cambiarDias;
+window.cambiarCantidad = cambiarCantidad;
 window.imprimirEtiqueta = imprimirEtiqueta;
 window.limpiarTodo = limpiarTodo;
 window.cargarHistorial = cargarHistorial;
