@@ -1,0 +1,2797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>🍽️ Mise and Place · Cocina</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E🍽️%3C/text%3E%3C/svg%3E">
+    <meta name="theme-color" content="#1e293b">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f2ee;
+            padding: 1rem;
+            color: #1e1e1e;
+        }
+        .app {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+        }
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.8rem;
+            border-bottom: 2px solid #eee8e0;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .header h1 {
+            font-weight: 600;
+            font-size: 1.5rem;
+            letter-spacing: -0.3px;
+        }
+        .header h1 small {
+            font-weight: 400;
+            font-size: 0.8rem;
+            color: #7a726a;
+            margin-left: 0.5rem;
+        }
+        .user-area {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .user-area input {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            background: #faf8f6;
+            width: 130px;
+        }
+        .user-area input:focus { outline: 2px solid #1e1e1e; outline-offset: 1px; }
+        .day-selector {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .day-btn {
+            background: #ece7e1;
+            border: none;
+            padding: 0.3rem 0.9rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #2f2b27;
+        }
+        .day-btn.active { background: #1e1e1e; color: white; }
+        .day-btn:hover { background: #d5cdc3; }
+        .turno-selector {
+            display: flex;
+            gap: 0.2rem;
+            background: #f0ebe5;
+            border-radius: 40px;
+            padding: 0.15rem;
+        }
+        .turno-btn {
+            background: transparent;
+            border: none;
+            padding: 0.2rem 1rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.7rem;
+            cursor: pointer;
+            color: #4b4540;
+        }
+        .turno-btn.active { background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.06); color: #1e1e1e; }
+        .sync-status {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.6rem;
+            border-radius: 30px;
+            background: #f0ebe5;
+        }
+        .sync-status.synced { background: #d4e6d9; color: #1d6b3c; }
+        .sync-status.syncing { background: #f7e3d4; color: #914d2a; }
+        .sync-status.error { background: #f5d6d6; color: #b13e3e; }
+        .tabs {
+            display: flex;
+            gap: 0.2rem;
+            background: #f0ebe5;
+            border-radius: 60px;
+            padding: 0.2rem;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: #4b4540;
+            flex: 1 1 auto;
+        }
+        .tab-btn.active { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.06); color: #1e1e1e; }
+        .tab-content { display: none; animation: fade 0.2s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fade { from { opacity: 0.5; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 🔥 CAMBIO: Una sola columna */
+        .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        
+        .shelf-card {
+            background: #fcfaf8;
+            border-radius: 16px;
+            padding: 0.8rem 0.8rem 0.5rem;
+            border: 1px solid #e8e1d9;
+            transition: all 0.2s;
+        }
+        .shelf-card:hover { border-color: #c5bdb3; }
+        .shelf-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 0.3rem;
+            border-bottom: 2px solid #e0d7cd;
+            margin-bottom: 0.4rem;
+            gap: 0.3rem;
+        }
+        .shelf-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #1e1e1e;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            flex: 1;
+        }
+        .shelf-title .badge {
+            font-weight: 400;
+            font-size: 0.6rem;
+            background: #e0d7cd;
+            padding: 0.05rem 0.5rem;
+            border-radius: 30px;
+            color: #3d3833;
+        }
+        .shelf-actions { display: flex; gap: 0.15rem; flex-shrink: 0; flex-wrap: wrap; }
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            padding: 0.1rem 0.25rem;
+            border-radius: 4px;
+            color: #5e5a55;
+            transition: 0.15s;
+        }
+        .icon-btn:hover { background: #e8e1d9; color: #1e1e1e; }
+        .icon-btn.danger:hover { background: #f5d6d6; color: #b13e3e; }
+        .icon-btn.move:hover { background: #d4e6d9; color: #1d6b3c; }
+        .icon-btn.info:hover { background: #dbeafe; color: #2563eb; }
+        .icon-btn.etiqueta-btn { background: #fef3c7; color: #92400e; border-radius: 6px; padding: 0.1rem 0.4rem; font-size: 0.65rem; font-weight: bold; }
+        .icon-btn.etiqueta-btn:hover { background: #f59e0b; color: white; }
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.2rem 0.05rem;
+            border-bottom: 1px solid #f0ebe5;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.15s;
+            flex-wrap: wrap;
+        }
+        .item-row:hover { background: #f1f5f9; border-radius: 4px; }
+        .item-row:last-child { border-bottom: none; }
+        .item-row.bold-item { font-weight: 700; background: #f3efe9; border-radius: 6px; padding: 0.2rem 0.4rem; margin: 0.15rem 0; border-bottom: 1px solid #e0d7cd; cursor: default; }
+        .item-row.bold-item:hover { background: #f3efe9; }
+        .item-name { flex: 1; color: #1f1d1b; min-width: 0; word-break: break-word; font-size: 0.8rem; }
+        .item-actions { display: flex; gap: 0.15rem; flex-wrap: wrap; align-items: center; }
+        .status-btn {
+            border: none;
+            padding: 0.1rem 0.4rem;
+            border-radius: 30px;
+            font-size: 0.55rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: #ece7e1;
+            color: #3d3833;
+            white-space: nowrap;
+        }
+        .status-btn.active-hay { background: #1e7e34; color: white; }
+        .status-btn.active-no { background: #b13e3e; color: white; }
+        .status-btn.active-elaborar { background: #c97d2b; color: white; }
+        .status-btn.active-descongelar { background: #2b6f8a; color: white; }
+        .status-btn:hover { opacity: 0.8; }
+        .item-edit-input {
+            border: 1px solid #d5cdc3;
+            border-radius: 6px;
+            padding: 0.05rem 0.3rem;
+            font-size: 0.8rem;
+            background: white;
+            flex: 1;
+            min-width: 60px;
+        }
+        .add-item-row {
+            display: flex;
+            gap: 0.3rem;
+            margin-top: 0.3rem;
+            padding-top: 0.3rem;
+            border-top: 1px dashed #d5cdc3;
+        }
+        .add-item-row input {
+            flex: 1;
+            border: 1px solid #d5cdc3;
+            border-radius: 6px;
+            padding: 0.15rem 0.4rem;
+            font-size: 0.75rem;
+        }
+        .add-item-row .btn-add {
+            background: #1e1e1e;
+            color: white;
+            border: none;
+            padding: 0.1rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        .add-item-row .btn-add:hover { background: #333; }
+        .stats-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.5rem;
+            background: #f5f2ee;
+            padding: 0.4rem 1rem;
+            border-radius: 60px;
+            margin-bottom: 1.2rem;
+            font-size: 0.75rem;
+        }
+        .stats-bar .num { font-weight: 700; margin-left: 0.1rem; }
+        .stats-bar .num.hay { color: #1e7e34; }
+        .stats-bar .num.no { color: #b13e3e; }
+        .stats-bar .num.elaborar { color: #c97d2b; }
+        .stats-bar .num.descongelar { color: #2b6f8a; }
+        .action-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 700px) { .action-list { grid-template-columns: 1fr; } }
+        .action-card {
+            background: #fcfaf8;
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
+            border: 1px solid #e8e1d9;
+        }
+        .action-card h3 {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .action-card h3 .count {
+            background: #1e1e1e;
+            color: white;
+            font-size: 0.65rem;
+            padding: 0.05rem 0.5rem;
+            border-radius: 30px;
+        }
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #ede8e1;
+            font-size: 0.8rem;
+        }
+        .action-item .shelf-tag {
+            font-size: 0.6rem;
+            background: #e0d7cd;
+            padding: 0.05rem 0.4rem;
+            border-radius: 30px;
+            color: #3d3833;
+        }
+        .empty-state { color: #8f8982; font-style: italic; padding: 0.3rem 0; font-size: 0.8rem; }
+        .order-list { display: flex; flex-direction: column; gap: 0.2rem; }
+        .order-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 0.6rem;
+            background: #fcfaf8;
+            border-radius: 10px;
+            border: 1px solid #e8e1d9;
+            font-size: 0.8rem;
+        }
+        .order-item .qty-input {
+            width: 40px;
+            padding: 0.1rem 0.2rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+        .order-item .remove-btn {
+            background: none;
+            border: none;
+            color: #b13e3e;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid #eee8e0;
+        }
+        .btn-primary {
+            background: #1e1e1e;
+            border: none;
+            padding: 0.4rem 1.5rem;
+            border-radius: 60px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-primary:hover { background: #33312e; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #b9b0a6;
+            padding: 0.4rem 1.2rem;
+            border-radius: 60px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-outline:hover { background: #e5dfd8; }
+        .btn-danger {
+            background: #b13e3e;
+            border: none;
+            padding: 0.4rem 1.2rem;
+            border-radius: 60px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-danger:hover { background: #8f2f2f; }
+        .btn-success {
+            background: #1e7e34;
+            border: none;
+            padding: 0.4rem 1.2rem;
+            border-radius: 60px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-success:hover { background: #15662a; }
+        .registro {
+            background: #f0ebe5;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: #2f2b27;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem 1rem;
+            align-items: center;
+        }
+        .registro .turno-badge {
+            background: #1e1e1e;
+            color: white;
+            padding: 0.05rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .footer {
+            margin-top: 1.5rem;
+            font-size: 0.65rem;
+            color: #7a726a;
+            text-align: center;
+            border-top: 1px solid #eee8e0;
+            padding-top: 0.8rem;
+        }
+        .shelf-edit-input {
+            border: 1px solid #d5cdc3;
+            border-radius: 6px;
+            padding: 0.05rem 0.3rem;
+            font-size: 0.8rem;
+            background: white;
+            flex: 1;
+            font-weight: 700;
+        }
+        .add-shelf-area {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .add-shelf-area input {
+            padding: 0.3rem 0.8rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            flex: 1;
+            min-width: 150px;
+        }
+        .loading { text-align: center; padding: 1.5rem; color: #7a726a; }
+        .spinner {
+            display: inline-block;
+            width: 25px;
+            height: 25px;
+            border: 3px solid #f0ebe5;
+            border-top-color: #1e1e1e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 0.8rem;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        .back-link:hover { color: #1e1e1e; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e1e1e;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            z-index: 999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+        .toast.success { background: #1e7e34; }
+        .toast.error { background: #b13e3e; }
+        .toast.info { background: #2563eb; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .move-btn-group { display: flex; gap: 0.1rem; }
+
+        /* ===== MODAL FICHA TÉCNICA ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        .modal {
+            background: white;
+            border-radius: 24px;
+            max-width: 650px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalIn 0.3s ease;
+        }
+        .modal.editing { max-width: 750px; }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 2px solid #eee8e0;
+        }
+        .modal-header h2 {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #1e1e1e;
+            line-height: 1.3;
+        }
+        .modal-header .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 0 0.3rem;
+            transition: 0.15s;
+            line-height: 1;
+        }
+        .modal-header .close-btn:hover { color: #1e1e1e; }
+        .modal-body { font-size: 0.9rem; }
+        .modal-body .info-row {
+            display: flex;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #f0ebe5;
+        }
+        .modal-body .info-row .label {
+            font-weight: 600;
+            color: #475569;
+            min-width: 100px;
+            flex-shrink: 0;
+        }
+        .modal-body .info-row .value { color: #1e1e1e; flex: 1; }
+        .modal-body .info-row .value .badge-alergeno {
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin: 0.1rem 0.2rem;
+            font-weight: 500;
+        }
+        .badge-alergeno.gluten { background: #fecaca; color: #991b1b; }
+        .badge-alergeno.lacteos { background: #dbeafe; color: #1e40af; }
+        .badge-alergeno.huevo { background: #fef3c7; color: #92400e; }
+        .badge-alergeno.pescado { background: #d1fae5; color: #065f46; }
+        .badge-alergeno.frutos-secos { background: #fce4ec; color: #880e4f; }
+        .badge-alergeno.soja { background: #e0f2fe; color: #0369a1; }
+        .badge-alergeno.moluscos { background: #f3e8ff; color: #6b21a8; }
+        .badge-alergeno.crustaceos { background: #fce4ec; color: #c62828; }
+        .badge-alergeno.apio { background: #e8f5e9; color: #2e7d32; }
+        .badge-alergeno.mostaza { background: #fff3e0; color: #e65100; }
+        .badge-alergeno.sesamo { background: #f3e5f5; color: #6a1b9a; }
+        .badge-alergeno.sulfitos { background: #e0f7fa; color: #00695c; }
+        .badge-alergeno.altramuces { background: #fbe9e7; color: #bf360c; }
+
+        .modal-body .receta-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid #eee8e0;
+        }
+        .modal-body .receta-section h4 {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #475569;
+            margin-bottom: 0.4rem;
+        }
+        .modal-body .receta-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        .modal-body .receta-section ul li {
+            padding: 0.2rem 0;
+            padding-left: 1.2rem;
+            position: relative;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #f8f5f0;
+        }
+        .modal-body .receta-section ul li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #94a3b8;
+        }
+        .modal-body .receta-section .elaboracion {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #334155;
+            padding: 0.4rem 0;
+            white-space: pre-wrap;
+        }
+        .modal-body .tipo-badge {
+            display: inline-block;
+            padding: 0.15rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .tipo-badge.receta { background: #dbeafe; color: #1e40af; }
+        .tipo-badge.ingrediente { background: #d1fae5; color: #065f46; }
+        .tipo-badge.simple { background: #f1f5f9; color: #475569; }
+        .modal-footer {
+            margin-top: 1.2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee8e0;
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .modal-footer .btn-modal {
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            border: none;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .modal-footer .btn-modal.primary { background: #1e1e1e; color: white; }
+        .modal-footer .btn-modal.primary:hover { background: #333; }
+        .modal-footer .btn-modal.outline { background: transparent; border: 1px solid #d5cdc3; }
+        .modal-footer .btn-modal.outline:hover { background: #f5f2ee; }
+        .modal-footer .btn-modal.danger { background: #b13e3e; color: white; }
+        .modal-footer .btn-modal.danger:hover { background: #8f2f2f; }
+
+        .has-receta { border-left: 3px solid #2563eb; }
+        .has-peso { border-left: 3px solid #059669; }
+        .no-info { border-left: 3px solid #94a3b8; }
+
+        /* ===== FORMULARIO DE EDICIÓN ===== */
+        .edit-form .form-group {
+            margin-bottom: 0.8rem;
+        }
+        .edit-form .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #475569;
+            margin-bottom: 0.2rem;
+        }
+        .edit-form .form-group input,
+        .edit-form .form-group textarea,
+        .edit-form .form-group select {
+            width: 100%;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            background: #faf8f6;
+        }
+        .edit-form .form-group input:focus,
+        .edit-form .form-group textarea:focus,
+        .edit-form .form-group select:focus {
+            outline: 2px solid #1e1e1e;
+            outline-offset: 1px;
+        }
+        .edit-form .form-group textarea { min-height: 60px; resize: vertical; }
+        .edit-form .form-group .help-text {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 0.15rem;
+        }
+        .edit-form .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+        }
+        .edit-form .alergenos-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .edit-form .alergenos-grid .alergeno-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            padding: 0.15rem 0.6rem 0.15rem 0.4rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.15s;
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .edit-form .alergenos-grid .alergeno-chip.selected {
+            border-color: #1e1e1e;
+            background: #e2e8f0;
+        }
+        .edit-form .alergenos-grid .alergeno-chip .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* ===== MODAL ETIQUETA ===== */
+        .modal-etiqueta .etiqueta-preview {
+            background: #faf8f6;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 2px dashed #d5cdc3;
+            margin: 0.5rem 0 1rem;
+        }
+        .modal-etiqueta .etiqueta-preview .producto-nombre {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #1e1e1e;
+            letter-spacing: 1px;
+        }
+        .modal-etiqueta .etiqueta-preview .producto-info {
+            font-size: 0.9rem;
+            color: #475569;
+            margin: 0.2rem 0;
+        }
+        .modal-etiqueta .etiqueta-preview .producto-cad {
+            font-size: 1.2rem;
+            color: #dc2626;
+            font-weight: bold;
+        }
+        .modal-etiqueta .etiqueta-preview .qr-container {
+            display: flex;
+            justify-content: center;
+            margin: 0.5rem 0;
+        }
+        .modal-etiqueta .etiqueta-preview .tipo-badge-etiqueta {
+            display: inline-block;
+            padding: 0.1rem 1rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+        }
+        .tipo-badge-etiqueta.elaboracion { background: #dbeafe; color: #1e40af; }
+        .tipo-badge-etiqueta.descongelacion { background: #d1fae5; color: #065f46; }
+        .modal-etiqueta .form-group {
+            margin-bottom: 0.8rem;
+        }
+        .modal-etiqueta .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #475569;
+            margin-bottom: 0.2rem;
+        }
+        .modal-etiqueta .form-group input,
+        .modal-etiqueta .form-group select {
+            width: 100%;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: inherit;
+        }
+        .modal-etiqueta .form-group input:focus,
+        .modal-etiqueta .form-group select:focus {
+            outline: 2px solid #1e1e1e;
+            outline-offset: 1px;
+        }
+
+        /* Historico de producción */
+        .ultima-produccion {
+            font-size: 0.65rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .ultima-produccion .prod-fecha {
+            background: #f1f5f9;
+            padding: 0.05rem 0.4rem;
+            border-radius: 12px;
+            font-size: 0.6rem;
+        }
+        .ultima-produccion .prod-cad {
+            color: #dc2626;
+            font-weight: 600;
+            font-size: 0.65rem;
+        }
+        .ultima-produccion .prod-verde { color: #1e7e34; }
+        .ultima-produccion .prod-rojo { color: #dc2626; }
+
+        @media (max-width: 500px) {
+            .app { padding: 0.8rem; }
+            .grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.2rem; }
+            .user-area input { width: 100px; font-size: 0.75rem; }
+            .shelf-actions .icon-btn { font-size: 0.7rem; }
+            .modal { padding: 1.2rem; margin: 0.5rem; }
+            .modal-body .info-row { flex-wrap: wrap; }
+            .modal-body .info-row .label { min-width: 80px; }
+            .edit-form .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <a href="personal.html" class="back-link">← Volver a Personal</a>
+    <div class="header">
+        <h1>🍽️ Mise and Place <small>timbres · 2025</small></h1>
+        <div class="user-area">
+            <label style="font-size:0.75rem;font-weight:500;">👨‍🍳</label>
+            <input type="text" v-model="cocinero" placeholder="Tu nombre">
+            <div class="turno-selector">
+                <button class="turno-btn" :class="{ active: turno === 'mediodia' }" @click="turno = 'mediodia'">☀️</button>
+                <button class="turno-btn" :class="{ active: turno === 'noche' }" @click="turno = 'noche'">🌙</button>
+            </div>
+            <div class="day-selector">
+                <button class="day-btn" v-for="d in days" :key="d" :class="{ active: currentDay === d }" @click="setDay(d)">{{ d.slice(0,3) }}</button>
+            </div>
+            <span class="sync-status" :class="syncStatusClass">{{ syncStatusText }}</span>
+        </div>
+    </div>
+
+    <div class="registro" v-if="cocinero">
+        <span>✅ <strong>{{ currentDay }}</strong> · <span class="turno-badge">{{ turno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche' }}</span></span>
+        <span>👨‍🍳 {{ cocinero }}</span>
+        <span style="font-size:0.7rem;color:#5e5a55;">{{ new Date().toLocaleDateString() }}</span>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn" :class="{ active: tab === 'revision' }" @click="tab = 'revision'">📋 Revisión</button>
+        <button class="tab-btn" :class="{ active: tab === 'accion' }" @click="tab = 'accion'">⚡ Listas</button>
+        <button class="tab-btn" :class="{ active: tab === 'pedido' }" @click="tab = 'pedido'">🛒 Pedido</button>
+        <button class="tab-btn" :class="{ active: tab === 'historial' }" @click="tab = 'historial'">📜 Historial</button>
+    </div>
+
+    <div v-if="loading" class="loading"><div class="spinner"></div><p style="margin-top:0.8rem;">Cargando...</p></div>
+
+    <div v-else>
+        <div class="tab-content" :class="{ active: tab === 'revision' }">
+            <div class="add-shelf-area">
+                <input type="text" v-model="newShelfName" placeholder="Nueva balda..." @keyup.enter="addShelf">
+                <button class="btn-primary" @click="addShelf">➕ Añadir</button>
+                <button class="btn-outline" @click="resetDay">🔄 Reiniciar</button>
+                <button class="btn-outline" @click="syncFromSupabase">📡 Sincronizar</button>
+            </div>
+            <div class="stats-bar">
+                <span>✅ <span class="num hay">{{ stats.hay }}</span></span>
+                <span>❌ <span class="num no">{{ stats.no }}</span></span>
+                <span>⚡ <span class="num elaborar">{{ stats.elaborar }}</span></span>
+                <span>❄️ <span class="num descongelar">{{ stats.descongelar }}</span></span>
+                <span>📦 {{ totalItems }}</span>
+            </div>
+            <div class="grid">
+                <div class="shelf-card" v-for="(shelf, name) in shelfItems" :key="name">
+                    <div class="shelf-header">
+                        <div class="shelf-title">
+                            <template v-if="editingShelf === name">
+                                <input class="shelf-edit-input" v-model="shelfEditName" @keyup.enter="saveShelfEdit(name)" @blur="saveShelfEdit(name)" ref="shelfEditInput">
+                            </template>
+                            <template v-else>
+                                {{ name }}
+                                <span class="badge">{{ shelf.filter(it => !it.bold).length }}</span>
+                            </template>
+                        </div>
+                        <div class="shelf-actions">
+                            <div class="move-btn-group">
+                                <button class="icon-btn move" @click="moveShelfUp(name)" title="Mover arriba">⬆️</button>
+                                <button class="icon-btn move" @click="moveShelfDown(name)" title="Mover abajo">⬇️</button>
+                            </div>
+                            <button class="icon-btn" @click="startEditShelf(name)" title="Editar nombre">✏️</button>
+                            <button class="icon-btn danger" @click="deleteShelf(name)" title="Eliminar balda">🗑️</button>
+                        </div>
+                    </div>
+                    <div v-for="item in shelf" :key="item.id" 
+                         class="item-row" 
+                         :class="{ 'bold-item': item.bold, 'has-receta': tieneReceta(item.name), 'has-peso': tieneSoloPeso(item.name), 'no-info': !tieneReceta(item.name) && !tieneSoloPeso(item.name) }" 
+                         @click="openFicha(item)">
+                        <template v-if="editingItem === item.id">
+                            <input class="item-edit-input" v-model="itemEditName" @keyup.enter="saveItemEdit(item)" @blur="saveItemEdit(item)" ref="itemEditInput" @click.stop>
+                            <button class="icon-btn" @click.stop="saveItemEdit(item)">💾</button>
+                        </template>
+                        <template v-else>
+                            <span class="item-name">{{ item.name }}</span>
+                            <div class="ultima-produccion" v-if="!item.bold && historialProduccion[item.name]">
+                                <span class="prod-fecha">📅 {{ historialProduccion[item.name].fecha }}</span>
+                                <span class="prod-cad" :class="historialProduccion[item.name].diasRestantes < 2 ? 'prod-rojo' : 'prod-verde'">
+                                    ⚠️ {{ historialProduccion[item.name].diasRestantes }}d
+                                </span>
+                            </div>
+                            <div class="item-actions" @click.stop>
+                                <button class="icon-btn etiqueta-btn" @click="abrirModalEtiqueta(item)" title="Generar etiqueta">🏷️</button>
+                                <button class="icon-btn info" @click="openFicha(item)" title="Ver ficha técnica">📋</button>
+                                <button class="icon-btn" @click="startEditItem(item)" title="Editar nombre">✏️</button>
+                                <button class="icon-btn danger" @click="deleteItem(item)" title="Eliminar">✕</button>
+                                <button class="status-btn" :class="{ 'active-hay': item.status === 'hay' }" @click="setStatus(item, 'hay')" :disabled="item.bold">✅</button>
+                                <button class="status-btn" :class="{ 'active-no': item.status === 'no' }" @click="setStatus(item, 'no')" :disabled="item.bold">❌</button>
+                                <button class="status-btn" :class="{ 'active-elaborar': item.status === 'elaborar' }" @click="setStatus(item, 'elaborar')" :disabled="item.bold">⚡</button>
+                                <button class="status-btn" :class="{ 'active-descongelar': item.status === 'descongelar' }" @click="setStatus(item, 'descongelar')" :disabled="item.bold">❄️</button>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="add-item-row">
+                        <input type="text" v-model="newItemNames[name]" :placeholder="'Nuevo...'" @keyup.enter="addItem(name)">
+                        <button class="btn-add" @click="addItem(name)">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="toolbar">
+                <button class="btn-primary" @click="tab = 'accion'">📊 Listas</button>
+            </div>
+        </div>
+
+        <div class="tab-content" :class="{ active: tab === 'accion' }">
+            <div class="action-list">
+                <div class="action-card">
+                    <h3>⚡ Elaborar <span class="count">{{ elaborarList.length }}</span></h3>
+                    <div v-if="elaborarList.length === 0" class="empty-state">✅ Completado</div>
+                    <div v-for="item in elaborarList" :key="item.id" class="action-item">
+                        <input type="checkbox" v-model="item.hecho" @change="updateHecho(item)">
+                        <span class="item-name" style="cursor:pointer;" @click="abrirModalEtiqueta(item)">{{ item.name }}</span>
+                        <span class="shelf-tag">{{ item.shelf }}</span>
+                        <button class="icon-btn etiqueta-btn" @click="abrirModalEtiqueta(item)" style="font-size:0.6rem;">🏷️</button>
+                    </div>
+                </div>
+                <div class="action-card">
+                    <h3>❄️ Descongelar <span class="count">{{ descongelarList.length }}</span></h3>
+                    <div v-if="descongelarList.length === 0" class="empty-state">✅ Completado</div>
+                    <div v-for="item in descongelarList" :key="item.id" class="action-item">
+                        <input type="checkbox" v-model="item.hecho" @change="updateHecho(item)">
+                        <span class="item-name" style="cursor:pointer;" @click="abrirModalEtiqueta(item)">{{ item.name }}</span>
+                        <span class="shelf-tag">{{ item.shelf }}</span>
+                        <button class="icon-btn etiqueta-btn" @click="abrirModalEtiqueta(item)" style="font-size:0.6rem;">🏷️</button>
+                    </div>
+                </div>
+            </div>
+            <div class="toolbar">
+                <button class="btn-outline" @click="tab = 'revision'">← Revisión</button>
+                <button class="btn-primary" @click="tab = 'pedido'">🛒 Pedido</button>
+            </div>
+        </div>
+
+        <div class="tab-content" :class="{ active: tab === 'pedido' }">
+            <div style="margin-bottom:0.8rem;">
+                <h3 style="font-size:1rem;">🛒 Lo que falta para pedir</h3>
+                <p style="color:#5e5a55;font-size:0.8rem;">Items marcados como "No hay"</p>
+            </div>
+            <div class="order-list">
+                <div v-for="item in pedidoList" :key="item.id" class="order-item">
+                    <input type="checkbox" v-model="item.pedidoHecho" @change="updatePedido">
+                    <span class="item-name">{{ item.name }}</span>
+                    <span class="shelf-tag">{{ item.shelf }}</span>
+                    <input type="number" class="qty-input" v-model="item.cantidad" min="1" @change="updatePedido">
+                    <button class="remove-btn" @click="quitarDePedido(item)">✕</button>
+                </div>
+                <div v-if="pedidoList.length === 0" class="empty-state" style="padding:0.8rem;">🎉 ¡Todo completo!</div>
+            </div>
+            <div class="toolbar">
+                <button class="btn-outline" @click="tab = 'accion'">← Listas</button>
+                <button class="btn-outline" @click="exportPedido">📋 Copiar</button>
+                <button class="btn-danger" @click="limpiarPedido">🗑️ Limpiar</button>
+            </div>
+        </div>
+
+        <div class="tab-content" :class="{ active: tab === 'historial' }">
+            <div style="margin-bottom:1rem;">
+                <h3 style="font-size:1rem;">📜 Historial de Producción</h3>
+                <p style="color:#5e5a55;font-size:0.8rem;">Últimas etiquetas generadas</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.3rem; max-height:500px; overflow-y:auto;">
+                <div v-for="(item, index) in historialProduccionList" :key="index" 
+                     style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0.6rem; background:#f8faf8; border-radius:8px; border-left:3px solid #2563eb; font-size:0.8rem; flex-wrap:wrap; gap:0.3rem;">
+                    <div>
+                        <strong>{{ item.producto }}</strong>
+                        <span style="color:#64748b; font-size:0.7rem; margin-left:0.5rem;">{{ item.tipo === 'descongelacion' ? '❄️' : '⚡' }}</span>
+                    </div>
+                    <div style="display:flex; gap:0.8rem; align-items:center; font-size:0.7rem; color:#475569; flex-wrap:wrap;">
+                        <span>📅 {{ item.fecha }}</span>
+                        <span class="prod-cad" :class="item.diasRestantes < 2 ? 'prod-rojo' : 'prod-verde'">⚠️ {{ item.diasRestantes }}d</span>
+                        <span>📦 Lote: {{ item.lote || 'S/L' }}</span>
+                        <button class="icon-btn etiqueta-btn" @click="reimprimirEtiqueta(item)" style="font-size:0.6rem;">🔄 Reimprimir</button>
+                    </div>
+                </div>
+                <div v-if="historialProduccionList.length === 0" class="empty-state" style="padding:1rem;">📭 No hay producciones registradas</div>
+            </div>
+            <div class="toolbar">
+                <button class="btn-outline" @click="cargarHistorialProduccion">🔄 Recargar</button>
+                <button class="btn-outline" @click="tab = 'revision'">← Volver</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL FICHA TÉCNICA ===== -->
+    <div v-if="modalVisible && !editandoFicha && !modalEtiquetaVisible" class="modal-overlay" @click.self="closeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>{{ fichaActual?.name || 'Ficha Técnica' }}</h2>
+                <button class="close-btn" @click="closeModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <span class="tipo-badge" :class="fichaActual?.tipo === 'receta' ? 'receta' : fichaActual?.tipo === 'ingrediente' ? 'ingrediente' : 'simple'">
+                        {{ fichaActual?.tipo === 'receta' ? '📝 Receta completa' : fichaActual?.tipo === 'ingrediente' ? '⚖️ Ingrediente' : '📦 Sin información' }}
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="label">📦 Balda</span>
+                    <span class="value">{{ fichaActual?.shelf || '—' }}</span>
+                </div>
+
+                <div class="info-row" v-if="fichaActual?.peso">
+                    <span class="label">⚖️ Peso/gramaje</span>
+                    <span class="value">{{ fichaActual.peso }}</span>
+                </div>
+
+                <div class="info-row" v-if="fichaActual?.tiempo && fichaActual?.tipo === 'receta'">
+                    <span class="label">⏱️ Tiempo prep.</span>
+                    <span class="value">{{ fichaActual.tiempo }}</span>
+                </div>
+
+                <div class="info-row" v-if="fichaActual?.alergenos && fichaActual.alergenos.length && fichaActual?.tipo === 'receta'">
+                    <span class="label">⚠️ Alérgenos</span>
+                    <span class="value">
+                        <span v-for="a in fichaActual.alergenos" :key="a" class="badge-alergeno" :class="getAlergenoClass(a)">{{ a }}</span>
+                    </span>
+                </div>
+
+                <div class="receta-section" v-if="fichaActual?.ingredientes && fichaActual.ingredientes.length && fichaActual?.tipo === 'receta'">
+                    <h4>📝 Ingredientes</h4>
+                    <ul>
+                        <li v-for="ing in fichaActual.ingredientes" :key="ing">{{ ing }}</li>
+                    </ul>
+                </div>
+
+                <div class="receta-section" v-if="fichaActual?.elaboracion && fichaActual?.tipo === 'receta'">
+                    <h4>👨‍🍳 Elaboración</h4>
+                    <div class="elaboracion">{{ fichaActual.elaboracion }}</div>
+                </div>
+
+                <div class="receta-section" v-if="fichaActual?.notas">
+                    <h4>📌 Notas</h4>
+                    <div class="elaboracion" style="color:#64748b;font-style:italic;">{{ fichaActual.notas }}</div>
+                </div>
+
+                <div v-if="!fichaActual?.tipo || fichaActual?.tipo === 'simple'" style="padding:1rem 0; color:#64748b; text-align:center; font-style:italic;">
+                    ℹ️ Este item no tiene ficha técnica registrada.
+                    <br><span style="font-size:0.8rem;">Haz clic en "Editar ficha" para crearla.</span>
+                </div>
+                
+                <!-- Historial de producción para este producto -->
+                <div v-if="historialProduccion[fichaActual?.name]" style="margin-top:1rem; padding-top:0.8rem; border-top:2px solid #eee8e0;">
+                    <h4 style="font-size:0.8rem; color:#475569;">📅 Última producción</h4>
+                    <div style="font-size:0.8rem; display:flex; gap:0.8rem; flex-wrap:wrap; padding:0.3rem 0;">
+                        <span>📅 {{ historialProduccion[fichaActual.name].fecha }}</span>
+                        <span>📦 Lote: {{ historialProduccion[fichaActual.name].lote || 'S/L' }}</span>
+                        <span class="prod-cad" :class="historialProduccion[fichaActual.name].diasRestantes < 2 ? 'prod-rojo' : 'prod-verde'">
+                            ⚠️ Cad: {{ historialProduccion[fichaActual.name].caducidad }} ({{ historialProduccion[fichaActual.name].diasRestantes }}d)
+                        </span>
+                    </div>
+                    <button class="icon-btn etiqueta-btn" @click="reimprimirEtiqueta(historialProduccion[fichaActual.name])" style="font-size:0.7rem; padding:0.1rem 0.6rem;">🔄 Reimprimir</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal primary" @click="closeModal">Cerrar</button>
+                <button class="btn-modal outline" @click="iniciarEdicionFicha">✏️ Editar ficha</button>
+                <button class="btn-modal danger" @click="eliminarFicha" v-if="fichaActual?.tipo !== 'simple'">🗑️ Eliminar</button>
+                <button class="btn-modal outline" @click="abrirModalEtiquetaDesdeFicha" style="background:#fef3c7; color:#92400e;">🏷️ Etiqueta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL EDICIÓN DE FICHA ===== -->
+    <div v-if="modalVisible && editandoFicha && !modalEtiquetaVisible" class="modal-overlay" @click.self="closeModal">
+        <div class="modal editing">
+            <div class="modal-header">
+                <h2>{{ editandoFichaNombre ? '✏️ Editando: ' + editandoFichaNombre : '📝 Nueva ficha' }}</h2>
+                <button class="close-btn" @click="closeModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="edit-form">
+                    <div class="form-group">
+                        <label>📋 Nombre del item</label>
+                        <input type="text" v-model="editForm.nombre" placeholder="Nombre exacto del item" required>
+                        <div class="help-text">Debe coincidir exactamente con el nombre en la balda</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>📂 Tipo</label>
+                        <select v-model="editForm.tipo">
+                            <option value="receta">📝 Receta completa</option>
+                            <option value="ingrediente">⚖️ Solo ingrediente (peso)</option>
+                            <option value="simple">📦 Sin información</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>⚖️ Peso/gramaje</label>
+                            <input type="text" v-model="editForm.peso" placeholder="Ej: 200 grm">
+                        </div>
+                        <div class="form-group" v-if="editForm.tipo === 'receta'">
+                            <label>⏱️ Tiempo preparación</label>
+                            <input type="text" v-model="editForm.tiempo" placeholder="Ej: 15 min">
+                        </div>
+                    </div>
+
+                    <div class="form-group" v-if="editForm.tipo === 'receta'">
+                        <label>⚠️ Alérgenos</label>
+                        <div class="alergenos-grid">
+                            <div v-for="alergeno in alergenosDisponibles" :key="alergeno.nombre" 
+                                 class="alergeno-chip" 
+                                 :class="{ selected: editForm.alergenos.includes(alergeno.nombre) }"
+                                 @click="toggleAlergeno(alergeno.nombre)">
+                                <span class="color-dot" :style="{ background: alergeno.color }"></span>
+                                {{ alergeno.nombre }}
+                            </div>
+                        </div>
+                        <div class="help-text">Haz clic para seleccionar/deseleccionar alérgenos</div>
+                    </div>
+
+                    <div class="form-group" v-if="editForm.tipo === 'receta'">
+                        <label>📝 Ingredientes (uno por línea)</label>
+                        <textarea v-model="editForm.ingredientesText" rows="4" placeholder="Ingrediente 1&#10;Ingrediente 2&#10;Ingrediente 3"></textarea>
+                        <div class="help-text">Escribe cada ingrediente en una línea nueva</div>
+                    </div>
+
+                    <div class="form-group" v-if="editForm.tipo === 'receta'">
+                        <label>👨‍🍳 Elaboración (pasos)</label>
+                        <textarea v-model="editForm.elaboracion" rows="5" placeholder="1. Paso 1&#10;2. Paso 2&#10;3. Paso 3"></textarea>
+                        <div class="help-text">Escribe cada paso en una línea nueva</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>📌 Notas adicionales</label>
+                        <textarea v-model="editForm.notas" rows="3" placeholder="Notas opcionales..."></textarea>
+                    </div>
+
+                    <div class="modal-footer" style="border-top: 2px solid #eee8e0; margin-top: 0.5rem;">
+                        <button class="btn-modal primary" @click="guardarFicha">💾 Guardar ficha</button>
+                        <button class="btn-modal outline" @click="cancelarEdicion">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL ETIQUETA ===== -->
+    <div v-if="modalEtiquetaVisible" class="modal-overlay" @click.self="cerrarModalEtiqueta">
+        <div class="modal modal-etiqueta" style="max-width:500px;">
+            <div class="modal-header">
+                <h2>🏷️ Etiqueta</h2>
+                <button class="close-btn" @click="cerrarModalEtiqueta">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>📋 Producto</label>
+                    <input type="text" v-model="etiquetaForm.producto" readonly style="background:#f1f5f9;">
+                </div>
+
+                <div class="form-group">
+                    <label>📂 Tipo</label>
+                    <select v-model="etiquetaForm.tipo" style="background:#f1f5f9; cursor:default;" disabled>
+                        <option value="elaboracion">⚡ Elaboración</option>
+                        <option value="descongelacion">❄️ Descongelación</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>📦 Lote</label>
+                    <input type="text" v-model="etiquetaForm.lote" placeholder="Ej: LOTE-001">
+                </div>
+
+                <div class="form-group">
+                    <label>📅 Fecha</label>
+                    <input type="date" v-model="etiquetaForm.fecha">
+                </div>
+
+                <div class="form-group">
+                    <label>⏳ Días de caducidad</label>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <input type="number" v-model="etiquetaForm.dias" min="1" max="365" style="width:80px; text-align:center;">
+                        <span style="font-size:0.8rem; color:#64748b;">días</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>📄 Cantidad</label>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <input type="number" v-model="etiquetaForm.cantidad" min="1" max="50" style="width:80px; text-align:center;">
+                        <span style="font-size:0.8rem; color:#64748b;">etiquetas</span>
+                    </div>
+                </div>
+
+                <div class="etiqueta-preview">
+                    <div class="tipo-badge-etiqueta" :class="etiquetaForm.tipo === 'descongelacion' ? 'descongelacion' : 'elaboracion'">
+                        {{ etiquetaForm.tipo === 'descongelacion' ? '❄️ DESCONGELACIÓN' : '⚡ ELABORACIÓN' }}
+                    </div>
+                    <div class="producto-nombre">{{ etiquetaForm.producto || 'PRODUCTO' }}</div>
+                    <div class="producto-info">📦 Lote: {{ etiquetaForm.lote || 'S/L' }}</div>
+                    <div class="producto-info">📅 {{ etiquetaForm.tipo === 'descongelacion' ? 'Descongelado' : 'Elaborado' }}: {{ formatDate(etiquetaForm.fecha) }}</div>
+                    <div class="producto-cad">⚠️ CAD: {{ formatDate(calcularCaducidad()) }}</div>
+                    <div class="qr-container" id="qr-etiqueta-preview"></div>
+                    <div style="font-size:0.65rem; color:#94a3b8;">📄 {{ etiquetaForm.cantidad }} etiqueta{{ etiquetaForm.cantidad > 1 ? 's' : '' }}</div>
+                </div>
+
+                <div class="modal-footer" style="justify-content:center;">
+                    <button class="btn-modal primary" @click="imprimirEtiquetaDesdeModal" style="background:#10b981; color:white; padding:0.6rem 2rem; font-size:1rem;">
+                        🖨️ IMPRIMIR
+                    </button>
+                    <button class="btn-modal outline" @click="cerrarModalEtiqueta">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="toast.show" class="toast" :class="toast.type">
+        {{ toast.message }}
+    </div>
+
+    <div class="footer">
+        📌 En negrita: encabezados · ⬆️⬇️ Mover baldas · 📋 Ver/Editar ficha técnica · ✏️ Edita · 🗑️ Elimina · ➕ Añade
+        <br>🏷️ Genera etiqueta · ⚡ Elaborar · ❄️ Descongelar · 📜 Historial de producción
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
+const API_URL = 'https://untried-january-thinning.ngrok-free.dev';
+
+(function() {
+    const DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+
+    const ALERGENOS_DISPONIBLES = [
+        { nombre: 'Gluten', color: '#dc2626' },
+        { nombre: 'Lácteos', color: '#2563eb' },
+        { nombre: 'Huevo', color: '#d97706' },
+        { nombre: 'Pescado', color: '#059669' },
+        { nombre: 'Frutos secos', color: '#7c3aed' },
+        { nombre: 'Soja', color: '#0284c7' },
+        { nombre: 'Moluscos', color: '#6b21a8' },
+        { nombre: 'Crustáceos', color: '#db2777' },
+        { nombre: 'Apio', color: '#16a34a' },
+        { nombre: 'Mostaza', color: '#ea580c' },
+        { nombre: 'Sésamo', color: '#7c3aed' },
+        { nombre: 'Sulfitos', color: '#0d9488' },
+        { nombre: 'Altramuces', color: '#b91c1c' }
+    ];
+
+    const FICHAS_INICIALES = {
+        "Croca (200 grm)": {
+            tipo: 'receta',
+            peso: "200 grm (cocida)",
+            tiempo: "12-15 min al horno",
+            alergenos: ["Gluten", "Huevo", "Lácteos"],
+            ingredientes: [
+                "200 gr de croca (peso en crudo)",
+                "Sal marina",
+                "Pimienta negra",
+                "Aceite de oliva virgen extra"
+            ],
+            elaboracion: "1. Sacar la croca de la nevera 15 min antes de cocinar.\n2. Salpimentar al gusto.\n3. Cocinar en horno a 180°C durante 12-15 min o hasta que esté dorada.\n4. Dejar reposar 2 min antes de servir.",
+            notas: "Acompañar con patata baby y ensalada. Peso final aproximado: 160 gr."
+        },
+        "Carne asada (180 grm)": {
+            tipo: 'receta',
+            peso: "180 grm (en crudo)",
+            tiempo: "8-10 min (al punto)",
+            alergenos: ["Soja", "Gluten"],
+            ingredientes: [
+                "180 gr de carne asada",
+                "Sal gruesa",
+                "Pimienta negra molida",
+                "Aceite de girasol"
+            ],
+            elaboracion: "1. Dejar atemperar la carne 20 min.\n2. Salpimentar generosamente.\n3. Cocinar en sartén muy caliente con aceite, 3-4 min por lado.\n4. Dejar reposar 5 min antes de cortar.",
+            notas: "Punto de cocción: jugoso (55°C en el centro)."
+        },
+        "Carne cubano (160 grm)": {
+            tipo: 'receta',
+            peso: "160 grm (en crudo)",
+            tiempo: "10-12 min",
+            alergenos: ["Gluten", "Soja"],
+            ingredientes: [
+                "160 gr de carne cubano",
+                "Sal y pimienta",
+                "Especias cubanas (comino, orégano)",
+                "Aceite de oliva"
+            ],
+            elaboracion: "1. Sazonar con las especias.\n2. Cocinar a la plancha o sartén 5-6 min por lado.\n3. Dejar reposar 3 min.",
+            notas: "Servir con arroz y frijoles negros."
+        },
+        "Carne bao (80 grm)": {
+            tipo: 'receta',
+            peso: "80 grm (por unidad)",
+            tiempo: "4-5 min",
+            alergenos: ["Gluten", "Soja", "Sésamo"],
+            ingredientes: [
+                "80 gr de carne bao",
+                "Salsa hoisin",
+                "Cebollino fresco",
+                "Pan bao"
+            ],
+            elaboracion: "1. Calentar el pan bao al vapor 3 min.\n2. Saltear la carne con salsa hoisin.\n3. Montar con cebollino y servir.",
+            notas: "Ideal para ración de 3 unidades."
+        },
+        "Hamburguesas (200 grm)": {
+            tipo: 'receta',
+            peso: "200 grm (en crudo)",
+            tiempo: "6-8 min",
+            alergenos: ["Gluten", "Huevo"],
+            ingredientes: [
+                "200 gr de carne de hamburguesa",
+                "Sal",
+                "Pimienta",
+                "Pan de hamburguesa"
+            ],
+            elaboracion: "1. Formar la hamburguesa con las manos.\n2. Cocinar a la plancha 3-4 min por lado.\n3. Dejar reposar 2 min.",
+            notas: "Punto: jugosa (70°C en el centro)."
+        },
+        "Pollo club (80 grm)": {
+            tipo: 'receta',
+            peso: "80 grm (por porción)",
+            tiempo: "5-6 min",
+            alergenos: ["Gluten"],
+            ingredientes: [
+                "80 gr de pechuga de pollo",
+                "Sal",
+                "Pimienta",
+                "Aceite de oliva"
+            ],
+            elaboracion: "1. Salpimentar el pollo.\n2. Cocinar a la plancha 2-3 min por lado.\n3. Dejar reposar 2 min.",
+            notas: "Usar para ensaladas o sándwiches."
+        },
+        "Pargo (150gr)": {
+            tipo: 'receta',
+            peso: "150 gr (en crudo)",
+            tiempo: "10-12 min",
+            alergenos: ["Pescado"],
+            ingredientes: [
+                "150 gr de pargo",
+                "Sal marina",
+                "Aceite de oliva",
+                "Limón"
+            ],
+            elaboracion: "1. Salpimentar el pargo.\n2. Cocinar a la plancha o al horno 5-6 min por lado.\n3. Rociar con limón antes de servir.",
+            notas: "Punto: carne blanca y jugosa."
+        },
+        "Bacalao (180 grm)": {
+            tipo: 'receta',
+            peso: "180 grm (desalado)",
+            tiempo: "8-10 min",
+            alergenos: ["Pescado"],
+            ingredientes: [
+                "180 gr de bacalao desalado",
+                "Aceite de oliva",
+                "Ajo laminado",
+                "Perejil"
+            ],
+            elaboracion: "1. Secar bien el bacalao.\n2. Confitar en aceite de oliva con ajo.\n3. Servir con perejil picado.",
+            notas: "No cocinar en exceso para que no se seque."
+        },
+        "Salmón (150 grm)": {
+            tipo: 'receta',
+            peso: "150 grm (en crudo)",
+            tiempo: "8-10 min",
+            alergenos: ["Pescado"],
+            ingredientes: [
+                "150 gr de salmón",
+                "Sal",
+                "Pimienta",
+                "Eneldo"
+            ],
+            elaboracion: "1. Salpimentar el salmón.\n2. Cocinar a la plancha 4-5 min por lado.\n3. Decorar con eneldo.",
+            notas: "Punto: 52°C en el centro."
+        },
+        "Pulpo (150 Gr)": {
+            tipo: 'receta',
+            peso: "150 gr (cocido)",
+            tiempo: "5-6 min (calentado)",
+            alergenos: ["Moluscos"],
+            ingredientes: [
+                "150 gr de pulpo cocido",
+                "Aceite de oliva",
+                "Pimentón dulce",
+                "Sal gorda"
+            ],
+            elaboracion: "1. Calentar el pulpo en agua caliente 3 min.\n2. Cortar en rodajas.\n3. Rociar con aceite, pimentón y sal.",
+            notas: "Servir con cachelos o patata cocida."
+        },
+        "Langostinos 6": {
+            tipo: 'receta',
+            peso: "6 unidades (aprox. 180 gr)",
+            tiempo: "3-4 min",
+            alergenos: ["Crustáceos"],
+            ingredientes: [
+                "6 langostinos grandes",
+                "Sal",
+                "Aceite de oliva",
+                "Ajo"
+            ],
+            elaboracion: "1. Salpimentar los langostinos.\n2. Saltear con ajo 2-3 min.\n3. Servir calientes.",
+            notas: "No cocinar en exceso para que no queden gomosos."
+        },
+        "Chipis bao (80 grm)": {
+            tipo: 'receta',
+            peso: "80 grm (por ración)",
+            tiempo: "3-4 min",
+            alergenos: ["Moluscos", "Gluten"],
+            ingredientes: [
+                "80 gr de chipis",
+                "Salsa teriyaki",
+                "Pan bao",
+                "Cebollino"
+            ],
+            elaboracion: "1. Saltear los chipis con salsa teriyaki.\n2. Calentar el pan bao.\n3. Montar y decorar con cebollino.",
+            notas: "Ración para 2-3 baos."
+        },
+        "Chipis fritos (250": {
+            tipo: 'receta',
+            peso: "250 gr (en crudo)",
+            tiempo: "5-6 min",
+            alergenos: ["Moluscos", "Gluten", "Huevo"],
+            ingredientes: [
+                "250 gr de chipis",
+                "Harina de fritos",
+                "Huevo",
+                "Aceite para freír"
+            ],
+            elaboracion: "1. Rebozar los chipis en harina y huevo.\n2. Freír en aceite caliente 2-3 min.\n3. Escurrir sobre papel absorbente.",
+            notas: "Servir con alioli de lima."
+        },
+        "Croquetas (10)": {
+            tipo: 'receta',
+            peso: "10 unidades (aprox. 250 gr)",
+            tiempo: "15-20 min (fritura)",
+            alergenos: ["Gluten", "Lácteos", "Huevo"],
+            ingredientes: [
+                "10 croquetas",
+                "Aceite para freír",
+                "Sal"
+            ],
+            elaboracion: "1. Calentar el aceite a 180°C.\n2. Freír las croquetas 2-3 min hasta que estén doradas.\n3. Escurrir sobre papel absorbente.",
+            notas: "No sobrecargar la freidora. Temperatura ideal: 175-180°C."
+        },
+        "Tarta de queso": {
+            tipo: 'receta',
+            peso: "150 gr (por porción)",
+            tiempo: "45-50 min (horneado)",
+            alergenos: ["Lácteos", "Huevo", "Gluten"],
+            ingredientes: [
+                "500 gr de queso crema",
+                "200 gr de azúcar",
+                "4 huevos",
+                "200 ml de nata",
+                "Galletas para la base"
+            ],
+            elaboracion: "1. Triturar las galletas y mezclar con mantequilla.\n2. Forrar el molde y refrigerar.\n3. Batir el queso con el azúcar.\n4. Añadir los huevos uno a uno.\n5. Incorporar la nata.\n6. Hornear 45-50 min a 170°C.\n7. Dejar enfriar y refrigerar 4h.",
+            notas: "Servir con coulis de frutos rojos."
+        },
+        "Patata Baby": {
+            tipo: 'ingrediente',
+            peso: "150 gr (por ración)",
+            notas: "Se puede cocer al horno con aceite y romero, o hervir en agua con sal."
+        },
+        "Brocoli": {
+            tipo: 'ingrediente',
+            peso: "100 gr (por ración)",
+            notas: "Cocer al vapor 5-7 min. Punto: tierno pero crujiente (al dente)."
+        },
+        "Ventresca (100 grm)": {
+            tipo: 'ingrediente',
+            peso: "100 grm (por ración)",
+            notas: "Ventresca de atún en aceite de oliva. Escurrir antes de usar."
+        },
+        "Tomate azul": {
+            tipo: 'ingrediente',
+            peso: "1 unidad (aprox. 80 gr)",
+            notas: "Tomate de variedad azul. Cortar en rodajas finas."
+        },
+        "Rucula": {
+            tipo: 'ingrediente',
+            peso: "30 gr (por ración)",
+            notas: "Hojas de rúcula fresca. Lavar y secar antes de usar."
+        },
+        "Huevo cocido 1": {
+            tipo: 'ingrediente',
+            peso: "1 unidad (aprox. 60 gr)",
+            notas: "Cocer 10 min en agua hirviendo. Enfriar en agua fría."
+        },
+        "Jamon": {
+            tipo: 'ingrediente',
+            peso: "50 gr (por ración)",
+            notas: "Jamon serrano en lonchas finas."
+        },
+        "Queso Edam Lomchas": {
+            tipo: 'ingrediente',
+            peso: "30 gr (por ración)",
+            notas: "Queso Edam en lonchas para hamburguesas."
+        },
+        "Bacon": {
+            tipo: 'ingrediente',
+            peso: "40 gr (por ración)",
+            notas: "Bacon ahumado en tiras. Cocinar hasta que esté crujiente."
+        },
+        "Cebolla caramelizada": {
+            tipo: 'ingrediente',
+            peso: "50 gr (por ración)",
+            notas: "Cebolla pochada con azúcar moreno y vinagre balsámico."
+        },
+        "Relish": {
+            tipo: 'ingrediente',
+            peso: "30 gr (por ración)",
+            notas: "Salsa de pepinillos y cebolla para hamburguesas."
+        },
+        "tomate en rodajas": {
+            tipo: 'ingrediente',
+            peso: "2 rodajas (aprox. 40 gr)",
+            notas: "Tomate maduro cortado en rodajas gruesas."
+        },
+        "Arzua": {
+            tipo: 'ingrediente',
+            peso: "40 gr (por ración)",
+            notas: "Queso Arzúa-Ulloa. Fundir sobre la hamburguesa."
+        },
+        "San simon": {
+            tipo: 'ingrediente',
+            peso: "30 gr (por ración)",
+            notas: "Queso San Simón ahumado. Rallar o laminar."
+        },
+        "Tempura": {
+            tipo: 'ingrediente',
+            peso: "100 gr (por ración)",
+            notas: "Mezcla para tempura. Mezclar con agua fría y usar inmediatamente."
+        },
+        "Salsa de queso san simon": {
+            tipo: 'ingrediente',
+            peso: "60 ml (por ración)",
+            notas: "Salsa de queso San Simón ahumado. Ideal para pastas y carnes."
+        },
+        "Salsa de queso chedar": {
+            tipo: 'ingrediente',
+            peso: "60 ml (por ración)",
+            notas: "Salsa de queso cheddar. Perfecta para hamburguesas y nachos."
+        },
+        "Mantequilla de salvia": {
+            tipo: 'ingrediente',
+            peso: "30 gr (por ración)",
+            notas: "Mantequilla infusionada con salvia. Ideal para pasta y pescados."
+        },
+        "Garbanzos": {
+            tipo: 'ingrediente',
+            peso: "100 gr (por ración)",
+            notas: "Garbanzos cocidos. Escurrir y enjuagar antes de usar."
+        },
+        "Pil Pil": {
+            tipo: 'ingrediente',
+            peso: "50 ml (por ración)",
+            notas: "Salsa pil-pil para bacalao. Emulsionar aceite con ajo y guindilla."
+        },
+        "mantequilla": {
+            tipo: 'ingrediente',
+            peso: "20 gr (por ración)",
+            notas: "Mantequilla sin sal. Temperatura ambiente para untar."
+        },
+        "nutella": {
+            tipo: 'ingrediente',
+            peso: "30 gr (por ración)",
+            notas: "Crema de avellanas y cacao."
+        },
+        "Fresas": {
+            tipo: 'ingrediente',
+            peso: "50 gr (por ración)",
+            notas: "Fresas frescas. Lavar y cortar en cuartos."
+        },
+        "Arandanos": {
+            tipo: 'ingrediente',
+            peso: "30 gr (por ración)",
+            notas: "Arándanos frescos o congelados."
+        },
+        "Phisalys": {
+            tipo: 'ingrediente',
+            peso: "2 unidades (por ración)",
+            notas: "Physalis (alquequenje). Decorar con la hoja abierta."
+        }
+    };
+
+    function generateBaseItems() {
+        const data = {};
+        const BASE_SHELF_DATA = {
+            "Balda 1 Puerta A": [
+                { name: "Ensalada Fredie", bold: true },
+                { name: "mezclum" }, { name: "langostinos (pqt3)" }, { name: "salmon marinado (80 grm)" },
+                { name: "tomates cherrys confitados (4)" }, { name: "trigueros (3)" },
+                { name: "pan multicereal(cuarto frio)" }, { name: "Aguacate" }, { name: "vinagreta de miel (Mesado)" }
+            ],
+            "Balda 2 (Ensalada Ventresca)": [
+                { name: "Ensalada de Ventresca", bold: true },
+                { name: "Ventresca (100 grm)" }, { name: "Tomate azul" }, { name: "Rucula" }, { name: "Huevo cocido 1" }
+            ],
+            "Balda 3 (Ensaladilla langostinos)": [
+                { name: "Ensaladilla de langostinos", bold: true },
+                { name: "Ensaladilla" }, { name: "langostinos (3 unidades)" }, { name: "wakame" },
+                { name: "Lechuga" }, { name: "Cebolla roja osmotizada" }, { name: "zumo de limon" },
+                { name: "Verduras bruinose (ceviche)" }
+            ],
+            "Balda 1 Puerta B (especias)": [
+                { name: "Especiero (hb, al, cil, per, cebollino)", bold: true },
+                { name: "Setas" }, { name: "Micro mezclum" }, { name: "Espinaca" }, { name: "ajo laminado" }
+            ],
+            "Balda 2 Puerta B (salsas)": [
+                { name: "salsero", bold: true },
+                { name: "kimchinesa" }, { name: "alioli de lima y perejil" }, { name: "salsa rosa" },
+                { name: "Romescu" }, { name: "aliño de tarta" }, { name: "mojo rojo" },
+                { name: "mojo verde" }, { name: "Tapanade" }
+            ],
+            "Balda 1 Puerta C (pastas)": [
+                { name: "Pastas", bold: true },
+                { name: "Tagliatelle" }, { name: "Boloñesa (160 grm)" }, { name: "Alfredo" },
+                { name: "Napole" }, { name: "Parmesano" }
+            ],
+            "Balda 2 Puerta C (carnes)": [
+                { name: "Carnes cocidas", bold: true },
+                { name: "Carne bao (80 grm)" }, { name: "Carne asada (180 grm)" },
+                { name: "Carne cubano (160 grm)" }, { name: "Salchichas" }
+            ],
+            "Balda 3 Puerta C (salsas calientes)": [
+                { name: "Salsa calientes", bold: true },
+                { name: "Salsa de queso san simon" }, { name: "Salsa de queso chedar" },
+                { name: "Mantequilla de salvia" }, { name: "Huevos Poche" }
+            ],
+            "Balda 1 Puerta D (fast food)": [
+                { name: "Fast food", bold: true },
+                { name: "Jamon" }, { name: "Queso Edam Lomchas" }, { name: "Bacon" },
+                { name: "Cebolla caramelizada" }, { name: "Relish" }, { name: "tomate en rodajas" }, { name: "Arzua" }
+            ],
+            "Balda 2 Puerta D": [
+                { name: "Patata Baby" }, { name: "Brocoli" }, { name: "Paleta" }, { name: "San simon" }, { name: "Tempura" }
+            ],
+            "Balda 3 Puerta D": [
+                { name: "Hamburguesas (200 grm)" }, { name: "Croca (200 grm)" }, { name: "Pollo club (80 grm)" }
+            ],
+            "Balda 1 Puerta E": [
+                { name: "Garbanzos", bold: true }, { name: "Pil Pil" }, { name: "Marca de arroz" }, { name: "mantequilla" }
+            ],
+            "Balda 2 Puerta E (pescados)": [
+                { name: "Pescados", bold: true },
+                { name: "Pargo (150gr)" }, { name: "Bacalao (180 grm)" }, { name: "Chipis bao (80 grm)" },
+                { name: "Chipis fritos (250" }, { name: "Salmón (150 grm)" }, { name: "Pulpo (150 Gr)" },
+                { name: "Langostinos 6" }
+            ],
+            "Balda 3 Puerta E": [ { name: "Croquetas (10)" } ],
+            "Balda 1 Puerta F": [ { name: "Tarta de queso", bold: true } ],
+            "Balda 2 Puerta F": [
+                { name: "Torrijas", bold: true },
+                { name: "Filloas" }, { name: "Mermelada" }, { name: "Crema pastelera" }, { name: "Mantequilla" },
+                { name: "Phisalys" }, { name: "Fresas" }, { name: "Arandanos" }, { name: "nutella" }, { name: "peta setas" }
+            ],
+            "Congelador": [
+                { name: "Helado de vainilla", bold: true }, { name: "Helado de café" },
+                { name: "Taper con Baos Negros" }, { name: "Taper con Baos Blancos" },
+                { name: "Taper con Almejas" }, { name: "Taper con Langostinos crujientes" }, { name: "Taper con Gnochis" }
+            ],
+            "Mesado / Cocina": [
+                { name: "Chips de platano", bold: true }, { name: "Chips de yuca" }, { name: "Vinagreta" },
+                { name: "Tostas Tartar" }, { name: "Merengues" }, { name: "Cramble Negro" },
+                { name: "Cramble Blanco" }, { name: "Dulce de leche" }, { name: "Harina de fritos" }, { name: "Fumet" }
+            ]
+        };
+
+        for (const [shelf, items] of Object.entries(BASE_SHELF_DATA)) {
+            data[shelf] = items.map((item, idx) => ({
+                id: `${shelf}-${idx}-${item.name.replace(/\s/g,'')}`,
+                name: item.name,
+                bold: item.bold || false,
+                status: null,
+                hecho: false,
+                pedidoHecho: false,
+                cantidad: 1,
+            }));
+        }
+        return data;
+    }
+
+    new Vue({
+        el: '#app',
+        data: {
+            days: DAYS,
+            turno: 'mediodia',
+            currentDay: 'Lunes',
+            cocinero: '',
+            tab: 'revision',
+            shelfItems: {},
+            elaborarList: [],
+            descongelarList: [],
+            pedidoList: [],
+            editingShelf: null,
+            shelfEditName: '',
+            editingItem: null,
+            itemEditName: '',
+            newShelfName: '',
+            newItemNames: {},
+            loading: false,
+            syncStatus: 'idle',
+            supabase: null,
+            toast: { show: false, message: '', type: '' },
+            modalVisible: false,
+            editandoFicha: false,
+            editandoFichaNombre: null,
+            fichaActual: null,
+            fichasTecnicas: {},
+            editForm: {
+                nombre: '',
+                tipo: 'simple',
+                peso: '',
+                tiempo: '',
+                alergenos: [],
+                ingredientesText: '',
+                elaboracion: '',
+                notas: ''
+            },
+            alergenosDisponibles: ALERGENOS_DISPONIBLES,
+            fichasCargadas: false,
+            // Etiquetas
+            modalEtiquetaVisible: false,
+            etiquetaForm: {
+                producto: '',
+                tipo: 'elaboracion',
+                lote: '',
+                fecha: '',
+                dias: 5,
+                cantidad: 1
+            },
+            etiquetaItemActual: null,
+            historialProduccion: {},
+            historialProduccionList: [],
+        },
+        computed: {
+            totalItems() {
+                let count = 0;
+                for (const shelf of Object.values(this.shelfItems)) {
+                    count += shelf.filter(it => !it.bold).length;
+                }
+                return count;
+            },
+            stats() {
+                let hay = 0, no = 0, elaborar = 0, descongelar = 0;
+                for (const shelf of Object.values(this.shelfItems)) {
+                    for (const item of shelf) {
+                        if (item.bold) continue;
+                        if (item.status === 'hay') hay++;
+                        else if (item.status === 'no') no++;
+                        else if (item.status === 'elaborar') elaborar++;
+                        else if (item.status === 'descongelar') descongelar++;
+                    }
+                }
+                return { hay, no, elaborar, descongelar };
+            },
+            syncStatusText() {
+                const map = { idle: '📡', syncing: '🔄', synced: '✅', error: '❌' };
+                return map[this.syncStatus] || '📡';
+            },
+            syncStatusClass() {
+                if (this.syncStatus === 'synced') return 'synced';
+                if (this.syncStatus === 'syncing') return 'syncing';
+                if (this.syncStatus === 'error') return 'error';
+                return '';
+            }
+        },
+        methods: {
+            // ============================================================
+            // TOAST
+            // ============================================================
+            showToast(message, type = 'success') {
+                this.toast = { show: true, message, type };
+                clearTimeout(this.toastTimer);
+                this.toastTimer = setTimeout(() => {
+                    this.toast.show = false;
+                }, 3000);
+            },
+
+            // ============================================================
+            // FECHAS
+            // ============================================================
+            formatDate(fechaStr) {
+                if (!fechaStr) return 'S/F';
+                const d = new Date(fechaStr);
+                if (isNaN(d)) return fechaStr;
+                return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+            },
+
+            formatDateInput(fechaStr) {
+                if (!fechaStr) return '';
+                const d = new Date(fechaStr);
+                if (isNaN(d)) return '';
+                return d.toISOString().split('T')[0];
+            },
+
+            calcularCaducidad() {
+                const fecha = new Date(this.etiquetaForm.fecha);
+                if (isNaN(fecha)) return new Date();
+                const cad = new Date(fecha);
+                cad.setDate(cad.getDate() + (parseInt(this.etiquetaForm.dias) || 5));
+                return cad;
+            },
+
+            // ============================================================
+            // FICHAS TÉCNICAS
+            // ============================================================
+            getAlergenoClass(alergeno) {
+                const map = {
+                    'Gluten': 'gluten',
+                    'Lácteos': 'lacteos',
+                    'Huevo': 'huevo',
+                    'Pescado': 'pescado',
+                    'Frutos secos': 'frutos-secos',
+                    'Soja': 'soja',
+                    'Moluscos': 'moluscos',
+                    'Crustáceos': 'crustaceos',
+                    'Apio': 'apio',
+                    'Mostaza': 'mostaza',
+                    'Sésamo': 'sesamo',
+                    'Sulfitos': 'sulfitos',
+                    'Altramuces': 'altramuces'
+                };
+                return map[alergeno] || '';
+            },
+
+            getFicha(nombre) {
+                if (this.fichasTecnicas[nombre]) return this.fichasTecnicas[nombre];
+                for (const [key, value] of Object.entries(this.fichasTecnicas)) {
+                    if (nombre.includes(key) || key.includes(nombre)) {
+                        return value;
+                    }
+                }
+                return null;
+            },
+
+            tieneReceta(nombre) {
+                const ficha = this.getFicha(nombre);
+                return ficha && ficha.tipo === 'receta';
+            },
+
+            tieneSoloPeso(nombre) {
+                const ficha = this.getFicha(nombre);
+                return ficha && ficha.tipo === 'ingrediente';
+            },
+
+            getShelfForItem(item) {
+                for (const [shelf, items] of Object.entries(this.shelfItems)) {
+                    if (items.find(it => it.id === item.id)) {
+                        return shelf;
+                    }
+                }
+                return '—';
+            },
+
+            async cargarFichas() {
+                if (this.fichasCargadas) return;
+                try {
+                    const { data, error } = await this.supabase
+                        .from('timbres_fichas')
+                        .select('*');
+
+                    if (error) {
+                        if (error.message.includes('does not exist')) {
+                            this.fichasTecnicas = { ...FICHAS_INICIALES };
+                            await this.inicializarFichas();
+                            return;
+                        }
+                        throw error;
+                    }
+
+                    if (data && data.length > 0) {
+                        const fichas = {};
+                        for (const row of data) {
+                            fichas[row.nombre] = {
+                                tipo: row.tipo || 'simple',
+                                peso: row.peso || null,
+                                tiempo: row.tiempo || null,
+                                alergenos: row.alergenos || [],
+                                ingredientes: row.ingredientes || [],
+                                elaboracion: row.elaboracion || null,
+                                notas: row.notas || null
+                            };
+                        }
+                        this.fichasTecnicas = fichas;
+                    } else {
+                        await this.inicializarFichas();
+                    }
+                    this.fichasCargadas = true;
+                } catch (error) {
+                    console.error('Error al cargar fichas:', error);
+                    this.fichasTecnicas = { ...FICHAS_INICIALES };
+                    this.fichasCargadas = true;
+                }
+            },
+
+            async inicializarFichas() {
+                try {
+                    const items = [];
+                    for (const [nombre, ficha] of Object.entries(FICHAS_INICIALES)) {
+                        items.push({
+                            nombre: nombre,
+                            tipo: ficha.tipo || 'simple',
+                            peso: ficha.peso || null,
+                            tiempo: ficha.tiempo || null,
+                            alergenos: ficha.alergenos || [],
+                            ingredientes: ficha.ingredientes || [],
+                            elaboracion: ficha.elaboracion || null,
+                            notas: ficha.notas || null
+                        });
+                    }
+
+                    const { error } = await this.supabase
+                        .from('timbres_fichas')
+                        .insert(items);
+
+                    if (error) throw error;
+
+                    this.fichasTecnicas = { ...FICHAS_INICIALES };
+                    this.showToast('Fichas técnicas iniciales cargadas', 'success');
+                } catch (error) {
+                    console.error('Error al inicializar fichas:', error);
+                    this.fichasTecnicas = { ...FICHAS_INICIALES };
+                }
+            },
+
+            async guardarFichaEnSupabase(nombre, ficha) {
+                try {
+                    const { error } = await this.supabase
+                        .from('timbres_fichas')
+                        .upsert({
+                            nombre: nombre,
+                            tipo: ficha.tipo || 'simple',
+                            peso: ficha.peso || null,
+                            tiempo: ficha.tiempo || null,
+                            alergenos: ficha.alergenos || [],
+                            ingredientes: ficha.ingredientes || [],
+                            elaboracion: ficha.elaboracion || null,
+                            notas: ficha.notas || null
+                        }, { onConflict: 'nombre' });
+
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('Error al guardar ficha:', error);
+                    return false;
+                }
+            },
+
+            async eliminarFichaSupabase(nombre) {
+                try {
+                    const { error } = await this.supabase
+                        .from('timbres_fichas')
+                        .delete()
+                        .eq('nombre', nombre);
+
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('Error al eliminar ficha:', error);
+                    return false;
+                }
+            },
+
+            openFicha(item) {
+                if (item.bold) return;
+                const ficha = this.getFicha(item.name);
+                this.fichaActual = {
+                    name: item.name,
+                    shelf: this.getShelfForItem(item),
+                    tipo: ficha?.tipo || 'simple',
+                    peso: ficha?.peso || null,
+                    tiempo: ficha?.tiempo || null,
+                    alergenos: ficha?.alergenos || [],
+                    ingredientes: ficha?.ingredientes || [],
+                    elaboracion: ficha?.elaboracion || null,
+                    notas: ficha?.notas || null,
+                };
+                this.modalVisible = true;
+                this.editandoFicha = false;
+            },
+
+            closeModal() {
+                this.modalVisible = false;
+                this.editandoFicha = false;
+                this.fichaActual = null;
+                this.editandoFichaNombre = null;
+            },
+
+            iniciarEdicionFicha() {
+                const ficha = this.fichaActual;
+                this.editandoFicha = true;
+                this.editandoFichaNombre = ficha.name;
+
+                this.editForm = {
+                    nombre: ficha.name,
+                    tipo: ficha.tipo || 'simple',
+                    peso: ficha.peso || '',
+                    tiempo: ficha.tiempo || '',
+                    alergenos: ficha.alergenos ? [...ficha.alergenos] : [],
+                    ingredientesText: ficha.ingredientes ? ficha.ingredientes.join('\n') : '',
+                    elaboracion: ficha.elaboracion || '',
+                    notas: ficha.notas || ''
+                };
+            },
+
+            toggleAlergeno(alergeno) {
+                const index = this.editForm.alergenos.indexOf(alergeno);
+                if (index > -1) {
+                    this.editForm.alergenos.splice(index, 1);
+                } else {
+                    this.editForm.alergenos.push(alergeno);
+                }
+            },
+
+            async guardarFicha() {
+                const nombre = this.editForm.nombre.trim();
+                if (!nombre) {
+                    this.showToast('El nombre del item es obligatorio', 'error');
+                    return;
+                }
+
+                const ficha = {
+                    tipo: this.editForm.tipo,
+                    peso: this.editForm.peso || null,
+                    tiempo: this.editForm.tiempo || null,
+                    alergenos: this.editForm.tipo === 'receta' ? [...this.editForm.alergenos] : [],
+                    ingredientes: this.editForm.tipo === 'receta' 
+                        ? this.editForm.ingredientesText.split('\n').filter(i => i.trim()) 
+                        : [],
+                    elaboracion: this.editForm.tipo === 'receta' ? this.editForm.elaboracion : null,
+                    notas: this.editForm.notas || null
+                };
+
+                this.fichasTecnicas[nombre] = ficha;
+
+                const success = await this.guardarFichaEnSupabase(nombre, ficha);
+                if (success) {
+                    this.showToast(`Ficha de "${nombre}" guardada correctamente`, 'success');
+                } else {
+                    this.showToast('Ficha guardada localmente, pero hubo error al sincronizar', 'warning');
+                }
+
+                this.closeModal();
+                this.$forceUpdate();
+            },
+
+            async eliminarFicha() {
+                const nombre = this.fichaActual.name;
+                if (!confirm(`¿Eliminar la ficha de "${nombre}"?`)) return;
+
+                delete this.fichasTecnicas[nombre];
+                const success = await this.eliminarFichaSupabase(nombre);
+                if (success) {
+                    this.showToast(`Ficha de "${nombre}" eliminada`, 'success');
+                } else {
+                    this.showToast('Ficha eliminada localmente, pero hubo error al sincronizar', 'warning');
+                }
+                this.closeModal();
+                this.$forceUpdate();
+            },
+
+            cancelarEdicion() {
+                this.editandoFicha = false;
+                this.editandoFichaNombre = null;
+                if (this.fichaActual) {
+                    const ficha = this.getFicha(this.fichaActual.name);
+                    this.fichaActual = {
+                        ...this.fichaActual,
+                        tipo: ficha?.tipo || 'simple',
+                        peso: ficha?.peso || null,
+                        tiempo: ficha?.tiempo || null,
+                        alergenos: ficha?.alergenos || [],
+                        ingredientes: ficha?.ingredientes || [],
+                        elaboracion: ficha?.elaboracion || null,
+                        notas: ficha?.notas || null,
+                    };
+                }
+            },
+
+            // ============================================================
+            // ETIQUETAS - CON MANEJO DE ERRORES MEJORADO
+            // ============================================================
+            abrirModalEtiqueta(item) {
+                if (item.bold) return;
+                this.etiquetaItemActual = item;
+                this.etiquetaForm.producto = item.name;
+                this.etiquetaForm.tipo = 'elaboracion';
+                this.etiquetaForm.lote = '';
+                this.etiquetaForm.fecha = new Date().toISOString().split('T')[0];
+                this.etiquetaForm.dias = 5;
+                this.etiquetaForm.cantidad = 1;
+                this.modalEtiquetaVisible = true;
+                this.modalVisible = false;
+                this.$nextTick(() => {
+                    this.generarQRModal();
+                });
+            },
+
+            abrirModalEtiquetaDesdeFicha() {
+                if (this.fichaActual) {
+                    this.abrirModalEtiqueta({ 
+                        name: this.fichaActual.name, 
+                        bold: false,
+                        id: 'ficha-' + this.fichaActual.name
+                    });
+                }
+            },
+
+            cerrarModalEtiqueta() {
+                this.modalEtiquetaVisible = false;
+                this.etiquetaItemActual = null;
+            },
+
+            generarQRModal() {
+                const container = document.getElementById('qr-etiqueta-preview');
+                if (!container) return;
+                container.innerHTML = '';
+                const producto = this.etiquetaForm.producto || 'PRODUCTO';
+                const lote = this.etiquetaForm.lote || 'S/L';
+                const fecha = this.formatDate(this.etiquetaForm.fecha);
+                const cad = this.formatDate(this.calcularCaducidad());
+                const tipo = this.etiquetaForm.tipo === 'descongelacion' ? 'DESC' : 'ELAB';
+                const qrTexto = `PROD:${producto}|LOTE:${lote}|${tipo}:${fecha}|CAD:${cad}`;
+                try {
+                    new QRCode(container, {
+                        text: qrTexto,
+                        width: 110,
+                        height: 110,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                } catch(e) {
+                    console.log('Error generando QR:', e);
+                }
+            },
+
+            async imprimirEtiquetaDesdeModal() {
+                const producto = this.etiquetaForm.producto.trim();
+                const lote = this.etiquetaForm.lote.trim() || 'S/L';
+                const dias = parseInt(this.etiquetaForm.dias) || 5;
+                const cantidad = parseInt(this.etiquetaForm.cantidad) || 1;
+                const fechaOrigen = this.etiquetaForm.fecha;
+
+                if (!producto) {
+                    this.showToast('⚠️ Producto requerido', 'error');
+                    return;
+                }
+                if (!fechaOrigen) {
+                    this.showToast('⚠️ Selecciona una fecha', 'error');
+                    return;
+                }
+
+                const fechaOrigenDate = new Date(fechaOrigen);
+                const caducidad = new Date(fechaOrigenDate);
+                caducidad.setDate(caducidad.getDate() + dias);
+                const fechaCad = this.formatDate(caducidad);
+                const fechaOrig = this.formatDate(fechaOrigenDate);
+                const tipoTexto = this.etiquetaForm.tipo === 'descongelacion' ? 'Descongelado' : 'Elaborado';
+                const qrTexto = `PROD:${producto}|LOTE:${lote}|${this.etiquetaForm.tipo === 'descongelacion' ? 'DESC' : 'ELAB'}:${fechaOrig}|CAD:${fechaCad}`;
+
+                const etiquetas = [];
+                for (let i = 0; i < cantidad; i++) {
+                    etiquetas.push({
+                        producto: producto,
+                        unidad: `${lote}`,
+                        fecha: `${tipoTexto}: ${fechaOrig}`,
+                        texto_qr: qrTexto
+                    });
+                }
+
+                const paquete = {
+                    etiquetas: etiquetas
+                };
+
+                const registro = {
+                    id: 'ETIQ_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+                    producto: producto,
+                    lote: lote,
+                    tipo: this.etiquetaForm.tipo,
+                    dias_caducidad: dias,
+                    fecha_origen: fechaOrigenDate.toISOString(),
+                    fecha_caducidad: caducidad.toISOString(),
+                    created_at: new Date().toISOString(),
+                    cantidad: cantidad
+                };
+
+                // Mostrar loading en el botón
+                const btn = event?.target;
+                const originalText = btn?.textContent || '🖨️ IMPRIMIR';
+                if (btn) btn.textContent = '⏳ Enviando...';
+
+                try {
+                    // Intentar guardar en Supabase con manejo de errores
+                    let supabaseOk = false;
+                    try {
+                        const { error } = await this.supabase
+                            .from('etiquetas_rapidas')
+                            .insert([registro]);
+                        if (error) {
+                            console.warn('Error guardando en Supabase:', error);
+                            this.showToast('⚠️ Error al guardar en base de datos: ' + error.message, 'error');
+                        } else {
+                            supabaseOk = true;
+                        }
+                    } catch (e) {
+                        console.warn('Excepción al guardar en Supabase:', e);
+                        this.showToast('⚠️ Error al guardar en base de datos', 'error');
+                    }
+
+                    // Si se guardó bien, actualizar historial
+                    if (supabaseOk) {
+                        this.historialProduccion[producto] = {
+                            fecha: this.formatDate(fechaOrigenDate),
+                            caducidad: this.formatDate(caducidad),
+                            diasRestantes: this.calcularDiasRestantes(caducidad),
+                            lote: lote,
+                            tipo: this.etiquetaForm.tipo,
+                            id: registro.id
+                        };
+                        await this.cargarHistorialProduccion();
+                    }
+
+                    // Enviar a imprimir
+                    const response = await fetch(API_URL + '/imprimir_etiqueta_rapida', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                        body: JSON.stringify(paquete)
+                    });
+
+                    if (response.ok) {
+                        this.showToast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} de ${producto} enviada${cantidad > 1 ? 's' : ''}`, 'success');
+                        
+                        // Si venía de un item de la lista, cambiar estado
+                        if (this.etiquetaItemActual && !this.etiquetaItemActual.bold) {
+                            if (this.etiquetaForm.tipo === 'elaboracion') {
+                                this.etiquetaItemActual.status = 'hay';
+                            } else if (this.etiquetaForm.tipo === 'descongelacion') {
+                                this.etiquetaItemActual.status = 'hay';
+                            }
+                            this.etiquetaItemActual.hecho = true;
+                            this.actualizarListas();
+                            await this.saveToSupabase();
+                        }
+
+                        this.cerrarModalEtiqueta();
+                    } else {
+                        const errorText = await response.text();
+                        this.showToast(`❌ Error al imprimir: ${errorText || 'Error desconocido'}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.showToast('❌ Error de conexión con el servidor de impresión', 'error');
+                } finally {
+                    if (btn) btn.textContent = originalText;
+                }
+            },
+
+            calcularDiasRestantes(fechaCaducidad) {
+                const hoy = new Date();
+                const cad = new Date(fechaCaducidad);
+                const diff = Math.ceil((cad - hoy) / (1000 * 60 * 60 * 24));
+                return diff;
+            },
+
+            async cargarHistorialProduccion() {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('etiquetas_rapidas')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .limit(100);
+
+                    if (error) {
+                        if (error.message.includes('does not exist') || error.message.includes('permission')) {
+                            console.warn('Tabla etiquetas_rapidas no accesible:', error);
+                            return;
+                        }
+                        throw error;
+                    }
+
+                    this.historialProduccionList = [];
+                    const historialMap = {};
+                    
+                    if (data) {
+                        for (const item of data) {
+                            const diasRest = this.calcularDiasRestantes(item.fecha_caducidad);
+                            const entry = {
+                                producto: item.producto,
+                                lote: item.lote || 'S/L',
+                                tipo: item.tipo || 'elaboracion',
+                                fecha: this.formatDate(item.fecha_origen),
+                                caducidad: this.formatDate(item.fecha_caducidad),
+                                diasRestantes: diasRest,
+                                id: item.id,
+                                cantidad: item.cantidad || 1
+                            };
+                            this.historialProduccionList.push(entry);
+                            if (!historialMap[item.producto] || new Date(item.created_at) > new Date(historialMap[item.producto].created_at)) {
+                                historialMap[item.producto] = {
+                                    fecha: this.formatDate(item.fecha_origen),
+                                    caducidad: this.formatDate(item.fecha_caducidad),
+                                    diasRestantes: diasRest,
+                                    lote: item.lote || 'S/L',
+                                    tipo: item.tipo || 'elaboracion',
+                                    id: item.id,
+                                    created_at: item.created_at
+                                };
+                            }
+                        }
+                    }
+                    this.historialProduccion = historialMap;
+                } catch (error) {
+                    console.error('Error cargando historial:', error);
+                }
+            },
+
+            async reimprimirEtiqueta(registro) {
+                if (!registro) return;
+                
+                const fechaCad = registro.caducidad || registro.fecha_caducidad;
+                const fechaOrig = registro.fecha || registro.fecha_origen;
+                const lote = registro.lote || 'S/L';
+                const tipoTexto = registro.tipo === 'descongelacion' ? 'Descongelado' : 'Elaborado';
+                const qrTexto = `PROD:${registro.producto}|LOTE:${lote}|${registro.tipo === 'descongelacion' ? 'DESC' : 'ELAB'}:${fechaOrig}|CAD:${fechaCad}`;
+                
+                const cantidad = registro.cantidad || 1;
+                const etiquetas = [];
+                for (let i = 0; i < cantidad; i++) {
+                    etiquetas.push({
+                        producto: registro.producto,
+                        unidad: `${lote}`,
+                        fecha: `${tipoTexto}: ${fechaOrig}`,
+                        texto_qr: qrTexto
+                    });
+                }
+                
+                const paquete = {
+                    etiquetas: etiquetas
+                };
+
+                try {
+                    const response = await fetch(API_URL + '/imprimir_etiqueta_rapida', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                        body: JSON.stringify(paquete)
+                    });
+                    if (response.ok) {
+                        this.showToast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} de ${registro.producto} reimpresa${cantidad > 1 ? 's' : ''}`, 'success');
+                    } else {
+                        this.showToast('❌ Error al reimprimir', 'error');
+                    }
+                } catch (error) {
+                    this.showToast('❌ Error de conexion', 'error');
+                }
+            },
+
+            // ============================================================
+            // MOVER BALDAS
+            // ============================================================
+            moveShelfUp(name) {
+                const keys = Object.keys(this.shelfItems);
+                const index = keys.indexOf(name);
+                if (index <= 0) {
+                    this.showToast('La balda ya está en la primera posición', 'error');
+                    return;
+                }
+                const prevKey = keys[index - 1];
+                const newItems = {};
+                for (let i = 0; i < keys.length; i++) {
+                    const key = keys[i];
+                    if (key === name) { continue; }
+                    else if (key === prevKey) {
+                        newItems[name] = this.shelfItems[name];
+                        newItems[prevKey] = this.shelfItems[prevKey];
+                    } else {
+                        newItems[key] = this.shelfItems[key];
+                    }
+                }
+                this.shelfItems = newItems;
+                this.saveToSupabase();
+                this.showToast(`"${name}" movida hacia arriba`, 'success');
+            },
+
+            moveShelfDown(name) {
+                const keys = Object.keys(this.shelfItems);
+                const index = keys.indexOf(name);
+                if (index >= keys.length - 1) {
+                    this.showToast('La balda ya está en la última posición', 'error');
+                    return;
+                }
+                const nextKey = keys[index + 1];
+                const newItems = {};
+                for (let i = 0; i < keys.length; i++) {
+                    const key = keys[i];
+                    if (key === name) { continue; }
+                    else if (key === nextKey) {
+                        newItems[nextKey] = this.shelfItems[nextKey];
+                        newItems[name] = this.shelfItems[name];
+                    } else {
+                        newItems[key] = this.shelfItems[key];
+                    }
+                }
+                this.shelfItems = newItems;
+                this.saveToSupabase();
+                this.showToast(`"${name}" movida hacia abajo`, 'success');
+            },
+
+            // ============================================================
+            // SUPABASE
+            // ============================================================
+            async syncFromSupabase() {
+                if (!this.supabase) {
+                    this.showToast('Error: Supabase no inicializado', 'error');
+                    return;
+                }
+                this.syncStatus = 'syncing';
+                try {
+                    const { data, error } = await this.supabase
+                        .from('timbres_revision')
+                        .select('*')
+                        .eq('turno', this.turno)
+                        .eq('dia', this.currentDay);
+                    if (error) throw error;
+                    
+                    if (data && data.length > 0) {
+                        const newItems = {};
+                        for (const row of data) {
+                            if (!newItems[row.balda]) newItems[row.balda] = [];
+                            newItems[row.balda].push({
+                                id: row.item_id,
+                                name: row.item_name,
+                                bold: row.bold || false,
+                                status: row.status || null,
+                                hecho: row.hecho || false,
+                                pedidoHecho: row.pedido_hecho || false,
+                                cantidad: row.cantidad || 1,
+                            });
+                        }
+                        this.shelfItems = newItems;
+                    } else {
+                        this.shelfItems = generateBaseItems();
+                        await this.uploadToSupabase();
+                    }
+                    this.syncStatus = 'synced';
+                    this.actualizarListas();
+                    this.showToast('Datos sincronizados correctamente', 'success');
+                } catch (error) {
+                    console.error(error);
+                    this.syncStatus = 'error';
+                    this.showToast('Error al sincronizar: ' + error.message, 'error');
+                }
+            },
+
+            async uploadToSupabase() {
+                if (!this.supabase) return;
+                try {
+                    const items = [];
+                    for (const [balda, shelf] of Object.entries(this.shelfItems)) {
+                        for (const item of shelf) {
+                            items.push({
+                                turno: this.turno, dia: this.currentDay, balda, item_id: item.id,
+                                item_name: item.name, bold: item.bold, status: item.status || null,
+                                hecho: item.hecho || false, pedido_hecho: item.pedidoHecho || false,
+                                cantidad: item.cantidad || 1,
+                            });
+                        }
+                    }
+                    await this.supabase.from('timbres_revision').delete().eq('turno', this.turno).eq('dia', this.currentDay);
+                    if (items.length > 0) {
+                        const { error } = await this.supabase.from('timbres_revision').insert(items);
+                        if (error) throw error;
+                    }
+                    if (this.cocinero) {
+                        await this.supabase.from('timbres_log').upsert({
+                            turno: this.turno, dia: this.currentDay,
+                            cocinero: this.cocinero, fecha: new Date().toISOString(),
+                        }, { onConflict: 'turno, dia' });
+                    }
+                } catch (error) { 
+                    console.error(error); 
+                    throw error; 
+                }
+            },
+
+            async saveToSupabase() {
+                if (!this.supabase) return;
+                this.syncStatus = 'syncing';
+                try { 
+                    await this.uploadToSupabase(); 
+                    this.syncStatus = 'synced'; 
+                } catch (e) { 
+                    this.syncStatus = 'error'; 
+                    this.showToast('Error al guardar: ' + e.message, 'error');
+                }
+            },
+
+            setDay(day) { 
+                this.currentDay = day; 
+                this.syncFromSupabase(); 
+            },
+
+            // ============================================================
+            // ESTADOS
+            // ============================================================
+            async setStatus(item, status) {
+                if (item.bold) return;
+                
+                // Si se marca como "elaborar" o "descongelar", abrir modal de etiqueta
+                if (status === 'elaborar' || status === 'descongelar') {
+                    this.etiquetaItemActual = item;
+                    this.etiquetaForm.producto = item.name;
+                    this.etiquetaForm.tipo = status === 'elaborar' ? 'elaboracion' : 'descongelacion';
+                    this.etiquetaForm.lote = '';
+                    this.etiquetaForm.fecha = new Date().toISOString().split('T')[0];
+                    this.etiquetaForm.dias = status === 'elaborar' ? 5 : 3;
+                    this.etiquetaForm.cantidad = 1;
+                    this.modalEtiquetaVisible = true;
+                    this.$nextTick(() => {
+                        this.generarQRModal();
+                    });
+                    return;
+                }
+
+                item.status = item.status === status ? null : status;
+                this.actualizarListas();
+                await this.saveToSupabase();
+            },
+
+            actualizarListas() {
+                const elaborar = [], descongelar = [];
+                for (const [shelf, items] of Object.entries(this.shelfItems)) {
+                    for (const item of items) {
+                        if (item.bold) continue;
+                        if (item.status === 'elaborar') elaborar.push({ ...item, shelf });
+                        else if (item.status === 'descongelar') descongelar.push({ ...item, shelf });
+                    }
+                }
+                this.elaborarList = elaborar;
+                this.descongelarList = descongelar;
+                this.actualizarPedido();
+            },
+
+            actualizarPedido() {
+                const base = [];
+                for (const [shelf, items] of Object.entries(this.shelfItems)) {
+                    for (const item of items) {
+                        if (item.bold) continue;
+                        if (item.status === 'no') {
+                            const existente = this.pedidoList.find(p => p.id === item.id);
+                            if (existente) base.push(existente);
+                            else base.push({ ...item, shelf, cantidad: item.cantidad || 1, pedidoHecho: false });
+                        }
+                    }
+                }
+                for (const p of this.pedidoList) {
+                    if (!base.find(b => b.id === p.id)) {
+                        let existe = false;
+                        for (const [shelf, items] of Object.entries(this.shelfItems)) {
+                            if (items.find(it => it.id === p.id)) existe = true;
+                        }
+                        if (existe) base.push(p);
+                    }
+                }
+                this.pedidoList = base;
+            },
+
+            async updateHecho() { await this.saveToSupabase(); },
+            async updatePedido() { await this.saveToSupabase(); },
+
+            async quitarDePedido(item) { 
+                this.pedidoList = this.pedidoList.filter(p => p.id !== item.id); 
+                await this.saveToSupabase(); 
+            },
+
+            async limpiarPedido() { 
+                if (confirm('¿Limpiar todos los items del pedido?')) { 
+                    this.pedidoList = []; 
+                    await this.saveToSupabase(); 
+                    this.showToast('Pedido limpiado', 'success');
+                } 
+            },
+
+            async resetDay() {
+                if (!confirm(`Reiniciar todos los estados para ${this.currentDay} (${this.turno})?`)) return;
+                for (const shelf of Object.values(this.shelfItems)) {
+                    for (const item of shelf) {
+                        if (!item.bold) { item.status = null; item.hecho = false; item.pedidoHecho = false; }
+                    }
+                }
+                this.pedidoList = [];
+                this.actualizarListas();
+                await this.saveToSupabase();
+                this.showToast('Día reiniciado correctamente', 'success');
+            },
+
+            // ============================================================
+            // EDICIÓN BALDAS
+            // ============================================================
+            startEditShelf(name) {
+                this.editingShelf = name;
+                this.shelfEditName = name;
+                this.$nextTick(() => {
+                    if (this.$refs.shelfEditInput) {
+                        const el = Array.isArray(this.$refs.shelfEditInput) ? this.$refs.shelfEditInput[0] : this.$refs.shelfEditInput;
+                        if (el) { el.focus(); el.select(); }
+                    }
+                });
+            },
+
+            async saveShelfEdit(oldName) {
+                if (!this.shelfEditName.trim()) { this.editingShelf = null; return; }
+                const newName = this.shelfEditName.trim();
+                if (newName === oldName) { this.editingShelf = null; return; }
+                if (this.shelfItems[newName] && newName !== oldName) { 
+                    this.showToast('Ya existe una balda con ese nombre', 'error');
+                    return; 
+                }
+                const items = this.shelfItems[oldName];
+                delete this.shelfItems[oldName];
+                this.shelfItems[newName] = items;
+                this.newItemNames[newName] = this.newItemNames[oldName] || '';
+                delete this.newItemNames[oldName];
+                this.editingShelf = null;
+                this.actualizarListas();
+                await this.saveToSupabase();
+                this.showToast('Balda renombrada correctamente', 'success');
+            },
+
+            async deleteShelf(name) {
+                if (!confirm(`¿Eliminar la balda "${name}" y todos sus items?`)) return;
+                delete this.shelfItems[name];
+                delete this.newItemNames[name];
+                this.pedidoList = this.pedidoList.filter(p => p.shelf !== name);
+                this.actualizarListas();
+                await this.saveToSupabase();
+                this.showToast('Balda eliminada correctamente', 'success');
+            },
+
+            async addShelf() {
+                const name = this.newShelfName.trim();
+                if (!name) { 
+                    this.showToast('Escribe un nombre para la balda', 'error');
+                    return; 
+                }
+                if (this.shelfItems[name]) { 
+                    this.showToast('Ya existe una balda con ese nombre', 'error');
+                    return; 
+                }
+                
+                const newShelfItems = {};
+                newShelfItems[name] = [];
+                for (const [key, value] of Object.entries(this.shelfItems)) {
+                    newShelfItems[key] = value;
+                }
+                this.shelfItems = newShelfItems;
+                
+                this.newItemNames[name] = '';
+                this.newShelfName = '';
+                await this.saveToSupabase();
+                this.showToast(`Balda "${name}" añadida al principio`, 'success');
+            },
+
+            // ============================================================
+            // EDICIÓN ITEMS
+            // ============================================================
+            startEditItem(item) {
+                this.editingItem = item.id;
+                this.itemEditName = item.name;
+                this.$nextTick(() => {
+                    if (this.$refs.itemEditInput) {
+                        const refs = this.$refs.itemEditInput;
+                        const el = Array.isArray(refs) ? refs[refs.length - 1] : refs;
+                        if (el) { el.focus(); el.select(); }
+                    }
+                });
+            },
+
+            async saveItemEdit(item) {
+                const newName = this.itemEditName.trim();
+                if (!newName) { this.editingItem = null; return; }
+                item.name = newName;
+                this.editingItem = null;
+                this.actualizarListas();
+                await this.saveToSupabase();
+                this.showToast('Item actualizado', 'success');
+            },
+
+            async deleteItem(item) {
+                if (!confirm(`¿Eliminar "${item.name}"?`)) return;
+                for (const shelf of Object.values(this.shelfItems)) {
+                    const idx = shelf.findIndex(it => it.id === item.id);
+                    if (idx !== -1) { shelf.splice(idx, 1); break; }
+                }
+                this.pedidoList = this.pedidoList.filter(p => p.id !== item.id);
+                this.actualizarListas();
+                await this.saveToSupabase();
+                this.showToast('Item eliminado', 'success');
+            },
+
+            async addItem(shelfName) {
+                const name = this.newItemNames[shelfName]?.trim();
+                if (!name) return;
+                const shelf = this.shelfItems[shelfName];
+                if (!shelf) return;
+                shelf.push({
+                    id: `${shelfName}-${Date.now()}-${Math.random()}`,
+                    name: name,
+                    bold: false,
+                    status: null,
+                    hecho: false,
+                    pedidoHecho: false,
+                    cantidad: 1,
+                });
+                this.newItemNames[shelfName] = '';
+                this.actualizarListas();
+                await this.saveToSupabase();
+                this.showToast('Item añadido', 'success');
+            },
+
+            // ============================================================
+            // EXPORT
+            // ============================================================
+            exportPedido() {
+                const lines = [`🛒 PEDIDO · ${this.currentDay} · ${this.turno} · ${this.cocinero || 'cocinero'}`];
+                lines.push('----------------------------------------');
+                if (this.pedidoList.length === 0) lines.push('✅ No hay nada que pedir');
+                else for (const item of this.pedidoList) lines.push(`  ${item.cantidad || 1}x  ${item.name}  (${item.shelf})`);
+                const texto = lines.join('\n');
+                navigator.clipboard?.writeText(texto).then(() => {
+                    this.showToast('📋 Pedido copiado al portapapeles', 'success');
+                }).catch(() => {
+                    const ta = document.createElement('textarea'); 
+                    ta.value = texto; 
+                    document.body.appendChild(ta); 
+                    ta.select(); 
+                    document.execCommand('copy'); 
+                    ta.remove(); 
+                    this.showToast('📋 Pedido copiado', 'success');
+                });
+            }
+        },
+        watch: {
+            'etiquetaForm.fecha'() { this.$nextTick(() => this.generarQRModal()); },
+            'etiquetaForm.lote'() { this.$nextTick(() => this.generarQRModal()); },
+            'etiquetaForm.dias'() { this.$nextTick(() => this.generarQRModal()); },
+            'etiquetaForm.tipo'() { this.$nextTick(() => this.generarQRModal()); },
+            'etiquetaForm.producto'() { this.$nextTick(() => this.generarQRModal()); },
+            turno() { this.syncFromSupabase(); },
+            shelfItems: { deep: true, handler() { this.actualizarListas(); } }
+        },
+        async mounted() {
+            try {
+                const { createClient } = supabase;
+                this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+            } catch (e) { 
+                this.showToast('Error al conectar con Supabase', 'error');
+                return; 
+            }
+            
+            await this.cargarFichas();
+            await this.cargarHistorialProduccion();
+            
+            this.loading = true;
+            await this.syncFromSupabase();
+            this.loading = false;
+            
+            for (const shelf of Object.keys(this.shelfItems)) {
+                if (!this.newItemNames[shelf]) this.newItemNames[shelf] = '';
+            }
+            
+            setInterval(() => { 
+                if (this.syncStatus !== 'syncing') {
+                    this.syncFromSupabase();
+                    this.cargarHistorialProduccion();
+                }
+            }, 30000);
+        }
+    });
+})();
+</script>
+</body>
+</html>
