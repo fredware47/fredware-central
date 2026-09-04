@@ -131,141 +131,250 @@
         .tab-content.active { display: block; }
         @keyframes fade { from { opacity: 0.5; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 🔥 CAMBIO: Una sola columna */
-        .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        /* 🔥 UNA SOLA COLUMNA */
+        .grid { display: grid; grid-template-columns: 1fr; gap: 1.2rem; }
         
+        /* 🔥 BALDAS MÁS ALTAS (VERTICALES) */
         .shelf-card {
             background: #fcfaf8;
             border-radius: 16px;
-            padding: 0.8rem 0.8rem 0.5rem;
-            border: 1px solid #e8e1d9;
+            padding: 1.2rem 1.2rem 1rem;
+            border: 2px solid #e0d7cd;
             transition: all 0.2s;
+            margin-bottom: 0.2rem;
+            min-height: 200px;
         }
-        .shelf-card:hover { border-color: #c5bdb3; }
-        .shelf-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-bottom: 0.3rem;
-            border-bottom: 2px solid #e0d7cd;
-            margin-bottom: 0.4rem;
-            gap: 0.3rem;
-        }
+        .shelf-card:hover { border-color: #b0a89e; }
+        
+        /* 🔥 TÍTULO DE BALDA MÁS GRANDE */
         .shelf-title {
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 1.2rem;
             color: #1e1e1e;
             display: flex;
             align-items: center;
-            gap: 0.3rem;
+            gap: 0.5rem;
             flex: 1;
         }
         .shelf-title .badge {
             font-weight: 400;
-            font-size: 0.6rem;
+            font-size: 0.85rem;
             background: #e0d7cd;
-            padding: 0.05rem 0.5rem;
+            padding: 0.15rem 0.8rem;
             border-radius: 30px;
             color: #3d3833;
         }
-        .shelf-actions { display: flex; gap: 0.15rem; flex-shrink: 0; flex-wrap: wrap; }
+        
+        /* 🔥 HEADER DE BALDA CON MÁS ESPACIO */
+        .shelf-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 0.6rem;
+            border-bottom: 2px solid #d5cdc3;
+            margin-bottom: 0.6rem;
+            gap: 0.5rem;
+        }
+        
+        /* 🔥 ACCIONES DE BALDA MÁS GRANDES */
+        .shelf-actions { display: flex; gap: 0.2rem; flex-shrink: 0; flex-wrap: wrap; }
+        
+        /* 🔥 ICONOS MÁS GRANDES */
         .icon-btn {
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 0.75rem;
-            padding: 0.1rem 0.25rem;
-            border-radius: 4px;
+            font-size: 1.2rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 6px;
             color: #5e5a55;
             transition: 0.15s;
+            min-height: 34px;
+            min-width: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .icon-btn:hover { background: #e8e1d9; color: #1e1e1e; }
         .icon-btn.danger:hover { background: #f5d6d6; color: #b13e3e; }
         .icon-btn.move:hover { background: #d4e6d9; color: #1d6b3c; }
         .icon-btn.info:hover { background: #dbeafe; color: #2563eb; }
-        .icon-btn.etiqueta-btn { background: #fef3c7; color: #92400e; border-radius: 6px; padding: 0.1rem 0.4rem; font-size: 0.65rem; font-weight: bold; }
+        .icon-btn.etiqueta-btn { 
+            background: #fef3c7; 
+            color: #92400e; 
+            border-radius: 8px; 
+            padding: 0.2rem 0.6rem; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            min-height: 32px;
+            min-width: 40px;
+        }
         .icon-btn.etiqueta-btn:hover { background: #f59e0b; color: white; }
+        
+        /* 🔥 ITEMS MÁS GRANDES Y CON MÁS ESPACIO */
         .item-row {
             display: flex;
             align-items: center;
-            gap: 0.3rem;
-            padding: 0.2rem 0.05rem;
+            gap: 0.6rem;
+            padding: 0.5rem 0.2rem;
             border-bottom: 1px solid #f0ebe5;
-            font-size: 0.8rem;
+            font-size: 1.05rem;
             cursor: pointer;
             transition: background 0.15s;
             flex-wrap: wrap;
         }
         .item-row:hover { background: #f1f5f9; border-radius: 4px; }
         .item-row:last-child { border-bottom: none; }
-        .item-row.bold-item { font-weight: 700; background: #f3efe9; border-radius: 6px; padding: 0.2rem 0.4rem; margin: 0.15rem 0; border-bottom: 1px solid #e0d7cd; cursor: default; }
+        .item-row.bold-item { 
+            font-weight: 700; 
+            background: #f3efe9; 
+            border-radius: 8px; 
+            padding: 0.4rem 0.6rem; 
+            margin: 0.2rem 0; 
+            border-bottom: 2px solid #d5cdc3; 
+            cursor: default; 
+            font-size: 1.05rem;
+        }
         .item-row.bold-item:hover { background: #f3efe9; }
-        .item-name { flex: 1; color: #1f1d1b; min-width: 0; word-break: break-word; font-size: 0.8rem; }
-        .item-actions { display: flex; gap: 0.15rem; flex-wrap: wrap; align-items: center; }
+        
+        /* 🔥 NOMBRE DEL ITEM MÁS GRANDE */
+        .item-name { 
+            flex: 1; 
+            color: #1f1d1b; 
+            min-width: 0; 
+            word-break: break-word; 
+            font-size: 1.05rem; 
+            font-weight: 500;
+            padding: 0.1rem 0;
+        }
+        
+        /* 🔥 ACCIONES DE ITEM */
+        .item-actions { display: flex; gap: 0.3rem; flex-wrap: wrap; align-items: center; }
+        
+        /* 🔥 BOTONES DE ESTADO MÁS GRANDES */
         .status-btn {
             border: none;
-            padding: 0.1rem 0.4rem;
+            padding: 0.3rem 0.7rem;
             border-radius: 30px;
-            font-size: 0.55rem;
+            font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
             background: #ece7e1;
             color: #3d3833;
             white-space: nowrap;
+            min-height: 34px;
+            min-width: 38px;
         }
         .status-btn.active-hay { background: #1e7e34; color: white; }
         .status-btn.active-no { background: #b13e3e; color: white; }
         .status-btn.active-elaborar { background: #c97d2b; color: white; }
         .status-btn.active-descongelar { background: #2b6f8a; color: white; }
         .status-btn:hover { opacity: 0.8; }
+        .status-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        /* 🔥 INPUT DE EDICIÓN DE ITEM */
         .item-edit-input {
             border: 1px solid #d5cdc3;
             border-radius: 6px;
-            padding: 0.05rem 0.3rem;
-            font-size: 0.8rem;
+            padding: 0.3rem 0.5rem;
+            font-size: 1rem;
             background: white;
             flex: 1;
-            min-width: 60px;
+            min-width: 80px;
+            min-height: 38px;
         }
+        
+        /* 🔥 INPUT PARA AÑADIR ITEM - MÁS GRANDE */
         .add-item-row {
             display: flex;
-            gap: 0.3rem;
-            margin-top: 0.3rem;
-            padding-top: 0.3rem;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+            padding-top: 0.6rem;
             border-top: 1px dashed #d5cdc3;
         }
         .add-item-row input {
             flex: 1;
             border: 1px solid #d5cdc3;
-            border-radius: 6px;
-            padding: 0.15rem 0.4rem;
-            font-size: 0.75rem;
+            border-radius: 8px;
+            padding: 0.5rem 0.7rem;
+            font-size: 1rem;
+            min-height: 44px;
         }
         .add-item-row .btn-add {
             background: #1e1e1e;
             color: white;
             border: none;
-            padding: 0.1rem 0.8rem;
+            padding: 0.4rem 1.5rem;
             border-radius: 30px;
-            font-size: 0.7rem;
+            font-size: 1rem;
             cursor: pointer;
+            min-height: 44px;
+            min-width: 50px;
         }
         .add-item-row .btn-add:hover { background: #333; }
+        
+        /* 🔥 ESTADÍSTICAS MÁS GRANDES */
         .stats-bar {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.8rem 1.5rem;
+            gap: 1rem 2rem;
             background: #f5f2ee;
-            padding: 0.4rem 1rem;
+            padding: 0.6rem 1.5rem;
             border-radius: 60px;
-            margin-bottom: 1.2rem;
-            font-size: 0.75rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
         }
         .stats-bar .num { font-weight: 700; margin-left: 0.1rem; }
         .stats-bar .num.hay { color: #1e7e34; }
         .stats-bar .num.no { color: #b13e3e; }
         .stats-bar .num.elaborar { color: #c97d2b; }
         .stats-bar .num.descongelar { color: #2b6f8a; }
+        
+        /* 🔥 INPUT PARA AÑADIR BALDA - MÁS GRANDE */
+        .add-shelf-area {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .add-shelf-area input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 40px;
+            font-size: 1rem;
+            flex: 1;
+            min-width: 150px;
+            min-height: 44px;
+        }
+        .add-shelf-area .btn-primary {
+            min-height: 44px;
+            padding: 0.4rem 1.8rem;
+            font-size: 0.95rem;
+        }
+        
+        /* 🔥 BADGE DE PRODUCCIÓN MÁS GRANDE */
+        .ultima-produccion {
+            font-size: 0.8rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .ultima-produccion .prod-fecha {
+            background: #f1f5f9;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+        .ultima-produccion .prod-cad {
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+        .ultima-produccion .prod-verde { color: #1e7e34; }
+        .ultima-produccion .prod-rojo { color: #dc2626; }
+        
         .action-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         @media (max-width: 700px) { .action-list { grid-template-columns: 1fr; } }
         .action-card {
@@ -415,26 +524,12 @@
         .shelf-edit-input {
             border: 1px solid #d5cdc3;
             border-radius: 6px;
-            padding: 0.05rem 0.3rem;
-            font-size: 0.8rem;
+            padding: 0.3rem 0.5rem;
+            font-size: 1rem;
             background: white;
             flex: 1;
             font-weight: 700;
-        }
-        .add-shelf-area {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .add-shelf-area input {
-            padding: 0.3rem 0.8rem;
-            border: 1px solid #d5cdc3;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            flex: 1;
-            min-width: 150px;
+            min-height: 38px;
         }
         .loading { text-align: center; padding: 1.5rem; color: #7a726a; }
         .spinner {
@@ -774,39 +869,29 @@
             outline-offset: 1px;
         }
 
-        /* Historico de producción */
-        .ultima-produccion {
-            font-size: 0.65rem;
-            color: #64748b;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            flex-wrap: wrap;
-        }
-        .ultima-produccion .prod-fecha {
-            background: #f1f5f9;
-            padding: 0.05rem 0.4rem;
-            border-radius: 12px;
-            font-size: 0.6rem;
-        }
-        .ultima-produccion .prod-cad {
-            color: #dc2626;
-            font-weight: 600;
-            font-size: 0.65rem;
-        }
-        .ultima-produccion .prod-verde { color: #1e7e34; }
-        .ultima-produccion .prod-rojo { color: #dc2626; }
-
-        @media (max-width: 500px) {
+        /* 🔥 RESPONSIVE - MÓVILES */
+        @media (max-width: 600px) {
             .app { padding: 0.8rem; }
             .grid { grid-template-columns: 1fr; }
             .header h1 { font-size: 1.2rem; }
             .user-area input { width: 100px; font-size: 0.75rem; }
-            .shelf-actions .icon-btn { font-size: 0.7rem; }
+            .shelf-actions .icon-btn { font-size: 1rem; min-height: 30px; min-width: 30px; }
+            .shelf-title { font-size: 1.1rem; }
+            .item-name { font-size: 0.95rem; }
+            .icon-btn { font-size: 1.1rem; min-height: 30px; min-width: 30px; }
+            .status-btn { font-size: 0.75rem; min-height: 30px; min-width: 34px; padding: 0.2rem 0.6rem; }
+            .shelf-card { padding: 0.8rem 0.8rem 0.6rem; min-height: 160px; }
+            .add-item-row input { min-height: 38px; font-size: 0.9rem; }
+            .add-item-row .btn-add { min-height: 38px; font-size: 0.9rem; padding: 0.3rem 1.2rem; }
+            .stats-bar { font-size: 0.8rem; padding: 0.4rem 1rem; gap: 0.6rem 1rem; }
+            .add-shelf-area input { min-height: 38px; font-size: 0.9rem; }
+            .add-shelf-area .btn-primary { min-height: 38px; font-size: 0.85rem; padding: 0.3rem 1.2rem; }
             .modal { padding: 1.2rem; margin: 0.5rem; }
             .modal-body .info-row { flex-wrap: wrap; }
             .modal-body .info-row .label { min-width: 80px; }
             .edit-form .form-row { grid-template-columns: 1fr; }
+            .item-row { font-size: 0.95rem; padding: 0.4rem 0.1rem; }
+            .item-row.bold-item { font-size: 0.95rem; }
         }
     </style>
 </head>
