@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fredware - Etiquetas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .header { background: #1e293b; color: white; padding: 16px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .header h1 { font-size: 20px; font-weight: 900; }
+        .header .sub { font-size: 11px; color: #94a3b8; }
+        .btn { padding: 12px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 14px; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-outline { background: transparent; color: #475569; border: 2px solid #cbd5e1; }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; }
+        input, select { width: 100%; padding: 14px; border: 2px solid #cbd5e1; border-radius: 12px; font-size: 18px; background: #f8fafc; text-align: center; font-weight: bold; }
+        input:focus, select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        input[type="number"] { -moz-appearance: textfield; }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .badge-online { background: #d1fae5; color: #065f46; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .badge-offline { background: #fee2e2; color: #991b1b; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .autocomplete-container { position: relative; }
+        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #2563eb; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; }
+        .suggestion-item { padding: 12px 16px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .suggestion-item:hover { background: #eff6ff; }
+        .suggestion-item .nombre { font-weight: bold; color: #1e293b; }
+        .suggestion-item .info { font-size: 12px; color: #94a3b8; }
+        .suggestion-item .badge-ultima { background: #dbeafe; color: #1d4ed8; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+        .marquesina { background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; display: none; }
+        .marquesina .ultimo { font-size: 14px; color: #166534; }
+        .marquesina .ultimo strong { font-size: 16px; }
+        .marquesina .cad { font-size: 13px; color: #dc2626; font-weight: bold; }
+        .marquesina .fecha-elab { font-size: 12px; color: #64748b; }
+        .historial-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .historial-item .nombre { font-weight: bold; color: #1e293b; font-size: 15px; }
+        .historial-item .info { font-size: 13px; color: #64748b; }
+        .historial-item .fecha-cad { color: #dc2626; font-weight: bold; }
+        .historial-item .tipo { background: #dbeafe; color: #1d4ed8; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+        .tab-btn { padding: 10px 16px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 13px; flex: 1; background: #e2e8f0; color: #475569; }
+        .tab-btn.active { background: #2563eb; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .resultado-busqueda { background: #f8fafc; border-radius: 10px; padding: 12px; margin-top: 8px; display: none; }
+        .resultado-busqueda .encontrado { font-weight: bold; font-size: 18px; color: #1e293b; }
+        .resultado-busqueda .detalle { font-size: 14px; color: #64748b; }
+        #preview { background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px; text-align: center; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 400px; margin: 0 auto; }
+        #preview .tipo-etiqueta { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 2px 14px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
+        #preview .producto { font-size: 24px; font-weight: 900; color: #1e293b; letter-spacing: 1px; line-height: 1.1; }
+        #preview .linea-info { font-size: 14px; color: #475569; line-height: 1.1; }
+        #preview .linea-info .etiqueta { font-weight: 400; color: #94a3b8; }
+        #preview .caducidad { font-size: 18px; color: #dc2626; font-weight: bold; line-height: 1.1; }
+        #preview .separador { border-top: 1px dashed #e2e8f0; margin: 6px 0; }
+        #preview .qr-container { display: flex; justify-content: center; margin: 2px 0; }
+        .selector-tipo { display: flex; gap: 8px; margin-bottom: 12px; }
+        .selector-tipo .tipo-btn { flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; background: white; font-weight: bold; }
+        .selector-tipo .tipo-btn:hover { border-color: #2563eb; }
+        .selector-tipo .tipo-btn.active { border-color: #2563eb; background: #eff6ff; }
+        .selector-tipo .tipo-btn .icono { font-size: 20px; display: block; }
+        .selector-tipo .tipo-btn .label { font-size: 13px; }
+        .cantidad-selector { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 8px 0; }
+        .cantidad-selector button { width: 40px; height: 40px; font-size: 20px; border-radius: 10px; border: 2px solid #cbd5e1; background: white; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        .cantidad-selector button:hover { background: #f1f5f9; border-color: #2563eb; }
+        .cantidad-selector button:active { transform: scale(0.95); }
+        .cantidad-selector input { width: 70px; text-align: center; font-size: 20px; padding: 8px; }
+        .cantidad-label { font-size: 14px; color: #64748b; font-weight: bold; }
+        @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+        .status-ok { background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .status-error { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card" style="padding:0; border:none; background:transparent;">
+        <div class="header">
+            <div>
+                <h1>🏷️ Etiquetas</h1>
+                <span class="sub">Elaboración y Descongelación</span>
+            </div>
+            <span id="statusBadge" class="badge-offline" style="font-size:10px;">🔴 Offline</span>
+        </div>
+    </div>
+
+    <div class="flex gap-2 bg-slate-100 p-2 rounded-xl mb-4">
+        <button class="tab-btn active" data-tab="tab-nueva" onclick="cambiarTab('tab-nueva')">📝 Nueva</button>
+        <button class="tab-btn" data-tab="tab-consultar" onclick="cambiarTab('tab-consultar')">🔍 Consultar</button>
+        <button class="tab-btn" data-tab="tab-historial" onclick="cambiarTab('tab-historial')">📋 Historial</button>
+    </div>
+
+    <div id="tab-nueva" class="tab-content active">
+        <div class="card">
+            <div id="marquesina" class="marquesina">
+                <div class="ultimo">📌 Ultima: <strong id="marq-producto">-</strong></div>
+                <div class="fecha-elab" id="marq-fecha-label">📅 Fecha: <span id="marq-elab">-</span></div>
+                <div class="cad">⚠️ Caducidad: <span id="marq-cad">-</span></div>
+                <button onclick="reimprimirUltimo()" class="btn btn-primary btn-sm mt-2">🔄 Reimprimir</button>
+            </div>
+
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tipo de etiqueta</label>
+            <div class="selector-tipo">
+                <div class="tipo-btn active" data-tipo="elaboracion" onclick="seleccionarTipo('elaboracion')">
+                    <span class="icono">🍳</span>
+                    <span class="label">Elaboración</span>
+                </div>
+                <div class="tipo-btn" data-tipo="descongelacion" onclick="seleccionarTipo('descongelacion')">
+                    <span class="icono">🧊</span>
+                    <span class="label">Descongelación</span>
+                </div>
+            </div>
+
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Producto</label>
+            <div class="autocomplete-container">
+                <input type="text" id="producto-input" placeholder="Escribe el producto..." class="uppercase" autofocus>
+                <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
+            </div>
+
+            <div class="mt-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Lote</label>
+                <input type="text" id="lote-input" placeholder="Ej: 20260828" class="uppercase">
+            </div>
+
+            <div class="mt-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1" id="fecha-origen-label">Fecha de Elaboración</label>
+                <input type="date" id="fecha-origen-input" value="">
+            </div>
+
+            <div class="mt-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Dias de caducidad</label>
+                <div style="display:flex; gap:8px; align-items:center; justify-content:center;">
+                    <button onclick="cambiarDias(-1)" class="btn btn-outline" style="width:50px; padding:10px; font-size:20px;">−</button>
+                    <input type="number" id="dias-input" value="5" min="1" max="365" style="text-align:center; font-size:24px; width:80px; padding:10px;">
+                    <button onclick="cambiarDias(1)" class="btn btn-outline" style="width:50px; padding:10px; font-size:20px;">+</button>
+                    <span class="text-sm text-slate-400 ml-1">dias</span>
+                </div>
+                <div class="text-xs text-slate-400 text-center mt-1" id="cad-info">La caducidad se calcula desde la fecha de elaboración</div>
+            </div>
+
+            <div class="mt-3">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cantidad de etiquetas</label>
+                <div class="cantidad-selector">
+                    <button onclick="cambiarCantidad(-1)">−</button>
+                    <input type="number" id="cantidad-input" value="1" min="1" max="50">
+                    <button onclick="cambiarCantidad(1)">+</button>
+                    <span class="cantidad-label">unidades</span>
+                </div>
+            </div>
+
+            <div id="preview" class="mt-3">
+                <div id="preview-tipo" class="tipo-etiqueta">🍳 ELABORACIÓN</div>
+                <div class="producto" id="preview-producto">PRODUCTO</div>
+                <div class="linea-info" id="preview-lote"><span class="etiqueta">Lote:</span> ---</div>
+                <div class="linea-info" id="preview-fecha-origen"><span class="etiqueta">Elaborado:</span> DD/MM/YYYY</div>
+                <div class="caducidad" id="preview-caducidad">⚠️ CAD: DD/MM/YYYY</div>
+                <div class="separador"></div>
+                <div id="preview-qr" class="qr-container"></div>
+                <div class="text-xs text-slate-400">Escanea el QR</div>
+                <div class="text-xs text-slate-400 mt-1" id="preview-cantidad">📄 1 etiqueta</div>
+            </div>
+
+            <button onclick="imprimirEtiqueta()" class="btn btn-success mt-4" style="padding:16px; font-size:18px; width:100%;">
+                🖨️ IMPRIMIR ETIQUETAS
+            </button>
+
+            <button onclick="limpiarTodo()" class="btn btn-outline mt-2" style="padding:10px; font-size:14px; width:100%;">
+                🗑️ Limpiar
+            </button>
+        </div>
+    </div>
+
+    <div id="tab-consultar" class="tab-content">
+        <div class="card">
+            <h3 class="font-bold text-slate-800 mb-4">🔍 Buscar ultima</h3>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Producto</label>
+            <div class="autocomplete-container">
+                <input type="text" id="buscar-producto" placeholder="Escribe el producto..." class="uppercase">
+                <div id="autocomplete-buscar" class="autocomplete-suggestions"></div>
+            </div>
+            <button onclick="buscarUltimaElaboracion()" class="btn btn-primary mt-3" style="width:100%;">🔍 Buscar</button>
+            <div id="resultado-busqueda" class="resultado-busqueda">
+                <div class="encontrado" id="res-producto">-</div>
+                <div class="detalle" id="res-tipo"></div>
+                <div class="detalle" id="res-lote">📦 Lote: <span id="res-lote-text">-</span></div>
+                <div class="detalle" id="res-fecha-origen">📅 Fecha: <span id="res-elab">-</span></div>
+                <div class="detalle">⚠️ Caducidad: <span id="res-cad">-</span></div>
+                <div class="detalle">📦 Dias: <span id="res-dias">-</span></div>
+                <button onclick="reimprimirDesdeBusqueda()" class="btn btn-success btn-sm mt-2">🔄 Reimprimir</button>
+                <span id="res-id" style="display:none;"></span>
+            </div>
+            <div id="resultado-no-encontrado" class="text-center text-slate-400 py-4" style="display:none;">
+                📭 No se encontraron registros
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-historial" class="tab-content">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span class="font-bold text-slate-700">📋 Historial</span>
+                <button onclick="cargarHistorial()" class="btn btn-primary btn-sm">🔄 Recargar</button>
+            </div>
+            <input type="text" id="filtro-historial" placeholder="🔍 Filtrar por producto..." class="text-sm mb-3" oninput="filtrarHistorial()">
+            <div id="historial-lista">
+                <div class="text-center text-slate-400 text-sm py-4">Cargando...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" style="position:fixed; bottom:20px; right:20px; z-index:10000; display:flex; flex-direction:column; gap:8px;"></div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN - CON TU CLAVE DE SERVICIO
+// ============================================================
+
+const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+
+// 🔥 TU CLAVE DE SERVICIO CORRECTA
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeXByc2pva3dnYXp6emxmbmJmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTM3MjUwOCwiZXhwIjoyMDk2OTQ4NTA4fQ.J-p03JwlrGvo_78OUW5r3LdWb4uLXtLle_yICAFBpW4";
+
+// Inicializar cliente Supabase
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let historialGlobal = [];
+let ultimoRegistro = null;
+let ultimoBuscado = null;
+let tipoActual = 'elaboracion';
+
+// ============================================================
+// UTILIDADES
+// ============================================================
+function toast(mensaje, tipo = 'success') {
+    const container = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    const colores = { success: 'bg-emerald-600', error: 'bg-red-600', warning: 'bg-amber-600', info: 'bg-blue-600' };
+    t.className = `${colores[tipo] || colores.success} text-white px-4 py-3 rounded-xl shadow-lg text-sm font-bold`;
+    t.textContent = mensaje;
+    container.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+function pad(n) { return n.toString().padStart(2, '0'); }
+
+function formatearFecha(fecha) {
+    if (!fecha) return 'S/F';
+    const d = new Date(fecha);
+    if (isNaN(d)) return fecha;
+    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+
+function formatearFechaInput(fecha) {
+    if (!fecha) return '';
+    const d = new Date(fecha);
+    if (isNaN(d)) return '';
+    return d.toISOString().split('T')[0];
+}
+
+function generarId() {
+    return 'ETIQ_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+}
+
+function getFechaHoy() {
+    return new Date();
+}
+
+// ============================================================
+// CANTIDAD
+// ============================================================
+function cambiarCantidad(cambio) {
+    const input = document.getElementById('cantidad-input');
+    let valor = parseInt(input.value) || 1;
+    valor = Math.max(1, Math.min(50, valor + cambio));
+    input.value = valor;
+    actualizarPreview();
+}
+
+// ============================================================
+// SELECTOR DE TIPO
+// ============================================================
+function seleccionarTipo(tipo) {
+    tipoActual = tipo;
+    document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.tipo-btn[data-tipo="${tipo}"]`).classList.add('active');
+    
+    const label = document.getElementById('fecha-origen-label');
+    const info = document.getElementById('cad-info');
+    const previewTipo = document.getElementById('preview-tipo');
+    
+    if (tipo === 'elaboracion') {
+        label.textContent = 'Fecha de Elaboración';
+        info.textContent = 'La caducidad se calcula desde la fecha de elaboración';
+        previewTipo.textContent = '🍳 ELABORACIÓN';
+        document.getElementById('fecha-origen-input').value = formatearFechaInput(getFechaHoy());
+    } else {
+        label.textContent = 'Fecha de Descongelación';
+        info.textContent = 'La caducidad se calcula desde la fecha de descongelación (+3 días por defecto)';
+        previewTipo.textContent = '🧊 DESCONGELACIÓN';
+        document.getElementById('fecha-origen-input').value = formatearFechaInput(getFechaHoy());
+        document.getElementById('dias-input').value = 3;
+    }
+    
+    actualizarPreview();
+}
+
+// ============================================================
+// GENERAR QR EN PREVIEW
+// ============================================================
+function generarQRPreview(texto) {
+    const container = document.getElementById('preview-qr');
+    container.innerHTML = '';
+    if (!texto) return;
+    try {
+        new QRCode(container, {
+            text: texto,
+            width: 110,
+            height: 110,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    } catch(e) {
+        console.log('Error generando QR:', e);
+    }
+}
+
+// ============================================================
+// CAMBIAR TAB
+// ============================================================
+function cambiarTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+    
+    if (tabId === 'tab-historial') cargarHistorial();
+    if (tabId === 'tab-nueva') document.getElementById('producto-input').focus();
+    if (tabId === 'tab-consultar') document.getElementById('buscar-producto').focus();
+}
+
+// ============================================================
+// AUTOCOMPLETADO
+// ============================================================
+let timeoutAutocomplete = null;
+
+function buscarAutocompletado(inputId, suggestionsId, callback) {
+    const input = document.getElementById(inputId);
+    const box = document.getElementById(suggestionsId);
+    const texto = input.value.trim().toUpperCase();
+    
+    if (!texto || texto.length < 2) {
+        box.style.display = 'none';
+        return;
+    }
+    
+    const coincidencias = historialGlobal
+        .filter(e => e.producto && e.producto.toUpperCase().includes(texto))
+        .sort((a, b) => new Date(b.fecha_origen) - new Date(a.fecha_origen));
+    
+    const unicos = {};
+    coincidencias.forEach(e => {
+        const key = e.producto.toUpperCase();
+        if (!unicos[key]) unicos[key] = e;
+    });
+    
+    const resultados = Object.values(unicos).slice(0, 8);
+    
+    if (resultados.length === 0) {
+        box.style.display = 'none';
+        return;
+    }
+    
+    box.innerHTML = '';
+    resultados.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        const tipoLabel = item.tipo === 'descongelacion' ? '🧊 Descong.' : '🍳 Elab.';
+        div.innerHTML = `
+            <div>
+                <span class="nombre">${item.producto}</span>
+                <span class="info ml-2">${tipoLabel} ${formatearFecha(item.fecha_origen)}</span>
+            </div>
+            <span class="badge-ultima">${item.dias_caducidad} dias</span>
+        `;
+        div.onclick = () => {
+            input.value = item.producto;
+            box.style.display = 'none';
+            if (inputId === 'buscar-producto') {
+                buscarUltimaElaboracion();
+            } else if (callback) {
+                callback(item);
+            }
+        };
+        box.appendChild(div);
+    });
+    
+    box.style.display = 'block';
+}
+
+document.getElementById('producto-input').addEventListener('input', function() {
+    clearTimeout(timeoutAutocomplete);
+    timeoutAutocomplete = setTimeout(() => {
+        buscarAutocompletado('producto-input', 'autocomplete-suggestions', (item) => {
+            document.getElementById('dias-input').value = item.dias_caducidad || 5;
+            if (item.tipo) {
+                seleccionarTipo(item.tipo);
+            }
+            document.getElementById('fecha-origen-input').value = formatearFechaInput(item.fecha_origen);
+            if (item.lote) {
+                document.getElementById('lote-input').value = item.lote;
+            }
+            actualizarPreview();
+            mostrarMarquesina(item);
+            guardarNombreProducto(item.producto);
+        });
+    }, 300);
+});
+
+document.getElementById('buscar-producto').addEventListener('input', function() {
+    clearTimeout(timeoutAutocomplete);
+    timeoutAutocomplete = setTimeout(() => {
+        buscarAutocompletado('buscar-producto', 'autocomplete-buscar', null);
+    }, 300);
+});
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.autocomplete-container')) {
+        document.querySelectorAll('.autocomplete-suggestions').forEach(b => b.style.display = 'none');
+    }
+});
+
+// ============================================================
+// MARQUESINA
+// ============================================================
+function mostrarMarquesina(item) {
+    const marq = document.getElementById('marquesina');
+    if (item) {
+        marq.style.display = 'block';
+        document.getElementById('marq-producto').textContent = item.producto;
+        const tipoLabel = item.tipo === 'descongelacion' ? 'Descongelado' : 'Elaborado';
+        document.getElementById('marq-fecha-label').innerHTML = `📅 ${tipoLabel}: <span id="marq-elab">${formatearFecha(item.fecha_origen)}</span>`;
+        document.getElementById('marq-cad').textContent = formatearFecha(item.fecha_caducidad);
+        ultimoRegistro = item;
+    } else {
+        marq.style.display = 'none';
+        ultimoRegistro = null;
+    }
+}
+
+function reimprimirUltimo() {
+    if (!ultimoRegistro) {
+        toast('No hay ultimo registro', 'warning');
+        return;
+    }
+    reimprimirEtiqueta(ultimoRegistro);
+}
+
+// ============================================================
+// PREVIEW
+// ============================================================
+function cambiarDias(cambio) {
+    const input = document.getElementById('dias-input');
+    let valor = parseInt(input.value) || 5;
+    valor = Math.max(1, Math.min(365, valor + cambio));
+    input.value = valor;
+    actualizarPreview();
+}
+
+function actualizarPreview() {
+    const producto = document.getElementById('producto-input').value.trim().toUpperCase();
+    const lote = document.getElementById('lote-input').value.trim().toUpperCase() || 'S/L';
+    const dias = parseInt(document.getElementById('dias-input').value) || 5;
+    const cantidad = parseInt(document.getElementById('cantidad-input').value) || 1;
+    const fechaOrigen = document.getElementById('fecha-origen-input').value;
+    const fechaOrigenDate = fechaOrigen ? new Date(fechaOrigen) : getFechaHoy();
+    const caducidad = new Date(fechaOrigenDate);
+    caducidad.setDate(caducidad.getDate() + dias);
+    
+    const preview = document.getElementById('preview');
+    if (producto && fechaOrigen) {
+        preview.style.display = 'block';
+        const tipoLabel = tipoActual === 'descongelacion' ? 'Descongelado' : 'Elaborado';
+        document.getElementById('preview-producto').textContent = producto;
+        document.getElementById('preview-lote').innerHTML = `<span class="etiqueta">Lote:</span> ${lote}`;
+        document.getElementById('preview-fecha-origen').innerHTML = `<span class="etiqueta">${tipoLabel}:</span> ${formatearFecha(fechaOrigenDate)}`;
+        document.getElementById('preview-caducidad').textContent = `⚠️ CAD: ${formatearFecha(caducidad)}`;
+        document.getElementById('preview-tipo').textContent = tipoActual === 'descongelacion' ? '🧊 DESCONGELACIÓN' : '🍳 ELABORACIÓN';
+        document.getElementById('preview-cantidad').textContent = `📄 ${cantidad} etiqueta${cantidad > 1 ? 's' : ''}`;
+        
+        const qrTexto = `PROD:${producto}|LOTE:${lote}|${tipoActual === 'descongelacion' ? 'DESC' : 'ELAB'}:${formatearFecha(fechaOrigenDate)}|CAD:${formatearFecha(caducidad)}`;
+        generarQRPreview(qrTexto);
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+function limpiarTodo() {
+    document.getElementById('producto-input').value = '';
+    document.getElementById('lote-input').value = '';
+    document.getElementById('dias-input').value = '5';
+    document.getElementById('cantidad-input').value = '1';
+    document.getElementById('fecha-origen-input').value = formatearFechaInput(getFechaHoy());
+    document.getElementById('preview').style.display = 'none';
+    document.getElementById('preview-qr').innerHTML = '';
+    document.getElementById('marquesina').style.display = 'none';
+    document.getElementById('producto-input').focus();
+    ultimoRegistro = null;
+    seleccionarTipo('elaboracion');
+}
+
+// ============================================================
+// AUTOGUARDADO DE PRODUCTOS
+// ============================================================
+function guardarNombreProducto(producto) {
+    if (!producto) return;
+    
+    const existe = historialGlobal.some(e => 
+        e.producto && e.producto.toUpperCase() === producto.toUpperCase()
+    );
+    
+    if (!existe) {
+        const registro = {
+            id: generarId(),
+            producto: producto,
+            lote: 'S/L',
+            tipo: 'elaboracion',
+            dias_caducidad: 5,
+            fecha_origen: new Date().toISOString(),
+            fecha_caducidad: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            created_at: new Date().toISOString(),
+            cantidad: 1
+        };
+        
+        db.from('etiquetas_rapidas').insert([registro]).then(({ error }) => {
+            if (!error) {
+                cargarHistorial();
+            }
+        });
+    }
+}
+
+// ============================================================
+// 🆕 FUNCIÓN: GUARDAR REGISTRO EN SUPABASE (NO BLOQUEA)
+// ============================================================
+async function guardarRegistroEnSupabase(registro) {
+    try {
+        const { error } = await db.from('etiquetas_rapidas').insert([registro]);
+        if (error) {
+            console.error('Error guardando en Supabase:', error);
+        } else {
+            console.log('✅ Registro guardado en Supabase');
+            cargarHistorial();
+        }
+    } catch (e) {
+        console.error('Error guardando en background:', e);
+    }
+}
+
+// ============================================================
+// 🖨️ IMPRIMIR ETIQUETA (VERSIÓN RÁPIDA V2)
+// ============================================================
+async function imprimirEtiqueta() {
+    const producto = document.getElementById('producto-input').value.trim().toUpperCase();
+    const lote = document.getElementById('lote-input').value.trim().toUpperCase() || 'S/L';
+    const dias = parseInt(document.getElementById('dias-input').value) || 5;
+    const cantidad = parseInt(document.getElementById('cantidad-input').value) || 1;
+    const fechaOrigen = document.getElementById('fecha-origen-input').value;
+    
+    if (!producto) {
+        toast('⚠️ Escribe o selecciona un producto', 'warning');
+        document.getElementById('producto-input').focus();
+        return;
+    }
+    
+    if (!fechaOrigen) {
+        toast('⚠️ Selecciona una fecha', 'warning');
+        return;
+    }
+    
+    const fechaOrigenDate = new Date(fechaOrigen);
+    const caducidad = new Date(fechaOrigenDate);
+    caducidad.setDate(caducidad.getDate() + dias);
+    
+    const fechaCad = formatearFecha(caducidad);
+    const fechaOrig = formatearFecha(fechaOrigenDate);
+    const tipoTexto = tipoActual === 'descongelacion' ? 'Descongelado' : 'Elaborado';
+    const qrTexto = `PROD:${producto}|LOTE:${lote}|${tipoActual === 'descongelacion' ? 'DESC' : 'ELAB'}:${fechaOrig}|CAD:${fechaCad}`;
+    
+    const etiquetas = [];
+    for (let i = 0; i < cantidad; i++) {
+        etiquetas.push({
+            producto: producto,
+            unidad: `${lote}`,
+            fecha: `${tipoTexto}: ${fechaOrig}`,
+            texto_qr: qrTexto
+        });
+    }
+    
+    const paquete = {
+        etiquetas: etiquetas
+    };
+    
+    const registro = {
+        id: generarId(),
+        producto: producto,
+        lote: lote,
+        tipo: tipoActual,
+        dias_caducidad: dias,
+        fecha_origen: fechaOrigenDate.toISOString(),
+        fecha_caducidad: caducidad.toISOString(),
+        created_at: new Date().toISOString(),
+        cantidad: cantidad
+    };
+    
+    try {
+        // 🔥 CAMBIO: Usar V2 (ASÍNCRONO) - NO espera a que se imprima
+        const response = await fetch(API_URL + '/imprimir_etiqueta_rapida_v2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify(paquete)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            toast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} en cola de impresión`, 'success');
+            if (navigator.vibrate) navigator.vibrate(50);
+            mostrarMarquesina(registro);
+            
+            // Mostrar estado de cola si hay muchas pendientes
+            if (data.cola && data.cola > 3) {
+                toast(`🔄 ${data.cola} etiquetas pendientes en cola`, 'info');
+            }
+            
+            // 🔥 Guardar en Supabase EN BACKGROUND (no esperar)
+            setTimeout(() => {
+                guardarRegistroEnSupabase(registro);
+            }, 100);
+            
+        } else {
+            toast('❌ Error al imprimir: ' + (data.message || 'Error desconocido'), 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        toast('❌ Error de conexion', 'error');
+    }
+}
+
+// ============================================================
+// REIMPRIMIR
+// ============================================================
+async function reimprimirEtiqueta(registro) {
+    if (!registro) return;
+    
+    const fechaCad = formatearFecha(registro.fecha_caducidad);
+    const fechaOrig = formatearFecha(registro.fecha_origen);
+    const lote = registro.lote || 'S/L';
+    const tipoTexto = registro.tipo === 'descongelacion' ? 'Descongelado' : 'Elaborado';
+    const qrTexto = `PROD:${registro.producto}|LOTE:${lote}|${registro.tipo === 'descongelacion' ? 'DESC' : 'ELAB'}:${fechaOrig}|CAD:${fechaCad}`;
+    
+    const cantidad = registro.cantidad || 1;
+    const etiquetas = [];
+    for (let i = 0; i < cantidad; i++) {
+        etiquetas.push({
+            producto: registro.producto,
+            unidad: `${lote}`,
+            fecha: `${tipoTexto}: ${fechaOrig}`,
+            texto_qr: qrTexto
+        });
+    }
+    
+    const paquete = {
+        etiquetas: etiquetas
+    };
+    
+    try {
+        // Reimprimir usa el endpoint V2 también (rápido)
+        const response = await fetch(API_URL + '/imprimir_etiqueta_rapida_v2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+            body: JSON.stringify(paquete)
+        });
+        if (response.ok) {
+            toast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} de ${registro.producto} reimpresa${cantidad > 1 ? 's' : ''}`, 'success');
+        } else {
+            toast('❌ Error al reimprimir', 'error');
+        }
+    } catch (error) {
+        toast('❌ Error de conexion', 'error');
+    }
+}
+
+// ============================================================
+// BUSCAR ÚLTIMA ELABORACIÓN
+// ============================================================
+async function buscarUltimaElaboracion() {
+    const producto = document.getElementById('buscar-producto').value.trim().toUpperCase();
+    const resultadoDiv = document.getElementById('resultado-busqueda');
+    const noEncontrado = document.getElementById('resultado-no-encontrado');
+    
+    if (!producto) {
+        toast('⚠️ Escribe un producto para buscar', 'warning');
+        return;
+    }
+    
+    try {
+        const { data, error } = await db
+            .from('etiquetas_rapidas')
+            .select('*')
+            .ilike('producto', '%' + producto + '%')
+            .order('fecha_origen', { ascending: false })
+            .limit(1);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+            const item = data[0];
+            ultimoBuscado = item;
+            resultadoDiv.style.display = 'block';
+            noEncontrado.style.display = 'none';
+            document.getElementById('res-producto').textContent = item.producto;
+            const tipoTexto = item.tipo === 'descongelacion' ? '🧊 Descongelado' : '🍳 Elaborado';
+            document.getElementById('res-tipo').textContent = tipoTexto;
+            document.getElementById('res-lote-text').textContent = item.lote || 'S/L';
+            document.getElementById('res-elab').textContent = formatearFecha(item.fecha_origen);
+            document.getElementById('res-cad').textContent = formatearFecha(item.fecha_caducidad);
+            document.getElementById('res-dias').textContent = item.dias_caducidad + ' dias';
+            document.getElementById('res-id').textContent = item.id;
+            mostrarMarquesina(item);
+        } else {
+            resultadoDiv.style.display = 'none';
+            noEncontrado.style.display = 'block';
+            ultimoBuscado = null;
+        }
+    } catch (error) {
+        console.error('Error al buscar:', error);
+        toast('❌ Error al buscar', 'error');
+    }
+}
+
+function reimprimirDesdeBusqueda() {
+    if (ultimoBuscado) {
+        reimprimirEtiqueta(ultimoBuscado);
+    } else {
+        toast('⚠️ No hay resultado', 'warning');
+    }
+}
+
+document.getElementById('buscar-producto').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        buscarUltimaElaboracion();
+    }
+});
+
+// ============================================================
+// HISTORIAL
+// ============================================================
+async function cargarHistorial() {
+    const container = document.getElementById('historial-lista');
+    try {
+        const { data, error } = await db
+            .from('etiquetas_rapidas')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50);
+        
+        if (error) throw error;
+        
+        historialGlobal = data || [];
+        
+        if (historialGlobal.length === 0) {
+            container.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">📭 No hay registros</div>';
+            document.getElementById('statusBadge').className = 'badge-online';
+            document.getElementById('statusBadge').textContent = '🟢 Online';
+            return;
+        }
+        
+        document.getElementById('statusBadge').className = 'badge-online';
+        document.getElementById('statusBadge').textContent = '🟢 Online';
+        
+        container.innerHTML = historialGlobal.map(entry => {
+            const tipoTexto = entry.tipo === 'descongelacion' ? '🧊 Descong.' : '🍳 Elab.';
+            const cant = entry.cantidad || 1;
+            return `
+            <div class="historial-item">
+                <div>
+                    <div class="nombre">${entry.producto}</div>
+                    <div class="info">📦 Lote: ${entry.lote || 'S/L'}</div>
+                    <div class="info">${tipoTexto} ${formatearFecha(entry.fecha_origen)}</div>
+                    <div class="info fecha-cad">⚠️ CAD: ${formatearFecha(entry.fecha_caducidad)}</div>
+                    <div class="info">📄 ${cant} etiqueta${cant > 1 ? 's' : ''}</div>
+                </div>
+                <button onclick="reimprimirEtiqueta(historialGlobal.find(e => e.id === '${entry.id}'))" class="btn btn-success btn-sm">🔄 Reimprimir</button>
+            </div>
+        `}).join('');
+        
+    } catch (error) {
+        console.error('Error al cargar historial:', error);
+        container.innerHTML = '<div class="text-center text-red-500 text-sm py-4">❌ Error al cargar</div>';
+        document.getElementById('statusBadge').className = 'badge-offline';
+        document.getElementById('statusBadge').textContent = '🔴 Offline';
+    }
+}
+
+function filtrarHistorial() {
+    const filtro = document.getElementById('filtro-historial').value.trim().toUpperCase();
+    const container = document.getElementById('historial-lista');
+    
+    if (!filtro) {
+        cargarHistorial();
+        return;
+    }
+    
+    const filtradas = historialGlobal.filter(e => 
+        e.producto && e.producto.toUpperCase().includes(filtro)
+    );
+    
+    if (filtradas.length === 0) {
+        container.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No hay coincidencias</div>';
+        return;
+    }
+    
+    container.innerHTML = filtradas.map(entry => {
+        const tipoTexto = entry.tipo === 'descongelacion' ? '🧊 Descong.' : '🍳 Elab.';
+        const cant = entry.cantidad || 1;
+        return `
+        <div class="historial-item">
+            <div>
+                <div class="nombre">${entry.producto}</div>
+                <div class="info">📦 Lote: ${entry.lote || 'S/L'}</div>
+                <div class="info">${tipoTexto} ${formatearFecha(entry.fecha_origen)}</div>
+                <div class="info fecha-cad">⚠️ CAD: ${formatearFecha(entry.fecha_caducidad)}</div>
+                <div class="info">📄 ${cant} etiqueta${cant > 1 ? 's' : ''}</div>
+            </div>
+            <button onclick="reimprimirEtiqueta(historialGlobal.find(e => e.id === '${entry.id}'))" class="btn btn-success btn-sm">🔄 Reimprimir</button>
+        </div>
+    `}).join('');
+}
+
+// ============================================================
+// AUTOGUARDADO AL PERDER EL FOCO
+// ============================================================
+document.getElementById('producto-input').addEventListener('blur', function() {
+    const producto = this.value.trim().toUpperCase();
+    if (producto && producto.length >= 3) {
+        const existe = historialGlobal.some(e => 
+            e.producto && e.producto.toUpperCase() === producto
+        );
+        if (!existe) {
+            guardarNombreProducto(producto);
+            toast('📝 Producto guardado en el historial', 'info');
+        }
+    }
+});
+
+// ============================================================
+// EVENTOS
+// ============================================================
+document.getElementById('producto-input').addEventListener('input', actualizarPreview);
+document.getElementById('lote-input').addEventListener('input', actualizarPreview);
+document.getElementById('producto-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('lote-input').focus();
+    }
+});
+document.getElementById('lote-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('fecha-origen-input').focus();
+    }
+});
+document.getElementById('fecha-origen-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        imprimirEtiqueta();
+    }
+});
+document.getElementById('dias-input').addEventListener('change', actualizarPreview);
+document.getElementById('dias-input').addEventListener('input', actualizarPreview);
+document.getElementById('fecha-origen-input').addEventListener('change', actualizarPreview);
+document.getElementById('cantidad-input').addEventListener('change', actualizarPreview);
+document.getElementById('cantidad-input').addEventListener('input', actualizarPreview);
+
+// ============================================================
+// INICIALIZAR
+// ============================================================
+cargarHistorial();
+document.getElementById('producto-input').focus();
+seleccionarTipo('elaboracion');
+
+// Verificar estado del servidor
+fetch(API_URL + '/health', { 
+    headers: { 'ngrok-skip-browser-warning': 'true' } 
+})
+.then(res => {
+    if (res.ok) {
+        document.getElementById('statusBadge').className = 'badge-online';
+        document.getElementById('statusBadge').textContent = '🟢 Online';
+    }
+})
+.catch(() => {
+    document.getElementById('statusBadge').className = 'badge-offline';
+    document.getElementById('statusBadge').textContent = '🔴 Offline';
+});
+
+// Exponer funciones
+window.cambiarDias = cambiarDias;
+window.cambiarCantidad = cambiarCantidad;
+window.imprimirEtiqueta = imprimirEtiqueta;
+window.limpiarTodo = limpiarTodo;
+window.cargarHistorial = cargarHistorial;
+window.reimprimirEtiqueta = reimprimirEtiqueta;
+window.reimprimirUltimo = reimprimirUltimo;
+window.buscarUltimaElaboracion = buscarUltimaElaboracion;
+window.reimprimirDesdeBusqueda = reimprimirDesdeBusqueda;
+window.cambiarTab = cambiarTab;
+window.filtrarHistorial = filtrarHistorial;
+window.seleccionarTipo = seleccionarTipo;
+</script>
+</body>
+</html>
