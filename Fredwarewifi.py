@@ -159,6 +159,61 @@ except Exception as e:
 app = Flask(__name__)
 
 # ============================================================
+# 🆕 COLA DE IMPRESIÓN PARA ETIQUETAS RÁPIDAS V2 (AISLADA)
+# ============================================================
+cola_etiquetas_v2 = queue.Queue()
+cola_status_v2 = {
+    "pendientes": 0,
+    "procesadas": 0,
+    "ultimo_error": None,
+    "ultima_impresion": None,
+    "activo": True
+}
+
+def worker_etiquetas_v2():
+    """Worker DEDICADO para etiquetas rápidas V2 - NO afecta a otras apps"""
+    while True:
+        try:
+            item = cola_etiquetas_v2.get(timeout=2)
+            if item is None:
+                break
+                
+            pdf_path, producto, cantidad, intentos = item
+            
+            exito = False
+            for intento in range(intentos):
+                try:
+                    print(f"🖨️ [Worker V2] Imprimiendo {cantidad}x {producto} (intento {intento+1}/{intentos})")
+                    imprimir_con_sumatra(pdf_path)
+                    exito = True
+                    cola_status_v2["ultima_impresion"] = datetime.now().isoformat()
+                    cola_status_v2["ultimo_error"] = None
+                    cola_status_v2["procesadas"] += 1
+                    break
+                except Exception as e:
+                    if intento < intentos - 1:
+                        time.sleep(0.5 * (intento + 1))
+                    else:
+                        cola_status_v2["ultimo_error"] = str(e)
+                        print(f"❌ [Worker V2] Error tras {intentos} intentos: {e}")
+            
+            time.sleep(1.5)
+            try:
+                if os.path.exists(pdf_path):
+                    os.unlink(pdf_path)
+            except Exception as e:
+                print(f"⚠️ [Worker V2] No se pudo eliminar {pdf_path}: {e}")
+            
+            cola_etiquetas_v2.task_done()
+            cola_status_v2["pendientes"] = cola_etiquetas_v2.qsize()
+            
+        except queue.Empty:
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"❌ [Worker V2] Error crítico: {e}")
+            time.sleep(1)
+
+# ============================================================
 # 🔓 CONFIGURACIÓN CORS
 # ============================================================
 @app.before_request
@@ -441,7 +496,7 @@ def imprimir_lote():
 
 
 # ============================================================
-# 🖨️ NUEVO ENDPOINT: ETIQUETAS RÁPIDAS (FORMATO LIMPIO)
+# 🖨️ ENDPOINT: ETIQUETAS RÁPIDAS (FORMATO LIMPIO) - VERSIÓN ORIGINAL
 # ============================================================
 @app.route('/imprimir_etiqueta_rapida', methods=['POST', 'OPTIONS'])
 def imprimir_etiqueta_rapida():
@@ -667,6 +722,240 @@ def imprimir_con_sumatra(ruta_pdf):
     except Exception as e:
         print(f"❌ Error imprimiendo: {e}")
         return False
+
+
+# ============================================================
+# 🆕 FUNCIÓN: GENERAR PDF SIN IMPRIMIR (PARA V2)
+# ============================================================
+def generar_pdf_etiqueta_rapida_v2(producto, lote, fecha, qr_texto):
+    """
+    Genera PDF de etiqueta rápida SIN IMPRIMIR (solo crea el archivo)
+    Retorna la ruta del archivo
+    """
+    try:
+        from reportlab.lib.pagesizes import mm
+        from reportlab.pdfgen import canvas
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.lib.utils import ImageReader
+        import tempfile
+        import io
+        import qrcode
+        
+        # Buscar fuentes
+        font_paths = [
+            "C:/Windows/Fonts/arialbd.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/System/Library/Fonts/Helvetica.ttc"
+        ]
+        
+        font_grande = "Helvetica-Bold"
+        font_normal = "Helvetica"
+        
+        for path in font_paths:
+            if os.path.exists(path):
+                try:
+                    pdfmetrics.registerFont(TTFont('CustomFont', path))
+                    font_grande = 'CustomFont'
+                    font_normal = 'CustomFont'
+                    break
+                except:
+                    pass
+        
+        ancho_mm = 62
+        alto_mm = 60
+        
+        pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        pdf_path = pdf_file.name
+        pdf_file.close()
+        
+        c = canvas.Canvas(pdf_path, pagesize=(ancho_mm * mm, alto_mm * mm))
+        margen_x = 2 * mm
+        
+        # PRODUCTO
+        c.setFont(font_grande, 16)
+        c.setFillColorRGB(0, 0, 0)
+        producto_display = producto[:20] if len(producto) > 20 else producto
+        c.drawString(margen_x, 54 * mm, producto_display)
+        
+        # LOTE
+        c.setFont(font_grande, 10)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(margen_x, 44 * mm, f"LOTE: {lote[:12]}")
+        
+        # FECHA
+        fecha_limpia = fecha
+        tipo_texto = "ELAB"
+        
+        if "Descongelado" in fecha:
+            tipo_texto = "DESC"
+            fecha_limpia = fecha.replace("Descongelado:", "").replace("Descongelado", "").strip()
+        elif "Elaborado" in fecha:
+            tipo_texto = "ELAB"
+            fecha_limpia = fecha.replace("Elaborado:", "").replace("Elaborado", "").strip()
+        
+        if "|" in fecha_limpia:
+            fecha_limpia = fecha_limpia.split("|")[0].strip()
+        
+        c.setFont(font_normal, 10)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(margen_x, 34 * mm, f"{tipo_texto}: {fecha_limpia}")
+        
+        # CADUCIDAD
+        caducidad = ""
+        if qr_texto and "CAD:" in qr_texto:
+            for parte in qr_texto.split("|"):
+                if "CAD:" in parte:
+                    caducidad = parte.replace("CAD:", "").strip()
+                    break
+        
+        if caducidad:
+            c.setFont(font_grande, 10)
+            c.setFillColorRGB(0, 0, 0)
+            c.drawString(margen_x, 24 * mm, f"CAD: {caducidad}")
+        
+        # QR
+        if qr_texto:
+            try:
+                qr = qrcode.QRCode(box_size=4, border=1)
+                qr.add_data(qr_texto)
+                qr.make(fit=True)
+                qr_img = qr.make_image(fill_color="black", back_color="white")
+                
+                qr_buffer = io.BytesIO()
+                qr_img.save(qr_buffer, format='PNG')
+                qr_buffer.seek(0)
+                
+                qr_reader = ImageReader(qr_buffer)
+                c.drawImage(qr_reader, 21 * mm, 2 * mm, width=20 * mm, height=20 * mm)
+            except:
+                c.rect(21 * mm, 2 * mm, 20 * mm, 20 * mm)
+                c.setFont(font_normal, 6)
+                c.drawString(27 * mm, 10 * mm, "QR")
+        
+        c.save()
+        print(f"  ↳ [V2] PDF generado: {os.path.basename(pdf_path)}")
+        return pdf_path
+        
+    except Exception as e:
+        print(f"❌ [V2] Error generando PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+
+# ============================================================
+# 🆕 NUEVO ENDPOINT: ETIQUETAS RÁPIDAS V2 (ASÍNCRONO)
+# ============================================================
+@app.route('/imprimir_etiqueta_rapida_v2', methods=['POST', 'OPTIONS'])
+def imprimir_etiqueta_rapida_v2():
+    """
+    🆕 VERSIÓN ASÍNCRONA - NO AFECTA A OTRAS APPS
+    Retorna inmediatamente, imprime en background
+    """
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        datos = request.get_json(silent=True)
+        if not datos:
+            return jsonify({"status": "error", "message": "Cuerpo vacío"}), 400
+            
+        etiquetas = datos.get('etiquetas', [])
+        if not etiquetas:
+            return jsonify({"status": "error", "message": "No hay etiquetas"}), 400
+
+        cantidad_total = len(etiquetas)
+        print(f"🖨️ [V2] Recibidas {cantidad_total} etiquetas - ENCOLANDO...")
+        
+        for etiq in etiquetas:
+            producto = etiq.get("producto", "S/P")
+            lote = etiq.get("unidad", "S/L")
+            fecha = etiq.get("fecha", "")
+            qr_texto = etiq.get("texto_qr", "FREDWARE")
+            
+            pdf_path = generar_pdf_etiqueta_rapida_v2(producto, lote, fecha, qr_texto)
+            cola_etiquetas_v2.put((pdf_path, producto, cantidad_total, 3))
+            
+        cola_status_v2["pendientes"] = cola_etiquetas_v2.qsize()
+        
+        return jsonify({
+            "status": "success",
+            "message": f"✅ {cantidad_total} etiqueta(s) en cola de impresión",
+            "cola": cola_status_v2["pendientes"],
+            "procesadas_hoy": cola_status_v2["procesadas"]
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ [V2] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ============================================================
+# 🆕 ENDPOINT: ESTADO DE LA COLA (SOLO CONSULTA)
+# ============================================================
+@app.route('/api/estado_cola_etiquetas', methods=['GET', 'OPTIONS'])
+def estado_cola_etiquetas_v2():
+    """
+    Endpoint para monitorear la cola de impresión
+    NO MODIFICA NADA, solo consulta
+    """
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    return jsonify({
+        "pendientes": cola_status_v2["pendientes"],
+        "procesadas": cola_status_v2["procesadas"],
+        "ultima_impresion": cola_status_v2["ultima_impresion"],
+        "ultimo_error": cola_status_v2["ultimo_error"],
+        "activo": cola_status_v2["activo"]
+    }), 200
+
+
+# ============================================================
+# 🆕 ENDPOINT: LIMPIAR COLA (SOLO PARA EMERGENCIAS)
+# ============================================================
+@app.route('/api/limpiar_cola_etiquetas', methods=['POST', 'OPTIONS'])
+def limpiar_cola_etiquetas_v2():
+    """
+    Endpoint de emergencia para limpiar la cola
+    """
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        datos = request.get_json(silent=True)
+        if not datos or datos.get('clave') != 'FREDWARE2024':
+            return jsonify({"status": "error", "message": "Clave incorrecta"}), 401
+        
+        pendientes = cola_etiquetas_v2.qsize()
+        
+        while not cola_etiquetas_v2.empty():
+            try:
+                item = cola_etiquetas_v2.get_nowait()
+                if item and isinstance(item, tuple) and len(item) > 0:
+                    pdf_path = item[0]
+                    try:
+                        if os.path.exists(pdf_path):
+                            os.unlink(pdf_path)
+                    except:
+                        pass
+                cola_etiquetas_v2.task_done()
+            except:
+                break
+        
+        cola_status_v2["pendientes"] = 0
+        
+        return jsonify({
+            "status": "success",
+            "message": f"✅ Cola limpiada: {pendientes} etiquetas eliminadas"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # ============================================================
@@ -928,6 +1217,8 @@ if __name__ == '__main__':
     print("   Endpoints disponibles:")
     print("     - /imprimir_lote → Etiquetas completas (con bote, temp, proveedor)")
     print("     - /imprimir_etiqueta_rapida → Etiquetas rápidas (formato limpio)")
+    print("     - /imprimir_etiqueta_rapida_v2 → Etiquetas rápidas (ASÍNCRONO) 🆕")
+    print("     - /api/estado_cola_etiquetas → Estado de la cola 🆕")
     
     try:
         base_datos.inicializar_base_datos()
@@ -944,6 +1235,10 @@ if __name__ == '__main__':
                 print("⚠️ Función 'programar_guardado_automatico' no encontrada")
         except Exception as e:
             print(f"⚠️ Error programando guardado automático: {e}")
+    
+    # Iniciar worker de etiquetas V2 (AISLADO - NO AFECTA A OTRAS APPS)
+    threading.Thread(target=worker_etiquetas_v2, daemon=True).start()
+    print("✅ Worker de etiquetas rápidas V2 iniciado (aislado)")
     
     print("🚀 Iniciando servidor Fredware en http://0.0.0.0:8000")
     print(f"🔧 Pool de conexiones SQLite: {db_pool.max_connections} conexiones")
