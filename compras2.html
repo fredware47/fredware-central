@@ -79,9 +79,7 @@
         .mb-2 { margin-bottom: 8px; }
         .error-box { background: #fee2e2; border: 1px solid #f87171; color: #991b1b; padding: 12px; border-radius: 8px; margin: 10px 0; font-size: 13px; }
         .loading-box { background: #e2e8f0; padding: 12px; border-radius: 8px; text-align: center; color: #64748b; font-size: 13px; }
-        .recepcion-badge { display: inline-block; background: #10b981; color: white; font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: bold; margin-left: 6px; animation: pulse 1.5s infinite; }
 
-        /* ALERTA DE FALTAS */
         .alerta-faltas-badge {
             display: none;
             background: #ef4444;
@@ -151,6 +149,7 @@
     <div id="sec1" class="app-section active">
         <div class="box" style="border-left: 4px solid #2563eb;">
             <h3>➕ Introducción Manual de Artículo con Medida</h3>
+            <p class="text-xs text-slate-400 mb-2">Añade productos a la cesta de compras para hacer pedidos</p>
             <div class="inline-form">
                 <input type="number" id="manual-cantidad" class="input-cant" value="1" min="1" placeholder="Cant">
                 <select id="manual-unidad" class="select-uni">
@@ -988,16 +987,13 @@ async function marcarComoRecibido(idx) {
     if (!item) return;
 
     try {
-        // 1. Marcar como recibido en la cesta
-        await actualizarItemCesta(item.id, { estado: 'RECIBIDO' });
-        
-        // 2. Registrar en RECEPCIONES (HISTORIAL)
+        // 1. Descomponer el detalle
         const datosRecepcion = descomponerDetalleCesta(item.detalle);
         const ahora = new Date().toISOString();
         const producto = datosRecepcion.articulo;
         const proveedor = item.proveedor_id || 'S/P';
         
-        // 🔥 Guardar en recepciones (historial)
+        // 2. 🔥 GUARDAR EN RECEPCIONES (HISTORIAL) - PRIMERO
         try {
             await db_nube.from('recepciones').insert({
                 id: `REC_${Date.now()}_${producto.slice(0,6)}`,
@@ -1012,30 +1008,53 @@ async function marcarComoRecibido(idx) {
             console.log(`✅ Recepción guardada en historial: ${producto}`);
         } catch (err) {
             console.warn('⚠️ Error guardando en historial:', err);
+            lanzarToast('❌ Error al guardar en historial de recepciones', 'error');
+            return;
         }
 
-        // 3. Eliminar de faltas si existe
+        // 3. Marcar como recibido en la cesta
+        await actualizarItemCesta(item.id, { estado: 'RECIBIDO' });
+
+        // 4. Eliminar de faltas si existe
         const faltas = await obtenerFaltas();
         const faltaEncontrada = faltas.find(f => f.insumo && f.insumo.includes(producto));
         if (faltaEncontrada) {
             await db_nube.from('faltas_cocina').delete().eq('id', faltaEncontrada.id);
             faltasPendientesCache = await obtenerFaltas();
             actualizarBadgeFaltas(faltasPendientesCache.length);
+            console.log(`🗑️ Falta eliminada: ${producto}`);
         }
 
-        // 4. Eliminar de la cesta local
+        // 5. Eliminar de la cesta local
         cestaLocal.splice(idx, 1);
         
-        // 5. Mostrar QR
+        // 6. Mostrar QR
         const qrData = `RECIBIDO: ${item.detalle} - ${new Date().toLocaleString()}`;
         mostrarQR(qrData);
 
-        toast(`✅ ${item.detalle} marcado como recibido y registrado en historial.`);
+        lanzarToast(`✅ ${producto} marcado como recibido y registrado en historial.`);
         renderCesta();
         evaluarRelojesDeCierre();
+        
+        // 7. Notificar broadcast
+        try {
+            await broadcastChannel.send({
+                type: 'broadcast',
+                event: 'producto-recibido',
+                payload: {
+                    producto: producto,
+                    proveedor: proveedor,
+                    cantidad: datosRecepcion.cantidad || 1,
+                    timestamp: ahora
+                }
+            });
+        } catch (err) {
+            console.warn('⚠️ Error enviando broadcast:', err);
+        }
+        
     } catch (error) {
         console.error('Error:', error);
-        toast("Error al marcar como recibido.", "error");
+        lanzarToast("Error al marcar como recibido.", "error");
     }
 }
 
@@ -1066,7 +1085,11 @@ function renderCesta() {
 
     renderBloquesWhatsApp(cestaLocal);
     if (cestaLocal.length === 0) {
-        contenedorAcordeon.innerHTML = `<div class="text-center text-slate-400 py-6 italic text-sm">La cesta está vacía.</div>`;
+        contenedorAcordeon.innerHTML = `
+            <div class="text-center text-slate-400 py-6 italic text-sm">
+                La cesta está vacía.
+            </div>
+        `;
         return;
     }
 
@@ -1721,6 +1744,29 @@ document.addEventListener('click', (e) => {
         box.style.display = 'none';
     }
 });
+
+// Exponer funciones globales
+window.marcarComoRecibido = marcarComoRecibido;
+window.recargarCestaManual = recargarCestaManual;
+window.agregarArticuloManual = agregarArticuloManual;
+window.parsearTextoWhatsApp = parsearTextoWhatsApp;
+window.actualizarLineaCesta = actualizarLineaCesta;
+window.cambiarProveedorItem = cambiarProveedorItem;
+window.quitarItemCesta = quitarItemCesta;
+window.guardarProveedor = guardarProveedor;
+window.eliminarProveedorSupabase = eliminarProveedorSupabase;
+window.cargarPlantillaProveedor = cargarPlantillaProveedor;
+window.agregarArticuloAPlantilla = agregarArticuloAPlantilla;
+window.eliminarArticuloPlantilla = eliminarArticuloPlantilla;
+window.volcarPlantillaACesta = volcarPlantillaACesta;
+window.eliminarFaltaDirecta = eliminarFaltaDirecta;
+window.pasarFaltaACesta = pasarFaltaACesta;
+window.irATabFaltas = irATabFaltas;
+window.cerrarAlertaFaltas = cerrarAlertaFaltas;
+window.subirCestaAlServidor = subirCestaAlServidor;
+window.exportarPedidosJson = exportarPedidosJson;
+window.switchTab = switchTab;
+window.buscarAutocompletado = buscarAutocompletado;
 
 // ============================================================
 // INICIALIZACIÓN
