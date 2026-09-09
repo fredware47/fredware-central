@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📦 Fredware - Historial de Recepciones</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 13px; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-outline { background: transparent; color: #475569; border: 1px solid #cbd5e1; }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-download { background: #0891b2; color: white; }
+        .btn-download:hover { background: #0e7490; }
+        .btn-purple { background: #8b5cf6; color: white; }
+        .btn-purple:hover { background: #7c3aed; }
+        .btn-indigo { background: #4f46e5; color: white; }
+        .btn-indigo:hover { background: #4338ca; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .flex { display: flex; }
+        .flex-wrap { flex-wrap: wrap; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .gap-4 { gap: 16px; }
+        .mt-4 { margin-top: 16px; }
+        .mb-4 { margin-bottom: 16px; }
+        .text-sm { font-size: 14px; }
+        .text-xs { font-size: 12px; }
+        .font-bold { font-weight: 700; }
+        .font-black { font-weight: 900; }
+        .text-center { text-align: center; }
+        .text-slate-400 { color: #94a3b8; }
+        .text-slate-500 { color: #64748b; }
+        .text-slate-600 { color: #475569; }
+        .text-slate-800 { color: #1e293b; }
+        .text-emerald-600 { color: #059669; }
+        .text-blue-600 { color: #2563eb; }
+        .text-red-600 { color: #dc2626; }
+        .text-amber-600 { color: #d97706; }
+        .text-purple-600 { color: #7c3aed; }
+        .uppercase { text-transform: uppercase; }
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .recepcion-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; transition: all 0.2s; }
+        .recepcion-item:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.1); }
+        .recepcion-item .badge-recibido { background: #d1fae5; color: #065f46; padding: 2px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .recepcion-item .badge-fecha { background: #e2e8f0; color: #475569; padding: 2px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        
+        .filtro-btn { padding: 6px 16px; border-radius: 20px; border: 1px solid #cbd5e1; background: white; cursor: pointer; font-size: 12px; transition: all 0.2s; font-weight: 600; }
+        .filtro-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+        .filtro-btn:hover { border-color: #2563eb; }
+        
+        input, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; transition: all 0.2s; }
+        input:focus, select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        
+        .stats-card { background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid #e2e8f0; }
+        .stats-card .numero { font-size: 28px; font-weight: 900; }
+        .stats-card .label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        @media (max-width: 640px) {
+            .grid-4 { grid-template-columns: 1fr 1fr; }
+        }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- HEADER -->
+    <div class="card" style="padding: 0; border: none; background: transparent;">
+        <div class="bg-slate-800 text-white p-4 rounded-xl flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">📦</span>
+                <div>
+                    <h1 class="text-xl font-black">FREDWARE - Historial de Recepciones</h1>
+                    <span class="text-xs text-slate-400">Registro histórico de todos los productos recibidos</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <span id="statusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-300">🔄 Conectando...</span>
+                <button onclick="recargarDatos()" class="btn" style="background: #475569; color: white; font-size: 12px; padding: 8px 16px;">🔄 Recargar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="grid-4 mb-4">
+        <div class="stats-card">
+            <div class="numero text-blue-600" id="totalRecepciones">0</div>
+            <div class="label">Total Recepciones</div>
+        </div>
+        <div class="stats-card">
+            <div class="numero text-emerald-600" id="totalHoy">0</div>
+            <div class="label">Recibidos Hoy</div>
+        </div>
+        <div class="stats-card">
+            <div class="numero text-amber-600" id="totalSemana">0</div>
+            <div class="label">Última Semana</div>
+        </div>
+        <div class="stats-card">
+            <div class="numero text-purple-600" id="totalProveedores">0</div>
+            <div class="label">Proveedores</div>
+        </div>
+    </div>
+
+    <!-- FILTROS Y ACCIONES -->
+    <div class="card">
+        <div class="flex flex-wrap gap-2 items-center">
+            <span class="text-xs font-bold text-slate-500 mr-2">Filtrar:</span>
+            <button class="filtro-btn active" data-filtro="todos" onclick="setFiltro('todos')">📋 Todos</button>
+            <button class="filtro-btn" data-filtro="hoy" onclick="setFiltro('hoy')">📅 Hoy</button>
+            <button class="filtro-btn" data-filtro="semana" onclick="setFiltro('semana')">📅 Esta semana</button>
+            <button class="filtro-btn" data-filtro="mes" onclick="setFiltro('mes')">📅 Este mes</button>
+            <div class="flex-1"></div>
+            <button onclick="descargarMensual()" class="btn btn-download text-sm py-2 px-4">
+                📥 Descargar Mes
+            </button>
+            <button onclick="descargarTodo()" class="btn btn-purple text-sm py-2 px-4">
+                📥 Todo el historial
+            </button>
+        </div>
+        
+        <div class="mt-4 flex flex-wrap gap-3 items-center">
+            <div class="flex-1 min-w-[200px]">
+                <input type="text" id="buscarRecepcion" placeholder="🔍 Buscar producto, proveedor..." oninput="filtrarRecepciones()">
+            </div>
+            <div class="w-[200px]">
+                <select id="filtroProveedor" onchange="filtrarRecepciones()">
+                    <option value="">Todos los proveedores</option>
+                </select>
+            </div>
+            <div class="w-[180px]">
+                <input type="date" id="filtroFechaInicio" onchange="filtrarRecepciones()" placeholder="Fecha inicio">
+            </div>
+            <div class="w-[180px]">
+                <input type="date" id="filtroFechaFin" onchange="filtrarRecepciones()" placeholder="Fecha fin">
+            </div>
+            <button onclick="exportarCSV()" class="btn btn-indigo text-sm py-2 px-4">
+                📊 Exportar CSV
+            </button>
+            <button onclick="limpiarFiltros()" class="btn btn-outline text-sm py-2 px-4">
+                🧹 Limpiar filtros
+            </button>
+        </div>
+        
+        <div class="mt-3 text-xs text-slate-400">
+            <span id="contadorResultados">0 resultados</span>
+        </div>
+    </div>
+
+    <!-- LISTA DE RECEPCIONES -->
+    <div id="listaRecepciones" class="space-y-2 max-h-[600px] overflow-y-auto">
+        <div class="text-center text-slate-400 py-8">Cargando historial de recepciones...</div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container" style="position:fixed; bottom:20px; right:20px; z-index:10000; display:flex; flex-direction:column; gap:8px;"></div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
+const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+
+// Estado
+let recepcionesGlobal = [];
+let proveedoresGlobal = [];
+let filtroActual = 'todos';
+
+// ============================================================
+// UTILIDADES
+// ============================================================
+function toast(mensaje, tipo = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const t = document.createElement('div');
+    const colores = { 
+        success: 'bg-emerald-600', 
+        error: 'bg-red-600', 
+        warning: 'bg-amber-600', 
+        info: 'bg-blue-600' 
+    };
+    t.className = `${colores[tipo] || colores.success} text-white px-4 py-3 rounded-xl shadow-lg text-sm font-bold fade-in`;
+    t.textContent = mensaje;
+    container.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+function formatearFecha(fechaStr) {
+    if (!fechaStr) return 'S/F';
+    try {
+        const d = new Date(fechaStr);
+        if (!isNaN(d)) {
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+        return fechaStr;
+    } catch { return fechaStr; }
+}
+
+function formatearFechaCorta(fechaStr) {
+    if (!fechaStr) return 'S/F';
+    try {
+        const d = new Date(fechaStr);
+        if (!isNaN(d)) {
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+        return fechaStr;
+    } catch { return fechaStr; }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function esHoy(fechaStr) {
+    if (!fechaStr) return false;
+    const hoy = new Date().toISOString().split('T')[0];
+    return fechaStr.startsWith(hoy);
+}
+
+function esEstaSemana(fechaStr) {
+    if (!fechaStr) return false;
+    const fecha = new Date(fechaStr);
+    const hoy = new Date();
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+    inicioSemana.setHours(0,0,0,0);
+    const finSemana = new Date(inicioSemana);
+    finSemana.setDate(inicioSemana.getDate() + 6);
+    finSemana.setHours(23,59,59,999);
+    return fecha >= inicioSemana && fecha <= finSemana;
+}
+
+function esEsteMes(fechaStr) {
+    if (!fechaStr) return false;
+    const fecha = new Date(fechaStr);
+    const hoy = new Date();
+    return fecha.getMonth() === hoy.getMonth() && fecha.getFullYear() === hoy.getFullYear();
+}
+
+// ============================================================
+// CARGA DE DATOS
+// ============================================================
+async function cargarRecepciones() {
+    try {
+        const { data, error } = await db
+            .from('recepciones')
+            .select('*')
+            .order('fecha_registro', { ascending: false });
+        
+        if (!error && data) {
+            recepcionesGlobal = data;
+            actualizarStatus('🟢 Conectado a Supabase', false);
+            renderizarRecepciones();
+            actualizarStats();
+            cargarProveedoresFiltro();
+            return;
+        }
+        
+        // Fallback: desde el servidor local
+        const response = await fetch(`${API_URL}/obtener_recepciones`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        if (response.ok) {
+            recepcionesGlobal = await response.json();
+            actualizarStatus('🟡 Usando servidor local', false);
+        } else {
+            recepcionesGlobal = obtenerRecepcionesEjemplo();
+            actualizarStatus('🔴 Modo offline (datos de ejemplo)', true);
+            toast('⚠️ Usando datos de ejemplo', 'warning');
+        }
+        
+        renderizarRecepciones();
+        actualizarStats();
+        cargarProveedoresFiltro();
+    } catch (error) {
+        console.error('Error cargando recepciones:', error);
+        recepcionesGlobal = obtenerRecepcionesEjemplo();
+        renderizarRecepciones();
+        actualizarStats();
+        actualizarStatus('🔴 Error de conexión', true);
+        toast('⚠️ Usando datos de ejemplo', 'warning');
+    }
+}
+
+function obtenerRecepcionesEjemplo() {
+    const hoy = new Date().toISOString();
+    const ayer = new Date(Date.now() - 86400000).toISOString();
+    const semanaPasada = new Date(Date.now() - 7*86400000).toISOString();
+    return [
+        {
+            id: 'REC_EJ001',
+            producto: 'ATÚN ROJO',
+            proveedor: 'PESCASA',
+            cantidad: 15,
+            unidad: 'KG',
+            fecha_registro: hoy,
+            fecha_recibido: hoy,
+            observaciones: 'Para fin de semana'
+        },
+        {
+            id: 'REC_EJ002',
+            producto: 'PIMIENTOS DE PIQUILLO',
+            proveedor: 'MAKRO',
+            cantidad: 12,
+            unidad: 'BOTES',
+            fecha_registro: hoy,
+            fecha_recibido: hoy,
+            observaciones: 'Pedido especial'
+        },
+        {
+            id: 'REC_EJ003',
+            producto: 'HARINA DE TRIGO',
+            proveedor: 'DISTRIBUCIONES GALICIA',
+            cantidad: 25,
+            unidad: 'KG',
+            fecha_registro: ayer,
+            fecha_recibido: ayer,
+            observaciones: ''
+        },
+        {
+            id: 'REC_EJ004',
+            producto: 'LECHE ENTERA',
+            proveedor: 'MERCADONA',
+            cantidad: 30,
+            unidad: 'L',
+            fecha_registro: ayer,
+            fecha_recibido: ayer,
+            observaciones: ''
+        },
+        {
+            id: 'REC_EJ005',
+            producto: 'CEBOLLAS',
+            proveedor: 'FRUTAS PEPE',
+            cantidad: 20,
+            unidad: 'KG',
+            fecha_registro: semanaPasada,
+            fecha_recibido: semanaPasada,
+            observaciones: 'Para cocina'
+        }
+    ];
+}
+
+async function cargarProveedoresFiltro() {
+    try {
+        const { data, error } = await db
+            .from('proveedores')
+            .select('nombre')
+            .order('nombre');
+        
+        if (!error && data && data.length > 0) {
+            proveedoresGlobal = data.map(p => p.nombre);
+        } else {
+            const provs = new Set(recepcionesGlobal.map(r => r.proveedor).filter(Boolean));
+            proveedoresGlobal = Array.from(provs).sort();
+        }
+        
+        const select = document.getElementById('filtroProveedor');
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Todos los proveedores</option>';
+        proveedoresGlobal.forEach(p => {
+            select.innerHTML += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
+        });
+        if (currentValue) select.value = currentValue;
+    } catch (error) {
+        console.error('Error cargando proveedores:', error);
+    }
+}
+
+function actualizarStatus(mensaje, esError = false) {
+    const badge = document.getElementById('statusBadge');
+    if (badge) {
+        badge.textContent = mensaje;
+        badge.className = `px-3 py-1 rounded-full text-xs font-bold ${
+            esError ? 'bg-red-500/20 text-red-300' : 'bg-emerald-500/20 text-emerald-300'
+        }`;
+    }
+}
+
+// ============================================================
+// RENDERIZADO
+// ============================================================
+function renderizarRecepciones() {
+    const container = document.getElementById('listaRecepciones');
+    if (!container) return;
+    
+    const filtradas = getRecepcionesFiltradas();
+    
+    if (filtradas.length === 0) {
+        container.innerHTML = `
+            <div class="card text-center py-12">
+                <div class="text-5xl mb-4">📭</div>
+                <div class="text-slate-400 font-medium">No hay recepciones registradas</div>
+                <div class="text-xs text-slate-400 mt-1">Las recepciones se registran automáticamente desde el panel de compras</div>
+            </div>
+        `;
+        document.getElementById('contadorResultados').textContent = '0 resultados';
+        return;
+    }
+    
+    container.innerHTML = filtradas.map(r => `
+        <div class="recepcion-item fade-in">
+            <div class="flex items-start justify-between flex-wrap gap-2">
+                <div class="flex-1 min-w-[200px]">
+                    <div class="font-black text-slate-800 text-lg">${escapeHtml(r.producto || 'S/P')}</div>
+                    <div class="flex flex-wrap gap-3 text-sm text-slate-500">
+                        <span>🏢 ${escapeHtml(r.proveedor || 'S/P')}</span>
+                        <span>📦 ${r.cantidad || 0} ${escapeHtml(r.unidad || 'UN')}</span>
+                        <span class="badge-fecha">📅 ${formatearFechaCorta(r.fecha_recibido || r.fecha_registro)}</span>
+                        <span class="badge-recibido">✅ Recibido</span>
+                    </div>
+                    ${r.observaciones ? `<div class="text-xs text-slate-400 mt-1">📝 ${escapeHtml(r.observaciones)}</div>` : ''}
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="imprimirEtiqueta('${r.id}')" class="btn btn-primary text-xs py-1.5 px-3">🖨️ Etiqueta</button>
+                    <button onclick="copiarDatos('${r.id}')" class="btn btn-outline text-xs py-1.5 px-3">📋 Copiar</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('contadorResultados').textContent = `${filtradas.length} resultados`;
+}
+
+function getRecepcionesFiltradas() {
+    let resultado = [...recepcionesGlobal];
+    
+    if (filtroActual === 'hoy') {
+        resultado = resultado.filter(r => esHoy(r.fecha_registro || r.fecha_recibido));
+    } else if (filtroActual === 'semana') {
+        resultado = resultado.filter(r => esEstaSemana(r.fecha_registro || r.fecha_recibido));
+    } else if (filtroActual === 'mes') {
+        resultado = resultado.filter(r => esEsteMes(r.fecha_registro || r.fecha_recibido));
+    }
+    
+    const busqueda = document.getElementById('buscarRecepcion')?.value?.trim()?.toUpperCase() || '';
+    if (busqueda) {
+        resultado = resultado.filter(r => 
+            (r.producto || '').toUpperCase().includes(busqueda) ||
+            (r.proveedor || '').toUpperCase().includes(busqueda) ||
+            (r.id || '').toUpperCase().includes(busqueda)
+        );
+    }
+    
+    const proveedorFiltro = document.getElementById('filtroProveedor')?.value || '';
+    if (proveedorFiltro) {
+        resultado = resultado.filter(r => r.proveedor === proveedorFiltro);
+    }
+    
+    const fechaInicio = document.getElementById('filtroFechaInicio')?.value || '';
+    const fechaFin = document.getElementById('filtroFechaFin')?.value || '';
+    if (fechaInicio) {
+        resultado = resultado.filter(r => {
+            const fecha = r.fecha_registro || r.fecha_recibido;
+            return fecha && fecha >= fechaInicio;
+        });
+    }
+    if (fechaFin) {
+        resultado = resultado.filter(r => {
+            const fecha = r.fecha_registro || r.fecha_recibido;
+            return fecha && fecha <= fechaFin + 'T23:59:59';
+        });
+    }
+    
+    return resultado;
+}
+
+function actualizarStats() {
+    const total = recepcionesGlobal.length;
+    const hoy = recepcionesGlobal.filter(r => esHoy(r.fecha_registro || r.fecha_recibido)).length;
+    const semana = recepcionesGlobal.filter(r => esEstaSemana(r.fecha_registro || r.fecha_recibido)).length;
+    const proveedores = new Set(recepcionesGlobal.map(r => r.proveedor).filter(Boolean)).size;
+    
+    document.getElementById('totalRecepciones').textContent = total;
+    document.getElementById('totalHoy').textContent = hoy;
+    document.getElementById('totalSemana').textContent = semana;
+    document.getElementById('totalProveedores').textContent = proveedores;
+}
+
+// ============================================================
+// FILTROS
+// ============================================================
+function setFiltro(filtro) {
+    filtroActual = filtro;
+    document.querySelectorAll('.filtro-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filtro === filtro);
+    });
+    renderizarRecepciones();
+}
+
+function filtrarRecepciones() {
+    renderizarRecepciones();
+}
+
+function limpiarFiltros() {
+    document.getElementById('buscarRecepcion').value = '';
+    document.getElementById('filtroProveedor').value = '';
+    document.getElementById('filtroFechaInicio').value = '';
+    document.getElementById('filtroFechaFin').value = '';
+    setFiltro('todos');
+}
+
+// ============================================================
+// ACCIONES
+// ============================================================
+async function imprimirEtiqueta(id) {
+    const recepcion = recepcionesGlobal.find(r => r.id === id);
+    if (!recepcion) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/imprimir_etiqueta_rapida_v2`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({
+                etiquetas: [{
+                    producto: recepcion.producto,
+                    unidad: `REC-${recepcion.id.slice(-6)}`,
+                    fecha: `Recibido: ${formatearFechaCorta(recepcion.fecha_recibido || recepcion.fecha_registro)}`,
+                    texto_qr: `REC:${recepcion.id}|PROD:${recepcion.producto}|PROV:${recepcion.proveedor}|CANT:${recepcion.cantidad} ${recepcion.unidad}`
+                }]
+            })
+        });
+        
+        if (response.ok) {
+            toast('🖨️ Etiqueta enviada a impresión');
+        } else {
+            toast('❌ Error al imprimir', 'error');
+        }
+    } catch (error) {
+        console.error('Error imprimiendo:', error);
+        toast('❌ Error al conectar con el servidor', 'error');
+    }
+}
+
+function copiarDatos(id) {
+    const recepcion = recepcionesGlobal.find(r => r.id === id);
+    if (!recepcion) return;
+    
+    const texto = `Producto: ${recepcion.producto}\nProveedor: ${recepcion.proveedor}\nCantidad: ${recepcion.cantidad} ${recepcion.unidad}\nFecha: ${formatearFecha(recepcion.fecha_recibido || recepcion.fecha_registro)}\nObservaciones: ${recepcion.observaciones || 'Ninguna'}`;
+    
+    navigator.clipboard.writeText(texto).then(() => {
+        toast('📋 Datos copiados al portapapeles');
+    }).catch(() => {
+        const textarea = document.createElement('textarea');
+        textarea.value = texto;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        toast('📋 Datos copiados al portapapeles');
+    });
+}
+
+// ============================================================
+// DESCARGABLES
+// ============================================================
+function descargarMensual() {
+    const ahora = new Date();
+    const mes = ahora.getMonth();
+    const año = ahora.getFullYear();
+    
+    const recepcionesMes = recepcionesGlobal.filter(r => {
+        const fecha = new Date(r.fecha_registro || r.fecha_recibido);
+        return fecha.getMonth() === mes && fecha.getFullYear() === año;
+    });
+    
+    if (recepcionesMes.length === 0) {
+        toast('⚠️ No hay recepciones este mes', 'warning');
+        return;
+    }
+    
+    const resumen = generarResumen(recepcionesMes);
+    descargarJSON(resumen, `recepciones_${año}_${String(mes+1).padStart(2,'0')}.json`);
+    toast(`📥 ${recepcionesMes.length} recepciones descargadas`);
+}
+
+function descargarTodo() {
+    if (recepcionesGlobal.length === 0) {
+        toast('⚠️ No hay recepciones para descargar', 'warning');
+        return;
+    }
+    
+    const resumen = generarResumen(recepcionesGlobal);
+    const ahora = new Date();
+    const fecha = `${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}`;
+    descargarJSON(resumen, `recepciones_completas_${fecha}.json`);
+    toast(`📥 ${recepcionesGlobal.length} recepciones descargadas`);
+}
+
+function exportarCSV() {
+    const filtradas = getRecepcionesFiltradas();
+    if (filtradas.length === 0) {
+        toast('⚠️ No hay datos para exportar', 'warning');
+        return;
+    }
+    
+    let csv = 'ID,Producto,Proveedor,Cantidad,Unidad,Fecha Registro,Fecha Recibido,Observaciones\n';
+    
+    filtradas.forEach(r => {
+        csv += `"${r.id || ''}","${(r.producto || '').replace(/"/g, '""')}","${(r.proveedor || '').replace(/"/g, '""')}",${r.cantidad || 0},"${r.unidad || 'UN'}","${r.fecha_registro || ''}","${r.fecha_recibido || ''}","${(r.observaciones || '').replace(/"/g, '""')}"\n`;
+    });
+    
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ahora = new Date();
+    a.download = `recepciones_${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast(`📊 ${filtradas.length} registros exportados a CSV`);
+}
+
+function generarResumen(recepciones) {
+    const resumen = {
+        fecha_exportacion: new Date().toISOString(),
+        total_recepciones: recepciones.length,
+        por_proveedor: {},
+        por_dia: {},
+        productos_mas_recibidos: {},
+        recepciones: recepciones
+    };
+    
+    recepciones.forEach(r => {
+        const prov = r.proveedor || 'S/P';
+        if (!resumen.por_proveedor[prov]) resumen.por_proveedor[prov] = 0;
+        resumen.por_proveedor[prov]++;
+        
+        const dia = r.fecha_registro ? new Date(r.fecha_registro).toISOString().split('T')[0] : 'S/F';
+        if (!resumen.por_dia[dia]) resumen.por_dia[dia] = 0;
+        resumen.por_dia[dia]++;
+        
+        const prod = r.producto || 'S/P';
+        if (!resumen.productos_mas_recibidos[prod]) resumen.productos_mas_recibidos[prod] = 0;
+        resumen.productos_mas_recibidos[prod] += r.cantidad || 1;
+    });
+    
+    return resumen;
+}
+
+function descargarJSON(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// RECARGAR
+// ============================================================
+function recargarDatos() {
+    cargarRecepciones();
+    toast('🔄 Datos recargados');
+}
+
+// ============================================================
+// SUSCRIPCIÓN EN TIEMPO REAL
+// ============================================================
+function suscribirRecepciones() {
+    try {
+        db.channel('recepciones')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'recepciones' 
+            }, async () => {
+                await cargarRecepciones();
+            })
+            .on('broadcast', { event: 'nueva_recepcion' }, ({ payload }) => {
+                toast(`📦 Nueva recepción: ${payload.producto} de ${payload.proveedor}`, 'success');
+                cargarRecepciones();
+            })
+            .subscribe((status) => {
+                console.log('📡 Canal recepciones:', status);
+            });
+    } catch (error) {
+        console.warn('Error en suscripción:', error);
+    }
+}
+
+// ============================================================
+// INICIALIZACIÓN
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    cargarRecepciones();
+    suscribirRecepciones();
+    setInterval(cargarRecepciones, 60000);
+});
+
+// Exponer funciones globales
+window.setFiltro = setFiltro;
+window.filtrarRecepciones = filtrarRecepciones;
+window.limpiarFiltros = limpiarFiltros;
+window.imprimirEtiqueta = imprimirEtiqueta;
+window.copiarDatos = copiarDatos;
+window.descargarMensual = descargarMensual;
+window.descargarTodo = descargarTodo;
+window.exportarCSV = exportarCSV;
+window.recargarDatos = recargarDatos;
+</script>
+</body>
+</html>
