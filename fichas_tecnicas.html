@@ -106,7 +106,7 @@
             <span class="text-3xl">📄</span>
             <div>
                 <h1>FREDWARE - Fichas de Producción</h1>
-                <span class="sub">Trazabilidad y Control de Producción · v4.0 (núcleo v2)</span>
+                <span class="sub">Trazabilidad y Control de Producción · v4.1 (núcleo v2)</span>
             </div>
             <div style="margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <span id="statusBadge" class="badge-conn loading">🟡 CONECTANDO...</span>
@@ -249,6 +249,33 @@ function escapeHtml(text) {
 }
 
 // ============================================================
+// SINCRONIZAR RECEPCIONES DESDE EL NÚCLEO
+// ============================================================
+function sincronizarRecepcionesDesdeNucleo(recepcionesNucleo) {
+    recepcionesGlobal = recepcionesNucleo.map(r => ({
+        id: r.id,
+        producto: r.producto,
+        proveedor: r.proveedor,
+        cantidad: r.cantidad,
+        unidad: r.unidad,
+        fecha_registro: r.fecha_registro,
+        fecha_recibido: r.fecha_recibido || r.fecha_registro,
+        observaciones: r.observaciones,
+        temperatura: r.temperatura,
+        conservacion: r.conservacion
+    }));
+
+    console.log(`📦 [Fichas] Recepciones sincronizadas: ${recepcionesGlobal.length}`);
+
+    // Actualizar badge
+    const badge = document.getElementById('statusBadge');
+    if (badge) {
+        badge.className = 'badge-conn online';
+        badge.textContent = '🟢 ONLINE';
+    }
+}
+
+// ============================================================
 // SUSCRIPCIÓN AL NÚCLEO
 // ============================================================
 window.fredware.subscribe((state) => {
@@ -257,28 +284,9 @@ window.fredware.subscribe((state) => {
         inicializado: state.inicializado
     });
 
-    // Cuando el núcleo tenga recepciones, sincronizamos
-    if (state.inicializado && state.recepciones && state.recepciones.length > 0) {
-        // Adaptar las recepciones al formato que espera esta app
-        recepcionesGlobal = state.recepciones.map(r => ({
-            id: r.id,
-            producto: r.producto,
-            proveedor: r.proveedor,
-            cantidad: r.cantidad,
-            unidad: r.unidad,
-            fecha_registro: r.fecha_registro,
-            fecha_recibido: r.fecha_recibido || r.fecha_registro,
-            observaciones: r.observaciones,
-            temperatura: r.temperatura,
-            conservacion: r.conservacion
-        }));
-
-        // Actualizar badge
-        const badge = document.getElementById('statusBadge');
-        if (badge) {
-            badge.className = 'badge-conn online';
-            badge.textContent = '🟢 ONLINE';
-        }
+    // 🔥 Copiar recepciones SIEMPRE que haya (sin esperar a inicializado)
+    if (state.recepciones && state.recepciones.length > 0) {
+        sincronizarRecepcionesDesdeNucleo(state.recepciones);
     }
 });
 
@@ -1281,6 +1289,10 @@ function generarHTMLFichaA4(ficha) {
 // ============================================================
 function recargarDatos() {
     cargarHistorial();
+    // 🔥 Refrescar también las recepciones del núcleo
+    if (window.fredware.state.recepciones && window.fredware.state.recepciones.length > 0) {
+        sincronizarRecepcionesDesdeNucleo(window.fredware.state.recepciones);
+    }
     toast('🔄 Datos recargados');
 }
 
@@ -1303,11 +1315,16 @@ async function initApp() {
     // Cargar historial (independiente del núcleo)
     await cargarHistorial();
 
-    // Esperar al núcleo en background para tener recepciones disponibles
-    esperarAlNucleo().then(() => {
-        actualizarBadgeOnline();
-        console.log(`✅ [Fichas] Recepciones disponibles del núcleo: ${recepcionesGlobal.length}`);
-    });
+    // Esperar al núcleo
+    await esperarAlNucleo();
+
+    // 🔥 COPIAR RECEPCIONES MANUALMENTE (no confiar solo en el suscriptor)
+    if (window.fredware.state.recepciones && window.fredware.state.recepciones.length > 0) {
+        sincronizarRecepcionesDesdeNucleo(window.fredware.state.recepciones);
+    }
+
+    actualizarBadgeOnline();
+    console.log(`✅ [Fichas] Recepciones disponibles del núcleo: ${recepcionesGlobal.length}`);
 }
 
 // Exponer funciones globales
