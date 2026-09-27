@@ -7,6 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- 🔥 NÚCLEO UNIFICADO v2 -->
+    <script src="shared-core.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; }
@@ -62,6 +64,8 @@
         .recepcion-item:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.1); }
         .recepcion-item .badge-recibido { background: #d1fae5; color: #065f46; padding: 2px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
         .recepcion-item .badge-fecha { background: #e2e8f0; color: #475569; padding: 2px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .recepcion-item .badge-migracion { background: #fef3c7; color: #92400e; padding: 2px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .recepcion-item .badge-appcc { background: #dbeafe; color: #1e40af; padding: 2px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
         
         .filtro-btn { padding: 6px 16px; border-radius: 20px; border: 1px solid #cbd5e1; background: white; cursor: pointer; font-size: 12px; transition: all 0.2s; font-weight: 600; }
         .filtro-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
@@ -73,6 +77,19 @@
         .stats-card { background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid #e2e8f0; }
         .stats-card .numero { font-size: 28px; font-weight: 900; }
         .stats-card .label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .status-online { background: #d1fae5; color: #065f46; }
+        .status-loading { background: #fef3c7; color: #92400e; }
+        .status-error { background: #fee2e2; color: #991b1b; }
         
         @media (max-width: 640px) {
             .grid-4 { grid-template-columns: 1fr 1fr; }
@@ -94,11 +111,11 @@
                 <span class="text-3xl">📦</span>
                 <div>
                     <h1 class="text-xl font-black">FREDWARE - Historial de Recepciones</h1>
-                    <span class="text-xs text-slate-400">Registro histórico de todos los productos recibidos</span>
+                    <span class="text-xs text-slate-400">Registro histórico · Núcleo v<span id="coreVersion">2.0</span></span>
                 </div>
             </div>
             <div class="flex items-center gap-3 flex-wrap">
-                <span id="statusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-300">🔄 Conectando...</span>
+                <span id="statusBadge" class="status-badge status-loading">🔄 Conectando...</span>
                 <button onclick="recargarDatos()" class="btn" style="background: #475569; color: white; font-size: 12px; padding: 8px 16px;">🔄 Recargar</button>
             </div>
         </div>
@@ -175,234 +192,95 @@
     </div>
 </div>
 
-<!-- TOAST -->
-<div id="toast-container" style="position:fixed; bottom:20px; right:20px; z-index:10000; display:flex; flex-direction:column; gap:8px;"></div>
-
 <script>
 // ============================================================
-// CONFIGURACIÓN
+// HISTORIAL DE RECEPCIONES — Núcleo v2
 // ============================================================
-const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
-const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Este archivo NO crea su propio cliente Supabase.
+// Usa fredware.supabase (del núcleo) y fredware.subscribe (estado global).
+// ============================================================
+
 const API_URL = "https://untried-january-thinning.ngrok-free.dev";
 
-// Estado
+// Estado local (filtros, no datos)
 let recepcionesGlobal = [];
 let proveedoresGlobal = [];
 let filtroActual = 'todos';
 
 // ============================================================
-// UTILIDADES
+// ALIAS A LAS UTILIDADES DEL NÚCLEO
 // ============================================================
-function toast(mensaje, tipo = 'success') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const t = document.createElement('div');
-    const colores = { 
-        success: 'bg-emerald-600', 
-        error: 'bg-red-600', 
-        warning: 'bg-amber-600', 
-        info: 'bg-blue-600' 
-    };
-    t.className = `${colores[tipo] || colores.success} text-white px-4 py-3 rounded-xl shadow-lg text-sm font-bold fade-in`;
-    t.textContent = mensaje;
-    container.appendChild(t);
-    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3500);
-}
-
-function formatearFecha(fechaStr) {
-    if (!fechaStr) return 'S/F';
-    try {
-        const d = new Date(fechaStr);
-        if (!isNaN(d)) {
-            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        }
-        return fechaStr;
-    } catch { return fechaStr; }
-}
-
-function formatearFechaCorta(fechaStr) {
-    if (!fechaStr) return 'S/F';
-    try {
-        const d = new Date(fechaStr);
-        if (!isNaN(d)) {
-            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        }
-        return fechaStr;
-    } catch { return fechaStr; }
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function esHoy(fechaStr) {
-    if (!fechaStr) return false;
-    const hoy = new Date().toISOString().split('T')[0];
-    return fechaStr.startsWith(hoy);
-}
-
-function esEstaSemana(fechaStr) {
-    if (!fechaStr) return false;
-    const fecha = new Date(fechaStr);
-    const hoy = new Date();
-    const inicioSemana = new Date(hoy);
-    inicioSemana.setDate(hoy.getDate() - hoy.getDay());
-    inicioSemana.setHours(0,0,0,0);
-    const finSemana = new Date(inicioSemana);
-    finSemana.setDate(inicioSemana.getDate() + 6);
-    finSemana.setHours(23,59,59,999);
-    return fecha >= inicioSemana && fecha <= finSemana;
-}
-
-function esEsteMes(fechaStr) {
-    if (!fechaStr) return false;
-    const fecha = new Date(fechaStr);
-    const hoy = new Date();
-    return fecha.getMonth() === hoy.getMonth() && fecha.getFullYear() === hoy.getFullYear();
-}
+const toast = (msg, tipo) => window.fredware.ui.toast(msg, tipo);
+const formatearFecha = (f) => window.fredware.util.formatearFecha(f);
+const formatearFechaCorta = (f) => window.fredware.util.formatearFechaCorta(f);
+const escapeHtml = (t) => window.fredware.util.escapeHtml(t);
+const esHoy = (f) => window.fredware.util.esHoy(f);
+const esEstaSemana = (f) => window.fredware.util.esEstaSemana(f);
+const esEsteMes = (f) => window.fredware.util.esEsteMes(f);
 
 // ============================================================
-// CARGA DE DATOS
+// SUSCRIPCIÓN AL NÚCLEO
 // ============================================================
-async function cargarRecepciones() {
-    try {
-        const { data, error } = await db
-            .from('recepciones')
-            .select('*')
-            .order('fecha_registro', { ascending: false });
-        
-        if (!error && data) {
-            recepcionesGlobal = data;
-            actualizarStatus('🟢 Conectado a Supabase', false);
-            renderizarRecepciones();
-            actualizarStats();
-            cargarProveedoresFiltro();
-            return;
-        }
-        
-        // Fallback: desde el servidor local
-        const response = await fetch(`${API_URL}/obtener_recepciones`, {
-            headers: { 'ngrok-skip-browser-warning': 'true' }
-        });
-        if (response.ok) {
-            recepcionesGlobal = await response.json();
-            actualizarStatus('🟡 Usando servidor local', false);
-        } else {
-            recepcionesGlobal = obtenerRecepcionesEjemplo();
-            actualizarStatus('🔴 Modo offline (datos de ejemplo)', true);
-            toast('⚠️ Usando datos de ejemplo', 'warning');
-        }
-        
+fredware.subscribe((state) => {
+    // Actualizar versión visible
+    const versionEl = document.getElementById('coreVersion');
+    if (versionEl && state.version) versionEl.textContent = state.version;
+
+    // Actualizar estado de conexión
+    actualizarStatus(state);
+
+    // Copiar recepciones del core a variable local
+    if (state.recepciones && state.recepciones.length > 0) {
+        recepcionesGlobal = state.recepciones;
         renderizarRecepciones();
         actualizarStats();
-        cargarProveedoresFiltro();
-    } catch (error) {
-        console.error('Error cargando recepciones:', error);
-        recepcionesGlobal = obtenerRecepcionesEjemplo();
+        cargarProveedoresFiltro(state);
+    } else if (state.inicializado) {
+        // Core cargado pero sin recepciones
+        recepcionesGlobal = [];
         renderizarRecepciones();
         actualizarStats();
-        actualizarStatus('🔴 Error de conexión', true);
-        toast('⚠️ Usando datos de ejemplo', 'warning');
     }
-}
+});
 
-function obtenerRecepcionesEjemplo() {
-    const hoy = new Date().toISOString();
-    const ayer = new Date(Date.now() - 86400000).toISOString();
-    const semanaPasada = new Date(Date.now() - 7*86400000).toISOString();
-    return [
-        {
-            id: 'REC_EJ001',
-            producto: 'ATÚN ROJO',
-            proveedor: 'PESCASA',
-            cantidad: 15,
-            unidad: 'KG',
-            fecha_registro: hoy,
-            fecha_recibido: hoy,
-            observaciones: 'Para fin de semana'
-        },
-        {
-            id: 'REC_EJ002',
-            producto: 'PIMIENTOS DE PIQUILLO',
-            proveedor: 'MAKRO',
-            cantidad: 12,
-            unidad: 'BOTES',
-            fecha_registro: hoy,
-            fecha_recibido: hoy,
-            observaciones: 'Pedido especial'
-        },
-        {
-            id: 'REC_EJ003',
-            producto: 'HARINA DE TRIGO',
-            proveedor: 'DISTRIBUCIONES GALICIA',
-            cantidad: 25,
-            unidad: 'KG',
-            fecha_registro: ayer,
-            fecha_recibido: ayer,
-            observaciones: ''
-        },
-        {
-            id: 'REC_EJ004',
-            producto: 'LECHE ENTERA',
-            proveedor: 'MERCADONA',
-            cantidad: 30,
-            unidad: 'L',
-            fecha_registro: ayer,
-            fecha_recibido: ayer,
-            observaciones: ''
-        },
-        {
-            id: 'REC_EJ005',
-            producto: 'CEBOLLAS',
-            proveedor: 'FRUTAS PEPE',
-            cantidad: 20,
-            unidad: 'KG',
-            fecha_registro: semanaPasada,
-            fecha_recibido: semanaPasada,
-            observaciones: 'Para cocina'
-        }
-    ];
-}
-
-async function cargarProveedoresFiltro() {
-    try {
-        const { data, error } = await db
-            .from('proveedores')
-            .select('nombre')
-            .order('nombre');
-        
-        if (!error && data && data.length > 0) {
-            proveedoresGlobal = data.map(p => p.nombre);
-        } else {
-            const provs = new Set(recepcionesGlobal.map(r => r.proveedor).filter(Boolean));
-            proveedoresGlobal = Array.from(provs).sort();
-        }
-        
-        const select = document.getElementById('filtroProveedor');
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">Todos los proveedores</option>';
-        proveedoresGlobal.forEach(p => {
-            select.innerHTML += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
-        });
-        if (currentValue) select.value = currentValue;
-    } catch (error) {
-        console.error('Error cargando proveedores:', error);
-    }
-}
-
-function actualizarStatus(mensaje, esError = false) {
+function actualizarStatus(state) {
     const badge = document.getElementById('statusBadge');
-    if (badge) {
-        badge.textContent = mensaje;
-        badge.className = `px-3 py-1 rounded-full text-xs font-bold ${
-            esError ? 'bg-red-500/20 text-red-300' : 'bg-emerald-500/20 text-emerald-300'
-        }`;
+    if (!badge) return;
+
+    if (!state.inicializado) {
+        badge.className = 'status-badge status-loading';
+        badge.textContent = '🔄 Cargando...';
+    } else if (state.recepciones && state.recepciones.length > 0) {
+        badge.className = 'status-badge status-online';
+        badge.textContent = `🟢 Núcleo activo (${state.recepciones.length})`;
+    } else {
+        badge.className = 'status-badge status-error';
+        badge.textContent = '⚠️ Sin datos';
     }
+}
+
+// ============================================================
+// PROVEEDORES PARA EL FILTRO
+// ============================================================
+function cargarProveedoresFiltro(state) {
+    // 1. Intentar extraer de las recepciones (más rápido, sin petición)
+    const provs = new Set();
+    recepcionesGlobal.forEach(r => {
+        if (r.proveedor) provs.add(r.proveedor);
+    });
+
+    proveedoresGlobal = Array.from(provs).sort();
+
+    // 2. Rellenar el <select>
+    const select = document.getElementById('filtroProveedor');
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">Todos los proveedores</option>';
+    proveedoresGlobal.forEach(p => {
+        select.innerHTML += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
+    });
+    if (currentValue) select.value = currentValue;
 }
 
 // ============================================================
@@ -411,22 +289,45 @@ function actualizarStatus(mensaje, esError = false) {
 function renderizarRecepciones() {
     const container = document.getElementById('listaRecepciones');
     if (!container) return;
-    
+
     const filtradas = getRecepcionesFiltradas();
-    
+
     if (filtradas.length === 0) {
         container.innerHTML = `
             <div class="card text-center py-12">
                 <div class="text-5xl mb-4">📭</div>
-                <div class="text-slate-400 font-medium">No hay recepciones registradas</div>
-                <div class="text-xs text-slate-400 mt-1">Las recepciones se registran automáticamente desde el panel de compras</div>
+                <div class="text-slate-400 font-medium">No hay recepciones que coincidan</div>
+                <div class="text-xs text-slate-400 mt-1">Prueba a cambiar los filtros o limpia la búsqueda</div>
             </div>
         `;
         document.getElementById('contadorResultados').textContent = '0 resultados';
         return;
     }
-    
-    container.innerHTML = filtradas.map(r => `
+
+    container.innerHTML = filtradas.map(r => renderizarItem(r)).join('');
+
+    document.getElementById('contadorResultados').textContent = `${filtradas.length} resultados`;
+}
+
+function renderizarItem(r) {
+    // Badge según origen
+    let badgeOrigen = '';
+    if (r.origen === 'MIGRACION') {
+        badgeOrigen = '<span class="badge-migracion">📦 Migrado</span>';
+    } else if (r.origen === 'DIRECTA') {
+        badgeOrigen = '<span class="badge-appcc">⚡ Directa</span>';
+    } else if (r.temperatura != null) {
+        badgeOrigen = `<span class="badge-appcc">🌡️ ${r.temperatura}°C · ${escapeHtml(r.conservacion || 'NEVERA')}</span>`;
+    } else {
+        badgeOrigen = '<span class="badge-recibido">✅ Recibido</span>';
+    }
+
+    // Autorizador (si lo hay)
+    const autorizador = r.autorizado_por && r.autorizado_por !== 'SISTEMA'
+        ? `<div class="text-xs text-amber-600 mt-1">🔏 Autorizado por: <strong>${escapeHtml(r.autorizado_por)}</strong></div>`
+        : '';
+
+    return `
         <div class="recepcion-item fade-in">
             <div class="flex items-start justify-between flex-wrap gap-2">
                 <div class="flex-1 min-w-[200px]">
@@ -435,9 +336,10 @@ function renderizarRecepciones() {
                         <span>🏢 ${escapeHtml(r.proveedor || 'S/P')}</span>
                         <span>📦 ${r.cantidad || 0} ${escapeHtml(r.unidad || 'UN')}</span>
                         <span class="badge-fecha">📅 ${formatearFechaCorta(r.fecha_recibido || r.fecha_registro)}</span>
-                        <span class="badge-recibido">✅ Recibido</span>
+                        ${badgeOrigen}
                     </div>
                     ${r.observaciones ? `<div class="text-xs text-slate-400 mt-1">📝 ${escapeHtml(r.observaciones)}</div>` : ''}
+                    ${autorizador}
                 </div>
                 <div class="flex gap-2 flex-wrap">
                     <button onclick="imprimirEtiqueta('${r.id}')" class="btn btn-primary text-xs py-1.5 px-3">🖨️ Etiqueta</button>
@@ -445,14 +347,16 @@ function renderizarRecepciones() {
                 </div>
             </div>
         </div>
-    `).join('');
-    
-    document.getElementById('contadorResultados').textContent = `${filtradas.length} resultados`;
+    `;
 }
 
+// ============================================================
+// FILTROS
+// ============================================================
 function getRecepcionesFiltradas() {
     let resultado = [...recepcionesGlobal];
-    
+
+    // Filtro rápido (todos/hoy/semana/mes)
     if (filtroActual === 'hoy') {
         resultado = resultado.filter(r => esHoy(r.fecha_registro || r.fecha_recibido));
     } else if (filtroActual === 'semana') {
@@ -460,54 +364,42 @@ function getRecepcionesFiltradas() {
     } else if (filtroActual === 'mes') {
         resultado = resultado.filter(r => esEsteMes(r.fecha_registro || r.fecha_recibido));
     }
-    
+
+    // Búsqueda por texto
     const busqueda = document.getElementById('buscarRecepcion')?.value?.trim()?.toUpperCase() || '';
     if (busqueda) {
-        resultado = resultado.filter(r => 
+        resultado = resultado.filter(r =>
             (r.producto || '').toUpperCase().includes(busqueda) ||
             (r.proveedor || '').toUpperCase().includes(busqueda) ||
             (r.id || '').toUpperCase().includes(busqueda)
         );
     }
-    
+
+    // Filtro por proveedor
     const proveedorFiltro = document.getElementById('filtroProveedor')?.value || '';
     if (proveedorFiltro) {
         resultado = resultado.filter(r => r.proveedor === proveedorFiltro);
     }
-    
+
+    // Rango de fechas
     const fechaInicio = document.getElementById('filtroFechaInicio')?.value || '';
     const fechaFin = document.getElementById('filtroFechaFin')?.value || '';
     if (fechaInicio) {
         resultado = resultado.filter(r => {
-            const fecha = r.fecha_registro || r.fecha_recibido;
+            const fecha = (r.fecha_registro || r.fecha_recibido || '').split('T')[0];
             return fecha && fecha >= fechaInicio;
         });
     }
     if (fechaFin) {
         resultado = resultado.filter(r => {
-            const fecha = r.fecha_registro || r.fecha_recibido;
-            return fecha && fecha <= fechaFin + 'T23:59:59';
+            const fecha = (r.fecha_registro || r.fecha_recibido || '').split('T')[0];
+            return fecha && fecha <= fechaFin;
         });
     }
-    
+
     return resultado;
 }
 
-function actualizarStats() {
-    const total = recepcionesGlobal.length;
-    const hoy = recepcionesGlobal.filter(r => esHoy(r.fecha_registro || r.fecha_recibido)).length;
-    const semana = recepcionesGlobal.filter(r => esEstaSemana(r.fecha_registro || r.fecha_recibido)).length;
-    const proveedores = new Set(recepcionesGlobal.map(r => r.proveedor).filter(Boolean)).size;
-    
-    document.getElementById('totalRecepciones').textContent = total;
-    document.getElementById('totalHoy').textContent = hoy;
-    document.getElementById('totalSemana').textContent = semana;
-    document.getElementById('totalProveedores').textContent = proveedores;
-}
-
-// ============================================================
-// FILTROS
-// ============================================================
 function setFiltro(filtro) {
     filtroActual = filtro;
     document.querySelectorAll('.filtro-btn').forEach(btn => {
@@ -526,6 +418,22 @@ function limpiarFiltros() {
     document.getElementById('filtroFechaInicio').value = '';
     document.getElementById('filtroFechaFin').value = '';
     setFiltro('todos');
+    toast('Filtros limpiados', 'info');
+}
+
+// ============================================================
+// ESTADÍSTICAS
+// ============================================================
+function actualizarStats() {
+    const total = recepcionesGlobal.length;
+    const hoy = recepcionesGlobal.filter(r => esHoy(r.fecha_registro || r.fecha_recibido)).length;
+    const semana = recepcionesGlobal.filter(r => esEstaSemana(r.fecha_registro || r.fecha_recibido)).length;
+    const proveedores = new Set(recepcionesGlobal.map(r => r.proveedor).filter(Boolean)).size;
+
+    document.getElementById('totalRecepciones').textContent = total;
+    document.getElementById('totalHoy').textContent = hoy;
+    document.getElementById('totalSemana').textContent = semana;
+    document.getElementById('totalProveedores').textContent = proveedores;
 }
 
 // ============================================================
@@ -533,27 +441,32 @@ function limpiarFiltros() {
 // ============================================================
 async function imprimirEtiqueta(id) {
     const recepcion = recepcionesGlobal.find(r => r.id === id);
-    if (!recepcion) return;
-    
+    if (!recepcion) {
+        toast('Recepción no encontrada', 'error');
+        return;
+    }
+
+    toast('📡 Enviando etiqueta a impresión...', 'info');
+
     try {
         const response = await fetch(`${API_URL}/imprimir_etiqueta_rapida_v2`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'ngrok-skip-browser-warning': 'true'
             },
             body: JSON.stringify({
                 etiquetas: [{
                     producto: recepcion.producto,
-                    unidad: `REC-${recepcion.id.slice(-6)}`,
+                    unidad: `REC-${(recepcion.id || '').slice(-6)}`,
                     fecha: `Recibido: ${formatearFechaCorta(recepcion.fecha_recibido || recepcion.fecha_registro)}`,
                     texto_qr: `REC:${recepcion.id}|PROD:${recepcion.producto}|PROV:${recepcion.proveedor}|CANT:${recepcion.cantidad} ${recepcion.unidad}`
                 }]
             })
         });
-        
+
         if (response.ok) {
-            toast('🖨️ Etiqueta enviada a impresión');
+            toast('🖨️ Etiqueta enviada a impresión', 'success');
         } else {
             toast('❌ Error al imprimir', 'error');
         }
@@ -565,20 +478,32 @@ async function imprimirEtiqueta(id) {
 
 function copiarDatos(id) {
     const recepcion = recepcionesGlobal.find(r => r.id === id);
-    if (!recepcion) return;
-    
-    const texto = `Producto: ${recepcion.producto}\nProveedor: ${recepcion.proveedor}\nCantidad: ${recepcion.cantidad} ${recepcion.unidad}\nFecha: ${formatearFecha(recepcion.fecha_recibido || recepcion.fecha_registro)}\nObservaciones: ${recepcion.observaciones || 'Ninguna'}`;
-    
+    if (!recepcion) {
+        toast('Recepción no encontrada', 'error');
+        return;
+    }
+
+    const texto = [
+        `Producto: ${recepcion.producto}`,
+        `Proveedor: ${recepcion.proveedor || 'S/P'}`,
+        `Cantidad: ${recepcion.cantidad} ${recepcion.unidad}`,
+        `Fecha: ${formatearFecha(recepcion.fecha_recibido || recepcion.fecha_registro)}`,
+        recepcion.temperatura != null ? `Temperatura: ${recepcion.temperatura}°C` : null,
+        recepcion.conservacion ? `Conservación: ${recepcion.conservacion}` : null,
+        recepcion.observaciones ? `Observaciones: ${recepcion.observaciones}` : null
+    ].filter(Boolean).join('\n');
+
     navigator.clipboard.writeText(texto).then(() => {
-        toast('📋 Datos copiados al portapapeles');
+        toast('📋 Datos copiados al portapapeles', 'success');
     }).catch(() => {
+        // Fallback
         const textarea = document.createElement('textarea');
         textarea.value = texto;
         document.body.appendChild(textarea);
         textarea.select();
         document.execCommand('copy');
         document.body.removeChild(textarea);
-        toast('📋 Datos copiados al portapapeles');
+        toast('📋 Datos copiados al portapapeles', 'success');
     });
 }
 
@@ -589,20 +514,20 @@ function descargarMensual() {
     const ahora = new Date();
     const mes = ahora.getMonth();
     const año = ahora.getFullYear();
-    
+
     const recepcionesMes = recepcionesGlobal.filter(r => {
         const fecha = new Date(r.fecha_registro || r.fecha_recibido);
         return fecha.getMonth() === mes && fecha.getFullYear() === año;
     });
-    
+
     if (recepcionesMes.length === 0) {
         toast('⚠️ No hay recepciones este mes', 'warning');
         return;
     }
-    
+
     const resumen = generarResumen(recepcionesMes);
-    descargarJSON(resumen, `recepciones_${año}_${String(mes+1).padStart(2,'0')}.json`);
-    toast(`📥 ${recepcionesMes.length} recepciones descargadas`);
+    descargarJSON(resumen, `recepciones_${año}_${String(mes + 1).padStart(2, '0')}.json`);
+    toast(`📥 ${recepcionesMes.length} recepciones descargadas`, 'success');
 }
 
 function descargarTodo() {
@@ -610,12 +535,12 @@ function descargarTodo() {
         toast('⚠️ No hay recepciones para descargar', 'warning');
         return;
     }
-    
+
     const resumen = generarResumen(recepcionesGlobal);
     const ahora = new Date();
-    const fecha = `${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}`;
+    const fecha = `${ahora.getFullYear()}${String(ahora.getMonth() + 1).padStart(2, '0')}${String(ahora.getDate()).padStart(2, '0')}`;
     descargarJSON(resumen, `recepciones_completas_${fecha}.json`);
-    toast(`📥 ${recepcionesGlobal.length} recepciones descargadas`);
+    toast(`📥 ${recepcionesGlobal.length} recepciones descargadas`, 'success');
 }
 
 function exportarCSV() {
@@ -624,24 +549,38 @@ function exportarCSV() {
         toast('⚠️ No hay datos para exportar', 'warning');
         return;
     }
-    
-    let csv = 'ID,Producto,Proveedor,Cantidad,Unidad,Fecha Registro,Fecha Recibido,Observaciones\n';
-    
+
+    let csv = 'ID,Producto,Proveedor,Cantidad,Unidad,Fecha Registro,Fecha Recibido,Temperatura,Conservacion,Autorizado,Origen,Observaciones\n';
+
     filtradas.forEach(r => {
-        csv += `"${r.id || ''}","${(r.producto || '').replace(/"/g, '""')}","${(r.proveedor || '').replace(/"/g, '""')}",${r.cantidad || 0},"${r.unidad || 'UN'}","${r.fecha_registro || ''}","${r.fecha_recibido || ''}","${(r.observaciones || '').replace(/"/g, '""')}"\n`;
+        const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+        csv += [
+            esc(r.id),
+            esc(r.producto),
+            esc(r.proveedor),
+            r.cantidad || 0,
+            esc(r.unidad),
+            esc(r.fecha_registro),
+            esc(r.fecha_recibido),
+            r.temperatura != null ? r.temperatura : '',
+            esc(r.conservacion),
+            esc(r.autorizado_por),
+            esc(r.origen),
+            esc(r.observaciones)
+        ].join(',') + '\n';
     });
-    
+
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     const ahora = new Date();
-    a.download = `recepciones_${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}.csv`;
+    a.download = `recepciones_${ahora.getFullYear()}${String(ahora.getMonth() + 1).padStart(2, '0')}${String(ahora.getDate()).padStart(2, '0')}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast(`📊 ${filtradas.length} registros exportados a CSV`);
+    toast(`📊 ${filtradas.length} registros exportados a CSV`, 'success');
 }
 
 function generarResumen(recepciones) {
@@ -653,21 +592,18 @@ function generarResumen(recepciones) {
         productos_mas_recibidos: {},
         recepciones: recepciones
     };
-    
+
     recepciones.forEach(r => {
         const prov = r.proveedor || 'S/P';
-        if (!resumen.por_proveedor[prov]) resumen.por_proveedor[prov] = 0;
-        resumen.por_proveedor[prov]++;
-        
-        const dia = r.fecha_registro ? new Date(r.fecha_registro).toISOString().split('T')[0] : 'S/F';
-        if (!resumen.por_dia[dia]) resumen.por_dia[dia] = 0;
-        resumen.por_dia[dia]++;
-        
+        resumen.por_proveedor[prov] = (resumen.por_proveedor[prov] || 0) + 1;
+
+        const dia = r.fecha_registro ? String(r.fecha_registro).split('T')[0] : 'S/F';
+        resumen.por_dia[dia] = (resumen.por_dia[dia] || 0) + 1;
+
         const prod = r.producto || 'S/P';
-        if (!resumen.productos_mas_recibidos[prod]) resumen.productos_mas_recibidos[prod] = 0;
-        resumen.productos_mas_recibidos[prod] += r.cantidad || 1;
+        resumen.productos_mas_recibidos[prod] = (resumen.productos_mas_recibidos[prod] || 0) + (r.cantidad || 1);
     });
-    
+
     return resumen;
 }
 
@@ -684,48 +620,33 @@ function descargarJSON(data, filename) {
 }
 
 // ============================================================
-// RECARGAR
+// RECARGA MANUAL
 // ============================================================
 function recargarDatos() {
-    cargarRecepciones();
-    toast('🔄 Datos recargados');
-}
-
-// ============================================================
-// SUSCRIPCIÓN EN TIEMPO REAL
-// ============================================================
-function suscribirRecepciones() {
-    try {
-        db.channel('recepciones')
-            .on('postgres_changes', { 
-                event: '*', 
-                schema: 'public', 
-                table: 'recepciones' 
-            }, async () => {
-                await cargarRecepciones();
-            })
-            .on('broadcast', { event: 'nueva_recepcion' }, ({ payload }) => {
-                toast(`📦 Nueva recepción: ${payload.producto} de ${payload.proveedor}`, 'success');
-                cargarRecepciones();
-            })
-            .subscribe((status) => {
-                console.log('📡 Canal recepciones:', status);
-            });
-    } catch (error) {
-        console.warn('Error en suscripción:', error);
+    const badge = document.getElementById('statusBadge');
+    if (badge) {
+        badge.className = 'status-badge status-loading';
+        badge.textContent = '🔄 Recargando...';
     }
+
+    fredware.recargarTodo()
+        .then(() => toast('🔄 Datos recargados', 'success'))
+        .catch(() => toast('❌ Error al recargar', 'error'));
 }
 
 // ============================================================
-// INICIALIZACIÓN
+// INICIALIZACIÓN (mínima — el core hace el trabajo)
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-    cargarRecepciones();
-    suscribirRecepciones();
-    setInterval(cargarRecepciones, 60000);
+    console.log('📦 [Recepcion] Esperando datos del núcleo...');
+
+    // Ya no hay setInterval ni suscripción propia.
+    // El núcleo ya hace polling cada 60s y notifica a todos los subscribers.
 });
 
-// Exponer funciones globales
+// ============================================================
+// EXPONER FUNCIONES GLOBALES (para los onclick del HTML)
+// ============================================================
 window.setFiltro = setFiltro;
 window.filtrarRecepciones = filtrarRecepciones;
 window.limpiarFiltros = limpiarFiltros;
