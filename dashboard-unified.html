@@ -264,28 +264,63 @@
 
 <script>
 // ============================================================
-// DASHBOARD UNIFICADO - v2
-// Usa el núcleo shared-core.js v2
+// DASHBOARD UNIFICADO - v2.1
+// Auto-render cuando el núcleo termina de cargar
 // ============================================================
 
 let estadoActual = null;
+let haRenderizado = false;
 
 // ============================================================
 // SUSCRIPCIÓN AL NÚCLEO
 // ============================================================
 fredware.subscribe((state) => {
     estadoActual = state;
+
+    // Actualizar siempre el badge de conexión (aunque aún no esté inicializado)
     actualizarConnectionStatus(state);
+
+    // Solo renderizar el cuerpo cuando el núcleo esté listo
+    if (!state.inicializado) {
+        // Mostrar estado de carga solo si NO hemos renderizado antes
+        if (!haRenderizado) {
+            mostrarEstadoCargando();
+        }
+        return;
+    }
+
+    // Núcleo listo → renderizar todo
     renderizarDashboard(state);
+    haRenderizado = true;
 });
 
+// ============================================================
+// ESTADO DE CARGA (solo primera vez)
+// ============================================================
+function mostrarEstadoCargando() {
+    const contenedores = [
+        'alertasContainer', 'mermasContainer', 'recepcionesContainer',
+        'criticosContainer', 'actividadContainer',
+        'topProductosContainer', 'topProveedoresContainer'
+    ];
+    contenedores.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><div>Cargando...</div></div>`;
+        }
+    });
+}
+
+// ============================================================
+// BADGE DE CONEXIÓN
+// ============================================================
 function actualizarConnectionStatus(state) {
     const badge = document.getElementById('connectionStatus');
     if (!badge) return;
 
     if (!state.inicializado) {
         badge.className = 'connection-status loading';
-        badge.textContent = '🔄 Cargando...';
+        badge.textContent = '🔄 Conectando...';
     } else if (state.recepciones && state.recepciones.length > 0) {
         badge.className = 'connection-status online';
         badge.textContent = `🟢 Online (${state.recepciones.length})`;
@@ -295,9 +330,7 @@ function actualizarConnectionStatus(state) {
     }
 
     const versionEl = document.getElementById('coreVersion');
-    if (versionEl && state.version) {
-        versionEl.textContent = `v${state.version}`;
-    }
+    if (versionEl && state.version) versionEl.textContent = `v${state.version}`;
 }
 
 // ============================================================
@@ -337,9 +370,7 @@ function renderizarAlertas(state) {
         return;
     }
 
-    // Máximo 5 alertas visibles
     const visibles = alertas.slice(0, 5);
-
     container.innerHTML = visibles.map(a => `
         <div class="alert-item ${a.tipo}">
             <span style="flex:1;font-size:13px;">${fredware.util.escapeHtml(a.mensaje)}</span>
@@ -401,7 +432,7 @@ function renderizarMermas(state) {
 }
 
 // ============================================================
-// RECEPCIONES (formato plano v2)
+// RECEPCIONES
 // ============================================================
 function renderizarRecepciones(state) {
     const container = document.getElementById('recepcionesContainer');
@@ -474,7 +505,6 @@ function renderizarActividad(state) {
     const container = document.getElementById('actividadContainer');
     const actividades = [];
 
-    // Última recepción
     if (state.recepciones?.length > 0) {
         const ultima = state.recepciones[0];
         if (ultima) {
@@ -486,7 +516,6 @@ function renderizarActividad(state) {
         }
     }
 
-    // Total hoy
     if (state.estadisticas.totalHoy > 0) {
         actividades.push({
             mensaje: `📊 ${state.estadisticas.totalHoy} recepciones hoy`,
@@ -495,7 +524,6 @@ function renderizarActividad(state) {
         });
     }
 
-    // Última alerta
     if (state.estadisticas.alertas?.length > 0) {
         const alerta = state.estadisticas.alertas[0];
         actividades.push({
@@ -522,7 +550,7 @@ function renderizarActividad(state) {
 }
 
 // ============================================================
-// TOP PRODUCTOS (calculado en el cliente desde state.recepciones)
+// TOP PRODUCTOS
 // ============================================================
 function renderizarTopProductos(state) {
     const container = document.getElementById('topProductosContainer');
@@ -533,7 +561,6 @@ function renderizarTopProductos(state) {
         return;
     }
 
-    // Contar por producto
     const conteo = {};
     recepciones.forEach(r => {
         const prod = r.producto || 'S/P';
@@ -576,7 +603,6 @@ function renderizarTopProveedores(state) {
         return;
     }
 
-    // Contar por proveedor
     const conteo = {};
     recepciones.forEach(r => {
         const prov = r.proveedor || 'S/P';
@@ -611,7 +637,6 @@ function renderizarTopProveedores(state) {
 // ACCIONES
 // ============================================================
 function forzarActualizacion() {
-    // Feedback visual inmediato
     const container = document.getElementById('alertasContainer');
     if (container) {
         container.innerHTML = `<div class="empty-state"><div class="icon">🔄</div><div>Actualizando...</div></div>`;
@@ -623,11 +648,8 @@ function forzarActualizacion() {
         badge.textContent = '🔄 Actualizando...';
     }
 
-    // Llamar al core
     fredware.recargarTodo()
-        .then(() => {
-            fredware.ui.toast('Datos actualizados', 'success');
-        })
+        .then(() => fredware.ui.toast('Datos actualizados', 'success'))
         .catch((err) => {
             console.error('Error actualizando:', err);
             fredware.ui.toast('Error al actualizar', 'error');
@@ -635,24 +657,18 @@ function forzarActualizacion() {
 }
 
 // ============================================================
-// INICIALIZACIÓN
+// FALLBACK: Si tras 6s el dashboard no ha renderizado, forzar recarga
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('📊 [Dashboard v2] Listo. Esperando datos del núcleo...');
+setTimeout(() => {
+    if (!haRenderizado) {
+        console.warn('⚠️ [Dashboard] No ha renderizado tras 6s, forzando recarga...');
+        fredware.recargarTodo();
+    }
+}, 6000);
 
-    // Si el core tarda en inicializar, mostrar estado intermedio
-    setTimeout(() => {
-        if (estadoActual && !estadoActual.inicializado) {
-            const badge = document.getElementById('connectionStatus');
-            if (badge) {
-                badge.className = 'connection-status loading';
-                badge.textContent = '🔄 Cargando datos...';
-            }
-        }
-    }, 2000);
-});
-
-// Exponer funciones globales
+// ============================================================
+// EXPONER FUNCIONES GLOBALES
+// ============================================================
 window.forzarActualizacion = forzarActualizacion;
 </script>
 </body>
