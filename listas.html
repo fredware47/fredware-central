@@ -6,136 +6,219 @@
     <title>👨‍🍳 Fredware - Hojas de Pedido Dinámicas</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 🔥 NÚCLEO UNIFICADO v2 -->
+    <script src="shared-core.js"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        
-        /* 🎨 NOTIFICACIONES TOAST FLOTANTES */
-        #toast-container { position: fixed; bottom: 25px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
-        .toast { background: #334155; color: white; padding: 14px 22px; border-radius: 12px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast-success { border-left: 5px solid #10b981; }
-        .toast-warning { border-left: 5px solid #f59e0b; }
-        .toast-error { border-left: 5px solid #ef4444; }
-        
-        /* 🔄 SPINNER DE CARGA */
+
         .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* 🗑️ BOTÓN ELIMINAR */
-        .btn-eliminar {
-            background: none;
-            border: none;
-            color: #ef4444;
-            font-size: 16px;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 8px;
-            transition: all 0.2s;
-            opacity: 0.5;
-        }
-        .btn-eliminar:hover {
-            background: #fef2f2;
-            opacity: 1;
-            transform: scale(1.1);
-        }
-        .btn-eliminar:active {
-            transform: scale(0.9);
+        .badge-conn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-conn.loading { background: #fef3c7; color: #92400e; animation: pulse-badge 1.5s ease-in-out infinite; }
+        .badge-conn.online { background: #d1fae5; color: #065f46; }
+        @keyframes pulse-badge { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        .prov-btn { width: 100%; text-align: left; padding: 12px 16px; border-radius: 12px; font-weight: 700; font-size: 13px; transition: all 0.2s; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .prov-btn:hover { background: #f1f5f9; }
+        .prov-btn.active { background: #dbeafe; color: #1e40af; border-color: #93c5fd; box-shadow: inset 0 2px 4px rgba(0,0,0,0.04); }
+
+        .art-row { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; transition: background 0.15s; }
+        .art-row:hover { background: #f8fafc; }
+        .art-row.seleccionado { background: #f0fdf4; }
+        .art-row.tiene-historico { border-left: 3px solid #10b981; }
+        .art-row:last-child { border-bottom: none; }
+
+        .art-check { width: 22px; height: 22px; cursor: pointer; accent-color: #10b981; flex-shrink: 0; }
+        .art-cant { width: 70px; padding: 8px 4px; text-align: center; font-weight: 800; font-size: 15px; border: 2px solid #cbd5e1; border-radius: 8px; background: #f8fafc; color: #1e293b; }
+        .art-cant:focus { outline: none; border-color: #10b981; background: white; }
+
+        .btn-q { background: #e2e8f0; color: #475569; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; }
+        .btn-q:hover { background: #cbd5e1; }
+        .btn-q:active { transform: scale(0.95); }
+
+        .btn-eliminar { background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: all 0.2s; opacity: 0.4; }
+        .btn-eliminar:hover { background: #fef2f2; opacity: 1; transform: scale(1.1); }
+
+        .footer-sticky { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 2px solid #10b981; padding: 14px 20px; z-index: 40; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); transform: translateY(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .footer-sticky.visible { transform: translateY(0); }
+
+        .hist-badge { font-size: 10px; background: #ecfdf5; color: #065f46; padding: 2px 8px; border-radius: 10px; font-weight: 700; display: inline-block; }
+        .hist-badge.nuevo { background: #f1f5f9; color: #64748b; }
+
+        .buscador { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; }
+        .buscador:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+
+        @media (max-width: 768px) {
+            .art-row { flex-wrap: wrap; }
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen pb-12 select-none">
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-24 select-none">
 
     <header class="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <div class="max-w-6xl mx-auto flex justify-between items-center flex-wrap gap-3">
             <div class="flex items-center space-x-3">
                 <span class="text-3xl">🛒</span>
                 <div>
                     <h1 class="text-lg font-black tracking-tight text-slate-900">FREDWARE PEDIDOS</h1>
-                    <p class="text-xs text-blue-600 font-bold tracking-widest uppercase">Hojas de Almacén Conectadas a Supabase</p>
+                    <p class="text-xs text-blue-600 font-bold tracking-widest uppercase">Hojas de Almacén Conectadas al Núcleo</p>
                 </div>
             </div>
-            <span id="reloj-sincro" class="bg-slate-200 text-slate-700 text-xs px-2.5 py-1.5 rounded-xl border border-slate-300 font-mono font-bold">NUBE CONECTADA</span>
+            <span id="badge-conn" class="badge-conn loading">🟡 CONECTANDO...</span>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-        
+    <main class="max-w-6xl mx-auto px-4 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- COLUMNA IZQUIERDA: PROVEEDORES -->
         <div class="md:col-span-1 space-y-4">
             <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                 <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">🏢 Distribuidores Activos</h2>
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">🏢 Distribuidores</h2>
                     <button onclick="cargarProveedoresDesdeSupabase()" class="text-blue-600 text-xs font-bold hover:underline">🔄 Refrescar</button>
                 </div>
-                <div id="lista-proveedores" class="space-y-1.5 max-h-[65vh] overflow-y-auto pr-1">
-                    <div class="text-xs text-slate-400 p-2">⏳ Leyendo agenda de Supabase...</div>
+                <div id="lista-proveedores" class="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
+                    <div class="text-xs text-slate-400 p-2">⏳ Leyendo agenda...</div>
                 </div>
             </div>
         </div>
 
+        <!-- COLUMNA DERECHA: PLANTILLA -->
         <div class="md:col-span-2 space-y-4">
-            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                
-                <div class="flex justify-between items-center border-b border-slate-100 pb-3 flex-wrap gap-2">
-                    <div>
-                        <h2 id="nombre-proveedor-activo" class="text-lg font-black text-slate-900">Selecciona un proveedor</h2>
-                        <p id="info-proveedor-activo" class="text-xs text-slate-400 font-medium">Lista de insumos en tiempo real</p>
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+
+                <!-- Header de la plantilla -->
+                <div class="p-5 border-b border-slate-100">
+                    <div class="flex justify-between items-start flex-wrap gap-3">
+                        <div>
+                            <h2 id="nombre-proveedor-activo" class="text-lg font-black text-slate-900">Selecciona un proveedor</h2>
+                            <p id="info-proveedor-activo" class="text-xs text-slate-400 font-medium mt-1">Elige un distribuidor de la izquierda</p>
+                        </div>
+                        <button id="btn-add-articulo" onclick="toggleFormNuevoArticulo()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95 hidden">
+                            ➕ Añadir Artículo
+                        </button>
                     </div>
-                    <button onclick="enviarPedidoCentral()" id="btn-enviar-pedido" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-5 py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2 hidden">
-                        <span id="btn-text">⚡ Enviar a Compras</span>
-                    </button>
+
+                    <!-- Formulario añadir artículo -->
+                    <div id="form-nuevo-articulo" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+                        <input type="text" id="nuevo-nombre-articulo" placeholder="Nombre del artículo..." class="flex-1 min-w-[180px] bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 uppercase">
+                        <select id="nueva-unidad-articulo" class="bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm font-semibold focus:outline-none text-slate-600">
+                            <option value="UNIDADES">Ud</option>
+                            <option value="KG">Kg</option>
+                            <option value="L">Litros</option>
+                            <option value="CAJAS">Cajas</option>
+                            <option value="BOTES">Botes</option>
+                        </select>
+                        <button onclick="agregarIngredienteASupabase()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm active:scale-95 transition-all">
+                            💾 Guardar
+                        </button>
+                    </div>
+
+                    <!-- Buscador -->
+                    <div id="contenedor-buscador" class="mt-4 hidden">
+                        <input type="text" id="buscador" class="buscador" placeholder="🔍 Buscar artículo en esta plantilla..." oninput="filtrarArticulos()">
+                    </div>
                 </div>
 
-                <div id="form-nuevo-articulo" class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2 items-center hidden">
-                    <input type="text" id="nuevo-nombre-articulo" placeholder="Añadir nuevo ingrediente a su plantilla..." class="flex-1 min-w-[120px] bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 uppercase">
-                    <select id="nueva-unidad-articulo" class="bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm font-semibold focus:outline-none text-slate-600">
-                        <option value="UNIDADES">Ud</option>
-                        <option value="KG">Kg</option>
-                        <option value="L">Litros</option>
-                        <option value="CAJAS">Cajas</option>
-                        <option value="BOTES">Botes</option>
-                    </select>
-                    <button onclick="agregarIngredienteASupabase()" class="bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm active:scale-95 transition-all">➕ Añadir</button>
+                <!-- Lista de artículos -->
+                <div id="contenedor-ingredientes" class="max-h-[60vh] overflow-y-auto">
+                    <div class="text-center italic text-slate-400 text-sm py-12 px-4">
+                        👈 Haz clic en un distribuidor de la izquierda para ver su plantilla de pedido
+                    </div>
                 </div>
-
-                <div id="contenedor-ingredientes" class="divide-y divide-slate-100 max-h-[55vh] overflow-y-auto pr-1">
-                    <div class="text-center italic text-slate-400 text-sm py-12">Haz clic en un distribuidor de la izquierda para desplegar su hoja de pedido interactiva conectada a la nube.</div>
-                </div>
-
             </div>
         </div>
     </main>
 
-    <div id="toast-container"></div>
+    <!-- FOOTER STICKY -->
+    <div id="footer-sticky" class="footer-sticky">
+        <div class="max-w-6xl mx-auto flex justify-between items-center flex-wrap gap-3">
+            <div>
+                <span class="text-sm font-bold text-slate-700">
+                    <span id="contador-seleccionados">0</span> seleccionados
+                </span>
+                <span class="text-xs text-slate-400 ml-2">
+                    · Total: <span id="total-unidades" class="font-black text-emerald-600">0</span> unidades
+                </span>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="limpiarSeleccion()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-sm px-4 py-3 rounded-xl transition-all active:scale-95">
+                    🧹 Limpiar
+                </button>
+                <button onclick="enviarPedidoCentral()" id="btn-enviar-pedido" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2">
+                    <span id="btn-text">⚡ Enviar a Compras</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // 🛰️ CONFIGURACIÓN SUPABASE
-        const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-        const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // 🌐 NGROK (OPCIONAL) - Solo para notificar a la oficina
+        // ============================================================
+        // CONFIGURACIÓN — usa el núcleo unificado v2
+        // ============================================================
+        const db_nube = window.fredware.supabase;
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
-        
+
+        // Estado
         let proveedorActivo = null;
         let proveedorNombre = null;
         let articulosCargados = [];
+        let articulosFiltrados = [];
+        let seleccion = {}; // { idArticulo: cantidad }
+        let textoBusqueda = '';
 
+        // ============================================================
+        // ALIAS A UTILIDADES DEL NÚCLEO
+        // ============================================================
         function lanzarToast(mensaje, tipo = 'success') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${tipo}`;
-            let icono = '✅';
-            if (tipo === 'error') icono = '❌';
-            if (tipo === 'warning') icono = '⚠️';
-            toast.innerHTML = `<span>${icono}</span> <span>${mensaje}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 50);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
+            window.fredware.ui.toast(mensaje, tipo);
+        }
+
+        function escapeHtml(text) {
+            return window.fredware.util.escapeHtml(text);
+        }
+
+        // ============================================================
+        // SUSCRIPCIÓN AL NÚCLEO
+        // ============================================================
+        window.fredware.subscribe((state) => {
+            console.log('📡 [Listas] Estado del núcleo:', {
+                recepciones: state.recepciones?.length,
+                escandallos: state.escandallos?.length,
+                inicializado: state.inicializado
+            });
+        });
+
+        // ============================================================
+        // ESPERAR AL NÚCLEO
+        // ============================================================
+        async function esperarAlNucleo() {
+            const MAX_INTENTOS = 30;
+            for (let i = 0; i < MAX_INTENTOS; i++) {
+                if (window.fredware && window.fredware.state && window.fredware.state.inicializado) {
+                    console.log(`✅ [Listas] Núcleo listo tras ${i + 1}s`);
+                    return true;
+                }
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            return false;
+        }
+
+        function actualizarBadgeOnline() {
+            const badge = document.getElementById('badge-conn');
+            if (badge) {
+                badge.className = 'badge-conn online';
+                badge.textContent = '🟢 ONLINE';
+            }
+        }
+
+        // ============================================================
+        // GENERADORES
+        // ============================================================
+        function generarIdUnico() {
+            return "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
         }
 
         function calcularFechaManana() {
@@ -145,106 +228,351 @@
             return manana.toISOString().split('T')[0];
         }
 
-        function generarIdUnico() {
-            return "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
+        function formatearFecha(fechaStr) {
+            if (!fechaStr) return 'S/F';
+            try {
+                const d = new Date(fechaStr);
+                if (isNaN(d)) return fechaStr;
+                return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            } catch { return fechaStr; }
         }
 
-        // 🏢 LECTURA MAESTRA DE PROVEEDORES DESDE SUPABASE
+        // ============================================================
+        // CARGA DE PROVEEDORES
+        // ============================================================
         async function cargarProveedoresDesdeSupabase() {
             const container = document.getElementById('lista-proveedores');
-            container.innerHTML = '<div class="text-xs text-slate-400 p-2">⏳ Sincronizando con Supabase...</div>';
+            container.innerHTML = '<div class="text-xs text-slate-400 p-2">⏳ Sincronizando...</div>';
 
-            // 🔥 CAMBIO: Usar 'id' y 'nombre'
-            const { data: proveedores, error } = await db_nube
-                .from('proveedores')
-                .select('id, nombre')
-                .order('nombre', { ascending: true });
+            try {
+                // Obtener proveedores
+                const { data: proveedores, error: errProv } = await db_nube
+                    .from('proveedores')
+                    .select('id, nombre')
+                    .order('nombre', { ascending: true });
 
-            if (error) {
-                console.error(error);
-                container.innerHTML = '<div class="text-xs text-red-500 p-2">❌ Error al conectar con Supabase.</div>';
-                return;
+                if (errProv) throw errProv;
+
+                // Obtener contadores de artículos por proveedor
+                const { data: articulos, error: errArt } = await db_nube
+                    .from('articulos_habituales')
+                    .select('proveedor_id');
+
+                if (errArt) throw errArt;
+
+                // Contar artículos por proveedor
+                const contadores = {};
+                (articulos || []).forEach(a => {
+                    contadores[a.proveedor_id] = (contadores[a.proveedor_id] || 0) + 1;
+                });
+
+                // Renderizar
+                container.innerHTML = '';
+                if (!proveedores || proveedores.length === 0) {
+                    container.innerHTML = '<div class="text-xs text-slate-400 p-2">Sin proveedores.</div>';
+                    return;
+                }
+
+                proveedores.forEach(p => {
+                    const numArt = contadores[p.id] || 0;
+                    const safeId = `btn-prov-${p.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    container.innerHTML += `
+                        <button onclick="cargarHojaInteractiva('${escapeHtml(p.id)}', '${escapeHtml(p.nombre)}')" id="${safeId}" class="prov-btn">
+                            <span>🏢 ${escapeHtml(p.nombre)}</span>
+                            <span class="text-xs ${numArt > 0 ? 'text-blue-600 font-bold' : 'text-slate-400'}">${numArt}</span>
+                        </button>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error cargando proveedores:', error);
+                container.innerHTML = '<div class="text-xs text-red-500 p-2">❌ Error al cargar.</div>';
             }
-
-            container.innerHTML = '';
-            proveedores.forEach(p => {
-                container.innerHTML += `
-                    <button onclick="cargarHojaInteractiva('${p.id}', '${p.nombre}')" id="btn-prov-${p.id.replace(/[^a-zA-Z0-9]/g, '_')}" class="w-full text-left px-4 py-3.5 rounded-xl font-bold text-sm transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 flex justify-between items-center">
-                        <span>🏢 ${p.nombre}</span>
-                        <span class="text-xs text-slate-400">➔</span>
-                    </button>
-                `;
-            });
         }
 
-        // 📋 DESPLEGAR LA HOJA DE INGREDIENTES
+        // ============================================================
+        // CARGAR HOJA DE UN PROVEEDOR
+        // ============================================================
         async function cargarHojaInteractiva(provId, provNombre) {
             proveedorActivo = provId;
             proveedorNombre = provNombre;
-            
-            // Efecto visual de botón seleccionado
-            document.querySelectorAll('#lista-proveedores button').forEach(b => {
-                b.className = "w-full text-left px-4 py-3.5 rounded-xl font-bold text-sm transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 flex justify-between items-center";
-            });
+            textoBusqueda = '';
+            document.getElementById('buscador').value = '';
+
+            // Highlight del botón activo
+            document.querySelectorAll('#lista-proveedores button').forEach(b => b.classList.remove('active'));
             const safeBtnId = `btn-prov-${provId.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            if(document.getElementById(safeBtnId)) {
-                document.getElementById(safeBtnId).className = "w-full text-left px-4 py-3.5 rounded-xl font-black text-sm transition-all border border-blue-300 bg-blue-50 text-blue-700 flex justify-between items-center shadow-inner";
-            }
+            const btn = document.getElementById(safeBtnId);
+            if (btn) btn.classList.add('active');
 
-            document.getElementById('nombre-proveedor-activo').innerText = `🏢 Hoja de Pedido: ${provNombre}`;
-            document.getElementById('info-proveedor-activo').innerText = "Cargando catálogo habitual de la nube...";
+            // Actualizar header
+            document.getElementById('nombre-proveedor-activo').innerText = `🏢 ${provNombre}`;
+            document.getElementById('info-proveedor-activo').innerText = 'Cargando plantilla...';
 
+            // Cargar artículos
             const contenedor = document.getElementById('contenedor-ingredientes');
-            contenedor.innerHTML = '<div class="text-center italic text-slate-400 text-sm py-12">⏳ Descargando artículos de Supabase...</div>';
+            contenedor.innerHTML = '<div class="text-center italic text-slate-400 text-sm py-12">⏳ Descargando artículos...</div>';
 
-            // 🔥 CAMBIO: Usar el id del proveedor para filtrar
-            const { data: articulos, error } = await db_nube
-                .from('articulos_habituales')
-                .select('*')
-                .eq('proveedor_id', provId)
-                .order('nombre_articulo', { ascending: true });
+            try {
+                const { data: articulos, error } = await db_nube
+                    .from('articulos_habituales')
+                    .select('*')
+                    .eq('proveedor_id', provId)
+                    .order('nombre_articulo', { ascending: true });
 
-            if (error) {
-                contenedor.innerHTML = '<div class="text-center text-red-500 py-12">❌ Error al leer la plantilla.</div>';
-                return;
+                if (error) throw error;
+
+                articulosCargados = articulos || [];
+                articulosFiltrados = [...articulosCargados];
+
+                document.getElementById('info-proveedor-activo').innerText = `${articulosCargados.length} artículos en la plantilla`;
+
+                // Mostrar buscador y botón añadir
+                document.getElementById('btn-add-articulo').classList.remove('hidden');
+                document.getElementById('contenedor-buscador').classList.remove('hidden');
+
+                // Limpiar selección previa de este proveedor
+                Object.keys(seleccion).forEach(k => {
+                    if (!articulosCargados.find(a => a.id.toString() === k)) {
+                        delete seleccion[k];
+                    }
+                });
+
+                renderIngredientes();
+                actualizarFooter();
+
+            } catch (error) {
+                console.error('Error cargando hoja:', error);
+                contenedor.innerHTML = '<div class="text-center text-red-500 py-12 text-sm">❌ Error al leer la plantilla.</div>';
             }
-
-            articulosCargados = articulos || [];
-            document.getElementById('info-proveedor-activo').innerText = `${articulosCargados.length} artículos guardados en plantilla`;
-            
-            document.getElementById('btn-enviar-pedido').classList.remove('hidden');
-            document.getElementById('form-nuevo-articulo').classList.remove('hidden');
-
-            renderIngredientes();
         }
 
+        // ============================================================
+        // RENDERIZAR ARTÍCULOS
+        // ============================================================
         function renderIngredientes() {
             const container = document.getElementById('contenedor-ingredientes');
             container.innerHTML = '';
 
-            if (articulosCargados.length === 0) {
-                container.innerHTML = '<div class="text-center italic text-slate-400 text-xs py-12">Esta plantilla está vacía en Supabase. Añade ingredientes con el cuadro de arriba.</div>';
+            if (articulosFiltrados.length === 0) {
+                if (textoBusqueda) {
+                    container.innerHTML = `<div class="text-center italic text-slate-400 text-sm py-12 px-4">No hay artículos que coincidan con "<strong>${escapeHtml(textoBusqueda)}</strong>"</div>`;
+                } else {
+                    container.innerHTML = '<div class="text-center italic text-slate-400 text-xs py-12 px-4">Esta plantilla está vacía. Añade artículos con el botón de arriba.</div>';
+                }
                 return;
             }
 
-            articulosCargados.forEach((art, index) => {
+            articulosFiltrados.forEach((art, index) => {
+                const idStr = art.id.toString();
+                const seleccionado = seleccion[idStr] !== undefined;
+                const cantidadActual = seleccion[idStr] || '';
+                const tieneHistorico = art.veces_pedido > 0;
+                
+                let histInfo = '';
+                if (tieneHistorico) {
+                    histInfo = `<span class="hist-badge">📊 ${art.veces_pedido}x · Últ: ${art.cantidad_habitual} ${escapeHtml(art.unidad_defecto.substring(0,4).toLowerCase())}</span>`;
+                } else {
+                    histInfo = `<span class="hist-badge nuevo">🆕 Sin histórico</span>`;
+                }
+
+                const rowClass = `art-row ${seleccionado ? 'seleccionado' : ''} ${tieneHistorico ? 'tiene-historico' : ''}`;
+
                 container.innerHTML += `
-                    <div class="flex justify-between items-center py-3.5 border-b border-slate-100 last:border-none text-slate-700">
-                        <div class="flex flex-col flex-1">
-                            <span class="text-sm font-bold tracking-tight uppercase">${art.nombre_articulo}</span>
-                            <span class="text-[10px] text-slate-400 font-bold tracking-wider uppercase font-mono">Formato: ${art.unidad_defecto}</span>
+                    <div class="${rowClass}" data-id="${idStr}" data-nombre="${escapeHtml(art.nombre_articulo).toLowerCase()}">
+                        <input type="checkbox" class="art-check" ${seleccionado ? 'checked' : ''} onchange="toggleSeleccion(${art.id})">
+                        <div class="flex-1 min-w-[150px]">
+                            <div class="text-sm font-bold tracking-tight uppercase text-slate-800">${escapeHtml(art.nombre_articulo)}</div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${escapeHtml(art.unidad_defecto)}</span>
+                                ${histInfo}
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <input type="number" id="input-cant-${index}" min="0" placeholder="0" class="w-20 text-center font-black bg-slate-50 border border-slate-300 rounded-xl py-2 px-1 focus:outline-none focus:border-blue-500 text-slate-800 text-base shadow-inner">
-                            <span class="text-xs font-bold text-slate-400 w-12 text-left">${art.unidad_defecto.substring(0,5)}</span>
-                            <button onclick="eliminarIngrediente(${art.id}, '${art.nombre_articulo}')" class="btn-eliminar" title="Eliminar este artículo">🗑️</button>
+                        <div class="flex items-center gap-2">
+                            <input type="number" class="art-cant" min="0" step="1" 
+                                value="${cantidadActual}"
+                                placeholder="0"
+                                onchange="cambiarCantidad(${art.id}, this.value)"
+                                oninput="cambiarCantidad(${art.id}, this.value)">
+                            <div class="flex gap-1">
+                                <button class="btn-q" onclick="cantidadRapida(${art.id}, 1)">+1</button>
+                                <button class="btn-q" onclick="cantidadRapida(${art.id}, 5)">+5</button>
+                                <button class="btn-q" onclick="cantidadRapida(${art.id}, 10)">+10</button>
+                            </div>
+                            <button class="btn-eliminar" onclick="eliminarIngrediente(${art.id}, '${escapeHtml(art.nombre_articulo).replace(/'/g, "\\'")}')" title="Eliminar artículo">🗑️</button>
                         </div>
                     </div>
                 `;
             });
         }
 
-        // 🗑️ ELIMINAR INGREDIENTE
+        // ============================================================
+        // SELECCIÓN Y CANTIDADES
+        // ============================================================
+        function toggleSeleccion(idArticulo) {
+            const idStr = idArticulo.toString();
+            const art = articulosCargados.find(a => a.id === idArticulo);
+            if (!art) return;
+
+            if (seleccion[idStr] !== undefined) {
+                // Deseleccionar
+                delete seleccion[idStr];
+            } else {
+                // Seleccionar — autocompletar con cantidad_habitual si existe
+                const cant = art.cantidad_habitual && art.cantidad_habitual > 0 ? art.cantidad_habitual : 1;
+                seleccion[idStr] = cant;
+            }
+
+            renderIngredientes();
+            actualizarFooter();
+        }
+
+        function cambiarCantidad(idArticulo, valor) {
+            const idStr = idArticulo.toString();
+            const cant = parseFloat(valor) || 0;
+
+            if (cant > 0) {
+                seleccion[idStr] = cant;
+            } else {
+                delete seleccion[idStr];
+            }
+
+            // Actualizar checkbox visual sin re-renderizar todo
+            const row = document.querySelector(`.art-row[data-id="${idStr}"]`);
+            if (row) {
+                const checkbox = row.querySelector('.art-check');
+                if (cant > 0 && checkbox && !checkbox.checked) {
+                    checkbox.checked = true;
+                    row.classList.add('seleccionado');
+                } else if (cant <= 0 && checkbox && checkbox.checked) {
+                    checkbox.checked = false;
+                    row.classList.remove('seleccionado');
+                }
+            }
+
+            actualizarFooter();
+        }
+
+        function cantidadRapida(idArticulo, cantidad) {
+            const idStr = idArticulo.toString();
+            const actual = parseFloat(seleccion[idStr]) || 0;
+            const nueva = actual + cantidad;
+            seleccion[idStr] = nueva;
+
+            // Actualizar input visual
+            const row = document.querySelector(`.art-row[data-id="${idStr}"]`);
+            if (row) {
+                const input = row.querySelector('.art-cant');
+                if (input) input.value = nueva;
+                const checkbox = row.querySelector('.art-check');
+                if (checkbox && !checkbox.checked) {
+                    checkbox.checked = true;
+                    row.classList.add('seleccionado');
+                }
+            }
+
+            actualizarFooter();
+        }
+
+        function limpiarSeleccion() {
+            seleccion = {};
+            renderIngredientes();
+            actualizarFooter();
+            lanzarToast('🧹 Selección limpiada');
+        }
+
+        // ============================================================
+        // FOOTER
+        // ============================================================
+        function actualizarFooter() {
+            const ids = Object.keys(seleccion);
+            const numSeleccionados = ids.length;
+            const totalUnidades = ids.reduce((sum, id) => sum + (parseFloat(seleccion[id]) || 0), 0);
+
+            document.getElementById('contador-seleccionados').textContent = numSeleccionados;
+            document.getElementById('total-unidades').textContent = totalUnidades;
+
+            const footer = document.getElementById('footer-sticky');
+            if (numSeleccionados > 0) {
+                footer.classList.add('visible');
+            } else {
+                footer.classList.remove('visible');
+            }
+        }
+
+        // ============================================================
+        // BUSCADOR
+        // ============================================================
+        function filtrarArticulos() {
+            const input = document.getElementById('buscador');
+            textoBusqueda = input.value.trim().toLowerCase();
+
+            if (!textoBusqueda) {
+                articulosFiltrados = [...articulosCargados];
+            } else {
+                articulosFiltrados = articulosCargados.filter(a => 
+                    a.nombre_articulo.toLowerCase().includes(textoBusqueda)
+                );
+            }
+
+            renderIngredientes();
+        }
+
+        // ============================================================
+        // AÑADIR ARTÍCULO A LA PLANTILLA
+        // ============================================================
+        function toggleFormNuevoArticulo() {
+            const form = document.getElementById('form-nuevo-articulo');
+            form.classList.toggle('hidden');
+            if (!form.classList.contains('hidden')) {
+                document.getElementById('nuevo-nombre-articulo').focus();
+            }
+        }
+
+        async function agregarIngredienteASupabase() {
+            const input = document.getElementById('nuevo-nombre-articulo');
+            const select = document.getElementById('nueva-unidad-articulo');
+            const nombre = input.value.trim().toUpperCase();
+            const unidad = select.value;
+
+            if (!nombre) {
+                lanzarToast("Escribe un nombre para el artículo.", "warning");
+                return;
+            }
+
+            if (articulosCargados.some(i => i.nombre_articulo.toUpperCase() === nombre)) {
+                lanzarToast("El artículo ya existe en esta plantilla.", "warning");
+                input.value = '';
+                return;
+            }
+
+            try {
+                const { error } = await db_nube
+                    .from('articulos_habituales')
+                    .insert([{ 
+                        proveedor_id: proveedorActivo, 
+                        nombre_articulo: nombre, 
+                        unidad_defecto: unidad 
+                    }]);
+
+                if (error) throw error;
+
+                input.value = '';
+                lanzarToast(`✅ "${nombre}" añadido a la plantilla`, 'success');
+                
+                // Recargar hoja
+                await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+                
+                // Cerrar formulario
+                document.getElementById('form-nuevo-articulo').classList.add('hidden');
+            } catch (error) {
+                console.error('Error añadiendo artículo:', error);
+                lanzarToast("❌ No se pudo guardar: " + error.message, 'error');
+            }
+        }
+
+        // ============================================================
+        // ELIMINAR ARTÍCULO DE LA PLANTILLA
+        // ============================================================
         async function eliminarIngrediente(id, nombre) {
             if (!confirm(`¿Eliminar "${nombre}" de la plantilla de ${proveedorNombre}?`)) {
                 return;
@@ -258,61 +586,42 @@
 
                 if (error) throw error;
 
-                lanzarToast(`🗑️ "${nombre}" eliminado correctamente`, 'success');
-                cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+                // Quitar de la selección
+                delete seleccion[id.toString()];
+
+                lanzarToast(`🗑️ "${nombre}" eliminado`, 'success');
+                await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
             } catch (error) {
+                console.error('Error eliminando:', error);
                 lanzarToast("❌ Error al eliminar: " + error.message, 'error');
             }
         }
 
-        // ➕ ALTA DE INGREDIENTE
-        async function agregarIngredienteASupabase() {
-            const input = document.getElementById('nuevo-nombre-articulo');
-            const select = document.getElementById('nueva-unidad-articulo');
-            const nombre = input.value.trim().toUpperCase();
-            const unidad = select.value;
-
-            if (!nombre) {
-                lanzarToast("Escribe un nombre para el ingrediente.", "warning");
-                return;
-            }
-
-            if (articulosCargados.some(i => i.nombre_articulo === nombre)) {
-                lanzarToast("El ingrediente ya existe en esta hoja.", "warning");
-                input.value = '';
-                return;
-            }
-
-            try {
-                const { error } = await db_nube
-                    .from('articulos_habituales')
-                    .insert([{ proveedor_id: proveedorActivo, nombre_articulo: nombre, unidad_defecto: unidad }]);
-
-                if (error) throw error;
-
-                input.value = '';
-                lanzarToast(`✅ "${nombre}" guardado en la plantilla de ${proveedorNombre}`, 'success');
-                cargarHojaInteractiva(proveedorActivo, proveedorNombre);
-            } catch (error) {
-                lanzarToast("❌ No se pudo salvar en Supabase: " + error.message, 'error');
-            }
-        }
-
-        // ⚡ ENVIAR PEDIDO
+        // ============================================================
+        // ENVIAR PEDIDO A COMPRAS
+        // ============================================================
         async function enviarPedidoCentral() {
-            let lineasInyectar = [];
+            const ids = Object.keys(seleccion);
 
-            articulosCargados.forEach((art, index) => {
-                const input = document.getElementById(`input-cant-${index}`);
-                const cant = parseFloat(input.value) || 0;
+            if (ids.length === 0) {
+                lanzarToast("Selecciona al menos 1 artículo.", "warning");
+                return;
+            }
 
+            // Construir líneas
+            const lineasInyectar = [];
+            ids.forEach(idStr => {
+                const art = articulosCargados.find(a => a.id.toString() === idStr);
+                if (!art) return;
+                const cant = parseFloat(seleccion[idStr]) || 0;
                 if (cant > 0) {
                     lineasInyectar.push({
                         id: generarIdUnico(),
                         detalle: `[${cant} ${art.unidad_defecto}] ${art.nombre_articulo}`,
                         proveedor_id: proveedorActivo,
                         estado: "PENDIENTE",
-                        fecha_registro: new Date().toISOString()
+                        fecha_registro: new Date().toISOString(),
+                        fecha_entrega_esperada: calcularFechaManana()
                     });
                 }
             });
@@ -322,41 +631,78 @@
                 return;
             }
 
+            // Verificar duplicados en cesta
             const btn = document.getElementById('btn-enviar-pedido');
             const btnText = document.getElementById('btn-text');
             if (btn && btnText) {
                 btn.disabled = true;
-                btnText.innerHTML = `<span class="spinner"></span> Guardando en Supabase...`;
+                btnText.innerHTML = `<span class="spinner"></span> Verificando...`;
             }
 
             try {
-                for (const item of lineasInyectar) {
-                    const { error } = await db_nube
-                        .from('cesta_pedidos')
-                        .insert([item]);
-                    if (error) throw error;
+                const { data: cestaActual, error: errCesta } = await db_nube
+                    .from('cesta_pedidos')
+                    .select('detalle')
+                    .neq('estado', 'RECIBIDO');
+
+                if (errCesta) throw errCesta;
+
+                const detallesExistentes = new Set((cestaActual || []).map(c => c.detalle.toUpperCase()));
+
+                const noDuplicados = lineasInyectar.filter(l => !detallesExistentes.has(l.detalle.toUpperCase()));
+                const duplicados = lineasInyectar.length - noDuplicados.length;
+
+                if (noDuplicados.length === 0) {
+                    lanzarToast(`⚠️ Los ${duplicados} artículos ya están en la cesta`, 'warning');
+                    if (btn && btnText) {
+                        btn.disabled = false;
+                        btnText.innerText = "⚡ Enviar a Compras";
+                    }
+                    return;
                 }
 
-                lanzarToast(`🛒 ¡Lote enviado! +${lineasInyectar.length} líneas cargadas en compras.`, 'success');
-                
-                articulosCargados.forEach((_, index) => { 
-                    document.getElementById(`input-cant-${index}`).value = ''; 
-                });
+                // Insertar los no duplicados
+                const { error: errInsert } = await db_nube
+                    .from('cesta_pedidos')
+                    .insert(noDuplicados);
 
-                // 🌐 NOTIFICAR A NGROK (OPCIONAL)
+                if (errInsert) throw errInsert;
+
+                // Mensaje según si hubo duplicados
+                if (duplicados > 0) {
+                    lanzarToast(`✅ ${noDuplicados.length} enviados · ⚠️ ${duplicados} ya estaban en cesta`, 'warning');
+                } else {
+                    lanzarToast(`🛒 ¡Enviados ${noDuplicados.length} artículos a compras!`, 'success');
+                }
+
+                // Limpiar selección
+                seleccion = {};
+                renderIngredientes();
+                actualizarFooter();
+
+                // Notificar al núcleo (opcional)
+                try {
+                    await window.fredware.broadcastEvent('nuevo_pedido', {
+                        proveedor: proveedorActivo,
+                        num_articulos: noDuplicados.length,
+                        origen: 'LISTAS'
+                    });
+                } catch (e) {}
+
+                // Notificar a ngrok (opcional)
                 try {
                     await fetch(`${API_URL}/api/cesta`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                        body: JSON.stringify(lineasInyectar)
+                        body: JSON.stringify(noDuplicados)
                     });
-                    console.log("✅ Notificación a oficina enviada vía ngrok.");
                 } catch (e) {
-                    console.log("ℹ️ Ngrok no disponible, pero los datos ya están en Supabase.");
+                    console.log("ℹ️ Ngrok no disponible.");
                 }
 
             } catch (error) {
-                lanzarToast("❌ Error al guardar en Supabase: " + error.message, 'error');
+                console.error('Error enviando pedido:', error);
+                lanzarToast("❌ Error al guardar: " + error.message, 'error');
             } finally {
                 if (btn && btnText) {
                     btn.disabled = false;
@@ -365,8 +711,36 @@
             }
         }
 
-        // Carga inicial al arrancar
-        cargarProveedoresDesdeSupabase();
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        async function initApp() {
+            console.log('🚀 [Listas] Init — esperando al núcleo...');
+
+            // Cargar proveedores inmediatamente
+            await cargarProveedoresDesdeSupabase();
+
+            // Esperar al núcleo en background
+            esperarAlNucleo().then(() => {
+                actualizarBadgeOnline();
+            });
+        }
+
+        // Exponer funciones globales
+        window.cargarProveedoresDesdeSupabase = cargarProveedoresDesdeSupabase;
+        window.cargarHojaInteractiva = cargarHojaInteractiva;
+        window.toggleSeleccion = toggleSeleccion;
+        window.cambiarCantidad = cambiarCantidad;
+        window.cantidadRapida = cantidadRapida;
+        window.limpiarSeleccion = limpiarSeleccion;
+        window.filtrarArticulos = filtrarArticulos;
+        window.toggleFormNuevoArticulo = toggleFormNuevoArticulo;
+        window.agregarIngredienteASupabase = agregarIngredienteASupabase;
+        window.eliminarIngrediente = eliminarIngrediente;
+        window.enviarPedidoCentral = enviarPedidoCentral;
+
+        // Arrancar
+        initApp();
     </script>
 </body>
 </html>
