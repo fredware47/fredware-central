@@ -81,7 +81,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v14.1</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v15.0</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -104,10 +104,6 @@
                 </h2>
                 <div class="flex gap-2 items-center">
                     <input type="text" id="insumo-falta" placeholder="Ej: MAYONESA, CEBOLLAS..." class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 uppercase text-base shadow-inner">
-                    
-                    <button id="btn-micro-voz" onclick="activarDictadoPorVoz()" class="bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center h-[50px] w-[50px]">
-                        🎙️
-                    </button>
 
                     <button onclick="registrarFaltaCocina()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
                         ➕ Añadir
@@ -213,7 +209,7 @@
         }
 
         // ============================================================
-        // SUSCRIPCIÓN AL NÚCLEO (con auto-carga)
+        // SUSCRIPCIÓN AL NÚCLEO (solo para badge y timestamp)
         // ============================================================
         window.fredware.subscribe((state) => {
             console.log('📡 [Faltas] Estado del núcleo:', {
@@ -222,9 +218,6 @@
                 inicializado: state.inicializado
             });
 
-            // ============================================================
-            // BADGE DE CONEXIÓN
-            // ============================================================
             const badgeRed = document.getElementById('badge-red');
             if (badgeRed) {
                 if (state.inicializado) {
@@ -236,24 +229,28 @@
                 }
             }
 
-            // ============================================================
-            // TIMESTAMP
-            // ============================================================
             const timestamp = document.getElementById('timestamp-sincro');
             if (timestamp && state.ultimaActualizacion) {
                 const hora = new Date(state.ultimaActualizacion).toTimeString().split(' ')[0];
                 timestamp.textContent = `Última actualización: ${hora}`;
             }
-
-            // ============================================================
-            // AUTO-CARGA CUANDO EL NÚCLEO ESTÉ LISTO
-            // ============================================================
-            if (state.inicializado && !cargaInicialCompletada) {
-                console.log('📡 [Faltas] Núcleo listo → ejecutando carga inicial');
-                cargaInicialCompletada = true;
-                cargarDatosIniciales();
-            }
         });
+
+        // ============================================================
+        // ESPERAR AL NÚCLEO (polling robusto)
+        // ============================================================
+        async function esperarAlNucleo() {
+            const MAX_INTENTOS = 30; // 30 segundos máximo
+            for (let i = 0; i < MAX_INTENTOS; i++) {
+                if (window.fredware && window.fredware.state && window.fredware.state.inicializado) {
+                    console.log(`✅ [Faltas] Núcleo listo (intento ${i + 1})`);
+                    return true;
+                }
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            console.warn('⚠️ [Faltas] Timeout esperando al núcleo. Cargando de todas formas...');
+            return false;
+        }
 
         // ============================================================
         // UTILIDADES INTERNAS
@@ -398,18 +395,9 @@
         }
 
         // ============================================================
-        // CARGA DE DATOS INICIALES (con reintentos)
+        // CARGA DE DATOS INICIALES
         // ============================================================
         async function cargarDatosIniciales() {
-            // 🔧 FIX: Si el núcleo no está listo, esperar
-            if (window.fredware && !window.fredware.state.inicializado) {
-                console.log('⏳ [Faltas] Esperando al núcleo...');
-                for (let i = 0; i < 10; i++) {
-                    await new Promise(r => setTimeout(r, 1000));
-                    if (window.fredware.state.inicializado) break;
-                }
-            }
-
             try {
                 console.log('📥 [Faltas] Cargando datos...');
                 const [cesta, faltas, proveedores] = await Promise.all([
@@ -420,13 +408,13 @@
                 cestaGlobal = cesta;
                 faltasPendientesCache = faltas || [];
                 localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
-                renderFaltasLocales();
+                await renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
                 console.log(`✅ [Faltas] Datos cargados: ${faltas?.length || 0} faltas, ${cesta?.length || 0} items cesta, ${proveedores?.length || 0} proveedores`);
             } catch (error) {
                 console.error("❌ [Faltas] Error cargando datos iniciales:", error);
                 cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
-                renderFaltasLocales();
+                await renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
                 lanzarToast("Error al cargar datos de la nube.", "error");
             }
@@ -478,48 +466,6 @@
             } catch (error) {
                 lanzarToast("Error al registrar falta en la nube.", "error");
             }
-        }
-
-        function activarDictadoPorVoz() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                lanzarToast("Este navegador no soporta dictado por voz.", "error");
-                return;
-            }
-
-            const recognition = new SpeechRecognition();
-            const btnMicro = document.getElementById('btn-micro-voz');
-            const inputFalta = document.getElementById('insumo-falta');
-
-            recognition.lang = 'es-ES';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-
-            recognition.onstart = () => {
-                btnMicro.className = "bg-red-500 border border-red-700 text-xl p-3 rounded-xl shadow-sm animate-pulse flex items-center justify-center h-[50px] w-[50px]";
-                lanzarToast("🎙️ Escuchando... Habla ahora", "warning");
-            };
-
-            recognition.onerror = (event) => {
-                console.error(event.error);
-                lanzarToast("No se pudo abrir el micro.", "error");
-                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
-            };
-
-            recognition.onend = () => {
-                btnMicro.className = "bg-slate-200 border border-slate-300 text-xl p-3 rounded-xl shadow-sm flex items-center justify-center h-[50px] w-[50px]";
-            };
-
-            recognition.onresult = (event) => {
-                const textoDictado = event.results[0][0].transcript;
-                if (textoDictado) {
-                    const limpio = textoDictado.trim().toUpperCase().replace(/\.$/, '');
-                    inputFalta.value = limpio;
-                    registrarFaltaCocina();
-                }
-            };
-
-            recognition.start();
         }
 
         async function renderFaltasLocales() {
@@ -810,7 +756,7 @@
         }
 
         // ============================================================
-        // RECEPCIÓN INDIVIDUAL — usa núcleo
+        // RECEPCIÓN INDIVIDUAL
         // ============================================================
         async function abrirFlujoRecepcion(detalleCompleto, proveedor, uIdUnique) {
             let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
@@ -1004,7 +950,7 @@
         }
 
         // ============================================================
-        // RECEPCIÓN MASIVA — usa núcleo
+        // RECEPCIÓN MASIVA
         // ============================================================
         async function recibirTodoElProveedor(provNombre) {
             let bultosPendientes = cestaGlobal.filter(item => 
@@ -1405,7 +1351,7 @@
         }
 
         // ============================================================
-        // ENTRADA DIRECTA — usa núcleo
+        // ENTRADA DIRECTA
         // ============================================================
         async function abrirEntradaDirecta() {
             const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -2045,33 +1991,22 @@
         async function init() {
             console.log('🚀 [Faltas] Init — esperando al núcleo...');
 
-            // Suscribirse a cambios en tiempo real (independiente del núcleo)
+            // 1. Suscribirse a cambios en tiempo real (independiente del núcleo)
             suscribirseCambios();
 
-            // Si el núcleo ya está listo, cargar inmediatamente
-            if (window.fredware.state.inicializado) {
-                await cargarDatosIniciales();
-                cargaInicialCompletada = true;
-            }
-            // Si no, el subscribe() se encargará de llamar a cargarDatosIniciales()
-            // cuando el núcleo esté listo
+            // 2. Esperar a que el núcleo esté listo (polling activo)
+            await esperarAlNucleo();
 
-            // Contador de etiquetas cada 30s
+            // 3. Cargar datos iniciales
+            await cargarDatosIniciales();
+            cargaInicialCompletada = true;
+
+            // 4. Contador de etiquetas cada 30s
             setInterval(actualizarContadorEtiquetas, 30000);
-
-            // Reintento por si acaso (cada 60s, solo si la lista está vacía)
-            setInterval(async () => {
-                const container = document.getElementById('contenedor-faltas-local');
-                if (container && container.innerHTML.includes('No hay faltas')) {
-                    console.log('🔄 [Faltas] Reintentando carga (lista vacía)');
-                    await cargarDatosIniciales();
-                }
-            }, 60000);
         }
 
         // Exponer funciones globales
         window.registrarFaltaCocina = registrarFaltaCocina;
-        window.activarDictadoPorVoz = activarDictadoPorVoz;
         window.borrarFaltaLocal = borrarFaltaLocal;
         window.abrirEntradaDirecta = abrirEntradaDirecta;
         window.abrirCamaraTrazabilidad = abrirCamaraTrazabilidad;
