@@ -77,11 +77,11 @@
             </div>
             <div class="flex flex-col items-end space-y-1">
                 <div class="flex items-center space-x-2">
-                    <span id="badge-red" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold">🟢 ONLINE</span>
+                    <span id="badge-red" class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-bold">⏳ CARGANDO...</span>
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v14.0</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v14.1</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -113,7 +113,9 @@
                         ➕ Añadir
                     </button>
                 </div>
-                <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto"></div>
+                <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto">
+                    <div class="text-center italic text-slate-400 text-xs py-2">⏳ Cargando faltas...</div>
+                </div>
             </div>
         </div>
 
@@ -123,7 +125,9 @@
                 <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
                     <span>🚛</span> Entradas Esperadas (Check & Trazabilidad)
                 </h2>
-                <div id="visor-repartos-hoy" class="space-y-4"></div>
+                <div id="visor-repartos-hoy" class="space-y-4">
+                    <div class="text-center italic text-slate-400 text-sm py-4">⏳ Cargando entradas...</div>
+                </div>
             </div>
         </div>
 
@@ -195,6 +199,7 @@
 
         let cestaGlobal = [];
         let faltasPendientesCache = [];
+        let cargaInicialCompletada = false;
 
         // ============================================================
         // UTILIDADES (delegadas al núcleo)
@@ -208,7 +213,7 @@
         }
 
         // ============================================================
-        // SUSCRIPCIÓN AL NÚCLEO
+        // SUSCRIPCIÓN AL NÚCLEO (con auto-carga)
         // ============================================================
         window.fredware.subscribe((state) => {
             console.log('📡 [Faltas] Estado del núcleo:', {
@@ -217,21 +222,36 @@
                 inicializado: state.inicializado
             });
 
-            // Actualizar badge de conexión
+            // ============================================================
+            // BADGE DE CONEXIÓN
+            // ============================================================
             const badgeRed = document.getElementById('badge-red');
-            if (badgeRed && state.inicializado) {
-                badgeRed.className = 'bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold';
-                badgeRed.textContent = '🟢 ONLINE';
-            } else if (badgeRed) {
-                badgeRed.className = 'bg-amber-500 text-white text-xs px-2.5 py-2 rounded-xl border border-amber-600 font-black animate-pulse shadow-sm';
-                badgeRed.textContent = '📡 OFFLINE';
+            if (badgeRed) {
+                if (state.inicializado) {
+                    badgeRed.className = 'bg-emerald-100 text-emerald-800 text-xs px-2.5 py-2 rounded-xl border border-emerald-300 font-bold';
+                    badgeRed.textContent = '🟢 ONLINE';
+                } else {
+                    badgeRed.className = 'bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-bold';
+                    badgeRed.textContent = '⏳ CARGANDO...';
+                }
             }
 
-            // Actualizar timestamp
+            // ============================================================
+            // TIMESTAMP
+            // ============================================================
             const timestamp = document.getElementById('timestamp-sincro');
             if (timestamp && state.ultimaActualizacion) {
                 const hora = new Date(state.ultimaActualizacion).toTimeString().split(' ')[0];
                 timestamp.textContent = `Última actualización: ${hora}`;
+            }
+
+            // ============================================================
+            // AUTO-CARGA CUANDO EL NÚCLEO ESTÉ LISTO
+            // ============================================================
+            if (state.inicializado && !cargaInicialCompletada) {
+                console.log('📡 [Faltas] Núcleo listo → ejecutando carga inicial');
+                cargaInicialCompletada = true;
+                cargarDatosIniciales();
             }
         });
 
@@ -266,7 +286,7 @@
         }
 
         // ============================================================
-        // FUNCIONES SUPABASE (usan db_nube del núcleo)
+        // FUNCIONES SUPABASE
         // ============================================================
         async function obtenerFaltas() {
             const { data, error } = await db_nube
@@ -274,7 +294,7 @@
                 .select('*')
                 .order('fecha_anotado', { ascending: false });
             if (error) throw error;
-            return data;
+            return data || [];
         }
 
         async function agregarFalta(insumo) {
@@ -300,7 +320,7 @@
                 .neq('estado', 'AUSENTE')
                 .order('fecha_registro', { ascending: true });
             if (error) throw error;
-            return data;
+            return data || [];
         }
 
         async function eliminarItemCesta(id) {
@@ -317,7 +337,7 @@
                 .select('*')
                 .order('nombre', { ascending: true });
             if (error) throw error;
-            return data;
+            return data || [];
         }
 
         // ============================================================
@@ -378,10 +398,20 @@
         }
 
         // ============================================================
-        // GESTIÓN DE FALTAS
+        // CARGA DE DATOS INICIALES (con reintentos)
         // ============================================================
         async function cargarDatosIniciales() {
+            // 🔧 FIX: Si el núcleo no está listo, esperar
+            if (window.fredware && !window.fredware.state.inicializado) {
+                console.log('⏳ [Faltas] Esperando al núcleo...');
+                for (let i = 0; i < 10; i++) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    if (window.fredware.state.inicializado) break;
+                }
+            }
+
             try {
+                console.log('📥 [Faltas] Cargando datos...');
                 const [cesta, faltas, proveedores] = await Promise.all([
                     obtenerCesta(),
                     obtenerFaltas(),
@@ -392,8 +422,9 @@
                 localStorage.setItem('fredware_proveedores', JSON.stringify(proveedores));
                 renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
+                console.log(`✅ [Faltas] Datos cargados: ${faltas?.length || 0} faltas, ${cesta?.length || 0} items cesta, ${proveedores?.length || 0} proveedores`);
             } catch (error) {
-                console.error("Error cargando datos iniciales:", error);
+                console.error("❌ [Faltas] Error cargando datos iniciales:", error);
                 cestaGlobal = JSON.parse(localStorage.getItem('fredware_cesta_compras')) || [];
                 renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
@@ -418,6 +449,9 @@
                 .subscribe();
         }
 
+        // ============================================================
+        // REGISTRAR FALTAS
+        // ============================================================
         async function registrarFaltaCocina() {
             const input = document.getElementById('insumo-falta');
             const valor = input.value.trim().toUpperCase();
@@ -439,6 +473,7 @@
                 await agregarFalta(valor);
                 input.value = '';
                 lanzarToast(`⚠️ Falta añadida: ${valor}`);
+                await renderFaltasLocales();
                 sincronizarConOficina('faltas', await obtenerFaltas());
             } catch (error) {
                 lanzarToast("Error al registrar falta en la nube.", "error");
@@ -514,6 +549,7 @@
             try {
                 await eliminarFalta(id);
                 lanzarToast("Falta eliminada.");
+                await renderFaltasLocales();
                 sincronizarConOficina('faltas', await obtenerFaltas());
             } catch (error) {
                 lanzarToast("Error al eliminar falta.", "error");
@@ -886,7 +922,6 @@
             Swal.fire({ title: '📡 Guardando en la nube...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
 
             try {
-                // 🔥 Usar el método del núcleo
                 await window.fredware.registrarRecepcion({
                     producto: productoLimpio,
                     proveedor: proveedor || 'S/P',
@@ -904,7 +939,6 @@
                 });
                 console.log('✅ Recepción registrada vía núcleo');
 
-                // Etiquetas
                 let loteEtiquetas = [];
                 if (formValues.stickers > 0) {
                     for (let i = 1; i <= formValues.stickers; i++) {
@@ -959,7 +993,7 @@
                 await sincronizarConOficina('faltas', await obtenerFaltas());
 
                 lanzarToast(`✅ ${productoLimpio} recibido correctamente`);
-                renderFaltasLocales();
+                await renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
 
             } catch (error) {
@@ -1107,7 +1141,6 @@
             }
 
             try {
-                // 🔥 Registrar cada recepción vía núcleo
                 for (let item of arrayLoteMercancias) {
                     try {
                         await window.fredware.registrarRecepcion({
@@ -1185,7 +1218,7 @@
             }
 
             await sincronizarConOficina('cesta', cestaGlobal);
-            renderFaltasLocales();
+            await renderFaltasLocales();
             renderCheckMercancia(cestaGlobal);
         }
 
@@ -1220,7 +1253,7 @@
                 await sincronizarConOficina('faltas', await obtenerFaltas());
 
                 lanzarToast("Incidencia comunicada.", "error");
-                renderFaltasLocales();
+                await renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
             } catch (error) {
                 lanzarToast('Guardado en local.', 'warning');
@@ -1491,7 +1524,6 @@
             Swal.fire({ title: '📡 Guardando en la nube...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
 
             try {
-                // 🔥 Usar el núcleo
                 await window.fredware.registrarRecepcion({
                     producto: directoValues.producto,
                     proveedor: directoValues.proveedor,
@@ -1509,7 +1541,6 @@
                 });
                 console.log('✅ Entrada directa registrada vía núcleo');
 
-                // Etiquetas
                 if (directoValues.imprimir_etiqueta && directoValues.num_etiquetas > 0) {
                     const loteEtiquetas = [];
                     for (let i = 1; i <= directoValues.num_etiquetas; i++) {
@@ -1540,7 +1571,6 @@
                     }
                 }
 
-                // Eliminar de faltas si existe
                 const faltas = await obtenerFaltas();
                 const faltaEncontrada = faltas.find(f => f.insumo && f.insumo.toUpperCase().includes(directoValues.producto));
                 if (faltaEncontrada) {
@@ -1625,7 +1655,7 @@
                 ]);
                 cestaGlobal = cesta;
                 faltasPendientesCache = faltas || [];
-                renderFaltasLocales();
+                await renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
             } catch (error) {
                 console.error('Error recargando datos:', error);
@@ -2013,14 +2043,30 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            await cargarDatosIniciales();
+            console.log('🚀 [Faltas] Init — esperando al núcleo...');
+
+            // Suscribirse a cambios en tiempo real (independiente del núcleo)
             suscribirseCambios();
-            
-            setInterval(actualizarContadorEtiquetas, 30000);
-            
-            setInterval(async () => {
+
+            // Si el núcleo ya está listo, cargar inmediatamente
+            if (window.fredware.state.inicializado) {
                 await cargarDatosIniciales();
-            }, 15000);
+                cargaInicialCompletada = true;
+            }
+            // Si no, el subscribe() se encargará de llamar a cargarDatosIniciales()
+            // cuando el núcleo esté listo
+
+            // Contador de etiquetas cada 30s
+            setInterval(actualizarContadorEtiquetas, 30000);
+
+            // Reintento por si acaso (cada 60s, solo si la lista está vacía)
+            setInterval(async () => {
+                const container = document.getElementById('contenedor-faltas-local');
+                if (container && container.innerHTML.includes('No hay faltas')) {
+                    console.log('🔄 [Faltas] Reintentando carga (lista vacía)');
+                    await cargarDatosIniciales();
+                }
+            }, 60000);
         }
 
         // Exponer funciones globales
@@ -2037,7 +2083,6 @@
         window.guardarEtiquetasSupabase = guardarEtiquetasSupabase;
         window.actualizarContadorEtiquetas = actualizarContadorEtiquetas;
         window.limpiarEtiquetasDia = limpiarEtiquetasDia;
-        window.guardarEtiquetaLocal = guardarEtiquetaLocal;
         window.guardarEtiquetaSupabase = guardarEtiquetaSupabase;
         window.guardarLoteEtiquetas = guardarLoteEtiquetas;
         window.sincronizarEtiquetasConSupabase = sincronizarEtiquetasConSupabase;
@@ -2048,6 +2093,7 @@
         window.cambiarTipoConservacion = cambiarTipoConservacion;
         window.evaluarAlertaTemperatura = evaluarAlertaTemperatura;
 
+        // Arrancar
         init();
     </script>
 </body>
