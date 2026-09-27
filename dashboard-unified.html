@@ -148,6 +148,20 @@
         }
         .item:last-child { border-bottom: none; }
         
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(255,255,255,0.1);
+        }
+        .connection-status.online { color: #86efac; }
+        .connection-status.loading { color: #fcd34d; }
+        .connection-status.error { color: #fca5a5; }
+        
         @media (max-width: 768px) {
             .grid-3, .grid-2 { grid-template-columns: 1fr; }
             .header { flex-direction: column; align-items: stretch; }
@@ -161,7 +175,7 @@
         <div>
             <h1>📊 FREDWARE - Dashboard Unificado</h1>
             <div style="font-size: 13px; opacity: 0.7; margin-top: 4px;">
-                Sistema integrado de recepciones e inventario
+                Sistema integrado de recepciones e inventario · <span id="coreVersion">v2.0</span>
             </div>
             <div class="nav-links">
                 <a href="Inventario.html" class="nav-link">📊 Inventario</a>
@@ -172,37 +186,46 @@
         <div class="stats" id="headerStats">
             <div class="stat-card">
                 <div class="number" id="totalIngredientes">0</div>
-                <div class="label">Ingredientes</div>
+                <div class="label">Insumos</div>
             </div>
             <div class="stat-card">
                 <div class="number" id="recepcionesHoy">0</div>
-                <div class="label">Recibidos Hoy</div>
+                <div class="label">Hoy</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="recepcionesSemana">0</div>
+                <div class="label">Semana</div>
             </div>
             <div class="stat-card">
                 <div class="number" id="alertasCount">0</div>
                 <div class="label">Alertas</div>
             </div>
         </div>
-        <button class="refresh-btn" onclick="forzarActualizacion()">🔄 Actualizar</button>
+        <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+            <span id="connectionStatus" class="connection-status loading">
+                🔄 Conectando...
+            </span>
+            <button class="refresh-btn" onclick="forzarActualizacion()">🔄 Actualizar</button>
+        </div>
     </div>
     
     <div class="grid-3">
         <div class="card">
             <h3>🚨 Alertas Activas</h3>
             <div id="alertasContainer">
-                <div class="empty-state"><div class="icon">✅</div><div>Cargando alertas...</div></div>
+                <div class="empty-state"><div class="icon">⏳</div><div>Cargando alertas...</div></div>
             </div>
         </div>
         <div class="card">
             <h3>📉 Mermas por Producto</h3>
             <div id="mermasContainer">
-                <div class="empty-state"><div class="icon">📊</div><div>Cargando datos...</div></div>
+                <div class="empty-state"><div class="icon">⏳</div><div>Cargando datos...</div></div>
             </div>
         </div>
         <div class="card">
             <h3>📦 Últimas Recepciones</h3>
             <div id="recepcionesContainer">
-                <div class="empty-state"><div class="icon">📭</div><div>Cargando recepciones...</div></div>
+                <div class="empty-state"><div class="icon">⏳</div><div>Cargando recepciones...</div></div>
             </div>
         </div>
     </div>
@@ -211,7 +234,7 @@
         <div class="card">
             <h3>⚠️ Productos Críticos</h3>
             <div id="criticosContainer">
-                <div class="empty-state"><div class="icon">✅</div><div>Cargando...</div></div>
+                <div class="empty-state"><div class="icon">⏳</div><div>Cargando...</div></div>
             </div>
         </div>
         <div class="card">
@@ -222,138 +245,415 @@
             <div class="last-update" id="lastUpdate">Última actualización: --</div>
         </div>
     </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>📊 Top Productos Recibidos</h3>
+            <div id="topProductosContainer">
+                <div class="empty-state"><div class="icon">⏳</div><div>Cargando...</div></div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>🏢 Top Proveedores</h3>
+            <div id="topProveedoresContainer">
+                <div class="empty-state"><div class="icon">⏳</div><div>Cargando...</div></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-let estadoActual = null;
-let ultimaActualizacion = null;
+// ============================================================
+// DASHBOARD UNIFICADO - v2
+// Usa el núcleo shared-core.js v2
+// ============================================================
 
+let estadoActual = null;
+
+// ============================================================
+// SUSCRIPCIÓN AL NÚCLEO
+// ============================================================
 fredware.subscribe((state) => {
     estadoActual = state;
-    ultimaActualizacion = new Date();
+    actualizarConnectionStatus(state);
     renderizarDashboard(state);
 });
 
+function actualizarConnectionStatus(state) {
+    const badge = document.getElementById('connectionStatus');
+    if (!badge) return;
+
+    if (!state.inicializado) {
+        badge.className = 'connection-status loading';
+        badge.textContent = '🔄 Cargando...';
+    } else if (state.recepciones && state.recepciones.length > 0) {
+        badge.className = 'connection-status online';
+        badge.textContent = `🟢 Online (${state.recepciones.length})`;
+    } else {
+        badge.className = 'connection-status error';
+        badge.textContent = '⚠️ Sin datos';
+    }
+
+    const versionEl = document.getElementById('coreVersion');
+    if (versionEl && state.version) {
+        versionEl.textContent = `v${state.version}`;
+    }
+}
+
+// ============================================================
+// RENDERIZADO PRINCIPAL
+// ============================================================
 function renderizarDashboard(state) {
-    document.getElementById('totalIngredientes').textContent = state.ingredientes.length;
-    document.getElementById('recepcionesHoy').textContent = state.estadisticas.totalHoy || 0;
-    document.getElementById('alertasCount').textContent = state.estadisticas.alertas.length;
+    const est = state.estadisticas || {};
+
+    document.getElementById('totalIngredientes').textContent = (state.ingredientes || []).length;
+    document.getElementById('recepcionesHoy').textContent = est.totalHoy || 0;
+    document.getElementById('recepcionesSemana').textContent = est.totalSemana || 0;
+    document.getElementById('alertasCount').textContent = (est.alertas || []).length;
+
     renderizarAlertas(state);
     renderizarMermas(state);
     renderizarRecepciones(state);
     renderizarCriticos(state);
     renderizarActividad(state);
-    document.getElementById('lastUpdate').textContent = 
-        `Última actualización: ${new Date().toLocaleTimeString()}`;
+    renderizarTopProductos(state);
+    renderizarTopProveedores(state);
+
+    const lastUpdate = document.getElementById('lastUpdate');
+    if (lastUpdate) {
+        lastUpdate.textContent = `Última actualización: ${new Date().toLocaleTimeString('es-ES')}`;
+    }
 }
 
+// ============================================================
+// ALERTAS
+// ============================================================
 function renderizarAlertas(state) {
     const container = document.getElementById('alertasContainer');
-    const alertas = state.estadisticas.alertas;
+    const alertas = state.estadisticas.alertas || [];
+
     if (alertas.length === 0) {
         container.innerHTML = `<div class="empty-state"><div class="icon">✅</div><div>Todo en orden</div></div>`;
         return;
     }
-    container.innerHTML = alertas.map(a => `
+
+    // Máximo 5 alertas visibles
+    const visibles = alertas.slice(0, 5);
+
+    container.innerHTML = visibles.map(a => `
         <div class="alert-item ${a.tipo}">
-            <span>${a.mensaje}</span>
+            <span style="flex:1;font-size:13px;">${fredware.util.escapeHtml(a.mensaje)}</span>
             <span class="badge badge-${a.prioridad}">${a.prioridad.toUpperCase()}</span>
         </div>
     `).join('');
+
+    if (alertas.length > 5) {
+        container.innerHTML += `
+            <div style="text-align:center;font-size:12px;color:#94a3b8;padding:8px;">
+                + ${alertas.length - 5} alertas más
+            </div>
+        `;
+    }
 }
 
+// ============================================================
+// MERMAS
+// ============================================================
 function renderizarMermas(state) {
     const container = document.getElementById('mermasContainer');
-    const sorted = [...state.escandallos].sort((a,b) => b.porcentaje_merma - a.porcentaje_merma);
-    const top5 = sorted.slice(0, 5);
-    if (top5.length === 0) {
+    const escandallos = state.escandallos || [];
+
+    if (escandallos.length === 0) {
         container.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div>No hay productos configurados</div></div>`;
         return;
     }
+
+    const sorted = [...escandallos]
+        .filter(e => e.porcentaje_merma != null)
+        .sort((a, b) => (parseFloat(b.porcentaje_merma) || 0) - (parseFloat(a.porcentaje_merma) || 0));
+
+    const top5 = sorted.slice(0, 5);
+
+    if (top5.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div>Sin datos de mermas</div></div>`;
+        return;
+    }
+
     container.innerHTML = top5.map(esc => {
-        const m = esc.porcentaje_merma || 0;
+        const m = parseFloat(esc.porcentaje_merma) || 0;
         const color = m > 20 ? 'red' : m > 10 ? 'yellow' : 'green';
+        const colorHex = m > 20 ? '#ef4444' : m > 10 ? '#f59e0b' : '#10b981';
+
         return `
             <div style="margin-bottom:12px;">
-                <div style="display:flex;justify-content:space-between;font-size:13px;">
-                    <span><strong>${esc.nombre_articulo}</strong></span>
-                    <span style="font-weight:700;color:${m>20?'#ef4444':m>10?'#f59e0b':'#10b981'}">${m}%</span>
+                <div style="display:flex;justify-content:space-between;font-size:13px;gap:8px;">
+                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        <strong>${fredware.util.escapeHtml(esc.nombre_articulo)}</strong>
+                    </span>
+                    <span style="font-weight:700;color:${colorHex};flex-shrink:0;">${m}%</span>
                 </div>
-                <div class="progress-bar"><div class="fill-${color}" style="width:${Math.min(m,100)}%"></div></div>
+                <div class="progress-bar">
+                    <div class="fill-${color}" style="width:${Math.min(m, 100)}%"></div>
+                </div>
             </div>
         `;
     }).join('');
 }
 
+// ============================================================
+// RECEPCIONES (formato plano v2)
+// ============================================================
 function renderizarRecepciones(state) {
     const container = document.getElementById('recepcionesContainer');
     const ultimas = (state.recepciones || []).slice(0, 5);
+
     if (ultimas.length === 0) {
         container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><div>Sin recepciones recientes</div></div>`;
         return;
     }
+
     container.innerHTML = ultimas.map(r => {
-        const productos = r.data?.productos || [];
+        const badgeOrigen = obtenerBadgeOrigen(r.origen);
         return `
             <div class="item">
-                <div>
-                    <strong>📅 ${r.fecha || 'Fecha desconocida'}</strong>
-                    <div style="font-size:12px;color:#64748b;">${productos.length} productos</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        📦 ${fredware.util.escapeHtml(r.producto || 'S/P')}
+                    </div>
+                    <div style="font-size:11px;color:#64748b;margin-top:2px;">
+                        ${fredware.util.escapeHtml(r.proveedor || 'S/P')} · ${r.cantidad || 1} ${fredware.util.escapeHtml(r.unidad || 'UN')}
+                    </div>
                 </div>
-                <span class="badge badge-low">✅ Recibido</span>
+                <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-size:11px;color:#94a3b8;font-weight:600;">
+                        ${fredware.util.formatearFechaCorta(r.fecha_registro)}
+                    </div>
+                    <span class="badge badge-low" style="font-size:9px;margin-top:2px;display:inline-block;">
+                        ${badgeOrigen}
+                    </span>
+                </div>
             </div>
         `;
     }).join('');
 }
 
+function obtenerBadgeOrigen(origen) {
+    switch (origen) {
+        case 'MIGRACION': return '📦 MIG';
+        case 'DIRECTA': return '⚡ DIR';
+        case 'FALTAS': return '🔔 FAL';
+        case 'COMPRAS':
+        default: return '✅ OK';
+    }
+}
+
+// ============================================================
+// CRÍTICOS
+// ============================================================
 function renderizarCriticos(state) {
     const container = document.getElementById('criticosContainer');
     const criticos = state.estadisticas.productosCriticos || [];
+
     if (criticos.length === 0) {
         container.innerHTML = `<div class="empty-state"><div class="icon">✅</div><div>No hay productos críticos</div></div>`;
         return;
     }
+
     container.innerHTML = criticos.map(p => `
         <div class="alert-item error">
-            <span>⚠️ ${p}</span>
-            <span class="badge badge-high">ALTA MERMA</span>
+            <span style="flex:1;font-size:13px;">⚠️ ${fredware.util.escapeHtml(p)}</span>
+            <span class="badge badge-high">MERMA</span>
         </div>
     `).join('');
 }
 
+// ============================================================
+// ACTIVIDAD
+// ============================================================
 function renderizarActividad(state) {
     const container = document.getElementById('actividadContainer');
     const actividades = [];
+
+    // Última recepción
     if (state.recepciones?.length > 0) {
         const ultima = state.recepciones[0];
-        if (ultima) actividades.push({
-            mensaje: `📦 Recepción: ${ultima.data?.productos?.length || 0} productos`,
-            tiempo: 'Ahora'
+        if (ultima) {
+            actividades.push({
+                mensaje: `📦 ${ultima.producto} recibido`,
+                detalle: `${ultima.cantidad} ${ultima.unidad} de ${ultima.proveedor}`,
+                tiempo: fredware.util.formatearFechaCorta(ultima.fecha_registro)
+            });
+        }
+    }
+
+    // Total hoy
+    if (state.estadisticas.totalHoy > 0) {
+        actividades.push({
+            mensaje: `📊 ${state.estadisticas.totalHoy} recepciones hoy`,
+            detalle: `${state.estadisticas.totalSemana} esta semana`,
+            tiempo: 'Hoy'
         });
     }
+
+    // Última alerta
     if (state.estadisticas.alertas?.length > 0) {
-        const ultimaAlerta = state.estadisticas.alertas[0];
-        if (ultimaAlerta) actividades.push({
-            mensaje: ultimaAlerta.mensaje,
+        const alerta = state.estadisticas.alertas[0];
+        actividades.push({
+            mensaje: alerta.mensaje,
+            detalle: `Prioridad: ${alerta.prioridad}`,
             tiempo: 'Ahora'
         });
     }
+
     if (actividades.length === 0) {
         container.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><div>Esperando actividad...</div></div>`;
         return;
     }
+
     container.innerHTML = actividades.map(a => `
-        <div class="item"><span>${a.mensaje}</span><span class="badge badge-low">${a.tiempo}</span></div>
+        <div class="item">
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;">${fredware.util.escapeHtml(a.mensaje)}</div>
+                <div style="font-size:11px;color:#94a3b8;">${fredware.util.escapeHtml(a.detalle || '')}</div>
+            </div>
+            <span class="badge badge-low" style="flex-shrink:0;">${a.tiempo}</span>
+        </div>
     `).join('');
 }
 
-function forzarActualizacion() {
-    document.getElementById('alertasContainer').innerHTML = 
-        `<div class="empty-state"><div class="icon">🔄</div><div>Actualizando...</div></div>`;
-    fredware.recargarTodo();
+// ============================================================
+// TOP PRODUCTOS (calculado en el cliente desde state.recepciones)
+// ============================================================
+function renderizarTopProductos(state) {
+    const container = document.getElementById('topProductosContainer');
+    const recepciones = state.recepciones || [];
+
+    if (recepciones.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div>Sin datos</div></div>`;
+        return;
+    }
+
+    // Contar por producto
+    const conteo = {};
+    recepciones.forEach(r => {
+        const prod = r.producto || 'S/P';
+        conteo[prod] = (conteo[prod] || 0) + 1;
+    });
+
+    const top = Object.entries(conteo)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    const maxCount = top[0]?.[1] || 1;
+
+    container.innerHTML = top.map(([producto, count]) => {
+        const pct = (count / maxCount) * 100;
+        return `
+            <div style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;gap:8px;">
+                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        <strong>${fredware.util.escapeHtml(producto)}</strong>
+                    </span>
+                    <span style="font-weight:700;color:#2563eb;flex-shrink:0;">${count}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="fill-green" style="width:${pct}%;background:#2563eb;"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
-setInterval(() => { if (fredware) fredware.recargarTodo(); }, 30000);
+// ============================================================
+// TOP PROVEEDORES
+// ============================================================
+function renderizarTopProveedores(state) {
+    const container = document.getElementById('topProveedoresContainer');
+    const recepciones = state.recepciones || [];
+
+    if (recepciones.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">🏢</div><div>Sin datos</div></div>`;
+        return;
+    }
+
+    // Contar por proveedor
+    const conteo = {};
+    recepciones.forEach(r => {
+        const prov = r.proveedor || 'S/P';
+        conteo[prov] = (conteo[prov] || 0) + 1;
+    });
+
+    const top = Object.entries(conteo)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    const maxCount = top[0]?.[1] || 1;
+
+    container.innerHTML = top.map(([proveedor, count]) => {
+        const pct = (count / maxCount) * 100;
+        return `
+            <div style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;gap:8px;">
+                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        🏢 <strong>${fredware.util.escapeHtml(proveedor)}</strong>
+                    </span>
+                    <span style="font-weight:700;color:#7c3aed;flex-shrink:0;">${count}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="fill-green" style="width:${pct}%;background:#7c3aed;"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ============================================================
+// ACCIONES
+// ============================================================
+function forzarActualizacion() {
+    // Feedback visual inmediato
+    const container = document.getElementById('alertasContainer');
+    if (container) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">🔄</div><div>Actualizando...</div></div>`;
+    }
+
+    const badge = document.getElementById('connectionStatus');
+    if (badge) {
+        badge.className = 'connection-status loading';
+        badge.textContent = '🔄 Actualizando...';
+    }
+
+    // Llamar al core
+    fredware.recargarTodo()
+        .then(() => {
+            fredware.ui.toast('Datos actualizados', 'success');
+        })
+        .catch((err) => {
+            console.error('Error actualizando:', err);
+            fredware.ui.toast('Error al actualizar', 'error');
+        });
+}
+
+// ============================================================
+// INICIALIZACIÓN
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📊 [Dashboard v2] Listo. Esperando datos del núcleo...');
+
+    // Si el core tarda en inicializar, mostrar estado intermedio
+    setTimeout(() => {
+        if (estadoActual && !estadoActual.inicializado) {
+            const badge = document.getElementById('connectionStatus');
+            if (badge) {
+                badge.className = 'connection-status loading';
+                badge.textContent = '🔄 Cargando datos...';
+            }
+        }
+    }, 2000);
+});
+
+// Exponer funciones globales
+window.forzarActualizacion = forzarActualizacion;
 </script>
 </body>
 </html>
