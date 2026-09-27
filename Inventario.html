@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>📊 Fredware - Gestión de Inventario y Mermas</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- 🔥 NÚCLEO UNIFICADO -->
+    <!-- 🔥 NÚCLEO UNIFICADO v2 -->
     <script src="shared-core.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f8fafc; color: #1e293b; padding: 15px; }
         .container { max-width: 900px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        h1 { font-size: 20px; text-align: center; margin-bottom: 15px; background: #0f172a; color: white; padding: 14px; border-radius: 8px; font-weight: 800; tracking: tight; }
+        h1 { font-size: 20px; text-align: center; margin-bottom: 15px; background: #0f172a; color: white; padding: 14px; border-radius: 8px; font-weight: 800; }
         
         .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 6px; background: none; border: none; color: #475569; font-size: 13px; transition: all 0.2s; }
@@ -20,7 +20,7 @@
         .app-section.active { display: block; }
 
         .box { background: #ffffff; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        h3 { font-size: 14px; margin-bottom: 12px; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; font-weight: 700; text-transform: uppercase; tracking: wide; }
+        h3 { font-size: 14px; margin-bottom: 12px; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; font-weight: 700; text-transform: uppercase; }
         label { display: block; font-size: 12px; font-weight: bold; margin-top: 10px; color: #475569; }
         input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px; font-size: 14px; outline: none; background-color: #f8fafc; }
         input:focus, select:focus { border-color: #0284c7; background-color: #fff; }
@@ -38,11 +38,19 @@
         .input-table { width: 85px; padding: 6px; text-align: center; margin-top: 0; font-weight: bold; }
         .badge-neto { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
         
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
-        .toast { background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast-success { border-left: 4px solid #10b981; }
-        .toast-error { border-left: 4px solid #ef4444; }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        .status-online { background: #d1fae5; color: #065f46; }
+        .status-loading { background: #fef3c7; color: #92400e; }
+        .status-error { background: #fee2e2; color: #991b1b; }
 
         .btn-volver {
             background: #64748b;
@@ -65,7 +73,10 @@
 <body>
 <div class="container">
     <a href="index.html" class="btn-volver">🏠 Volver al Panel</a>
-    <h1>📊 Fredware Ecosistema - Inventario y Mermas</h1>
+    <h1>
+        📊 Fredware - Inventario y Mermas
+        <span id="statusBadge" class="status-badge status-loading">🔄 Cargando...</span>
+    </h1>
     
     <div class="tabs">
         <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">📉 Cuadro de Cierre Mensual</button>
@@ -82,7 +93,7 @@
                         <option value="06-2026">Junio 2026</option>
                         <option value="07-2026">Julio 2026</option>
                         <option value="08-2026">Agosto 2026</option>
-                        <option value="09-2026">Septiembre 2026</option>
+                        <option value="09-2026" selected>Septiembre 2026</option>
                     </select>
                 </div>
                 <div>
@@ -107,7 +118,7 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-cierre-mensual">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
             <button class="btn-action" style="background: #10b981; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);" onclick="guardarConteoFisicoBase()">💾 Blindar Conteo e Inventario del Mes</button>
@@ -166,350 +177,403 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-maestro-escandallos">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 </div>
 
-<div id="toast-container"></div>
-
 <script>
-    // ============================================================
-    // CONFIGURACIÓN SUPABASE (reutiliza las mismas credenciales)
-    // ============================================================
-    const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-    const db_nube = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ============================================================
+// INVENTARIO — Núcleo v2
+// ============================================================
+// Cambios clave:
+//   ✅ Usa fredware.supabase (del núcleo)
+//   ✅ obtenerComprasBrutas() lee de 'compras_historicas'
+//   ✅ Utilidades del core (toast, escapeHtml)
+//   ✅ Suscripción al estado global
+// ============================================================
 
-    let listadoEscandallosGlobal = [];
-    let lineasInventarioMes = [];
+// Cliente del núcleo (no crear uno propio)
+const db_nube = window.fredware.supabase;
 
-    // ============================================================
-    // UTILIDADES
-    // ============================================================
-    function lanzarToast(mensaje, tipo = 'success') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${tipo}`;
-        toast.innerHTML = `<span>${tipo === 'success' ? '✅' : '❌'}</span> <span>${mensaje}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.classList.add('show'), 50);
-        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
+// Estado local
+let listadoEscandallosGlobal = [];
+let lineasInventarioMes = [];
+
+// Alias a utilidades del core
+const lanzarToast = (msg, tipo) => window.fredware.ui.toast(msg, tipo);
+const escapeHtml = (t) => window.fredware.util.escapeHtml(t);
+
+// ============================================================
+// ACTUALIZAR ESTADO DE CONEXIÓN
+// ============================================================
+function actualizarStatusBadge(state) {
+    const badge = document.getElementById('statusBadge');
+    if (!badge) return;
+
+    if (!state.inicializado) {
+        badge.className = 'status-badge status-loading';
+        badge.textContent = '🔄 Cargando...';
+    } else {
+        badge.className = 'status-badge status-online';
+        badge.textContent = `🟢 Núcleo v${state.version || '2.0'} activo`;
+    }
+}
+
+// ============================================================
+// SUSCRIPCIÓN AL NÚCLEO
+// ============================================================
+fredware.subscribe((state) => {
+    actualizarStatusBadge(state);
+    // Guardar escandallos del core (reutilizables)
+    if (state.escandallos && state.escandallos.length > 0) {
+        listadoEscandallosGlobal = state.escandallos;
+    }
+});
+
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
+function switchTab(num) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`btn-t${num}`).classList.add('active');
+    document.getElementById(`sec${num}`).classList.add('active');
+
+    if (num === 1) cargarCuadroInventario();
+    if (num === 2) cargarMaestroEscandallos();
+}
+
+// ============================================================
+// PESTAÑA 2: MAESTRO DE ESCANDALLOS
+// ============================================================
+async function cargarMaestroEscandallos() {
+    const cuerpo = document.getElementById('tabla-maestro-escandallos');
+    if (!cuerpo) return;
+    cuerpo.innerHTML = '<tr><td colspan="6">⏳ Leyendo matriz de costes...</td></tr>';
+
+    const { data, error } = await db_nube
+        .from('maestro_escandallos')
+        .select('*')
+        .order('nombre_articulo', { ascending: true });
+
+    if (error) {
+        cuerpo.innerHTML = '<tr><td colspan="6">❌ Error al conectar con Supabase.</td></tr>';
+        return;
     }
 
-    function switchTab(num) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
-        document.getElementById(`btn-t${num}`).classList.add('active');
-        document.getElementById(`sec${num}`).classList.add('active');
-        
-        if (num === 1) cargarCuadroInventario();
-        if (num === 2) cargarMaestroEscandallos();
+    listadoEscandallosGlobal = data || [];
+    cuerpo.innerHTML = '';
+
+    if (listadoEscandallosGlobal.length === 0) {
+        cuerpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;font-style:italic;">No hay fichas configuradas. Configura la primera arriba.</td></tr>';
+        return;
     }
 
-    // ============================================================
-    // PESTAÑA 2: MAESTRO DE ESCANDALLOS (sin cambios)
-    // ============================================================
-    async function cargarMaestroEscandallos() {
-        const cuerpo = document.getElementById('tabla-maestro-escandallos');
-        if(!cuerpo) return;
-        cuerpo.innerHTML = '<tr><td colspan="6">⏳ Leyendo matriz de costes...</td></tr>';
+    listadoEscandallosGlobal.forEach(esc => {
+        cuerpo.innerHTML += `
+            <tr>
+                <td><strong>${escapeHtml(esc.nombre_articulo)}</strong></td>
+                <td><span style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">${escapeHtml(esc.unidad_compra)}</span></td>
+                <td><span style="font-size:11px;background:#e2e8f0;padding:2px 6px;border-radius:4px;">${escapeHtml(esc.unidad_recuento)}</span></td>
+                <td style="text-align: center;font-weight:bold;">x${esc.factor_conversion}</td>
+                <td style="text-align: center;color:#ef4444;font-weight:bold;">${esc.porcentaje_merma}%</td>
+                <td>
+                    <button class="btn-action btn-danger" style="padding:4px 8px;font-size:11px;margin-top:0;" onclick="eliminarFichaEscandallo('${esc.id}')">Eliminar</button>
+                </td>
+            </tr>
+        `;
+    });
+}
 
-        const { data, error } = await db_nube
-            .from('maestro_escandallos')
-            .select('*')
-            .order('nombre_articulo', { ascending: true });
+async function guardarFichaEscandallo() {
+    const inputId = document.getElementById('esc-id').value.trim().toUpperCase();
+    const uCompra = document.getElementById('esc-unidad-compra').value;
+    const uRecuento = document.getElementById('esc-unidad-recuento').value;
+    const factor = parseFloat(document.getElementById('esc-factor').value) || 1.0;
+    const merma = parseFloat(document.getElementById('esc-merma').value) || 0.0;
 
-        if (error) {
-            cuerpo.innerHTML = '<tr><td colspan="6">❌ Error al conectar con Supabase.</td></tr>';
-            return;
-        }
+    if (!inputId) { lanzarToast("El nombre del insumo es obligatorio.", "error"); return; }
 
-        listadoEscandallosGlobal = data || [];
-        cuerpo.innerHTML = '';
+    const { error } = await db_nube
+        .from('maestro_escandallos')
+        .upsert([{
+            id: inputId,
+            nombre_articulo: inputId,
+            unidad_compra: uCompra,
+            unidad_recuento: uRecuento,
+            factor_conversion: factor,
+            porcentaje_merma: merma
+        }]);
 
-        if(listadoEscandallosGlobal.length === 0) {
-            cuerpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;font-style:italic;">No hay fichas configuradas. Configura la primera arriba.</td></tr>';
-            return;
-        }
+    if (error) { lanzarToast("No se pudo guardar la regla.", "error"); return; }
 
-        listadoEscandallosGlobal.forEach(esc => {
-            cuerpo.innerHTML += `
-                <tr>
-                    <td><strong>${esc.nombre_articulo}</strong></td>
-                    <td><span style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">${esc.unidad_compra}</span></td>
-                    <td><span style="font-size:11px;background:#e2e8f0;padding:2px 6px;border-radius:4px;">${esc.unidad_recuento}</span></td>
-                    <td style="text-align: center;font-weight:bold;">x${esc.factor_conversion}</td>
-                    <td style="text-align: center;color:#ef4444;font-weight:bold;">${esc.porcentaje_merma}%</td>
-                    <td>
-                        <button class="btn-action btn-danger" style="padding:4px 8px;font-size:11px;margin-top:0;" onclick="eliminarFichaEscandallo('${esc.id}')">Eliminar</button>
-                    </td>
-                </tr>
-            `;
-        });
+    lanzarToast("Regla de rendimiento fijada.", 'success');
+    document.getElementById('esc-id').value = '';
+    document.getElementById('esc-merma').value = '0';
+    document.getElementById('esc-factor').value = '1';
+    cargarMaestroEscandallos();
+
+    // Recargar el núcleo para reflejar el nuevo escandallo
+    if (window.fredware) window.fredware.recargarTodo();
+}
+
+async function eliminarFichaEscandallo(id) {
+    if (!confirm("¿Eliminar este insumo del maestro contable?")) return;
+    const { error } = await db_nube.from('maestro_escandallos').delete().eq('id', id);
+    if (error) { lanzarToast("Error al borrar.", "error"); return; }
+    lanzarToast("Insumo desvinculado.", 'success');
+    cargarMaestroEscandallos();
+
+    if (window.fredware) window.fredware.recargarTodo();
+}
+
+// ============================================================
+// PESTAÑA 1: INVENTARIO MENSUAL
+// ============================================================
+
+// 🔥 CAMBIO CLAVE: Ahora lee de compras_historicas (no de cesta_pedidos)
+async function obtenerComprasBrutas(periodo) {
+    // El periodo viene como "MM-YYYY"
+    const [mes, año] = periodo.split('-');
+    const inicio = new Date(parseInt(año), parseInt(mes) - 1, 1);
+    const fin = new Date(parseInt(año), parseInt(mes), 1); // primer día del mes siguiente
+
+    const { data, error } = await db_nube
+        .from('compras_historicas')
+        .select('producto, cantidad, unidad, fecha_compra')
+        .eq('estado', 'RECIBIDO')
+        .gte('fecha_compra', inicio.toISOString())
+        .lt('fecha_compra', fin.toISOString());
+
+    if (error) {
+        console.error("Error obteniendo compras desde compras_historicas:", error);
+        return {};
     }
 
-    async function guardarFichaEscandallo() {
-        const inputId = document.getElementById('esc-id').value.trim().toUpperCase();
-        const uCompra = document.getElementById('esc-unidad-compra').value;
-        const uRecuento = document.getElementById('esc-unidad-recuento').value;
-        const factor = parseFloat(document.getElementById('esc-factor').value) || 1.0;
-        const merma = parseFloat(document.getElementById('esc-merma').value) || 0.0;
-
-        if(!inputId) { lanzarToast("El nombre del insumo es obligatorio.", "error"); return; }
-
-        const { error } = await db_nube
-            .from('maestro_escandallos')
-            .upsert([{
-                id: inputId,
-                nombre_articulo: inputId,
-                unidad_compra: uCompra,
-                unidad_recuento: uRecuento,
-                factor_conversion: factor,
-                porcentaje_merma: merma
-            }]);
-
-        if (error) { lanzarToast("No se pudo guardar la regla.", "error"); return; }
-
-        lanzarToast("Regla de rendimiento fijada.");
-        document.getElementById('esc-id').value = '';
-        document.getElementById('esc-merma').value = '0';
-        document.getElementById('esc-factor').value = '1';
-        cargarMaestroEscandallos();
-    }
-
-    async function eliminarFichaEscandallo(id) {
-        if(!confirm("¿Eliminar este insumo del maestro contable?")) return;
-        const { error } = await db_nube.from('maestro_escandallos').delete().eq('id', id);
-        if(error) { lanzarToast("Error al borrar.", "error"); return; }
-        lanzarToast("Insumo desvinculado.");
-        cargarMaestroEscandallos();
-    }
-
-    // ============================================================
-    // PESTAÑA 1: INVENTARIO MENSUAL (con datos reales de Supabase)
-    // ============================================================
-
-    // 🔵 Obtener compras brutas del mes desde cesta_pedidos
-    async function obtenerComprasBrutas(periodo) {
-        // El periodo viene como "MM-YYYY", lo convertimos a rango de fechas
-        const [mes, año] = periodo.split('-');
-        const inicio = new Date(parseInt(año), parseInt(mes) - 1, 1);
-        const fin = new Date(parseInt(año), parseInt(mes), 1); // primer día del mes siguiente
-
-        const { data, error } = await db_nube
-            .from('cesta_pedidos')
-            .select('detalle, fecha_entrega_esperada, fecha_registro')
-            .eq('estado', 'RECIBIDO') // Solo lo que ha entrado
-            .gte('fecha_entrega_esperada', inicio.toISOString().split('T')[0])
-            .lt('fecha_entrega_esperada', fin.toISOString().split('T')[0]);
-
-        if (error) {
-            console.error("Error obteniendo compras:", error);
-            return {};
-        }
-
-        // Consolidar por nombre de artículo (extraer del detalle)
-        const compras = {};
-        data.forEach(item => {
-            // Extraer cantidad y nombre del detalle: "[5 KG] MERLUZA"
-            const match = item.detalle.match(/^\[(\d+)\s+\w+\]\s*(.*)$/);
-            if (match) {
-                const cantidad = parseFloat(match[1]);
-                const nombre = match[2].trim().toUpperCase();
-                compras[nombre] = (compras[nombre] || 0) + cantidad;
-            }
-        });
-
-        return compras;
-    }
-
-    // 🔵 Obtener stock final del mes anterior (para usarlo como inicial)
-    async function obtenerStockMesAnterior(periodo, articuloId) {
-        const [mes, año] = periodo.split('-');
-        let mesAnterior = parseInt(mes) - 1;
-        let añoAnterior = parseInt(año);
-        if (mesAnterior === 0) { mesAnterior = 12; añoAnterior--; }
-        const periodoAnterior = `${String(mesAnterior).padStart(2, '0')}-${añoAnterior}`;
-
-        const { data, error } = await db_nube
-            .from('inventario_mensual')
-            .select('stock_fisico_final')
-            .eq('mes_anio', periodoAnterior)
-            .eq('articulo_id', articuloId)
-            .maybeSingle();
-
-        if (error || !data) return 0;
-        return data.stock_fisico_final || 0;
-    }
-
-    // 🔵 Generar líneas para el mes actual (sincronizar con maestro y compras)
-    async function generarLineasMesActual() {
-        const periodo = document.getElementById('filtro-periodo').value;
-
-        // 1. Obtener todos los artículos del maestro
-        const { data: maestro, error: errMaestro } = await db_nube
-            .from('maestro_escandallos')
-            .select('*');
-        if (errMaestro || !maestro || maestro.length === 0) {
-            lanzarToast("Primero debes dar de alta algún insumo en el Maestro (Pestaña 2).", "error");
-            return;
-        }
-
-        // 2. Obtener compras brutas del mes desde la cesta
-        const comprasBrutas = await obtenerComprasBrutas(periodo);
-
-        // 3. Para cada artículo, calcular stock inicial y compras, e insertar/actualizar
-        for (const art of maestro) {
-            const stockInicial = await obtenerStockMesAnterior(periodo, art.id);
-            const compras = comprasBrutas[art.nombre_articulo] || 0;
-
-            // Aplicar factor de conversión si corresponde
-            let comprasAjustadas = compras;
-            if (art.factor_conversion !== 1 && art.unidad_compra === 'CAJAS') {
-                comprasAjustadas = compras * art.factor_conversion;
-            }
-
-            // Insertar o actualizar la línea del mes
-            const { error } = await db_nube
-                .from('inventario_mensual')
-                .upsert([{
-                    mes_anio: periodo,
-                    articulo_id: art.id,
-                    stock_inicial: stockInicial,
-                    compras_brutas_mes: comprasAjustadas,
-                    stock_fisico_final: 0.0,
-                    consumo_teorico_neto: 0.0
-                }], { onConflict: 'mes_anio, articulo_id' });
-
-            if (error) console.error("Error al guardar línea:", error);
-        }
-
-        lanzarToast("Sincronización con compras de Fredware completada.");
-        cargarCuadroInventario();
-    }
-
-    // 🔵 Cargar el cuadro de inventario para el mes seleccionado
-    async function cargarCuadroInventario() {
-        const periodo = document.getElementById('filtro-periodo').value;
-        const cuerpo = document.getElementById('tabla-cierre-mensual');
-        if(!cuerpo) return;
-        cuerpo.innerHTML = '<tr><td colspan="7">⏳ Calculando histórico de compras brutas y rendimientos...</td></tr>';
-
-        // 1. Obtener maestro (para mermas y unidad)
-        const { data: maestro } = await db_nube.from('maestro_escandallos').select('*');
-        listadoEscandallosGlobal = maestro || [];
-
-        // 2. Obtener líneas de inventario del mes
-        const { data: inventarioMes, error } = await db_nube
-            .from('inventario_mensual')
-            .select('*, maestro_escandallos(*)')
-            .eq('mes_anio', periodo);
-
-        if(error) { cuerpo.innerHTML = '<tr><td colspan="7">❌ Error en lectura de histórico.</td></tr>'; return; }
-        
-        lineasInventarioMes = inventarioMes || [];
-        cuerpo.innerHTML = '';
-
-        if(lineasInventarioMes.length === 0) {
-            cuerpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;font-style:italic;">Mes en blanco. Dale al botón superior para sincronizar las compras de Fredware Central.</td></tr>';
-            return;
-        }
-
-        lineasInventarioMes.forEach((lin) => {
-            const esc = lin.maestro_escandallos || { unidad_recuento: 'KG', porcentaje_merma: 0 };
-            
-            cuerpo.innerHTML += `
-                <tr>
-                    <td><strong>${lin.articulo_id}</strong></td>
-                    <td><span style="font-size:11px;background:#e2e8f0;padding:2px 6px;border-radius:4px;">${esc.unidad_recuento}</span></td>
-                    <td style="text-align: center;font-weight:bold;color:#475569;">${lin.stock_inicial}</td>
-                    <td style="text-align: center;font-weight:bold;color:#2563eb;">${lin.compras_brutas_mes}</td>
-                    <td style="text-align: center;">
-                        <input type="number" id="f-final-${lin.id}" class="input-table" value="${lin.stock_fisico_final}" min="0" step="0.01" onchange="calcularConsumoFilaEnCaliente(${lin.id}, ${lin.stock_inicial}, ${lin.compras_brutas_mes}, ${esc.porcentaje_merma})">
-                    </td>
-                    <td style="text-align: center;color:#ef4444;font-weight:bold;">${esc.porcentaje_merma}%</td>
-                    <td style="text-align: center;"><span id="neto-display-${lin.id}" class="badge-neto">${lin.consumo_teorico_neto} ${esc.unidad_recuento}</span></td>
-                </tr>
-            `;
-        });
-    }
-
-    // 🔵 Cálculo interactivo en caliente
-    function calcularConsumoFilaEnCaliente(lineaId, inicial, compras, porcMerma) {
-        const inputFisico = parseFloat(document.getElementById(`f-final-${lineaId}`).value) || 0;
-        const consumoBruto = (inicial + compras) - inputFisico;
-        const rendimientoFactor = (100 - porcMerma) / 100;
-        let consumoNetoReal = consumoBruto * rendimientoFactor;
-        if(consumoNetoReal < 0) consumoNetoReal = 0;
-        document.getElementById(`neto-display-${lineaId}`).innerText = `${consumoNetoReal.toFixed(2)}`;
-    }
-
-    // 🔵 Guardar el conteo físico final y el consumo neto calculado
-    // ✅ MODIFICADO CON INTEGRACIÓN AL NÚCLEO UNIFICADO
-    async function guardarConteoFisicoBase() {
-        if(lineasInventarioMes.length === 0) return;
-
-        for(let lin of lineasInventarioMes) {
-            const inputVal = parseFloat(document.getElementById(`f-final-${lin.id}`).value) || 0;
-            const displayNeto = parseFloat(document.getElementById(`neto-display-${lin.id}`).innerText) || 0;
-
-            await db_nube
-                .from('inventario_mensual')
-                .update({ 
-                    stock_fisico_final: inputVal, 
-                    consumo_teorico_neto: displayNeto,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', lin.id);
-
-            // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
-            if (window.fredware) {
-                try {
-                    await window.fredware.broadcastEvent('cierre_inventario', {
-                        id: lin.id,
-                        articulo: lin.articulo_id,
-                        stock_final: inputVal,
-                        consumo_neto: displayNeto,
-                        mes_anio: lin.mes_anio,
-                        timestamp: new Date().toISOString()
-                    });
-                    console.log('📡 Notificado cierre de inventario al núcleo:', lin.articulo_id);
-                } catch (e) {
-                    console.warn('⚠️ No se pudo notificar al núcleo:', e);
-                }
-            }
-        }
-
-        lanzarToast("¡Cierre de inventario mensual guardado a fuego en la nube!");
-        cargarCuadroInventario();
-    }
-
-    // ============================================================
-    // CONEXIÓN AL NÚCLEO UNIFICADO
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', () => {
-        if (window.fredware) {
-            console.log('✅ Inventario conectado al núcleo unificado');
-            window.fredware.subscribe((state) => {
-                console.log('📊 Estado global actualizado desde Inventario');
-                // Opcional: refrescar datos si hay nuevas recepciones
-                if (state.recepciones && state.recepciones.length > 0) {
-                    // Podríamos recargar compras si es necesario
-                }
-            });
-        } else {
-            console.warn('⚠️ Núcleo unificado no disponible. Asegúrate de que shared-core.js está cargado.');
+    // Consolidar por producto
+    const compras = {};
+    (data || []).forEach(item => {
+        const nombre = (item.producto || '').toUpperCase().trim();
+        const cantidad = parseFloat(item.cantidad) || 0;
+        if (nombre) {
+            compras[nombre] = (compras[nombre] || 0) + cantidad;
         }
     });
 
-    // ============================================================
-    // CARGA INICIAL
-    // ============================================================
+    console.log(`📊 Compras brutas cargadas de compras_historicas:`, Object.keys(compras).length, 'productos');
+    return compras;
+}
+
+// 🔵 Stock final del mes anterior (sin cambios)
+async function obtenerStockMesAnterior(periodo, articuloId) {
+    const [mes, año] = periodo.split('-');
+    let mesAnterior = parseInt(mes) - 1;
+    let añoAnterior = parseInt(año);
+    if (mesAnterior === 0) { mesAnterior = 12; añoAnterior--; }
+    const periodoAnterior = `${String(mesAnterior).padStart(2, '0')}-${añoAnterior}`;
+
+    const { data, error } = await db_nube
+        .from('inventario_mensual')
+        .select('stock_fisico_final')
+        .eq('mes_anio', periodoAnterior)
+        .eq('articulo_id', articuloId)
+        .maybeSingle();
+
+    if (error || !data) return 0;
+    return parseFloat(data.stock_fisico_final) || 0;
+}
+
+// 🔵 Generar líneas del mes actual
+async function generarLineasMesActual() {
+    const periodo = document.getElementById('filtro-periodo').value;
+
+    // 1. Obtener todos los artículos del maestro
+    const { data: maestro, error: errMaestro } = await db_nube
+        .from('maestro_escandallos')
+        .select('*');
+    if (errMaestro || !maestro || maestro.length === 0) {
+        lanzarToast("Primero debes dar de alta algún insumo en el Maestro (Pestaña 2).", "error");
+        return;
+    }
+
+    // 2. Obtener compras brutas del mes desde compras_historicas
+    const comprasBrutas = await obtenerComprasBrutas(periodo);
+
+    // 3. Para cada artículo, calcular stock inicial y compras, e insertar/actualizar
+    let actualizados = 0;
+    for (const art of maestro) {
+        const stockInicial = await obtenerStockMesAnterior(periodo, art.id);
+        const compras = comprasBrutas[art.nombre_articulo] || 0;
+
+        // Aplicar factor de conversión si corresponde
+        let comprasAjustadas = compras;
+        if (art.factor_conversion && art.factor_conversion !== 1 && art.unidad_compra === 'CAJAS') {
+            comprasAjustadas = compras * art.factor_conversion;
+        }
+
+        // Insertar o actualizar la línea del mes
+        const { error } = await db_nube
+            .from('inventario_mensual')
+            .upsert([{
+                mes_anio: periodo,
+                articulo_id: art.id,
+                stock_inicial: stockInicial,
+                compras_brutas_mes: comprasAjustadas,
+                stock_fisico_final: 0.0,
+                consumo_teorico_neto: 0.0
+            }], { onConflict: 'mes_anio, articulo_id' });
+
+        if (error) {
+            console.error("Error al guardar línea:", error);
+        } else {
+            actualizados++;
+        }
+    }
+
+    lanzarToast(`✅ Sincronización completada (${actualizados} insumos desde compras_historicas)`, 'success');
     cargarCuadroInventario();
+}
+
+// 🔵 Cargar el cuadro de inventario
+async function cargarCuadroInventario() {
+    const periodo = document.getElementById('filtro-periodo').value;
+    const cuerpo = document.getElementById('tabla-cierre-mensual');
+    if (!cuerpo) return;
+    cuerpo.innerHTML = '<tr><td colspan="7">⏳ Calculando histórico de compras brutas y rendimientos...</td></tr>';
+
+    // 1. Obtener maestro (por si no está cargado)
+    const { data: maestro } = await db_nube.from('maestro_escandallos').select('*');
+    listadoEscandallosGlobal = maestro || [];
+
+    // 2. Obtener líneas de inventario del mes
+    const { data: inventarioMes, error } = await db_nube
+        .from('inventario_mensual')
+        .select('*, maestro_escandallos(*)')
+        .eq('mes_anio', periodo);
+
+    if (error) {
+        cuerpo.innerHTML = '<tr><td colspan="7">❌ Error en lectura de histórico.</td></tr>';
+        return;
+    }
+
+    lineasInventarioMes = inventarioMes || [];
+    cuerpo.innerHTML = '';
+
+    if (lineasInventarioMes.length === 0) {
+        cuerpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;font-style:italic;">Mes en blanco. Dale al botón superior para sincronizar las compras de Fredware Central.</td></tr>';
+        return;
+    }
+
+    lineasInventarioMes.forEach((lin) => {
+        const esc = lin.maestro_escandallos || { unidad_recuento: 'KG', porcentaje_merma: 0 };
+
+        cuerpo.innerHTML += `
+            <tr>
+                <td><strong>${escapeHtml(lin.articulo_id)}</strong></td>
+                <td><span style="font-size:11px;background:#e2e8f0;padding:2px 6px;border-radius:4px;">${escapeHtml(esc.unidad_recuento)}</span></td>
+                <td style="text-align: center;font-weight:bold;color:#475569;">${lin.stock_inicial}</td>
+                <td style="text-align: center;font-weight:bold;color:#2563eb;">${lin.compras_brutas_mes}</td>
+                <td style="text-align: center;">
+                    <input type="number" id="f-final-${lin.id}" class="input-table" value="${lin.stock_fisico_final}" min="0" step="0.01" onchange="calcularConsumoFilaEnCaliente(${lin.id}, ${lin.stock_inicial}, ${lin.compras_brutas_mes}, ${esc.porcentaje_merma})">
+                </td>
+                <td style="text-align: center;color:#ef4444;font-weight:bold;">${esc.porcentaje_merma}%</td>
+                <td style="text-align: center;"><span id="neto-display-${lin.id}" class="badge-neto">${lin.consumo_teorico_neto} ${escapeHtml(esc.unidad_recuento)}</span></td>
+            </tr>
+        `;
+    });
+}
+
+// 🔵 Cálculo interactivo
+function calcularConsumoFilaEnCaliente(lineaId, inicial, compras, porcMerma) {
+    const inputFisico = parseFloat(document.getElementById(`f-final-${lineaId}`).value) || 0;
+    const consumoBruto = (inicial + compras) - inputFisico;
+    const rendimientoFactor = (100 - porcMerma) / 100;
+    let consumoNetoReal = consumoBruto * rendimientoFactor;
+    if (consumoNetoReal < 0) consumoNetoReal = 0;
+    document.getElementById(`neto-display-${lineaId}`).innerText = `${consumoNetoReal.toFixed(2)}`;
+}
+
+// 🔵 Guardar conteo físico y notificar al núcleo
+async function guardarConteoFisicoBase() {
+    if (lineasInventarioMes.length === 0) {
+        lanzarToast('No hay líneas para guardar', 'warning');
+        return;
+    }
+
+    let guardadas = 0;
+
+    for (let lin of lineasInventarioMes) {
+        const inputVal = parseFloat(document.getElementById(`f-final-${lin.id}`).value) || 0;
+        const displayNeto = parseFloat(document.getElementById(`neto-display-${lin.id}`).innerText) || 0;
+
+        const { error } = await db_nube
+            .from('inventario_mensual')
+            .update({
+                stock_fisico_final: inputVal,
+                consumo_teorico_neto: displayNeto,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', lin.id);
+
+        if (error) {
+            console.error('Error guardando línea:', lin.articulo_id, error);
+            continue;
+        }
+        guardadas++;
+
+        // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
+        if (window.fredware) {
+            try {
+                await window.fredware.broadcastEvent('cierre_inventario', {
+                    id: lin.id,
+                    articulo: lin.articulo_id,
+                    stock_final: inputVal,
+                    consumo_neto: displayNeto,
+                    mes_anio: lin.mes_anio,
+                    timestamp: new Date().toISOString()
+                });
+            } catch (e) {
+                console.warn('⚠️ No se pudo notificar al núcleo:', e);
+            }
+        }
+    }
+
+    lanzarToast(`✅ ${guardadas} líneas guardadas y notificadas al núcleo`, 'success');
+    cargarCuadroInventario();
+
+    // Refrescar el núcleo para que el dashboard refleje el cierre
+    if (window.fredware) window.fredware.recargarTodo();
+}
+
+// ============================================================
+// INICIALIZACIÓN
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📊 [Inventario] Conectado al núcleo v2');
+
+    // Cargar el cuadro del mes seleccionado por defecto
+    cargarCuadroInventario();
+
+    // Si el usuario cambia el periodo, recargar
+    const selectPeriodo = document.getElementById('filtro-periodo');
+    if (selectPeriodo && !selectPeriodo.dataset.inicializado) {
+        selectPeriodo.dataset.inicializado = 'true';
+    }
+});
+
+// Exponer funciones globales
+window.switchTab = switchTab;
+window.cargarMaestroEscandallos = cargarMaestroEscandallos;
+window.guardarFichaEscandallo = guardarFichaEscandallo;
+window.eliminarFichaEscandallo = eliminarFichaEscandallo;
+window.obtenerComprasBrutas = obtenerComprasBrutas;
+window.generarLineasMesActual = generarLineasMesActual;
+window.cargarCuadroInventario = cargarCuadroInventario;
+window.calcularConsumoFilaEnCaliente = calcularConsumoFilaEnCaliente;
+window.guardarConteoFisicoBase = guardarConteoFisicoBase;
 </script>
 </body>
 </html>
