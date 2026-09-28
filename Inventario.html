@@ -49,8 +49,24 @@
             margin-left: 8px;
         }
         .status-online { background: #d1fae5; color: #065f46; }
-        .status-loading { background: #fef3c7; color: #92400e; }
+        .status-loading { background: #fef3c7; color: #92400e; animation: pulse-badge 1.5s ease-in-out infinite; }
         .status-error { background: #fee2e2; color: #991b1b; }
+        @keyframes pulse-badge { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Panel de diagnóstico */
+        .diag-panel {
+            background: #1e293b;
+            color: #f1f5f9;
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 2px solid #fbbf24;
+        }
+        .diag-panel .diag-ok { color: #86efac; }
+        .diag-panel .diag-ko { color: #fca5a5; }
+        .diag-panel .diag-warn { color: #fcd34d; }
 
         .btn-volver {
             background: #64748b;
@@ -77,6 +93,12 @@
         📊 Fredware - Inventario y Mermas
         <span id="statusBadge" class="status-badge status-loading">🔄 Cargando...</span>
     </h1>
+
+    <!-- Panel de diagnóstico temporal -->
+    <div class="diag-panel">
+        <strong>🔍 DIAGNÓSTICO:</strong>
+        <span id="diag-status">Iniciando...</span>
+    </div>
     
     <div class="tabs">
         <button class="tab-btn active" id="btn-t1" onclick="switchTab(1)">📉 Cuadro de Cierre Mensual</button>
@@ -186,17 +208,11 @@
 
 <script>
 // ============================================================
-// INVENTARIO — Núcleo v2
-// ============================================================
-// Cambios clave:
-//   ✅ Usa fredware.supabase (del núcleo)
-//   ✅ obtenerComprasBrutas() lee de 'compras_historicas'
-//   ✅ Utilidades del core (toast, escapeHtml)
-//   ✅ Suscripción al estado global
+// INVENTARIO — Núcleo v2 (con espera al núcleo)
 // ============================================================
 
-// Cliente del núcleo (no crear uno propio)
-const db_nube = window.fredware.supabase;
+// Cliente del núcleo — se asigna en initApp() tras esperar al núcleo
+let db_nube = null;
 
 // Estado local
 let listadoEscandallosGlobal = [];
@@ -205,6 +221,35 @@ let lineasInventarioMes = [];
 // Alias a utilidades del core
 const lanzarToast = (msg, tipo) => window.fredware.ui.toast(msg, tipo);
 const escapeHtml = (t) => window.fredware.util.escapeHtml(t);
+
+// ============================================================
+// PANEL DE DIAGNÓSTICO
+// ============================================================
+function actualizarDiag(mensaje) {
+    const el = document.getElementById('diag-status');
+    if (el) el.innerHTML = mensaje;
+}
+
+actualizarDiag('<span class="diag-warn">⏳ Esperando al núcleo...</span>');
+
+// ============================================================
+// ESPERAR AL NÚCLEO
+// ============================================================
+async function esperarAlNucleo() {
+    const MAX_INTENTOS = 30;
+    for (let i = 0; i < MAX_INTENTOS; i++) {
+        if (window.fredware && window.fredware.state && window.fredware.state.inicializado) {
+            console.log(`✅ [Inventario] Núcleo listo tras ${i + 1}s`);
+            return true;
+        }
+        if (i > 0 && i % 5 === 0) {
+            console.log(`⏳ [Inventario] Esperando al núcleo... (${i}s)`);
+        }
+        await new Promise(r => setTimeout(r, 1000));
+    }
+    console.warn('⚠️ [Inventario] Timeout esperando al núcleo.');
+    return false;
+}
 
 // ============================================================
 // ACTUALIZAR ESTADO DE CONEXIÓN
@@ -225,12 +270,24 @@ function actualizarStatusBadge(state) {
 // ============================================================
 // SUSCRIPCIÓN AL NÚCLEO
 // ============================================================
-fredware.subscribe((state) => {
+window.fredware.subscribe((state) => {
     actualizarStatusBadge(state);
-    // Guardar escandallos del core (reutilizables)
+
     if (state.escandallos && state.escandallos.length > 0) {
         listadoEscandallosGlobal = state.escandallos;
     }
+
+    // Actualizar diagnóstico en vivo
+    const esc = (state.escandallos && state.escandallos.length) || 0;
+    const rec = (state.recepciones && state.recepciones.length) || 0;
+    const ini = state.inicializado ? '<span class="diag-ok">✅ init</span>' : '<span class="diag-warn">⏳ init</span>';
+
+    actualizarDiag(
+        `<span class="diag-ok">✅ Core</span> · ` +
+        ini + ' · ' +
+        `Escandallos: <span class="${esc > 0 ? 'diag-ok' : 'diag-ko'}">${esc}</span> · ` +
+        `Recepciones: <span class="${rec > 0 ? 'diag-ok' : 'diag-ko'}">${rec}</span>`
+    );
 });
 
 // ============================================================
@@ -252,6 +309,12 @@ function switchTab(num) {
 async function cargarMaestroEscandallos() {
     const cuerpo = document.getElementById('tabla-maestro-escandallos');
     if (!cuerpo) return;
+
+    if (!db_nube) {
+        cuerpo.innerHTML = '<tr><td colspan="6">❌ Núcleo no cargado todavía</td></tr>';
+        return;
+    }
+
     cuerpo.innerHTML = '<tr><td colspan="6">⏳ Leyendo matriz de costes...</td></tr>';
 
     const { data, error } = await db_nube
@@ -268,7 +331,7 @@ async function cargarMaestroEscandallos() {
     cuerpo.innerHTML = '';
 
     if (listadoEscandallosGlobal.length === 0) {
-        cuerpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;font-style:italic;">No hay fichas configuradas. Configura la primera arriba.</td></tr>';
+        cuerpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;font-style:italic;">No hay fichas configuradas.</td></tr>';
         return;
     }
 
@@ -289,6 +352,8 @@ async function cargarMaestroEscandallos() {
 }
 
 async function guardarFichaEscandallo() {
+    if (!db_nube) { lanzarToast("Núcleo no cargado todavía", "error"); return; }
+
     const inputId = document.getElementById('esc-id').value.trim().toUpperCase();
     const uCompra = document.getElementById('esc-unidad-compra').value;
     const uRecuento = document.getElementById('esc-unidad-recuento').value;
@@ -316,11 +381,11 @@ async function guardarFichaEscandallo() {
     document.getElementById('esc-factor').value = '1';
     cargarMaestroEscandallos();
 
-    // Recargar el núcleo para reflejar el nuevo escandallo
     if (window.fredware) window.fredware.recargarTodo();
 }
 
 async function eliminarFichaEscandallo(id) {
+    if (!db_nube) return;
     if (!confirm("¿Eliminar este insumo del maestro contable?")) return;
     const { error } = await db_nube.from('maestro_escandallos').delete().eq('id', id);
     if (error) { lanzarToast("Error al borrar.", "error"); return; }
@@ -333,13 +398,12 @@ async function eliminarFichaEscandallo(id) {
 // ============================================================
 // PESTAÑA 1: INVENTARIO MENSUAL
 // ============================================================
-
-// 🔥 CAMBIO CLAVE: Ahora lee de compras_historicas (no de cesta_pedidos)
 async function obtenerComprasBrutas(periodo) {
-    // El periodo viene como "MM-YYYY"
+    if (!db_nube) return {};
+
     const [mes, año] = periodo.split('-');
     const inicio = new Date(parseInt(año), parseInt(mes) - 1, 1);
-    const fin = new Date(parseInt(año), parseInt(mes), 1); // primer día del mes siguiente
+    const fin = new Date(parseInt(año), parseInt(mes), 1);
 
     const { data, error } = await db_nube
         .from('compras_historicas')
@@ -349,11 +413,10 @@ async function obtenerComprasBrutas(periodo) {
         .lt('fecha_compra', fin.toISOString());
 
     if (error) {
-        console.error("Error obteniendo compras desde compras_historicas:", error);
+        console.error("Error obteniendo compras:", error);
         return {};
     }
 
-    // Consolidar por producto
     const compras = {};
     (data || []).forEach(item => {
         const nombre = (item.producto || '').toUpperCase().trim();
@@ -363,12 +426,13 @@ async function obtenerComprasBrutas(periodo) {
         }
     });
 
-    console.log(`📊 Compras brutas cargadas de compras_historicas:`, Object.keys(compras).length, 'productos');
+    console.log(`📊 Compras brutas:`, Object.keys(compras).length, 'productos');
     return compras;
 }
 
-// 🔵 Stock final del mes anterior (sin cambios)
 async function obtenerStockMesAnterior(periodo, articuloId) {
+    if (!db_nube) return 0;
+
     const [mes, año] = periodo.split('-');
     let mesAnterior = parseInt(mes) - 1;
     let añoAnterior = parseInt(año);
@@ -386,35 +450,31 @@ async function obtenerStockMesAnterior(periodo, articuloId) {
     return parseFloat(data.stock_fisico_final) || 0;
 }
 
-// 🔵 Generar líneas del mes actual
 async function generarLineasMesActual() {
+    if (!db_nube) { lanzarToast("Núcleo no cargado todavía", "error"); return; }
+
     const periodo = document.getElementById('filtro-periodo').value;
 
-    // 1. Obtener todos los artículos del maestro
     const { data: maestro, error: errMaestro } = await db_nube
         .from('maestro_escandallos')
         .select('*');
     if (errMaestro || !maestro || maestro.length === 0) {
-        lanzarToast("Primero debes dar de alta algún insumo en el Maestro (Pestaña 2).", "error");
+        lanzarToast("Primero debes dar de alta algún insumo en el Maestro.", "error");
         return;
     }
 
-    // 2. Obtener compras brutas del mes desde compras_historicas
     const comprasBrutas = await obtenerComprasBrutas(periodo);
 
-    // 3. Para cada artículo, calcular stock inicial y compras, e insertar/actualizar
     let actualizados = 0;
     for (const art of maestro) {
         const stockInicial = await obtenerStockMesAnterior(periodo, art.id);
         const compras = comprasBrutas[art.nombre_articulo] || 0;
 
-        // Aplicar factor de conversión si corresponde
         let comprasAjustadas = compras;
         if (art.factor_conversion && art.factor_conversion !== 1 && art.unidad_compra === 'CAJAS') {
             comprasAjustadas = compras * art.factor_conversion;
         }
 
-        // Insertar o actualizar la línea del mes
         const { error } = await db_nube
             .from('inventario_mensual')
             .upsert([{
@@ -433,60 +493,67 @@ async function generarLineasMesActual() {
         }
     }
 
-    lanzarToast(`✅ Sincronización completada (${actualizados} insumos desde compras_historicas)`, 'success');
+    lanzarToast(`✅ Sincronización completada (${actualizados} insumos)`, 'success');
     cargarCuadroInventario();
 }
 
-// 🔵 Cargar el cuadro de inventario
 async function cargarCuadroInventario() {
     const periodo = document.getElementById('filtro-periodo').value;
     const cuerpo = document.getElementById('tabla-cierre-mensual');
     if (!cuerpo) return;
-    cuerpo.innerHTML = '<tr><td colspan="7">⏳ Calculando histórico de compras brutas y rendimientos...</td></tr>';
 
-    // 1. Obtener maestro (por si no está cargado)
-    const { data: maestro } = await db_nube.from('maestro_escandallos').select('*');
-    listadoEscandallosGlobal = maestro || [];
-
-    // 2. Obtener líneas de inventario del mes
-    const { data: inventarioMes, error } = await db_nube
-        .from('inventario_mensual')
-        .select('*, maestro_escandallos(*)')
-        .eq('mes_anio', periodo);
-
-    if (error) {
-        cuerpo.innerHTML = '<tr><td colspan="7">❌ Error en lectura de histórico.</td></tr>';
+    if (!db_nube) {
+        cuerpo.innerHTML = '<tr><td colspan="7">⏳ Esperando al núcleo...</td></tr>';
         return;
     }
 
-    lineasInventarioMes = inventarioMes || [];
-    cuerpo.innerHTML = '';
+    cuerpo.innerHTML = '<tr><td colspan="7">⏳ Calculando histórico...</td></tr>';
 
-    if (lineasInventarioMes.length === 0) {
-        cuerpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;font-style:italic;">Mes en blanco. Dale al botón superior para sincronizar las compras de Fredware Central.</td></tr>';
-        return;
+    try {
+        const { data: maestro } = await db_nube.from('maestro_escandallos').select('*');
+        listadoEscandallosGlobal = maestro || [];
+
+        const { data: inventarioMes, error } = await db_nube
+            .from('inventario_mensual')
+            .select('*, maestro_escandallos(*)')
+            .eq('mes_anio', periodo);
+
+        if (error) {
+            cuerpo.innerHTML = `<tr><td colspan="7">❌ Error: ${escapeHtml(error.message)}</td></tr>`;
+            return;
+        }
+
+        lineasInventarioMes = inventarioMes || [];
+        cuerpo.innerHTML = '';
+
+        if (lineasInventarioMes.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;font-style:italic;">Mes en blanco. Pulsa "⚡ Inicializar / Sincronizar Insumos del Mes".</td></tr>';
+            return;
+        }
+
+        lineasInventarioMes.forEach((lin) => {
+            const esc = lin.maestro_escandallos || { unidad_recuento: 'KG', porcentaje_merma: 0 };
+
+            cuerpo.innerHTML += `
+                <tr>
+                    <td><strong>${escapeHtml(lin.articulo_id)}</strong></td>
+                    <td><span style="font-size:11px;background:#e2e8f0;padding:2px 6px;border-radius:4px;">${escapeHtml(esc.unidad_recuento)}</span></td>
+                    <td style="text-align: center;font-weight:bold;color:#475569;">${lin.stock_inicial}</td>
+                    <td style="text-align: center;font-weight:bold;color:#2563eb;">${lin.compras_brutas_mes}</td>
+                    <td style="text-align: center;">
+                        <input type="number" id="f-final-${lin.id}" class="input-table" value="${lin.stock_fisico_final}" min="0" step="0.01" onchange="calcularConsumoFilaEnCaliente(${lin.id}, ${lin.stock_inicial}, ${lin.compras_brutas_mes}, ${esc.porcentaje_merma})">
+                    </td>
+                    <td style="text-align: center;color:#ef4444;font-weight:bold;">${esc.porcentaje_merma}%</td>
+                    <td style="text-align: center;"><span id="neto-display-${lin.id}" class="badge-neto">${lin.consumo_teorico_neto} ${escapeHtml(esc.unidad_recuento)}</span></td>
+                </tr>
+            `;
+        });
+    } catch (e) {
+        console.error('Error cargando cuadro:', e);
+        cuerpo.innerHTML = `<tr><td colspan="7">❌ Error inesperado: ${escapeHtml(e.message)}</td></tr>`;
     }
-
-    lineasInventarioMes.forEach((lin) => {
-        const esc = lin.maestro_escandallos || { unidad_recuento: 'KG', porcentaje_merma: 0 };
-
-        cuerpo.innerHTML += `
-            <tr>
-                <td><strong>${escapeHtml(lin.articulo_id)}</strong></td>
-                <td><span style="font-size:11px;background:#e2e8f0;padding:2px 6px;border-radius:4px;">${escapeHtml(esc.unidad_recuento)}</span></td>
-                <td style="text-align: center;font-weight:bold;color:#475569;">${lin.stock_inicial}</td>
-                <td style="text-align: center;font-weight:bold;color:#2563eb;">${lin.compras_brutas_mes}</td>
-                <td style="text-align: center;">
-                    <input type="number" id="f-final-${lin.id}" class="input-table" value="${lin.stock_fisico_final}" min="0" step="0.01" onchange="calcularConsumoFilaEnCaliente(${lin.id}, ${lin.stock_inicial}, ${lin.compras_brutas_mes}, ${esc.porcentaje_merma})">
-                </td>
-                <td style="text-align: center;color:#ef4444;font-weight:bold;">${esc.porcentaje_merma}%</td>
-                <td style="text-align: center;"><span id="neto-display-${lin.id}" class="badge-neto">${lin.consumo_teorico_neto} ${escapeHtml(esc.unidad_recuento)}</span></td>
-            </tr>
-        `;
-    });
 }
 
-// 🔵 Cálculo interactivo
 function calcularConsumoFilaEnCaliente(lineaId, inicial, compras, porcMerma) {
     const inputFisico = parseFloat(document.getElementById(`f-final-${lineaId}`).value) || 0;
     const consumoBruto = (inicial + compras) - inputFisico;
@@ -496,8 +563,9 @@ function calcularConsumoFilaEnCaliente(lineaId, inicial, compras, porcMerma) {
     document.getElementById(`neto-display-${lineaId}`).innerText = `${consumoNetoReal.toFixed(2)}`;
 }
 
-// 🔵 Guardar conteo físico y notificar al núcleo
 async function guardarConteoFisicoBase() {
+    if (!db_nube) { lanzarToast("Núcleo no cargado", "error"); return; }
+
     if (lineasInventarioMes.length === 0) {
         lanzarToast('No hay líneas para guardar', 'warning');
         return;
@@ -524,7 +592,6 @@ async function guardarConteoFisicoBase() {
         }
         guardadas++;
 
-        // 🔥 NOTIFICAR AL NÚCLEO UNIFICADO
         if (window.fredware) {
             try {
                 await window.fredware.broadcastEvent('cierre_inventario', {
@@ -541,28 +608,30 @@ async function guardarConteoFisicoBase() {
         }
     }
 
-    lanzarToast(`✅ ${guardadas} líneas guardadas y notificadas al núcleo`, 'success');
+    lanzarToast(`✅ ${guardadas} líneas guardadas`, 'success');
     cargarCuadroInventario();
 
-    // Refrescar el núcleo para que el dashboard refleje el cierre
     if (window.fredware) window.fredware.recargarTodo();
 }
 
 // ============================================================
 // INICIALIZACIÓN
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('📊 [Inventario] Conectado al núcleo v2');
+async function initApp() {
+    console.log('🚀 [Inventario] Init — esperando al núcleo...');
 
-    // Cargar el cuadro del mes seleccionado por defecto
-    cargarCuadroInventario();
+    // Esperar al núcleo
+    await esperarAlNucleo();
 
-    // Si el usuario cambia el periodo, recargar
-    const selectPeriodo = document.getElementById('filtro-periodo');
-    if (selectPeriodo && !selectPeriodo.dataset.inicializado) {
-        selectPeriodo.dataset.inicializado = 'true';
-    }
-});
+    // Asignar el cliente del núcleo AHORA que está listo
+    db_nube = window.fredware.supabase;
+    console.log('✅ [Inventario] Cliente Supabase asignado');
+
+    // Ahora sí, cargar el cuadro de inventario
+    await cargarCuadroInventario();
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
 
 // Exponer funciones globales
 window.switchTab = switchTab;
