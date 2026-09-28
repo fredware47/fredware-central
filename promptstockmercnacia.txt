@@ -1,0 +1,108 @@
+════════════════════════════════════════════════════════════
+📌 FREDWARE - PUNTO DE RETORNO · 28/09/2026
+════════════════════════════════════════════════════════════
+
+PROYECTO ACTIVO: "Inventario Full"
+FASE ACTUAL: A completada, B a medias
+
+────────────────────────────────────────────────────────────
+📊 ESTADO ACTUAL
+────────────────────────────────────────────────────────────
+
+Ecosistema base (Fases 1-4): ✅ COMPLETO
+- 7 apps integradas al núcleo v2
+- 1 app satélite (miseandplace)
+- Todo verificado y operativo
+
+Inventario Full - Fase A: ✅ COMPLETO
+- Tablas: productos_raciones (60), stock_movimientos, consumos_diarios
+- Vista v_stock_en_vivo funcionando
+- Migración de 35 insumos + 25 nuevos del buffet
+- Trigger fn_recepcion_a_stock ACTIVO (probado con CROCA)
+
+Inventario Full - Fase B: ⏳ A MEDIAS
+- ✅ Trigger básico creado y probado
+- ❌ Falta: matching inteligente de nombres
+- ❌ Falta: auto-creación de productos nuevos
+- ❌ Falta: comboboxes estrictos en las apps
+
+────────────────────────────────────────────────────────────
+🎯 SIGUIENTE PASO AL RETOMAR
+────────────────────────────────────────────────────────────
+
+Continuar con el sistema de nombres exactos:
+
+1. Añadir campo "estado" a productos_raciones
+   (CONFIGURADO / PENDIENTE_CONFIGURAR / ARCHIVADO)
+
+2. Función buscar_producto_inteligente() con pg_trgm
+   (para tolerar errores ortográficos leves)
+
+3. Función crear_producto_si_no_existe()
+   (para cuando llega un producto nuevo)
+
+4. Actualizar trigger fn_recepcion_a_stock con las 2 funciones
+
+5. Vista v_productos_pendientes
+   (para que el jefe configure los nuevos)
+
+6. Función marcar_como_configurado()
+
+7. Comboboxes estrictos en faltas.html
+   (HTML5 datalist + validación)
+
+8. Comboboxes estrictos en compras.html
+
+────────────────────────────────────────────────────────────
+📋 PENDIENTES POSTERIORES (para más adelante)
+────────────────────────────────────────────────────────────
+
+Fase B2 completa:
+- Probar flujo real con faltas.html y compras.html
+- Verificar que el stock se actualiza correctamente
+
+Fase B3 (opcional):
+- Migrar histórico de recepciones al stock
+
+Fase C:
+- Integrar miseandplace.html con el stock
+- Añadir input de "raciones consumidas"
+- Registrar SALIDAS automáticas
+
+Fase D:
+- Alertas cuando stock < mínimo
+- WhatsApp automático
+- Sugerencias de pedido
+
+Fase E:
+- Reportes de merma real vs teórica
+- Productos más consumidos
+- Análisis de rotación
+
+────────────────────────────────────────────────────────────
+⚠️ COSAS A LIMPIAR AL RETOMAR
+────────────────────────────────────────────────────────────
+
+1. El stock de CROCA está a 3 kg (de la prueba del trigger).
+   Ponerlo a 0:
+   
+   UPDATE productos_raciones SET stock_actual = 0 WHERE id = 'CROCA';
+   DELETE FROM stock_movimientos WHERE referencia LIKE 'REC_TEST_%';
+
+2. Falta hacer un "inventario inicial" real cuando la app esté lista.
+
+────────────────────────────────────────────────────────────
+📌 OTRAS OPCIONES PENDIENTES (del prompt anterior)
+────────────────────────────────────────────────────────────
+
+A) Cierre mensual real de Septiembre 2026
+C) Limpieza y organización de archivos
+D) Ajustes rápidos (mermas + renombrar)
+E) Verificación end-to-end completa
+F) Empezar a usar el sistema con datos reales
+
+(Ver detalles en el prompt anterior guardado)
+
+════════════════════════════════════════════════════════════
+FIN DEL PUNTO DE RETORNO
+════════════════════════════════════════════════════════════

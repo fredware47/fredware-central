@@ -1,0 +1,135 @@
+════════════════════════════════════════════════════════════
+📌 FREDWARE - TAREAS PENDIENTES PARA RETOMAR
+════════════════════════════════════════════════════════════
+
+Fecha de creación: 28/09/2026
+Estado del proyecto: Fases 1-4 completadas ✅
+Próximo proyecto activo: "Inventario Full" (Opción B)
+
+────────────────────────────────────────────────────────────
+🎯 OPCIÓN A — Cierre mensual real de Septiembre 2026
+────────────────────────────────────────────────────────────
+Objetivo: Hacer el primer cierre de inventario con datos reales
+
+Pasos:
+1. Abrir Inventario.html → pestaña "Maestro de Escandallos"
+2. Ajustar mermas reales de cada uno de los 35 insumos (5-10%)
+3. Abrir pestaña "Cuadro de Cierre Mensual"
+4. Seleccionar Septiembre 2026
+5. Pulsar "⚡ Inicializar / Sincronizar Insumos del Mes"
+6. Introducir el stock físico final de cada insumo tras contar en cámara
+7. Pulsar "💾 Blindar Conteo"
+8. Verificar en Supabase: SELECT * FROM inventario_mensual WHERE mes_anio='09-2026'
+9. Ver el dashboard reflejando el cierre
+
+Duración estimada: 30-60 min
+Valor: Primer cierre contable real
+
+────────────────────────────────────────────────────────────
+🎯 OPCIÓN C — Limpieza final y organización del proyecto
+────────────────────────────────────────────────────────────
+Objetivo: Dejar el proyecto ordenado y documentado
+
+Pasos:
+1. Renombrar archivos sin (n):
+   - dashboard-unified (1).html → dashboard-unified.html
+   - Inventario (1).html → Inventario.html
+   - miseandplace (2).html → miseandplace.html
+   - shared-core (2).js → shared-core.js
+   - etc.
+
+2. Crear estructura de carpetas:
+   /core/shared-core.js
+   /apps/dashboard-unified.html
+   /apps/recepcion.html
+   /apps/Inventario.html
+   /apps/faltas.html
+   /apps/compras.html
+   /apps/listas.html
+   /produccion/fichas_tecnicas.html
+   /produccion/etiquetas.html
+   /produccion/caducidades.html
+   /produccion/miseandplace.html
+   /backend/fww.py
+   /backend/generador_pdf.py
+   /backend/base_datos.py
+
+3. Actualizar los <script src="..."> de cada app
+4. Crear README.md con la documentación completa
+5. Actualizar las URLs en las apps si cambian las rutas
+
+Duración estimada: 30-45 min
+Valor: Proyecto limpio y mantenible
+
+────────────────────────────────────────────────────────────
+🎯 OPCIÓN D — Ajustar mermas + renombrar archivos (rápido)
+────────────────────────────────────────────────────────────
+Objetivo: Mejoras rápidas de día a día
+
+Pasos:
+1. Ajustar mermas de los 35 insumos (5-10 min)
+2. Renombrar archivos sin (n) (10 min)
+3. Verificar que todo sigue funcionando
+
+Duración estimada: 20-30 min
+Valor: Dashboard con datos reales + archivos ordenados
+
+────────────────────────────────────────────────────────────
+🎯 OPCIÓN E — Verificación completa end-to-end
+────────────────────────────────────────────────────────────
+Objetivo: Confirmar que todo funciona antes de escalar
+
+Pasos:
+1. Abrir cada app y hacer una operación real:
+   - faltas.html → añadir falta + recibir producto
+   - compras.html → añadir a cesta + marcar recibido
+   - listas.html → seleccionar artículos + enviar a compras
+   - recepcion.html → verificar que aparece la recepción
+   - Inventario.html → hacer un cierre ficticio
+   - fichas_tecnicas.html → crear ficha + imprimir
+   - dashboard-unified.html → verificar que refleja todo
+2. Confirmar que los datos fluyen entre apps
+3. Documentar el flujo en un diagrama
+
+Duración estimada: 20-30 min
+Valor: Confianza total en el sistema
+
+────────────────────────────────────────────────────────────
+🎯 OPCIÓN F — Empezar a usar el sistema con datos reales
+────────────────────────────────────────────────────────────
+Objetivo: Dejar de montar y empezar a trabajar
+
+Pasos:
+1. Día 1 en el trabajo:
+   - Usar faltas.html para faltas reales de cocina
+   - Usar listas.html para hacer pedidos a proveedores
+   - Usar compras.html para confirmar recepciones
+   - Usar fichas_tecnicas.html para producir y etiquetar
+2. Después de 1-2 semanas:
+   - Los datos se habrán acumulado en la BD
+   - Tendrás histórico real
+   - Podrás hacer cierre mensual real
+3. Ajustes según vayas viendo:
+   - Añadir productos al maestro
+   - Ajustar mermas según realidad
+   - Optimizar flujos
+
+Duración estimada: continuo (uso diario)
+Valor: El sistema empieza a generar valor real
+
+────────────────────────────────────────────────────────────
+📝 NOTAS PARA FUTURAS SESIONES
+────────────────────────────────────────────────────────────
+
+- Panel de diagnóstico visible en dashboard-unified.html e Inventario.html
+  (útil para debug, no molesta)
+- Archivos con (n) en el nombre aún sin renombrar
+- Recepción "PRUEBA" pendiente de borrar de la tabla recepciones:
+  DELETE FROM recepciones WHERE producto = 'PRUEBA';
+- Backups del 28/09 intactos: *_backup_fase4_20260928
+- El "Inventario Full" (proyecto activo) puede integrar los datos de
+  miseandplace.html para llevar control de raciones
+
+════════════════════════════════════════════════════════════
+FIN DEL PROMPT GUARDADO
+════════════════════════════════════════════════════════════
