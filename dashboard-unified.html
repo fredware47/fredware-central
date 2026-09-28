@@ -162,6 +162,30 @@
         .connection-status.loading { color: #fcd34d; }
         .connection-status.error { color: #fca5a5; }
         
+        /* Panel de diagnóstico */
+        .diag-panel {
+            background: #1e293b;
+            color: #f1f5f9;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            border: 2px solid #fbbf24;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .diag-panel .diag-item {
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+        }
+        .diag-panel .diag-ok { color: #86efac; }
+        .diag-panel .diag-ko { color: #fca5a5; }
+        .diag-panel .diag-warn { color: #fcd34d; }
+        
         @media (max-width: 768px) {
             .grid-3, .grid-2 { grid-template-columns: 1fr; }
             .header { flex-direction: column; align-items: stretch; }
@@ -171,6 +195,13 @@
 </head>
 <body>
 <div class="dashboard" id="app">
+
+    <!-- Panel de diagnóstico (temporal, quitar cuando funcione) -->
+    <div class="diag-panel" id="diag-panel">
+        <strong>🔍 DIAGNÓSTICO:</strong>
+        <span id="diag-status">Iniciando...</span>
+    </div>
+
     <div class="header">
         <div>
             <h1>📊 FREDWARE - Dashboard Unificado</h1>
@@ -264,35 +295,91 @@
 
 <script>
 // ============================================================
-// DASHBOARD UNIFICADO - v2.1
-// Auto-render cuando el núcleo termina de cargar
+// DASHBOARD UNIFICADO - v2.3
+// Fix: lee state.escandallos en vez de state.ingredientes
 // ============================================================
 
 let estadoActual = null;
 let haRenderizado = false;
 
 // ============================================================
-// SUSCRIPCIÓN AL NÚCLEO
+// PANEL DE DIAGNÓSTICO
 // ============================================================
-fredware.subscribe((state) => {
-    estadoActual = state;
+function actualizarDiag(mensaje) {
+    const el = document.getElementById('diag-status');
+    if (el) el.innerHTML = mensaje;
+}
 
-    // Actualizar siempre el badge de conexión (aunque aún no esté inicializado)
-    actualizarConnectionStatus(state);
+// Diagnóstico inicial
+actualizarDiag('<span class="diag-warn">⏳ Esperando al núcleo (3s)...</span>');
 
-    // Solo renderizar el cuerpo cuando el núcleo esté listo
-    if (!state.inicializado) {
-        // Mostrar estado de carga solo si NO hemos renderizado antes
-        if (!haRenderizado) {
-            mostrarEstadoCargando();
-        }
+// Diagnóstico a los 3 segundos
+setTimeout(() => {
+    const info = [];
+
+    if (typeof window.fredware === 'undefined') {
+        info.push('<span class="diag-ko">❌ Core NO cargado</span>');
+        actualizarDiag(info.join(' · '));
         return;
     }
 
-    // Núcleo listo → renderizar todo
-    renderizarDashboard(state);
-    haRenderizado = true;
-});
+    info.push('<span class="diag-ok">✅ Core</span>');
+
+    if (!window.fredware.state) {
+        info.push('<span class="diag-ko">❌ Sin state</span>');
+        actualizarDiag(info.join(' · '));
+        return;
+    }
+
+    const s = window.fredware.state;
+    const esc = (s.escandallos && s.escandallos.length) || 0;
+    const rec = (s.recepciones && s.recepciones.length) || 0;
+    const ini = s.inicializado ? '<span class="diag-ok">✅ init</span>' : '<span class="diag-warn">⏳ init</span>';
+
+    info.push(ini);
+    info.push(`Escandallos: <span class="${esc > 0 ? 'diag-ok' : 'diag-ko'}">${esc}</span>`);
+    info.push(`Recepciones: <span class="${rec > 0 ? 'diag-ok' : 'diag-ko'}">${rec}</span>`);
+
+    actualizarDiag(info.join(' · '));
+}, 3000);
+
+// ============================================================
+// SUSCRIPCIÓN AL NÚCLEO
+// ============================================================
+try {
+    fredware.subscribe((state) => {
+        estadoActual = state;
+
+        // Actualizar siempre el badge de conexión
+        actualizarConnectionStatus(state);
+
+        // Actualizar diagnóstico en vivo
+        const esc = (state.escandallos && state.escandallos.length) || 0;
+        const rec = (state.recepciones && state.recepciones.length) || 0;
+        const ini = state.inicializado ? '<span class="diag-ok">✅ init</span>' : '<span class="diag-warn">⏳ init</span>';
+
+        actualizarDiag(
+            '<span class="diag-ok">✅ Core</span> · ' +
+            ini + ' · ' +
+            `Escandallos: <span class="${esc > 0 ? 'diag-ok' : 'diag-ko'}">${esc}</span> · ` +
+            `Recepciones: <span class="${rec > 0 ? 'diag-ok' : 'diag-ko'}">${rec}</span>`
+        );
+
+        // Solo renderizar el cuerpo cuando el núcleo esté listo
+        if (!state.inicializado) {
+            if (!haRenderizado) {
+                mostrarEstadoCargando();
+            }
+            return;
+        }
+
+        // Núcleo listo → renderizar todo
+        renderizarDashboard(state);
+        haRenderizado = true;
+    });
+} catch (e) {
+    actualizarDiag('<span class="diag-ko">❌ Error al suscribirse: ' + e.message + '</span>');
+}
 
 // ============================================================
 // ESTADO DE CARGA (solo primera vez)
@@ -335,11 +422,13 @@ function actualizarConnectionStatus(state) {
 
 // ============================================================
 // RENDERIZADO PRINCIPAL
+// 🔥 FIX: usa state.escandallos en vez de state.ingredientes
 // ============================================================
 function renderizarDashboard(state) {
     const est = state.estadisticas || {};
 
-    document.getElementById('totalIngredientes').textContent = (state.ingredientes || []).length;
+    // Contador de Insumos: lee de escandallos (que sí tiene los 35)
+    document.getElementById('totalIngredientes').textContent = (state.escandallos || []).length;
     document.getElementById('recepcionesHoy').textContent = est.totalHoy || 0;
     document.getElementById('recepcionesSemana').textContent = est.totalSemana || 0;
     document.getElementById('alertasCount').textContent = (est.alertas || []).length;
@@ -662,7 +751,7 @@ function forzarActualizacion() {
 setTimeout(() => {
     if (!haRenderizado) {
         console.warn('⚠️ [Dashboard] No ha renderizado tras 6s, forzando recarga...');
-        fredware.recargarTodo();
+        if (window.fredware) fredware.recargarTodo();
     }
 }, 6000);
 
