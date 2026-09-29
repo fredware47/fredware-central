@@ -618,10 +618,6 @@
         .modal-footer .btn-modal.outline { background: transparent; border: 1px solid #d5cdc3; }
         .modal-footer .btn-modal.outline:hover { background: #f5f2ee; }
 
-        .has-receta { border-left: 3px solid #2563eb; }
-        .has-peso { border-left: 3px solid #059669; }
-        .no-info { border-left: 3px solid #94a3b8; }
-
         .modal-etiqueta .etiqueta-preview {
             background: #faf8f6;
             border-radius: 16px;
@@ -775,7 +771,7 @@
                             </div>
                             <div class="item-actions" v-if="!item.bold" @click.stop>
                                 <button class="icon-btn etiqueta-btn" @click="abrirModalEtiqueta(item)" title="Generar etiqueta">🏷️</button>
-                                <button class="icon-btn info" @click="openFicha(item)" title="Ver ficha técnica">📋</button>
+                                <button class="icon-btn info" @click="openFicha(item)" title="Ver ficha">📋</button>
                                 <button class="status-btn" :class="{ 'active-hay': item.status === 'hay' }" @click="setStatus(item, 'hay')">✅</button>
                                 <button class="status-btn" :class="{ 'active-no': item.status === 'no' }" @click="setStatus(item, 'no')">❌</button>
                                 <button class="status-btn" :class="{ 'active-elaborar': item.status === 'elaborar' }" @click="setStatus(item, 'elaborar')">⚡</button>
@@ -873,55 +869,64 @@
         </div>
     </div>
 
-    <!-- ========== MODAL FICHA TÉCNICA (solo lectura) ========== -->
+    <!-- ========== MODAL FICHA (solo lectura) ========== -->
     <div v-if="modalVisible && !modalEtiquetaVisible" class="modal-overlay" @click.self="closeModal">
         <div class="modal">
             <div class="modal-header">
-                <h2>{{ fichaActual?.name || 'Ficha Técnica' }}</h2>
+                <h2>{{ fichaActual?.name || 'Ficha' }}</h2>
                 <button class="close-btn" @click="closeModal">✕</button>
             </div>
             <div class="modal-body">
                 <div>
-                    <span class="tipo-badge" :class="fichaActual?.tipo === 'receta' ? 'receta' : fichaActual?.tipo === 'ingrediente' ? 'ingrediente' : 'simple'">
-                        {{ fichaActual?.tipo === 'receta' ? '📝 Receta completa' : fichaActual?.tipo === 'ingrediente' ? '⚖️ Ingrediente' : '📦 Sin información' }}
+                    <span class="tipo-badge" :class="fichaActual?.tipo_ficha || 'simple'">
+                        {{ getTipoLabel(fichaActual?.tipo_ficha) }}
                     </span>
                 </div>
+
                 <div class="info-row">
                     <span class="label">📦 Balda</span>
                     <span class="value">{{ fichaActual?.shelf || '—' }}</span>
                 </div>
+
                 <div class="info-row" v-if="fichaActual?.peso">
                     <span class="label">⚖️ Peso/gramaje</span>
                     <span class="value">{{ fichaActual.peso }}</span>
                 </div>
-                <div class="info-row" v-if="fichaActual?.tiempo && fichaActual?.tipo === 'receta'">
+
+                <div class="info-row" v-if="fichaActual?.tiempo && fichaActual?.tipo_ficha === 'receta'">
                     <span class="label">⏱️ Tiempo prep.</span>
                     <span class="value">{{ fichaActual.tiempo }}</span>
                 </div>
-                <div class="info-row" v-if="fichaActual?.alergenos && fichaActual.alergenos.length && fichaActual?.tipo === 'receta'">
+
+                <div class="info-row" v-if="fichaActual?.alergenos && fichaActual.alergenos.length">
                     <span class="label">⚠️ Alérgenos</span>
                     <span class="value">
                         <span v-for="a in fichaActual.alergenos" :key="a" class="badge-alergeno" :class="getAlergenoClass(a)">{{ a }}</span>
                     </span>
                 </div>
-                <div class="receta-section" v-if="fichaActual?.ingredientes && fichaActual.ingredientes.length && fichaActual?.tipo === 'receta'">
+
+                <div class="receta-section" v-if="fichaActual?.ingredientes && fichaActual.ingredientes.length && fichaActual?.tipo_ficha === 'receta'">
                     <h4>📝 Ingredientes</h4>
                     <ul>
                         <li v-for="ing in fichaActual.ingredientes" :key="ing">{{ ing }}</li>
                     </ul>
                 </div>
-                <div class="receta-section" v-if="fichaActual?.elaboracion && fichaActual?.tipo === 'receta'">
+
+                <div class="receta-section" v-if="fichaActual?.elaboracion && fichaActual?.tipo_ficha === 'receta'">
                     <h4>👨‍🍳 Elaboración</h4>
                     <div class="elaboracion">{{ fichaActual.elaboracion }}</div>
                 </div>
+
                 <div class="receta-section" v-if="fichaActual?.notas">
                     <h4>📌 Notas</h4>
                     <div class="elaboracion" style="color:#64748b;font-style:italic;">{{ fichaActual.notas }}</div>
                 </div>
-                <div v-if="!fichaActual?.tipo || fichaActual?.tipo === 'simple'" style="padding:1rem 0; color:#64748b; text-align:center; font-style:italic;">
+
+                <div v-if="!fichaActual?.tipo_ficha || fichaActual?.tipo_ficha === 'simple'" style="padding:1rem 0; color:#64748b; text-align:center; font-style:italic;">
                     ℹ️ Este item no tiene ficha técnica registrada.
                     <br><span style="font-size:0.8rem;">Pide al jefe que la cree.</span>
                 </div>
+
                 <div v-if="historialProduccion[fichaActual?.name]" style="margin-top:1rem; padding-top:0.8rem; border-top:2px solid #eee8e0;">
                     <h4 style="font-size:0.8rem; color:#475569;">📅 Última producción</h4>
                     <div style="font-size:0.8rem; display:flex; gap:0.8rem; flex-wrap:wrap; padding:0.3rem 0;">
@@ -1004,7 +1009,7 @@
     <div v-if="toast.show" class="toast" :class="toast.type">{{ toast.message }}</div>
 
     <div class="footer">
-        📌 Pulsa un item para ver su ficha técnica · 🏷️ Genera etiqueta · ⚡ Elaborar · ❄️ Descongelar · 📜 Historial
+        📌 Pulsa un item para ver su ficha · 🏷️ Genera etiqueta · ⚡ Elaborar · ❄️ Descongelar · 📜 Historial
     </div>
 </div>
 
@@ -1041,8 +1046,6 @@ const CARTA_ACTUAL = 'carta_actual';
             toast: { show: false, message: '', type: '' },
             modalVisible: false,
             fichaActual: null,
-            fichasTecnicas: {},
-            fichasCargadas: false,
             modalEtiquetaVisible: false,
             etiquetaForm: { producto:'', tipo:'elaboracion', lote:'', fecha:'', dias:5, cantidad:1 },
             etiquetaItemActual: null,
@@ -1081,6 +1084,17 @@ const CARTA_ACTUAL = 'carta_actual';
                 const cad = new Date(fecha);
                 cad.setDate(cad.getDate() + (parseInt(this.etiquetaForm.dias) || 5));
                 return cad;
+            },
+
+            getTipoLabel(tipo) {
+                if (tipo === 'receta') return '📝 Preparación';
+                if (tipo === 'ingrediente') return '⚖️ Producto';
+                return '📦 Sin ficha';
+            },
+
+            getAlergenoClass(alergeno) {
+                const map = { 'Gluten':'gluten','Lácteos':'lacteos','Huevo':'huevo','Pescado':'pescado','Frutos secos':'frutos-secos','Soja':'soja','Moluscos':'moluscos','Crustáceos':'crustaceos','Apio':'apio','Mostaza':'mostaza','Sésamo':'sesamo','Sulfitos':'sulfitos','Altramuces':'altramuces' };
+                return map[alergeno] || '';
             },
 
             editarCocinero() {
@@ -1163,10 +1177,18 @@ const CARTA_ACTUAL = 'carta_actual';
                         item_orden: item.item_orden,
                         balda_orden: item.balda_orden,
                         balda: balda,
+                        // 🔥 Campos de ficha vienen del catálogo directamente
+                        tipo_ficha: item.tipo_ficha || 'simple',
+                        peso: item.peso || null,
+                        tiempo: item.tiempo || null,
+                        alergenos: item.alergenos || [],
+                        ingredientes: item.ingredientes || [],
+                        elaboracion: item.elaboracion || null,
+                        notas: item.notas || null,
+                        // Estado de la revisión
                         status: this.revisionHoy[item.id]?.status || null,
                         hecho: this.revisionHoy[item.id]?.hecho || false,
                         cantidad: this.revisionHoy[item.id]?.cantidad || 1,
-                        notas: this.revisionHoy[item.id]?.notas || null,
                     }));
                 }
                 this.shelfItems = shelfItems;
@@ -1305,12 +1327,11 @@ const CARTA_ACTUAL = 'carta_actual';
             async reiniciarRevision() {
                 const confirmar = confirm(
                     `⚠️ ¿Reiniciar la revisión de HOY?\n\n` +
-                    `Esto borrará todos los estados marcados hoy en el turno ${this.turno}.\n` +
-                    `El catálogo NO se toca.\n\n` +
+                    `Esto borrará todos los estados marcados hoy en el turno ${this.turno}.\n\n` +
                     `¿Continuar?`
                 );
                 if (!confirmar) return;
-                const confirmar2 = confirm('¿Estás totalmente seguro? Esta acción no se puede deshacer.');
+                const confirmar2 = confirm('¿Estás totalmente seguro?');
                 if (!confirmar2) return;
 
                 try {
@@ -1330,58 +1351,19 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            getAlergenoClass(alergeno) {
-                const map = { 'Gluten':'gluten','Lácteos':'lacteos','Huevo':'huevo','Pescado':'pescado','Frutos secos':'frutos-secos','Soja':'soja','Moluscos':'moluscos','Crustáceos':'crustaceos','Apio':'apio','Mostaza':'mostaza','Sésamo':'sesamo','Sulfitos':'sulfitos','Altramuces':'altramuces' };
-                return map[alergeno] || '';
-            },
-
-            getFicha(nombre) {
-                if (this.fichasTecnicas[nombre]) return this.fichasTecnicas[nombre];
-                for (const [key, value] of Object.entries(this.fichasTecnicas)) {
-                    if (nombre.includes(key) || key.includes(nombre)) return value;
-                }
-                return null;
-            },
-
-            async cargarFichas() {
-                if (this.fichasCargadas) return;
-                try {
-                    const { data, error } = await this.supabase.from('timbres_fichas').select('*');
-                    if (error) throw error;
-                    const fichas = {};
-                    for (const row of (data || [])) {
-                        fichas[row.nombre] = {
-                            tipo: row.tipo || 'simple',
-                            peso: row.peso || null,
-                            tiempo: row.tiempo || null,
-                            alergenos: row.alergenos || [],
-                            ingredientes: row.ingredientes || [],
-                            elaboracion: row.elaboracion || null,
-                            notas: row.notas || null
-                        };
-                    }
-                    this.fichasTecnicas = fichas;
-                    this.fichasCargadas = true;
-                } catch (error) {
-                    console.error('Error al cargar fichas:', error);
-                    this.fichasTecnicas = {};
-                    this.fichasCargadas = true;
-                }
-            },
-
+            // 🔥 Ahora la ficha viene directamente del item (fusionada en shelfItems)
             openFicha(item) {
                 if (item.bold) return;
-                const ficha = this.getFicha(item.name);
                 this.fichaActual = {
                     name: item.name,
                     shelf: item.balda,
-                    tipo: ficha?.tipo || 'simple',
-                    peso: ficha?.peso || null,
-                    tiempo: ficha?.tiempo || null,
-                    alergenos: ficha?.alergenos || [],
-                    ingredientes: ficha?.ingredientes || [],
-                    elaboracion: ficha?.elaboracion || null,
-                    notas: ficha?.notas || null,
+                    tipo_ficha: item.tipo_ficha,
+                    peso: item.peso,
+                    tiempo: item.tiempo,
+                    alergenos: item.alergenos || [],
+                    ingredientes: item.ingredientes || [],
+                    elaboracion: item.elaboracion,
+                    notas: item.notas,
                 };
                 this.modalVisible = true;
             },
@@ -1407,7 +1389,12 @@ const CARTA_ACTUAL = 'carta_actual';
 
             abrirModalEtiquetaDesdeFicha() {
                 if (this.fichaActual) {
-                    this.abrirModalEtiqueta({ name: this.fichaActual.name, bold: false, catalogo_id: 'ficha-' + this.fichaActual.name, balda: this.fichaActual.shelf });
+                    this.abrirModalEtiqueta({ 
+                        name: this.fichaActual.name, 
+                        bold: false, 
+                        catalogo_id: 'ficha-' + this.fichaActual.name, 
+                        balda: this.fichaActual.shelf 
+                    });
                 }
             },
 
@@ -1587,7 +1574,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 this.showToast('Error al conectar con Supabase', 'error');
                 return;
             }
-            await this.cargarFichas();
             await this.cargarHistorialProduccion();
             this.loading = true;
             await this.syncFromSupabase();
