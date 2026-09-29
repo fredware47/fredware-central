@@ -92,18 +92,6 @@
         .sync-status.synced { background: #d4e6d9; color: #1d6b3c; }
         .sync-status.syncing { background: #f7e3d4; color: #914d2a; }
         .sync-status.error { background: #f5d6d6; color: #b13e3e; }
-        .admin-toggle {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            font-size: 0.75rem;
-            color: #7a726a;
-            cursor: pointer;
-            background: #f0ebe5;
-            padding: 0.3rem 0.7rem;
-            border-radius: 30px;
-        }
-        .admin-toggle input { cursor: pointer; }
         .tabs {
             display: flex;
             gap: 0.2rem;
@@ -141,7 +129,6 @@
             min-height: 200px;
         }
         .shelf-card:hover { border-color: #b0a89e; }
-        .shelf-card.inactive { opacity: 0.5; border-style: dashed; }
         .shelf-title {
             font-weight: 700;
             font-size: 1.2rem;
@@ -168,7 +155,6 @@
             margin-bottom: 0.6rem;
             gap: 0.5rem;
         }
-        .shelf-actions { display: flex; gap: 0.2rem; flex-shrink: 0; flex-wrap: wrap; }
         .icon-btn {
             background: none;
             border: none;
@@ -185,8 +171,6 @@
             justify-content: center;
         }
         .icon-btn:hover { background: #e8e1d9; color: #1e1e1e; }
-        .icon-btn.danger:hover { background: #f5d6d6; color: #b13e3e; }
-        .icon-btn.move:hover { background: #d4e6d9; color: #1d6b3c; }
         .icon-btn.info:hover { background: #dbeafe; color: #2563eb; }
         .icon-btn.etiqueta-btn { 
             background: #fef3c7; 
@@ -224,7 +208,6 @@
             font-size: 1.05rem;
         }
         .item-row.bold-item:hover { background: #f3efe9; }
-        .item-row.inactivo { opacity: 0.4; }
         
         .item-name { 
             flex: 1; 
@@ -255,46 +238,6 @@
         .status-btn.active-elaborar { background: #c97d2b; color: white; }
         .status-btn.active-descongelar { background: #2b6f8a; color: white; }
         .status-btn:hover { opacity: 0.8; }
-        .status-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        
-        .item-edit-input {
-            border: 1px solid #d5cdc3;
-            border-radius: 6px;
-            padding: 0.3rem 0.5rem;
-            font-size: 1rem;
-            background: white;
-            flex: 1;
-            min-width: 80px;
-            min-height: 38px;
-        }
-        
-        .add-item-row {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 0.6rem;
-            padding-top: 0.6rem;
-            border-top: 1px dashed #d5cdc3;
-        }
-        .add-item-row input {
-            flex: 1;
-            border: 1px solid #d5cdc3;
-            border-radius: 8px;
-            padding: 0.5rem 0.7rem;
-            font-size: 1rem;
-            min-height: 44px;
-        }
-        .add-item-row .btn-add {
-            background: #1e1e1e;
-            color: white;
-            border: none;
-            padding: 0.4rem 1.5rem;
-            border-radius: 30px;
-            font-size: 1rem;
-            cursor: pointer;
-            min-height: 44px;
-            min-width: 50px;
-        }
-        .add-item-row .btn-add:hover { background: #333; }
         
         .stats-bar {
             display: flex;
@@ -311,28 +254,6 @@
         .stats-bar .num.no { color: #b13e3e; }
         .stats-bar .num.elaborar { color: #c97d2b; }
         .stats-bar .num.descongelar { color: #2b6f8a; }
-        
-        .add-shelf-area {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .add-shelf-area input {
-            padding: 0.5rem 1rem;
-            border: 1px solid #d5cdc3;
-            border-radius: 40px;
-            font-size: 1rem;
-            flex: 1;
-            min-width: 150px;
-            min-height: 44px;
-        }
-        .add-shelf-area .btn-primary {
-            min-height: 44px;
-            padding: 0.4rem 1.8rem;
-            font-size: 0.95rem;
-        }
         
         .ultima-produccion {
             font-size: 0.8rem;
@@ -461,17 +382,6 @@
             font-size: 0.8rem;
         }
         .btn-danger:hover { background: #8f2f2f; }
-        .btn-success {
-            background: #1e7e34;
-            border: none;
-            padding: 0.4rem 1.2rem;
-            border-radius: 60px;
-            color: white;
-            font-weight: 500;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-        .btn-success:hover { background: #15662a; }
         .btn-warning {
             background: #c97d2b;
             border: none;
@@ -511,16 +421,6 @@
             text-align: center;
             border-top: 1px solid #eee8e0;
             padding-top: 0.8rem;
-        }
-        .shelf-edit-input {
-            border: 1px solid #d5cdc3;
-            border-radius: 6px;
-            padding: 0.3rem 0.5rem;
-            font-size: 1rem;
-            background: white;
-            flex: 1;
-            font-weight: 700;
-            min-height: 38px;
         }
         .loading { text-align: center; padding: 1.5rem; color: #7a726a; }
         .spinner {
@@ -563,7 +463,6 @@
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
-        .move-btn-group { display: flex; gap: 0.1rem; }
 
         .modal-overlay {
             position: fixed;
@@ -587,7 +486,6 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             animation: modalIn 0.3s ease;
         }
-        .modal.editing { max-width: 750px; }
         @keyframes modalIn {
             from { opacity: 0; transform: scale(0.95) translateY(20px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
@@ -719,80 +617,10 @@
         .modal-footer .btn-modal.primary:hover { background: #333; }
         .modal-footer .btn-modal.outline { background: transparent; border: 1px solid #d5cdc3; }
         .modal-footer .btn-modal.outline:hover { background: #f5f2ee; }
-        .modal-footer .btn-modal.danger { background: #b13e3e; color: white; }
-        .modal-footer .btn-modal.danger:hover { background: #8f2f2f; }
 
         .has-receta { border-left: 3px solid #2563eb; }
         .has-peso { border-left: 3px solid #059669; }
         .no-info { border-left: 3px solid #94a3b8; }
-
-        .edit-form .form-group {
-            margin-bottom: 0.8rem;
-        }
-        .edit-form .form-group label {
-            display: block;
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: #475569;
-            margin-bottom: 0.2rem;
-        }
-        .edit-form .form-group input,
-        .edit-form .form-group textarea,
-        .edit-form .form-group select {
-            width: 100%;
-            padding: 0.4rem 0.6rem;
-            border: 1px solid #d5cdc3;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-family: inherit;
-            background: #faf8f6;
-        }
-        .edit-form .form-group input:focus,
-        .edit-form .form-group textarea:focus,
-        .edit-form .form-group select:focus {
-            outline: 2px solid #1e1e1e;
-            outline-offset: 1px;
-        }
-        .edit-form .form-group textarea { min-height: 60px; resize: vertical; }
-        .edit-form .form-group .help-text {
-            font-size: 0.7rem;
-            color: #94a3b8;
-            margin-top: 0.15rem;
-        }
-        .edit-form .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.8rem;
-        }
-        .edit-form .alergenos-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.3rem;
-        }
-        .edit-form .alergenos-grid .alergeno-chip {
-            display: flex;
-            align-items: center;
-            gap: 0.2rem;
-            padding: 0.15rem 0.6rem 0.15rem 0.4rem;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: 0.15s;
-            background: #f1f5f9;
-            color: #475569;
-        }
-        .edit-form .alergenos-grid .alergeno-chip.selected {
-            border-color: #1e1e1e;
-            background: #e2e8f0;
-        }
-        .edit-form .alergenos-grid .alergeno-chip .color-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-        }
 
         .modal-etiqueta .etiqueta-preview {
             background: #faf8f6;
@@ -858,48 +686,19 @@
             outline-offset: 1px;
         }
 
-        .catalogo-info {
-            background: #f0ebe5;
-            padding: 0.8rem 1.2rem;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            color: #4b4540;
-            margin-bottom: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.8rem;
-        }
-        .catalogo-info .info-txt strong { color: #1e1e1e; }
-        .catalogo-info .carta-badge {
-            background: #1e1e1e;
-            color: white;
-            padding: 0.2rem 0.8rem;
-            border-radius: 30px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
         @media (max-width: 600px) {
             .app { padding: 0.8rem; }
             .grid { grid-template-columns: 1fr; }
             .header h1 { font-size: 1.2rem; }
-            .shelf-actions .icon-btn { font-size: 1rem; min-height: 30px; min-width: 30px; }
             .shelf-title { font-size: 1.1rem; }
             .item-name { font-size: 0.95rem; }
             .icon-btn { font-size: 1.1rem; min-height: 30px; min-width: 30px; }
             .status-btn { font-size: 0.75rem; min-height: 30px; min-width: 34px; padding: 0.2rem 0.6rem; }
             .shelf-card { padding: 0.8rem 0.8rem 0.6rem; min-height: 160px; }
-            .add-item-row input { min-height: 38px; font-size: 0.9rem; }
-            .add-item-row .btn-add { min-height: 38px; font-size: 0.9rem; padding: 0.3rem 1.2rem; }
             .stats-bar { font-size: 0.8rem; padding: 0.4rem 1rem; gap: 0.6rem 1rem; }
-            .add-shelf-area input { min-height: 38px; font-size: 0.9rem; }
-            .add-shelf-area .btn-primary { min-height: 38px; font-size: 0.85rem; padding: 0.3rem 1.2rem; }
             .modal { padding: 1.2rem; margin: 0.5rem; }
             .modal-body .info-row { flex-wrap: wrap; }
             .modal-body .info-row .label { min-width: 80px; }
-            .edit-form .form-row { grid-template-columns: 1fr; }
             .item-row { font-size: 0.95rem; padding: 0.4rem 0.1rem; }
             .item-row.bold-item { font-size: 0.95rem; }
         }
@@ -911,7 +710,6 @@
     <div class="header">
         <h1>🍽️ Mise and Place <small>{{ cartaActual }}</small></h1>
         <div class="user-area">
-            <!-- 🔥 Cocinero desde localStorage -->
             <div class="cocinero-badge" :class="{ empty: !cocinero }" @click="editarCocinero" title="Click para cambiar">
                 👨‍🍳 {{ cocinero || 'Pulsa aquí para poner tu nombre' }}
             </div>
@@ -919,11 +717,6 @@
                 <button class="turno-btn" :class="{ active: turno === 'mediodia' }" @click="cambiarTurno('mediodia')">☀️</button>
                 <button class="turno-btn" :class="{ active: turno === 'noche' }" @click="cambiarTurno('noche')">🌙</button>
             </div>
-            <!-- 🔥 Modo admin -->
-            <label class="admin-toggle" v-if="cocinero">
-                <input type="checkbox" v-model="modoAdmin" @change="toggleModoAdmin">
-                🔧 Admin
-            </label>
             <span class="sync-status" :class="syncStatusClass">{{ syncStatusText }}</span>
         </div>
     </div>
@@ -939,7 +732,6 @@
         <button class="tab-btn" :class="{ active: tab === 'accion' }" @click="tab = 'accion'">⚡ Listas</button>
         <button class="tab-btn" :class="{ active: tab === 'pedido' }" @click="tab = 'pedido'">🛒 Pedido</button>
         <button class="tab-btn" :class="{ active: tab === 'historial' }" @click="tab = 'historial'">📜 Historial</button>
-        <button class="tab-btn" v-if="modoAdmin" :class="{ active: tab === 'catalogo' }" @click="tab = 'catalogo'">📋 Catálogo</button>
     </div>
 
     <div v-if="loading" class="loading"><div class="spinner"></div><p style="margin-top:0.8rem;">Cargando...</p></div>
@@ -951,8 +743,7 @@
                 <div style="font-size:2rem;">📋</div>
                 <h3 style="margin:0.5rem 0;">El catálogo está vacío</h3>
                 <p style="color:#7a726a; font-size:0.9rem;">
-                    Pide al administrador que configure el catálogo.<br>
-                    Si eres admin, activa el modo <strong>🔧 Admin</strong> arriba y ve a la pestaña <strong>Catálogo</strong>.
+                    Pide al jefe que configure el catálogo desde <strong>miseandplacejefe.html</strong>.
                 </p>
             </div>
             <div v-else>
@@ -1038,10 +829,10 @@
             </div>
             <div class="order-list">
                 <div v-for="item in pedidoList" :key="item.catalogo_id" class="order-item">
-                    <input type="checkbox" v-model="item.pedidoHecho" @change="updatePedido">
+                    <input type="checkbox" v-model="item.pedidoHecho" @change="updatePedido(item)">
                     <span class="item-name">{{ item.name }}</span>
                     <span class="shelf-tag">{{ item.balda }}</span>
-                    <input type="number" class="qty-input" v-model="item.cantidad" min="1" @change="updatePedido">
+                    <input type="number" class="qty-input" v-model="item.cantidad" min="1" @change="updatePedido(item)">
                     <button class="remove-btn" @click="quitarDePedido(item)">✕</button>
                 </div>
                 <div v-if="pedidoList.length === 0" class="empty-state" style="padding:0.8rem;">🎉 ¡Todo completo!</div>
@@ -1080,89 +871,10 @@
                 <button class="btn-outline" @click="tab = 'revision'">← Volver</button>
             </div>
         </div>
-
-        <!-- ========== CATÁLOGO (solo admin) ========== -->
-        <div class="tab-content" :class="{ active: tab === 'catalogo' }" v-if="modoAdmin">
-            <div class="catalogo-info">
-                <div class="info-txt">
-                    📋 Catálogo de la <strong>{{ cartaActual }}</strong> · 
-                    <strong>{{ numBaldasCatalogo }}</strong> baldas · 
-                    <strong>{{ numItemsCatalogo }}</strong> items
-                </div>
-                <span class="carta-badge">{{ cartaActual }}</span>
-            </div>
-            
-            <div class="add-shelf-area">
-                <input type="text" v-model="newShelfName" placeholder="Nueva balda..." @keyup.enter="addShelf">
-                <button class="btn-primary" @click="addShelf">➕ Añadir balda</button>
-                <button class="btn-warning" @click="cargarCatalogoInicial" v-if="numBaldasCatalogo === 0">
-                    🌱 Cargar catálogo inicial
-                </button>
-                <button class="btn-outline" @click="recargarCatalogo">🔄 Recargar</button>
-            </div>
-
-            <div v-if="Object.keys(catalogo).length === 0" style="padding:2rem; text-align:center; background:#f8f8f8; border-radius:16px; margin-top:1rem;">
-                <p style="color:#7a726a;">El catálogo está vacío.</p>
-                <p style="color:#7a726a; font-size:0.85rem; margin-top:0.5rem;">
-                    Pulsa <strong>🌱 Cargar catálogo inicial</strong> para partir de la estructura heredada,<br>
-                    o añade baldas una a una con el botón de arriba.
-                </p>
-            </div>
-
-            <div class="grid" v-else>
-                <div class="shelf-card" v-for="(shelf, baldaKey) in catalogo" :key="baldaKey">
-                    <div class="shelf-header">
-                        <div class="shelf-title">
-                            <template v-if="editingShelf === baldaKey">
-                                <input class="shelf-edit-input" v-model="shelfEditName" @keyup.enter="saveShelfEdit(baldaKey)" @blur="saveShelfEdit(baldaKey)" ref="shelfEditInput">
-                            </template>
-                            <template v-else>
-                                {{ baldaKey }}
-                                <span class="badge">{{ shelf.filter(it => !it.item_bold).length }}</span>
-                            </template>
-                        </div>
-                        <div class="shelf-actions">
-                            <div class="move-btn-group">
-                                <button class="icon-btn move" @click="moveShelfUp(baldaKey)" title="Mover arriba">⬆️</button>
-                                <button class="icon-btn move" @click="moveShelfDown(baldaKey)" title="Mover abajo">⬇️</button>
-                            </div>
-                            <button class="icon-btn" @click="startEditShelf(baldaKey)" title="Editar nombre">✏️</button>
-                            <button class="icon-btn danger" @click="deleteShelf(baldaKey)" title="Eliminar balda">🗑️</button>
-                        </div>
-                    </div>
-                    <div v-for="item in shelf" :key="item.id" 
-                         class="item-row" 
-                         :class="{ 'bold-item': item.item_bold, 'inactivo': !item.activo }">
-                        <template v-if="editingItem === item.id">
-                            <input class="item-edit-input" v-model="itemEditName" @keyup.enter="saveItemEdit(item)" @blur="saveItemEdit(item)" ref="itemEditInput">
-                            <button class="icon-btn" @click="saveItemEdit(item)">💾</button>
-                        </template>
-                        <template v-else>
-                            <span class="item-name">{{ item.item_nombre }}</span>
-                            <div class="item-actions">
-                                <button class="icon-btn" @click="toggleBold(item)" :title="item.item_bold ? 'Quitar cabecera' : 'Marcar cabecera'">
-                                    {{ item.item_bold ? '📌' : '📄' }}
-                                </button>
-                                <button class="icon-btn" @click="startEditItem(item)" title="Editar nombre">✏️</button>
-                                <button class="icon-btn danger" @click="deleteItem(item)" title="Desactivar item">✕</button>
-                            </div>
-                        </template>
-                    </div>
-                    <div class="add-item-row">
-                        <input type="text" v-model="newItemNames[baldaKey]" :placeholder="'Nuevo item...'" @keyup.enter="addItem(baldaKey)">
-                        <button class="btn-add" @click="addItem(baldaKey)">+</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="toolbar" style="margin-top:1.5rem;">
-                <button class="btn-outline" @click="tab = 'revision'">← Volver a Revisión</button>
-            </div>
-        </div>
     </div>
 
-    <!-- ========== MODAL FICHA TÉCNICA ========== -->
-    <div v-if="modalVisible && !editandoFicha && !modalEtiquetaVisible" class="modal-overlay" @click.self="closeModal">
+    <!-- ========== MODAL FICHA TÉCNICA (solo lectura) ========== -->
+    <div v-if="modalVisible && !modalEtiquetaVisible" class="modal-overlay" @click.self="closeModal">
         <div class="modal">
             <div class="modal-header">
                 <h2>{{ fichaActual?.name || 'Ficha Técnica' }}</h2>
@@ -1208,6 +920,7 @@
                 </div>
                 <div v-if="!fichaActual?.tipo || fichaActual?.tipo === 'simple'" style="padding:1rem 0; color:#64748b; text-align:center; font-style:italic;">
                     ℹ️ Este item no tiene ficha técnica registrada.
+                    <br><span style="font-size:0.8rem;">Pide al jefe que la cree.</span>
                 </div>
                 <div v-if="historialProduccion[fichaActual?.name]" style="margin-top:1rem; padding-top:0.8rem; border-top:2px solid #eee8e0;">
                     <h4 style="font-size:0.8rem; color:#475569;">📅 Última producción</h4>
@@ -1222,72 +935,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-modal primary" @click="closeModal">Cerrar</button>
-                <button class="btn-modal outline" @click="iniciarEdicionFicha">✏️ Editar ficha</button>
                 <button class="btn-modal outline" @click="abrirModalEtiquetaDesdeFicha" style="background:#fef3c7; color:#92400e;">🏷️ Etiqueta</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========== MODAL EDICIÓN FICHA ========== -->
-    <div v-if="modalVisible && editandoFicha && !modalEtiquetaVisible" class="modal-overlay" @click.self="closeModal">
-        <div class="modal editing">
-            <div class="modal-header">
-                <h2>📝 {{ editandoFichaNombre ? 'Editando: ' + editandoFichaNombre : 'Nueva ficha' }}</h2>
-                <button class="close-btn" @click="closeModal">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="edit-form">
-                    <div class="form-group">
-                        <label>📋 Nombre del item</label>
-                        <input type="text" v-model="editForm.nombre" placeholder="Nombre exacto del item" required>
-                    </div>
-                    <div class="form-group">
-                        <label>📂 Tipo</label>
-                        <select v-model="editForm.tipo">
-                            <option value="receta">📝 Receta completa</option>
-                            <option value="ingrediente">⚖️ Solo ingrediente (peso)</option>
-                            <option value="simple">📦 Sin información</option>
-                        </select>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>⚖️ Peso/gramaje</label>
-                            <input type="text" v-model="editForm.peso" placeholder="Ej: 200 grm">
-                        </div>
-                        <div class="form-group" v-if="editForm.tipo === 'receta'">
-                            <label>⏱️ Tiempo preparación</label>
-                            <input type="text" v-model="editForm.tiempo" placeholder="Ej: 15 min">
-                        </div>
-                    </div>
-                    <div class="form-group" v-if="editForm.tipo === 'receta'">
-                        <label>⚠️ Alérgenos</label>
-                        <div class="alergenos-grid">
-                            <div v-for="alergeno in alergenosDisponibles" :key="alergeno.nombre" 
-                                 class="alergeno-chip" 
-                                 :class="{ selected: editForm.alergenos.includes(alergeno.nombre) }"
-                                 @click="toggleAlergeno(alergeno.nombre)">
-                                <span class="color-dot" :style="{ background: alergeno.color }"></span>
-                                {{ alergeno.nombre }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group" v-if="editForm.tipo === 'receta'">
-                        <label>📝 Ingredientes (uno por línea)</label>
-                        <textarea v-model="editForm.ingredientesText" rows="4" placeholder="Ingrediente 1&#10;Ingrediente 2"></textarea>
-                    </div>
-                    <div class="form-group" v-if="editForm.tipo === 'receta'">
-                        <label>👨‍🍳 Elaboración (pasos)</label>
-                        <textarea v-model="editForm.elaboracion" rows="5" placeholder="1. Paso 1&#10;2. Paso 2"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>📌 Notas adicionales</label>
-                        <textarea v-model="editForm.notas" rows="3"></textarea>
-                    </div>
-                    <div class="modal-footer" style="border-top: 2px solid #eee8e0; margin-top: 0.5rem;">
-                        <button class="btn-modal primary" @click="guardarFicha">💾 Guardar ficha</button>
-                        <button class="btn-modal outline" @click="cancelarEdicion">Cancelar</button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -1356,8 +1004,7 @@
     <div v-if="toast.show" class="toast" :class="toast.type">{{ toast.message }}</div>
 
     <div class="footer">
-        📌 En negrita: encabezados · 📋 Ver ficha técnica · 🏷️ Genera etiqueta
-        <br>⚡ Elaborar · ❄️ Descongelar · 📜 Historial · 🔧 Modo admin = pestaña Catálogo
+        📌 Pulsa un item para ver su ficha técnica · 🏷️ Genera etiqueta · ⚡ Elaborar · ❄️ Descongelar · 📜 Historial
     </div>
 </div>
 
@@ -1370,104 +1017,6 @@ const API_URL = 'https://untried-january-thinning.ngrok-free.dev';
 const CARTA_ACTUAL = 'carta_actual';
 
 (function() {
-    const ALERGENOS_DISPONIBLES = [
-        { nombre: 'Gluten', color: '#dc2626' },
-        { nombre: 'Lácteos', color: '#2563eb' },
-        { nombre: 'Huevo', color: '#d97706' },
-        { nombre: 'Pescado', color: '#059669' },
-        { nombre: 'Frutos secos', color: '#7c3aed' },
-        { nombre: 'Soja', color: '#0284c7' },
-        { nombre: 'Moluscos', color: '#6b21a8' },
-        { nombre: 'Crustáceos', color: '#db2777' },
-        { nombre: 'Apio', color: '#16a34a' },
-        { nombre: 'Mostaza', color: '#ea580c' },
-        { nombre: 'Sésamo', color: '#7c3aed' },
-        { nombre: 'Sulfitos', color: '#0d9488' },
-        { nombre: 'Altramuces', color: '#b91c1c' }
-    ];
-
-    // Estructura inicial (heredada de la carta anterior - como punto de partida)
-    const CATALOGO_INICIAL = {
-        "Balda 1 Puerta A": [
-            { name: "Ensalada Fredie", bold: true },
-            { name: "mezclum" }, { name: "langostinos (pqt3)" }, { name: "salmon marinado (80 grm)" },
-            { name: "tomates cherrys confitados (4)" }, { name: "trigueros (3)" },
-            { name: "pan multicereal(cuarto frio)" }, { name: "Aguacate" }, { name: "vinagreta de miel (Mesado)" }
-        ],
-        "Balda 2 (Ensalada Ventresca)": [
-            { name: "Ensalada de Ventresca", bold: true },
-            { name: "Ventresca (100 grm)" }, { name: "Tomate azul" }, { name: "Rucula" }, { name: "Huevo cocido 1" }
-        ],
-        "Balda 3 (Ensaladilla langostinos)": [
-            { name: "Ensaladilla de langostinos", bold: true },
-            { name: "Ensaladilla" }, { name: "langostinos (3 unidades)" }, { name: "wakame" },
-            { name: "Lechuga" }, { name: "Cebolla roja osmotizada" }, { name: "zumo de limon" },
-            { name: "Verduras bruinose (ceviche)" }
-        ],
-        "Balda 1 Puerta B (especias)": [
-            { name: "Especiero (hb, al, cil, per, cebollino)", bold: true },
-            { name: "Setas" }, { name: "Micro mezclum" }, { name: "Espinaca" }, { name: "ajo laminado" }
-        ],
-        "Balda 2 Puerta B (salsas)": [
-            { name: "salsero", bold: true },
-            { name: "kimchinesa" }, { name: "alioli de lima y perejil" }, { name: "salsa rosa" },
-            { name: "Romescu" }, { name: "aliño de tarta" }, { name: "mojo rojo" },
-            { name: "mojo verde" }, { name: "Tapanade" }
-        ],
-        "Balda 1 Puerta C (pastas)": [
-            { name: "Pastas", bold: true },
-            { name: "Tagliatelle" }, { name: "Boloñesa (160 grm)" }, { name: "Alfredo" },
-            { name: "Napole" }, { name: "Parmesano" }
-        ],
-        "Balda 2 Puerta C (carnes)": [
-            { name: "Carnes cocidas", bold: true },
-            { name: "Carne bao (80 grm)" }, { name: "Carne asada (180 grm)" },
-            { name: "Carne cubano (160 grm)" }, { name: "Salchichas" }
-        ],
-        "Balda 3 Puerta C (salsas calientes)": [
-            { name: "Salsa calientes", bold: true },
-            { name: "Salsa de queso san simon" }, { name: "Salsa de queso chedar" },
-            { name: "Mantequilla de salvia" }, { name: "Huevos Poche" }
-        ],
-        "Balda 1 Puerta D (fast food)": [
-            { name: "Fast food", bold: true },
-            { name: "Jamon" }, { name: "Queso Edam Lomchas" }, { name: "Bacon" },
-            { name: "Cebolla caramelizada" }, { name: "Relish" }, { name: "tomate en rodajas" }, { name: "Arzua" }
-        ],
-        "Balda 2 Puerta D": [
-            { name: "Patata Baby" }, { name: "Brocoli" }, { name: "Paleta" }, { name: "San simon" }, { name: "Tempura" }
-        ],
-        "Balda 3 Puerta D": [
-            { name: "Hamburguesas (200 grm)" }, { name: "Croca (200 grm)" }, { name: "Pollo club (80 grm)" }
-        ],
-        "Balda 1 Puerta E": [
-            { name: "Garbanzos", bold: true }, { name: "Pil Pil" }, { name: "Marca de arroz" }, { name: "mantequilla" }
-        ],
-        "Balda 2 Puerta E (pescados)": [
-            { name: "Pescados", bold: true },
-            { name: "Pargo (150gr)" }, { name: "Bacalao (180 grm)" }, { name: "Chipis bao (80 grm)" },
-            { name: "Chipis fritos (250" }, { name: "Salmón (150 grm)" }, { name: "Pulpo (150 Gr)" },
-            { name: "Langostinos 6" }
-        ],
-        "Balda 3 Puerta E": [ { name: "Croquetas (10)" } ],
-        "Balda 1 Puerta F": [ { name: "Tarta de queso", bold: true } ],
-        "Balda 2 Puerta F": [
-            { name: "Torrijas", bold: true },
-            { name: "Filloas" }, { name: "Mermelada" }, { name: "Crema pastelera" }, { name: "Mantequilla" },
-            { name: "Phisalys" }, { name: "Fresas" }, { name: "Arandanos" }, { name: "nutella" }, { name: "peta setas" }
-        ],
-        "Congelador": [
-            { name: "Helado de vainilla", bold: true }, { name: "Helado de café" },
-            { name: "Taper con Baos Negros" }, { name: "Taper con Baos Blancos" },
-            { name: "Taper con Almejas" }, { name: "Taper con Langostinos crujientes" }, { name: "Taper con Gnochis" }
-        ],
-        "Mesado / Cocina": [
-            { name: "Chips de platano", bold: true }, { name: "Chips de yuca" }, { name: "Vinagreta" },
-            { name: "Tostas Tartar" }, { name: "Merengues" }, { name: "Cramble Negro" },
-            { name: "Cramble Blanco" }, { name: "Dulce de leche" }, { name: "Harina de fritos" }, { name: "Fumet" }
-        ]
-    };
-
     new Vue({
         el: '#app',
         data: {
@@ -1477,38 +1026,22 @@ const CARTA_ACTUAL = 'carta_actual';
             horaActualizacion: '',
             tab: 'revision',
             cartaActual: CARTA_ACTUAL,
-            // Catálogo
-            catalogo: {},              // { balda: [items] }
+            catalogo: {},
             catalogoCargado: false,
-            // Revisión
-            revisionHoy: {},           // { catalogo_id: { status, hecho, cantidad, notas } }
-            shelfItems: {},            // vista fusionada: { balda: [items con status] }
+            revisionHoy: {},
+            shelfItems: {},
             elaborarList: [],
             descongelarList: [],
             pedidoList: [],
             stats: { hay: 0, no: 0, elaborar: 0, descongelar: 0 },
             totalItems: 0,
-            // UI admin
-            modoAdmin: false,
-            editingShelf: null,
-            shelfEditName: '',
-            editingItem: null,
-            itemEditName: '',
-            newShelfName: '',
-            newItemNames: {},
-            // Estado
             loading: false,
             syncStatus: 'idle',
             supabase: null,
             toast: { show: false, message: '', type: '' },
-            // Modales
             modalVisible: false,
-            editandoFicha: false,
-            editandoFichaNombre: null,
             fichaActual: null,
             fichasTecnicas: {},
-            editForm: { nombre:'', tipo:'simple', peso:'', tiempo:'', alergenos:[], ingredientesText:'', elaboracion:'', notas:'' },
-            alergenosDisponibles: ALERGENOS_DISPONIBLES,
             fichasCargadas: false,
             modalEtiquetaVisible: false,
             etiquetaForm: { producto:'', tipo:'elaboracion', lote:'', fecha:'', dias:5, cantidad:1 },
@@ -1526,16 +1059,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 if (this.syncStatus === 'syncing') return 'syncing';
                 if (this.syncStatus === 'error') return 'error';
                 return '';
-            },
-            numBaldasCatalogo() {
-                return Object.keys(this.catalogo).length;
-            },
-            numItemsCatalogo() {
-                let n = 0;
-                for (const shelf of Object.values(this.catalogo)) {
-                    n += shelf.filter(it => !it.item_bold).length;
-                }
-                return n;
             }
         },
         methods: {
@@ -1560,9 +1083,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 return cad;
             },
 
-            // ============================================================
-            // COCINERO (localStorage)
-            // ============================================================
             editarCocinero() {
                 const actual = this.cocinero || '';
                 const nuevo = prompt('👨‍🍳 ¿Cuál es tu nombre?', actual);
@@ -1572,32 +1092,13 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            // ============================================================
-            // MODO ADMIN
-            // ============================================================
-            toggleModoAdmin() {
-                localStorage.setItem('fredware_modo_admin', this.modoAdmin ? '1' : '0');
-                if (!this.modoAdmin && this.tab === 'catalogo') {
-                    this.tab = 'revision';
-                }
-            },
-
-            // ============================================================
-            // CAMBIO DE TURNO (opción A: mantiene revisión)
-            // ============================================================
             async cambiarTurno(nuevoTurno) {
                 this.turno = nuevoTurno;
-                // Al cambiar de turno, recargamos la revisión del nuevo turno
-                // pero mantenemos los cambios que el cocinero haya hecho
-                // (los datos van a la misma tabla con distinto turno)
                 await this.cargarRevision();
                 this.fusionarCatalogoYRevision();
-                this.showToast(`Turno cambiado a ${nuevoTurno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche'}`, 'info');
+                this.showToast(`Turno: ${nuevoTurno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche'}`, 'info');
             },
 
-            // ============================================================
-            // CARGA DEL CATÁLOGO
-            // ============================================================
             async cargarCatalogo() {
                 try {
                     const { data, error } = await this.supabase
@@ -1607,10 +1108,7 @@ const CARTA_ACTUAL = 'carta_actual';
                         .eq('activo', true)
                         .order('balda_orden')
                         .order('item_orden');
-                    
                     if (error) throw error;
-
-                    // Agrupar por balda
                     const cat = {};
                     for (const row of (data || [])) {
                         if (!cat[row.balda]) cat[row.balda] = [];
@@ -1627,9 +1125,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            // ============================================================
-            // CARGA DE LA REVISIÓN
-            // ============================================================
             async cargarRevision() {
                 try {
                     const hoy = new Date().toISOString().split('T')[0];
@@ -1638,9 +1133,7 @@ const CARTA_ACTUAL = 'carta_actual';
                         .select('*')
                         .eq('fecha', hoy)
                         .eq('turno', this.turno);
-                    
                     if (error) throw error;
-
                     const rev = {};
                     for (const row of (data || [])) {
                         rev[row.catalogo_id] = {
@@ -1660,9 +1153,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            // ============================================================
-            // FUSIONAR CATÁLOGO + REVISIÓN → shelfItems (para la UI)
-            // ============================================================
             fusionarCatalogoYRevision() {
                 const shelfItems = {};
                 for (const [balda, items] of Object.entries(this.catalogo)) {
@@ -1700,9 +1190,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 this.totalItems = total;
             },
 
-            // ============================================================
-            // SINCRONIZAR TODO
-            // ============================================================
             async syncFromSupabase() {
                 this.syncStatus = 'syncing';
                 try {
@@ -1717,9 +1204,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            // ============================================================
-            // ESTADOS (upsert en timbres_revision)
-            // ============================================================
             async setStatus(item, status) {
                 if (item.bold) return;
                 const nuevoStatus = item.status === status ? null : status;
@@ -1727,9 +1211,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 await this.guardarEstadoItem(item);
                 this.actualizarListas();
                 this.actualizarStats();
-                if (status === 'no' && nuevoStatus === 'no') {
-                    this.actualizarPedido();
-                }
             },
 
             async guardarEstadoItem(item) {
@@ -1756,16 +1237,9 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            async updateHecho(item) {
-                await this.guardarEstadoItem(item);
-            },
-            async updatePedido(item) {
-                await this.guardarEstadoItem(item);
-            },
+            async updateHecho(item) { await this.guardarEstadoItem(item); },
+            async updatePedido(item) { await this.guardarEstadoItem(item); },
 
-            // ============================================================
-            // LISTAS DERIVADAS
-            // ============================================================
             actualizarListas() {
                 const elaborar = [], descongelar = [];
                 for (const [shelf, items] of Object.entries(this.shelfItems)) {
@@ -1828,9 +1302,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 return null;
             },
 
-            // ============================================================
-            // REINICIAR REVISIÓN
-            // ============================================================
             async reiniciarRevision() {
                 const confirmar = confirm(
                     `⚠️ ¿Reiniciar la revisión de HOY?\n\n` +
@@ -1850,7 +1321,6 @@ const CARTA_ACTUAL = 'carta_actual';
                         .eq('fecha', hoy)
                         .eq('turno', this.turno);
                     if (error) throw error;
-
                     this.revisionHoy = {};
                     this.fusionarCatalogoYRevision();
                     this.showToast('Revisión reiniciada', 'success');
@@ -1860,283 +1330,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            // ============================================================
-            // CATÁLOGO - CRUD (solo admin)
-            // ============================================================
-            async recargarCatalogo() {
-                await this.cargarCatalogo();
-                await this.cargarRevision();
-                this.fusionarCatalogoYRevision();
-                this.showToast('Catálogo recargado', 'success');
-            },
-
-            async addShelf() {
-                const name = this.newShelfName.trim();
-                if (!name) { this.showToast('Escribe un nombre', 'error'); return; }
-                if (this.catalogo[name]) { this.showToast('Ya existe una balda con ese nombre', 'error'); return; }
-
-                // Calcular orden: al principio (orden 0) o al final (max+1)
-                const maxOrden = Object.values(this.catalogo).flat().reduce((m, it) => Math.max(m, it.balda_orden || 0), 0);
-                try {
-                    // Insertar una fila "placeholder" para que exista la balda
-                    // (aunque esté vacía), usando un item temporal oculto o
-                    // directamente no insertar nada hasta que se añada un item
-                    // → mejor: insertar la balda con un item vacío marcado como bold
-                    await this.supabase.from('timbres_catalogo').insert([{
-                        carta: CARTA_ACTUAL,
-                        balda: name,
-                        balda_orden: maxOrden + 1,
-                        item_orden: 0,
-                        item_nombre: '(vacía)',
-                        item_bold: false,
-                        activo: false  // la marcamos inactiva
-                    }]);
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                    this.newShelfName = '';
-                    this.showToast(`Balda "${name}" añadida`, 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al añadir balda', 'error');
-                }
-            },
-
-            async deleteShelf(balda) {
-                if (!confirm(`¿Eliminar la balda "${balda}" y todos sus items del catálogo?`)) return;
-                try {
-                    await this.supabase
-                        .from('timbres_catalogo')
-                        .update({ activo: false })
-                        .eq('carta', CARTA_ACTUAL)
-                        .eq('balda', balda);
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                    this.showToast(`Balda "${balda}" eliminada`, 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al eliminar balda', 'error');
-                }
-            },
-
-            startEditShelf(name) {
-                this.editingShelf = name;
-                this.shelfEditName = name;
-                this.$nextTick(() => {
-                    if (this.$refs.shelfEditInput) {
-                        const el = Array.isArray(this.$refs.shelfEditInput) ? this.$refs.shelfEditInput[0] : this.$refs.shelfEditInput;
-                        if (el) { el.focus(); el.select(); }
-                    }
-                });
-            },
-
-            async saveShelfEdit(oldName) {
-                const newName = this.shelfEditName.trim();
-                if (!newName || newName === oldName) {
-                    this.editingShelf = null;
-                    return;
-                }
-                if (this.catalogo[newName]) {
-                    this.showToast('Ya existe una balda con ese nombre', 'error');
-                    return;
-                }
-                try {
-                    await this.supabase
-                        .from('timbres_catalogo')
-                        .update({ balda: newName, updated_at: new Date().toISOString() })
-                        .eq('carta', CARTA_ACTUAL)
-                        .eq('balda', oldName);
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                    this.editingShelf = null;
-                    this.showToast('Balda renombrada', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al renombrar', 'error');
-                }
-            },
-
-            async moveShelfUp(name) {
-                const keys = Object.keys(this.catalogo);
-                const index = keys.indexOf(name);
-                if (index <= 0) { this.showToast('Ya está arriba', 'error'); return; }
-                const prevKey = keys[index - 1];
-                // Intercambiar balda_orden
-                const ordenA = this.catalogo[name][0]?.balda_orden || 0;
-                const ordenB = this.catalogo[prevKey][0]?.balda_orden || 0;
-                try {
-                    await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenB }).eq('carta', CARTA_ACTUAL).eq('balda', name);
-                    await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenA }).eq('carta', CARTA_ACTUAL).eq('balda', prevKey);
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                    this.showToast('Balda movida arriba', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al mover', 'error');
-                }
-            },
-
-            async moveShelfDown(name) {
-                const keys = Object.keys(this.catalogo);
-                const index = keys.indexOf(name);
-                if (index >= keys.length - 1) { this.showToast('Ya está abajo', 'error'); return; }
-                const nextKey = keys[index + 1];
-                const ordenA = this.catalogo[name][0]?.balda_orden || 0;
-                const ordenB = this.catalogo[nextKey][0]?.balda_orden || 0;
-                try {
-                    await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenB }).eq('carta', CARTA_ACTUAL).eq('balda', name);
-                    await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenA }).eq('carta', CARTA_ACTUAL).eq('balda', nextKey);
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                    this.showToast('Balda movida abajo', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al mover', 'error');
-                }
-            },
-
-            async addItem(balda) {
-                const name = (this.newItemNames[balda] || '').trim();
-                if (!name) return;
-                const items = this.catalogo[balda] || [];
-                const maxItemOrden = items.reduce((m, it) => Math.max(m, it.item_orden || 0), 0);
-                const baldaOrden = items[0]?.balda_orden || 0;
-                try {
-                    await this.supabase.from('timbres_catalogo').insert([{
-                        carta: CARTA_ACTUAL,
-                        balda: balda,
-                        balda_orden: baldaOrden,
-                        item_orden: maxItemOrden + 1,
-                        item_nombre: name,
-                        item_bold: false,
-                        activo: true
-                    }]);
-                    // Si la balda estaba con "(vacía)" inactiva, la activamos
-                    await this.supabase
-                        .from('timbres_catalogo')
-                        .update({ activo: false })
-                        .eq('carta', CARTA_ACTUAL)
-                        .eq('balda', balda)
-                        .eq('item_nombre', '(vacía)');
-                    this.newItemNames[balda] = '';
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                    this.showToast('Item añadido', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al añadir', 'error');
-                }
-            },
-
-            startEditItem(item) {
-                this.editingItem = item.id;
-                this.itemEditName = item.item_nombre;
-                this.$nextTick(() => {
-                    if (this.$refs.itemEditInput) {
-                        const refs = this.$refs.itemEditInput;
-                        const el = Array.isArray(refs) ? refs[refs.length - 1] : refs;
-                        if (el) { el.focus(); el.select(); }
-                    }
-                });
-            },
-
-            async saveItemEdit(item) {
-                const newName = this.itemEditName.trim();
-                if (!newName) { this.editingItem = null; return; }
-                try {
-                    await this.supabase
-                        .from('timbres_catalogo')
-                        .update({ item_nombre: newName, updated_at: new Date().toISOString() })
-                        .eq('id', item.id);
-                    this.editingItem = null;
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                    this.showToast('Item actualizado', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al actualizar', 'error');
-                }
-            },
-
-            async toggleBold(item) {
-                try {
-                    await this.supabase
-                        .from('timbres_catalogo')
-                        .update({ item_bold: !item.item_bold, updated_at: new Date().toISOString() })
-                        .eq('id', item.id);
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error', 'error');
-                }
-            },
-
-            async deleteItem(item) {
-                if (!confirm(`¿Desactivar "${item.item_nombre}" del catálogo?`)) return;
-                try {
-                    await this.supabase
-                        .from('timbres_catalogo')
-                        .update({ activo: false, updated_at: new Date().toISOString() })
-                        .eq('id', item.id);
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                    this.showToast('Item desactivado', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al desactivar', 'error');
-                }
-            },
-
-            // ============================================================
-            // CARGAR CATÁLOGO INICIAL (semilla)
-            // ============================================================
-            async cargarCatalogoInicial() {
-                if (!confirm('Esto añadirá la estructura heredada al catálogo de la carta actual.\n\nPodrás editarla después.\n\n¿Continuar?')) return;
-
-                const filas = [];
-                let baldaOrden = 1;
-                for (const [balda, items] of Object.entries(CATALOGO_INICIAL)) {
-                    let itemOrden = 1;
-                    for (const item of items) {
-                        filas.push({
-                            carta: CARTA_ACTUAL,
-                            balda: balda,
-                            balda_orden: baldaOrden,
-                            item_orden: itemOrden,
-                            item_nombre: item.name,
-                            item_bold: item.bold || false,
-                            activo: true
-                        });
-                        itemOrden++;
-                    }
-                    baldaOrden++;
-                }
-
-                try {
-                    const { error } = await this.supabase.from('timbres_catalogo').insert(filas);
-                    if (error) throw error;
-                    await this.cargarCatalogo();
-                    await this.cargarRevision();
-                    this.fusionarCatalogoYRevision();
-                    this.showToast(`✅ ${filas.length} items cargados al catálogo`, 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al cargar catálogo inicial', 'error');
-                }
-            },
-
-            // ============================================================
-            // FICHAS TÉCNICAS (sin cambios)
-            // ============================================================
             getAlergenoClass(alergeno) {
                 const map = { 'Gluten':'gluten','Lácteos':'lacteos','Huevo':'huevo','Pescado':'pescado','Frutos secos':'frutos-secos','Soja':'soja','Moluscos':'moluscos','Crustáceos':'crustaceos','Apio':'apio','Mostaza':'mostaza','Sésamo':'sesamo','Sulfitos':'sulfitos','Altramuces':'altramuces' };
                 return map[alergeno] || '';
@@ -2191,74 +1384,13 @@ const CARTA_ACTUAL = 'carta_actual';
                     notas: ficha?.notas || null,
                 };
                 this.modalVisible = true;
-                this.editandoFicha = false;
             },
 
             closeModal() {
                 this.modalVisible = false;
-                this.editandoFicha = false;
                 this.fichaActual = null;
-                this.editandoFichaNombre = null;
             },
 
-            iniciarEdicionFicha() {
-                const ficha = this.fichaActual;
-                this.editandoFicha = true;
-                this.editandoFichaNombre = ficha.name;
-                this.editForm = {
-                    nombre: ficha.name,
-                    tipo: ficha.tipo || 'simple',
-                    peso: ficha.peso || '',
-                    tiempo: ficha.tiempo || '',
-                    alergenos: ficha.alergenos ? [...ficha.alergenos] : [],
-                    ingredientesText: ficha.ingredientes ? ficha.ingredientes.join('\n') : '',
-                    elaboracion: ficha.elaboracion || '',
-                    notas: ficha.notas || ''
-                };
-            },
-
-            toggleAlergeno(alergeno) {
-                const i = this.editForm.alergenos.indexOf(alergeno);
-                if (i > -1) this.editForm.alergenos.splice(i, 1);
-                else this.editForm.alergenos.push(alergeno);
-            },
-
-            async guardarFicha() {
-                const nombre = this.editForm.nombre.trim();
-                if (!nombre) { this.showToast('El nombre es obligatorio', 'error'); return; }
-                const ficha = {
-                    tipo: this.editForm.tipo,
-                    peso: this.editForm.peso || null,
-                    tiempo: this.editForm.tiempo || null,
-                    alergenos: this.editForm.tipo === 'receta' ? [...this.editForm.alergenos] : [],
-                    ingredientes: this.editForm.tipo === 'receta' ? this.editForm.ingredientesText.split('\n').filter(i => i.trim()) : [],
-                    elaboracion: this.editForm.tipo === 'receta' ? this.editForm.elaboracion : null,
-                    notas: this.editForm.notas || null
-                };
-                this.fichasTecnicas[nombre] = ficha;
-                try {
-                    await this.supabase.from('timbres_fichas').upsert({
-                        nombre: nombre,
-                        carta: CARTA_ACTUAL,
-                        ...ficha
-                    }, { onConflict: 'nombre' });
-                    this.showToast(`Ficha de "${nombre}" guardada`, 'success');
-                } catch (e) {
-                    console.error(e);
-                    this.showToast('Guardado local, error al sincronizar', 'warning');
-                }
-                this.closeModal();
-                this.$forceUpdate();
-            },
-
-            cancelarEdicion() {
-                this.editandoFicha = false;
-                this.editandoFichaNombre = null;
-            },
-
-            // ============================================================
-            // ETIQUETAS (sin cambios)
-            // ============================================================
             abrirModalEtiqueta(item) {
                 if (item.bold) return;
                 this.etiquetaItemActual = item;
@@ -2447,10 +1579,7 @@ const CARTA_ACTUAL = 'carta_actual';
             'etiquetaForm.producto'() { this.$nextTick(() => this.generarQRModal()); },
         },
         async mounted() {
-            // Cargar cocinero desde localStorage
             this.cocinero = localStorage.getItem('fredware_cocinero') || '';
-            this.modoAdmin = localStorage.getItem('fredware_modo_admin') === '1';
-
             try {
                 const { createClient } = supabase;
                 this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2458,22 +1587,17 @@ const CARTA_ACTUAL = 'carta_actual';
                 this.showToast('Error al conectar con Supabase', 'error');
                 return;
             }
-
             await this.cargarFichas();
             await this.cargarHistorialProduccion();
-
             this.loading = true;
             await this.syncFromSupabase();
             this.loading = false;
-
-            // Polling ligero
             setInterval(async () => {
                 if (this.syncStatus !== 'syncing') {
                     await this.cargarRevision();
                     this.fusionarCatalogoYRevision();
                 }
             }, 30000);
-
             setInterval(() => { this.cargarHistorialProduccion(); }, 60000);
         }
     });
