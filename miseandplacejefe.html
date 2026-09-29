@@ -12,10 +12,7 @@
             padding: 1rem;
             color: #1e1e1e;
         }
-        .app {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+        .app { max-width: 1400px; margin: 0 auto; }
         .header {
             display: flex;
             flex-wrap: wrap;
@@ -28,23 +25,9 @@
             margin-bottom: 1rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.04);
         }
-        .header h1 {
-            font-weight: 600;
-            font-size: 1.4rem;
-            letter-spacing: -0.3px;
-        }
-        .header h1 small {
-            font-weight: 400;
-            font-size: 0.8rem;
-            color: #7a726a;
-            margin-left: 0.5rem;
-        }
-        .header-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
+        .header h1 { font-weight: 600; font-size: 1.4rem; letter-spacing: -0.3px; }
+        .header h1 small { font-weight: 400; font-size: 0.8rem; color: #7a726a; margin-left: 0.5rem; }
+        .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
         .sync-status {
             font-size: 0.75rem;
             color: #7a726a;
@@ -92,11 +75,7 @@
             border-radius: 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.03);
         }
-        .filters-bar label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #475569;
-        }
+        .filters-bar label { font-size: 0.8rem; font-weight: 600; color: #475569; }
         .filters-bar select,
         .filters-bar input {
             padding: 0.4rem 0.8rem;
@@ -154,11 +133,7 @@
         .stat-card .value.orange { color: #c97d2b; }
         .stat-card .value.blue { color: #2b6f8a; }
 
-        .panel-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.2rem;
-        }
+        .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
         @media (max-width: 900px) { .panel-grid { grid-template-columns: 1fr; } }
 
         .panel-card {
@@ -184,12 +159,7 @@
             font-weight: 500;
             color: #7a726a;
         }
-        .panel-card .empty {
-            color: #8f8982;
-            font-style: italic;
-            padding: 0.5rem 0;
-            font-size: 0.85rem;
-        }
+        .panel-card .empty { color: #8f8982; font-style: italic; padding: 0.5rem 0; font-size: 0.85rem; }
 
         .log-item {
             display: flex;
@@ -249,16 +219,8 @@
             border-radius: 12px;
             padding: 0.8rem 1rem;
         }
-        .shelf-summary-item .shelf-name {
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #333;
-        }
-        .shelf-summary-item .shelf-stats {
-            font-size: 0.75rem;
-            color: #7a726a;
-            margin-top: 0.2rem;
-        }
+        .shelf-summary-item .shelf-name { font-weight: 600; font-size: 0.85rem; color: #333; }
+        .shelf-summary-item .shelf-stats { font-size: 0.75rem; color: #7a726a; margin-top: 0.2rem; }
 
         .btn {
             border: none;
@@ -300,6 +262,7 @@
         .icon-btn:hover { background: #f0ebe5; color: #1e1e1e; }
         .icon-btn.danger:hover { background: #f5d6d6; color: #b13e3e; }
         .icon-btn.move:hover { background: #d4e6d9; color: #1d6b3c; }
+        .icon-btn.info:hover { background: #dbeafe; color: #2563eb; }
 
         .catalogo-info {
             background: #f0ebe5;
@@ -394,12 +357,20 @@
             margin: 0.2rem 0;
             border-bottom: 2px solid #d5cdc3;
         }
-        .item-name {
-            flex: 1;
-            min-width: 0;
-            word-break: break-word;
-        }
+        .item-name { flex: 1; min-width: 0; word-break: break-word; }
         .item-actions { display: flex; gap: 0.2rem; align-items: center; }
+
+        .tipo-badge {
+            display: inline-block;
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .tipo-badge.receta { background: #dbeafe; color: #1e40af; }
+        .tipo-badge.ingrediente { background: #d1fae5; color: #065f46; }
+        .tipo-badge.simple { background: #f1f5f9; color: #94a3b8; }
 
         .edit-input {
             border: 1px solid #d5cdc3;
@@ -439,7 +410,7 @@
 
         .fichas-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 0.8rem;
             margin-top: 1rem;
         }
@@ -448,34 +419,53 @@
             border-radius: 12px;
             padding: 1rem 1.2rem;
             border: 1px solid #e8e1d9;
-            cursor: pointer;
             transition: 0.15s;
             box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            position: relative;
         }
         .ficha-card:hover { border-color: #b0a89e; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .ficha-card .ficha-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
         .ficha-card .ficha-nombre {
             font-weight: 700;
             font-size: 0.95rem;
             color: #1e1e1e;
-            margin-bottom: 0.3rem;
+            flex: 1;
+            cursor: pointer;
         }
+        .ficha-card .ficha-nombre:hover { color: #2563eb; }
+        .ficha-card .ficha-delete {
+            background: none;
+            border: none;
+            color: #b13e3e;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0 0.3rem;
+            border-radius: 4px;
+        }
+        .ficha-card .ficha-delete:hover { background: #f5d6d6; }
         .ficha-card .ficha-meta {
             font-size: 0.75rem;
             color: #7a726a;
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
+            align-items: center;
         }
-        .tipo-pill {
-            display: inline-block;
-            padding: 0.1rem 0.6rem;
+        .ficha-card .ficha-alergenos {
+            font-size: 0.7rem;
+            color: #92400e;
+            background: #fef3c7;
+            padding: 0.15rem 0.5rem;
             border-radius: 30px;
-            font-size: 0.65rem;
-            font-weight: 600;
+            display: inline-block;
+            margin-top: 0.3rem;
         }
-        .tipo-pill.receta { background: #dbeafe; color: #1e40af; }
-        .tipo-pill.ingrediente { background: #d1fae5; color: #065f46; }
-        .tipo-pill.simple { background: #f1f5f9; color: #475569; }
 
         .modal-overlay {
             position: fixed;
@@ -491,7 +481,7 @@
         .modal {
             background: white;
             border-radius: 24px;
-            max-width: 650px;
+            max-width: 700px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
@@ -506,11 +496,7 @@
             padding-bottom: 0.8rem;
             border-bottom: 2px solid #eee8e0;
         }
-        .modal-header h2 {
-            font-weight: 700;
-            font-size: 1.3rem;
-            color: #1e1e1e;
-        }
+        .modal-header h2 { font-weight: 700; font-size: 1.3rem; color: #1e1e1e; }
         .modal-header .close-btn {
             background: none;
             border: none;
@@ -520,13 +506,13 @@
             line-height: 1;
         }
 
-        .edit-form .form-group { margin-bottom: 0.8rem; }
+        .edit-form .form-group { margin-bottom: 1rem; }
         .edit-form .form-group label {
             display: block;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: #475569;
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.3rem;
         }
         .edit-form .form-group input,
         .edit-form .form-group textarea,
@@ -545,12 +531,13 @@
             outline: 2px solid #1e1e1e;
             outline-offset: 1px;
         }
-        .edit-form .form-group textarea { min-height: 60px; resize: vertical; }
+        .edit-form .form-group textarea { min-height: 70px; resize: vertical; }
         .edit-form .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 0.8rem;
         }
+
         .alergenos-grid {
             display: flex;
             flex-wrap: wrap;
@@ -560,7 +547,7 @@
             display: flex;
             align-items: center;
             gap: 0.2rem;
-            padding: 0.2rem 0.7rem;
+            padding: 0.25rem 0.7rem;
             border-radius: 30px;
             font-size: 0.75rem;
             font-weight: 500;
@@ -573,6 +560,7 @@
         .alergeno-chip.selected {
             border-color: #1e1e1e;
             background: #e2e8f0;
+            font-weight: 700;
         }
         .alergeno-chip .color-dot {
             width: 10px;
@@ -580,8 +568,48 @@
             border-radius: 50%;
         }
 
+        .tipo-radio-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .tipo-radio {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            background: #f0ebe5;
+            border: 2px solid transparent;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.15s;
+        }
+        .tipo-radio:hover { background: #e5dfd8; }
+        .tipo-radio.selected {
+            background: #dbeafe;
+            border-color: #2563eb;
+            color: #1e40af;
+            font-weight: 600;
+        }
+        .tipo-radio.selected.producto {
+            background: #d1fae5;
+            border-color: #059669;
+            color: #065f46;
+        }
+        .tipo-radio.selected.preparacion {
+            background: #dbeafe;
+            border-color: #2563eb;
+            color: #1e40af;
+        }
+        .tipo-radio.selected.sinficha {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #475569;
+        }
+
         .modal-footer {
-            margin-top: 1.2rem;
+            margin-top: 1.5rem;
             padding-top: 1rem;
             border-top: 1px solid #eee8e0;
             display: flex;
@@ -607,10 +635,7 @@
         .toast.error { background: #b13e3e; }
         .toast.warning { background: #c97d2b; }
 
-        .loading {
-            text-align: center;
-            padding: 2rem;
-        }
+        .loading { text-align: center; padding: 2rem; }
         .spinner {
             display: inline-block;
             width: 30px;
@@ -645,6 +670,14 @@
             font-size: 0.9rem;
             flex: 1;
             min-width: 200px;
+            font-family: inherit;
+        }
+        .search-bar select {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            background: #faf8f6;
             font-family: inherit;
         }
 
@@ -778,7 +811,8 @@
                 <div>
                     📋 Catálogo de la <strong>{{ cartaActual }}</strong> · 
                     <strong>{{ numBaldasCatalogo }}</strong> baldas · 
-                    <strong>{{ numItemsCatalogo }}</strong> items activos
+                    <strong>{{ numItemsCatalogo }}</strong> items activos · 
+                    <strong>{{ numConFicha }}</strong> con ficha
                 </div>
                 <span class="carta-badge">{{ cartaActual }}</span>
             </div>
@@ -793,10 +827,6 @@
 
             <div v-if="numBaldasCatalogo === 0" style="padding:2rem; text-align:center; background:#faf8f6; border-radius:16px;">
                 <p style="color:#7a726a;">El catálogo está vacío.</p>
-                <p style="color:#7a726a; font-size:0.85rem; margin-top:0.5rem;">
-                    Pulsa <strong>🌱 Cargar catálogo inicial</strong> para partir de la estructura heredada,<br>
-                    o añade baldas una a una con el botón de arriba.
-                </p>
             </div>
 
             <div v-else>
@@ -827,7 +857,11 @@
                         </template>
                         <template v-else>
                             <span class="item-name">{{ item.item_nombre }}</span>
+                            <span class="tipo-badge" :class="item.tipo_ficha || 'simple'">
+                                {{ getTipoLabel(item.tipo_ficha) }}
+                            </span>
                             <div class="item-actions">
+                                <button class="icon-btn info" @click="editarFichaDeItem(item)" title="Editar ficha del item">📝</button>
                                 <button class="icon-btn" @click="toggleBold(item)" :title="item.item_bold ? 'Quitar cabecera' : 'Marcar como cabecera'">
                                     {{ item.item_bold ? '📌' : '📄' }}
                                 </button>
@@ -847,61 +881,79 @@
         <!-- ========== FICHAS TÉCNICAS ========== -->
         <div class="tab-content" :class="{ active: tab === 'fichas' }">
             <div class="search-bar">
-                <input type="text" v-model="busquedaFichas" placeholder="🔍 Buscar ficha por nombre...">
-                <button class="btn btn-primary" @click="nuevaFicha">➕ Nueva ficha</button>
+                <input type="text" v-model="busquedaFichas" placeholder="🔍 Buscar item por nombre...">
+                <select v-model="filtroTipoFicha">
+                    <option value="">Todos los tipos</option>
+                    <option value="receta">📝 Preparaciones</option>
+                    <option value="ingrediente">⚖️ Productos</option>
+                    <option value="simple">📦 Sin ficha</option>
+                </select>
             </div>
 
-            <div v-if="fichasFiltradas.length === 0" style="padding:2rem; text-align:center; color:#7a726a;">
-                <p v-if="busquedaFichas">No hay fichas que coincidan con "{{ busquedaFichas }}"</p>
-                <p v-else>No hay fichas técnicas. Pulsa "➕ Nueva ficha" para crear la primera.</p>
+            <div v-if="itemsFiltrados.length === 0" style="padding:2rem; text-align:center; color:#7a726a;">
+                <p v-if="busquedaFichas || filtroTipoFicha">No hay items que coincidan.</p>
+                <p v-else>No hay items en el catálogo.</p>
             </div>
 
             <div v-else class="fichas-list">
-                <div v-for="ficha in fichasFiltradas" :key="ficha.nombre" class="ficha-card" @click="editarFicha(ficha.nombre)">
-                    <div class="ficha-nombre">{{ ficha.nombre }}</div>
+                <div v-for="item in itemsFiltrados" :key="item.id" class="ficha-card">
+                    <div class="ficha-header-row">
+                        <div class="ficha-nombre" @click="editarFichaDeItem(item)">
+                            {{ item.item_nombre }}
+                        </div>
+                        <button class="ficha-delete" @click="borrarFichaDeItem(item)" title="Eliminar ficha">🗑️</button>
+                    </div>
                     <div class="ficha-meta">
-                        <span class="tipo-pill" :class="ficha.tipo">
-                            {{ ficha.tipo === 'receta' ? '📝 Receta' : ficha.tipo === 'ingrediente' ? '⚖️ Ingrediente' : '📦 Simple' }}
+                        <span class="tipo-badge" :class="item.tipo_ficha || 'simple'">
+                            {{ getTipoLabel(item.tipo_ficha) }}
                         </span>
-                        <span v-if="ficha.peso">⚖️ {{ ficha.peso }}</span>
-                        <span v-if="ficha.alergenos && ficha.alergenos.length">⚠️ {{ ficha.alergenos.length }} alérgenos</span>
+                        <span v-if="item.peso">⚖️ {{ item.peso }}</span>
+                        <span v-if="item.tiempo">⏱️ {{ item.tiempo }}</span>
+                        <span style="color:#94a3b8;font-size:0.7rem;">({{ item.balda }})</span>
+                    </div>
+                    <div v-if="item.alergenos && item.alergenos.length" class="ficha-alergenos">
+                        ⚠️ {{ item.alergenos.join(', ') }}
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ========== MODAL EDICIÓN FICHA ========== -->
+    <!-- ========== MODAL EDICIÓN FICHA DE ITEM ========== -->
     <div v-if="modalFichaVisible" class="modal-overlay" @click.self="cerrarModalFicha">
         <div class="modal">
             <div class="modal-header">
-                <h2>{{ editandoFichaNombre ? '✏️ ' + editandoFichaNombre : '📝 Nueva ficha' }}</h2>
+                <h2>📝 {{ editandoFichaItem ? 'Ficha de: ' + editandoFichaItem.item_nombre : 'Nueva ficha' }}</h2>
                 <button class="close-btn" @click="cerrarModalFicha">✕</button>
             </div>
             <div class="edit-form">
                 <div class="form-group">
-                    <label>📋 Nombre del item</label>
-                    <input type="text" v-model="editForm.nombre" placeholder="Ej: Croca (200 grm)" required>
+                    <label>📂 Tipo de ficha</label>
+                    <div class="tipo-radio-group">
+                        <div class="tipo-radio" :class="{ selected: editForm.tipo_ficha === 'ingrediente', producto: editForm.tipo_ficha === 'ingrediente' }" @click="editForm.tipo_ficha = 'ingrediente'">
+                            ⚖️ Producto
+                        </div>
+                        <div class="tipo-radio" :class="{ selected: editForm.tipo_ficha === 'receta', preparacion: editForm.tipo_ficha === 'receta' }" @click="editForm.tipo_ficha = 'receta'">
+                            📝 Preparación
+                        </div>
+                        <div class="tipo-radio" :class="{ selected: editForm.tipo_ficha === 'simple', sinficha: editForm.tipo_ficha === 'simple' }" @click="editForm.tipo_ficha = 'simple'">
+                            📦 Sin ficha
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>📂 Tipo</label>
-                    <select v-model="editForm.tipo">
-                        <option value="receta">📝 Receta completa</option>
-                        <option value="ingrediente">⚖️ Solo ingrediente (peso)</option>
-                        <option value="simple">📦 Sin información</option>
-                    </select>
-                </div>
+
                 <div class="form-row">
                     <div class="form-group">
-                        <label>⚖️ Peso/gramaje</label>
-                        <input type="text" v-model="editForm.peso" placeholder="Ej: 200 grm">
+                        <label>⚖️ Peso / gramaje</label>
+                        <input type="text" v-model="editForm.peso" placeholder="Ej: 200 grm, 6 unidades...">
                     </div>
-                    <div class="form-group" v-if="editForm.tipo === 'receta'">
+                    <div class="form-group" v-if="editForm.tipo_ficha === 'receta'">
                         <label>⏱️ Tiempo preparación</label>
                         <input type="text" v-model="editForm.tiempo" placeholder="Ej: 15 min">
                     </div>
                 </div>
-                <div class="form-group" v-if="editForm.tipo === 'receta'">
+
+                <div class="form-group">
                     <label>⚠️ Alérgenos</label>
                     <div class="alergenos-grid">
                         <div v-for="a in alergenosDisponibles" :key="a.nombre" 
@@ -913,22 +965,28 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-group" v-if="editForm.tipo === 'receta'">
+
+                <div class="form-group" v-if="editForm.tipo_ficha === 'receta'">
                     <label>📝 Ingredientes (uno por línea)</label>
                     <textarea v-model="editForm.ingredientesText" rows="4" placeholder="200 gr de croca&#10;Sal marina&#10;Aceite de oliva"></textarea>
                 </div>
-                <div class="form-group" v-if="editForm.tipo === 'receta'">
+
+                <div class="form-group" v-if="editForm.tipo_ficha === 'receta'">
                     <label>👨‍🍳 Elaboración (pasos)</label>
                     <textarea v-model="editForm.elaboracion" rows="5" placeholder="1. Sacar la croca 15 min antes&#10;2. Salpimentar&#10;3. Hornear 12-15 min a 180°C"></textarea>
                 </div>
+
                 <div class="form-group">
                     <label>📌 Notas adicionales</label>
                     <textarea v-model="editForm.notas" rows="3" placeholder="Notas opcionales..."></textarea>
                 </div>
+
                 <div class="modal-footer">
                     <button class="btn btn-outline" @click="cerrarModalFicha">Cancelar</button>
-                    <button class="btn btn-danger" @click="eliminarFicha" v-if="editandoFichaNombre">🗑️ Eliminar</button>
-                    <button class="btn btn-success" @click="guardarFicha">💾 Guardar</button>
+                    <button class="btn btn-danger" @click="borrarFichaDeItem(editandoFichaItem)" v-if="editandoFichaItem && editandoFichaItem.tipo_ficha !== 'simple'">
+                        🗑️ Eliminar ficha
+                    </button>
+                    <button class="btn btn-success" @click="guardarFichaDeItem">💾 Guardar</button>
                 </div>
             </div>
         </div>
@@ -937,8 +995,8 @@
     <div v-if="toast.show" class="toast" :class="toast.type">{{ toast.message }}</div>
 
     <div class="footer">
-        📊 Panel de control · Datos sincronizados con Supabase
-        <br>Catálogo y fichas técnicas editables solo desde aquí.
+        📊 Panel de control · Catálogo y fichas editables solo desde aquí
+        <br>🟢 Producto (ingrediente simple) · 🔵 Preparación (receta) · ⚪ Sin ficha
     </div>
 </div>
 
@@ -1077,11 +1135,11 @@ const CARTA_ACTUAL = 'carta_actual';
             editingItem: null,
             itemEditName: '',
             // Fichas
-            fichasTecnicas: {},
             busquedaFichas: '',
+            filtroTipoFicha: '',
             modalFichaVisible: false,
-            editandoFichaNombre: null,
-            editForm: { nombre:'', tipo:'simple', peso:'', tiempo:'', alergenos:[], ingredientesText:'', elaboracion:'', notas:'' },
+            editandoFichaItem: null,
+            editForm: { tipo_ficha:'simple', peso:'', tiempo:'', alergenos:[], ingredientesText:'', elaboracion:'', notas:'' },
             alergenosDisponibles: ALERGENOS_DISPONIBLES,
         },
         computed: {
@@ -1105,14 +1163,26 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
                 return n;
             },
-            fichasFiltradas() {
-                const lista = [];
-                for (const [nombre, ficha] of Object.entries(this.fichasTecnicas)) {
-                    if (!this.busquedaFichas || nombre.toLowerCase().includes(this.busquedaFichas.toLowerCase())) {
-                        lista.push({ nombre, ...ficha });
+            numConFicha() {
+                let n = 0;
+                for (const shelf of Object.values(this.catalogo)) {
+                    for (const it of shelf) {
+                        if (!it.item_bold && it.tipo_ficha && it.tipo_ficha !== 'simple') n++;
                     }
                 }
-                lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+                return n;
+            },
+            itemsFiltrados() {
+                const lista = [];
+                for (const [balda, items] of Object.entries(this.catalogo)) {
+                    for (const it of items) {
+                        if (it.item_bold) continue;
+                        if (this.filtroTipoFicha && (it.tipo_ficha || 'simple') !== this.filtroTipoFicha) continue;
+                        if (this.busquedaFichas && !it.item_nombre.toLowerCase().includes(this.busquedaFichas.toLowerCase())) continue;
+                        lista.push({ ...it, balda });
+                    }
+                }
+                lista.sort((a, b) => a.item_nombre.localeCompare(b.item_nombre));
                 return lista;
             }
         },
@@ -1129,39 +1199,37 @@ const CARTA_ACTUAL = 'carta_actual';
                 return d.toLocaleString('es-ES', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
             },
 
-            // ============================================================
-            // FECHA FILTRO
-            // ============================================================
+            getTipoLabel(tipo) {
+                if (tipo === 'receta') return '📝 Preparación';
+                if (tipo === 'ingrediente') return '⚖️ Producto';
+                return '📦 Sin ficha';
+            },
+
             getFechaFiltro() {
                 const hoy = new Date();
-                if (this.fechaFiltro === 'hoy') {
-                    return { desde: new Date(hoy), hasta: new Date(hoy) };
-                } else if (this.fechaFiltro === 'ayer') {
+                if (this.fechaFiltro === 'hoy') return { desde: new Date(hoy), hasta: new Date(hoy) };
+                if (this.fechaFiltro === 'ayer') {
                     const ayer = new Date(hoy);
                     ayer.setDate(ayer.getDate() - 1);
                     return { desde: ayer, hasta: ayer };
-                } else if (this.fechaFiltro === 'semana') {
+                }
+                if (this.fechaFiltro === 'semana') {
                     const hace7 = new Date(hoy);
                     hace7.setDate(hace7.getDate() - 7);
                     return { desde: hace7, hasta: hoy };
-                } else if (this.fechaFiltro === 'custom') {
+                }
+                if (this.fechaFiltro === 'custom') {
                     const f = new Date(this.fechaCustom);
                     return { desde: f, hasta: f };
                 }
                 return { desde: hoy, hasta: hoy };
             },
 
-            // ============================================================
-            // CARGA DE DATOS
-            // ============================================================
             async recargarTodo() {
                 this.loading = true;
                 this.syncStatus = 'syncing';
                 try {
-                    await Promise.all([
-                        this.cargarCatalogo(),
-                        this.cargarFichas()
-                    ]);
+                    await this.cargarCatalogo();
                     await this.recargarSupervision();
                     this.syncStatus = 'synced';
                 } catch (e) {
@@ -1194,29 +1262,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            async cargarFichas() {
-                try {
-                    const { data, error } = await this.supabase.from('timbres_fichas').select('*');
-                    if (error) throw error;
-                    const fichas = {};
-                    for (const row of (data || [])) {
-                        fichas[row.nombre] = {
-                            tipo: row.tipo || 'simple',
-                            peso: row.peso || null,
-                            tiempo: row.tiempo || null,
-                            alergenos: row.alergenos || [],
-                            ingredientes: row.ingredientes || [],
-                            elaboracion: row.elaboracion || null,
-                            notas: row.notas || null
-                        };
-                    }
-                    this.fichasTecnicas = fichas;
-                } catch (e) {
-                    console.error('Error cargando fichas:', e);
-                    this.fichasTecnicas = {};
-                }
-            },
-
             async recargarSupervision() {
                 this.syncStatus = 'syncing';
                 try {
@@ -1224,7 +1269,6 @@ const CARTA_ACTUAL = 'carta_actual';
                     const fechaDesde = desde.toISOString().split('T')[0];
                     const fechaHasta = hasta.toISOString().split('T')[0];
 
-                    // Traer revisiones del rango + turno
                     const { data, error } = await this.supabase
                         .from('timbres_revision')
                         .select('*')
@@ -1234,14 +1278,12 @@ const CARTA_ACTUAL = 'carta_actual';
                     if (error) throw error;
                     this.revisiones = data || [];
 
-                    // Calcular stats
                     const stats = { hay: 0, no: 0, elaborar: 0, descongelar: 0 };
                     const logsMap = new Map();
                     const pendientes = [];
                     const resumenBalda = {};
                     let marcados = 0;
 
-                    // Mapa de catalogo_id → item
                     const catalogoMap = {};
                     for (const [balda, items] of Object.entries(this.catalogo)) {
                         for (const item of items) {
@@ -1301,18 +1343,14 @@ const CARTA_ACTUAL = 'carta_actual';
                 this.recargarSupervision();
             },
 
-            // ============================================================
-            // REINICIAR REVISIÓN
-            // ============================================================
             async reiniciarRevision() {
                 const confirmar = confirm(
                     `⚠️ ¿Reiniciar la revisión?\n\n` +
-                    `Se borrarán los estados del rango seleccionado (${this.fechaFiltro}) en el turno ${this.turno}.\n` +
-                    `El catálogo NO se toca.\n\n` +
+                    `Se borrarán los estados del rango seleccionado (${this.fechaFiltro}) en el turno ${this.turno}.\n\n` +
                     `¿Continuar?`
                 );
                 if (!confirmar) return;
-                const confirmar2 = confirm('¿Estás totalmente seguro? Esta acción no se puede deshacer.');
+                const confirmar2 = confirm('¿Estás totalmente seguro?');
                 if (!confirmar2) return;
 
                 try {
@@ -1341,7 +1379,7 @@ const CARTA_ACTUAL = 'carta_actual';
             async addShelf() {
                 const name = this.newShelfName.trim();
                 if (!name) { this.showToast('Escribe un nombre', 'error'); return; }
-                if (this.catalogo[name]) { this.showToast('Ya existe una balda con ese nombre', 'error'); return; }
+                if (this.catalogo[name]) { this.showToast('Ya existe', 'error'); return; }
 
                 const maxOrden = Object.values(this.catalogo).flat().reduce((m, it) => Math.max(m, it.balda_orden || 0), 0);
                 try {
@@ -1359,12 +1397,12 @@ const CARTA_ACTUAL = 'carta_actual';
                     this.showToast(`Balda "${name}" añadida`, 'success');
                 } catch (e) {
                     console.error('Error:', e);
-                    this.showToast('Error al añadir balda', 'error');
+                    this.showToast('Error al añadir', 'error');
                 }
             },
 
             async deleteShelf(balda) {
-                if (!confirm(`¿Eliminar la balda "${balda}" y todos sus items del catálogo?`)) return;
+                if (!confirm(`¿Eliminar la balda "${balda}" y todos sus items?`)) return;
                 try {
                     await this.supabase
                         .from('timbres_catalogo')
@@ -1392,14 +1430,8 @@ const CARTA_ACTUAL = 'carta_actual';
 
             async saveShelfEdit(oldName) {
                 const newName = this.shelfEditName.trim();
-                if (!newName || newName === oldName) {
-                    this.editingShelf = null;
-                    return;
-                }
-                if (this.catalogo[newName]) {
-                    this.showToast('Ya existe una balda con ese nombre', 'error');
-                    return;
-                }
+                if (!newName || newName === oldName) { this.editingShelf = null; return; }
+                if (this.catalogo[newName]) { this.showToast('Ya existe', 'error'); return; }
                 try {
                     await this.supabase
                         .from('timbres_catalogo')
@@ -1411,7 +1443,7 @@ const CARTA_ACTUAL = 'carta_actual';
                     this.showToast('Balda renombrada', 'success');
                 } catch (e) {
                     console.error('Error:', e);
-                    this.showToast('Error al renombrar', 'error');
+                    this.showToast('Error', 'error');
                 }
             },
 
@@ -1426,11 +1458,8 @@ const CARTA_ACTUAL = 'carta_actual';
                     await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenB }).eq('carta', CARTA_ACTUAL).eq('balda', name);
                     await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenA }).eq('carta', CARTA_ACTUAL).eq('balda', prevKey);
                     await this.cargarCatalogo();
-                    this.showToast('Balda movida arriba', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al mover', 'error');
-                }
+                    this.showToast('Balda movida', 'success');
+                } catch (e) { console.error(e); }
             },
 
             async moveShelfDown(name) {
@@ -1444,11 +1473,8 @@ const CARTA_ACTUAL = 'carta_actual';
                     await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenB }).eq('carta', CARTA_ACTUAL).eq('balda', name);
                     await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenA }).eq('carta', CARTA_ACTUAL).eq('balda', nextKey);
                     await this.cargarCatalogo();
-                    this.showToast('Balda movida abajo', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al mover', 'error');
-                }
+                    this.showToast('Balda movida', 'success');
+                } catch (e) { console.error(e); }
             },
 
             async addItem(balda) {
@@ -1465,9 +1491,11 @@ const CARTA_ACTUAL = 'carta_actual';
                         item_orden: maxItemOrden + 1,
                         item_nombre: name,
                         item_bold: false,
-                        activo: true
+                        activo: true,
+                        tipo_ficha: 'simple',
+                        alergenos: '{}',
+                        ingredientes: '{}'
                     }]);
-                    // Desactivar el placeholder "(vacía)" si existe
                     await this.supabase
                         .from('timbres_catalogo')
                         .update({ activo: false })
@@ -1506,10 +1534,7 @@ const CARTA_ACTUAL = 'carta_actual';
                     this.editingItem = null;
                     await this.cargarCatalogo();
                     this.showToast('Item actualizado', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al actualizar', 'error');
-                }
+                } catch (e) { console.error(e); }
             },
 
             async toggleBold(item) {
@@ -1519,13 +1544,11 @@ const CARTA_ACTUAL = 'carta_actual';
                         .update({ item_bold: !item.item_bold, updated_at: new Date().toISOString() })
                         .eq('id', item.id);
                     await this.cargarCatalogo();
-                } catch (e) {
-                    console.error('Error:', e);
-                }
+                } catch (e) { console.error(e); }
             },
 
             async deleteItem(item) {
-                if (!confirm(`¿Desactivar "${item.item_nombre}" del catálogo?`)) return;
+                if (!confirm(`¿Desactivar "${item.item_nombre}"?`)) return;
                 try {
                     await this.supabase
                         .from('timbres_catalogo')
@@ -1533,14 +1556,11 @@ const CARTA_ACTUAL = 'carta_actual';
                         .eq('id', item.id);
                     await this.cargarCatalogo();
                     this.showToast('Item desactivado', 'success');
-                } catch (e) {
-                    console.error('Error:', e);
-                    this.showToast('Error al desactivar', 'error');
-                }
+                } catch (e) { console.error(e); }
             },
 
             async cargarCatalogoInicial() {
-                if (!confirm('Esto añadirá la estructura heredada al catálogo de la carta actual.\n\nPodrás editarla después.\n\n¿Continuar?')) return;
+                if (!confirm('Esto añadirá la estructura heredada al catálogo.\n\n¿Continuar?')) return;
 
                 const filas = [];
                 let baldaOrden = 1;
@@ -1554,7 +1574,10 @@ const CARTA_ACTUAL = 'carta_actual';
                             item_orden: itemOrden,
                             item_nombre: item.name,
                             item_bold: item.bold || false,
-                            activo: true
+                            activo: true,
+                            tipo_ficha: 'simple',
+                            alergenos: '{}',
+                            ingredientes: '{}'
                         });
                         itemOrden++;
                     }
@@ -1573,34 +1596,25 @@ const CARTA_ACTUAL = 'carta_actual';
             },
 
             // ============================================================
-            // FICHAS TÉCNICAS
+            // FICHAS DE ITEMS DEL CATÁLOGO
             // ============================================================
-            nuevaFicha() {
-                this.editandoFichaNombre = null;
-                this.editForm = { nombre:'', tipo:'receta', peso:'', tiempo:'', alergenos:[], ingredientesText:'', elaboracion:'', notas:'' };
-                this.modalFichaVisible = true;
-            },
-
-            editarFicha(nombre) {
-                const ficha = this.fichasTecnicas[nombre];
-                if (!ficha) return;
-                this.editandoFichaNombre = nombre;
+            editarFichaDeItem(item) {
+                this.editandoFichaItem = item;
                 this.editForm = {
-                    nombre: nombre,
-                    tipo: ficha.tipo || 'simple',
-                    peso: ficha.peso || '',
-                    tiempo: ficha.tiempo || '',
-                    alergenos: ficha.alergenos ? [...ficha.alergenos] : [],
-                    ingredientesText: ficha.ingredientes ? ficha.ingredientes.join('\n') : '',
-                    elaboracion: ficha.elaboracion || '',
-                    notas: ficha.notas || ''
+                    tipo_ficha: item.tipo_ficha || 'simple',
+                    peso: item.peso || '',
+                    tiempo: item.tiempo || '',
+                    alergenos: item.alergenos || [],
+                    ingredientesText: (item.ingredientes || []).join('\n'),
+                    elaboracion: item.elaboracion || '',
+                    notas: item.notas || ''
                 };
                 this.modalFichaVisible = true;
             },
 
             cerrarModalFicha() {
                 this.modalFichaVisible = false;
-                this.editandoFichaNombre = null;
+                this.editandoFichaItem = null;
             },
 
             toggleAlergeno(a) {
@@ -1609,27 +1623,30 @@ const CARTA_ACTUAL = 'carta_actual';
                 else this.editForm.alergenos.push(a);
             },
 
-            async guardarFicha() {
-                const nombre = this.editForm.nombre.trim();
-                if (!nombre) { this.showToast('El nombre es obligatorio', 'error'); return; }
-                const ficha = {
-                    tipo: this.editForm.tipo,
-                    peso: this.editForm.peso || null,
-                    tiempo: this.editForm.tiempo || null,
-                    alergenos: this.editForm.tipo === 'receta' ? [...this.editForm.alergenos] : [],
-                    ingredientes: this.editForm.tipo === 'receta' ? this.editForm.ingredientesText.split('\n').filter(i => i.trim()) : [],
-                    elaboracion: this.editForm.tipo === 'receta' ? this.editForm.elaboracion : null,
-                    notas: this.editForm.notas || null
-                };
+            async guardarFichaDeItem() {
+                if (!this.editandoFichaItem) return;
+                const item = this.editandoFichaItem;
+                const ingredientes = this.editForm.tipo_ficha === 'receta'
+                    ? this.editForm.ingredientesText.split('\n').map(l => l.trim()).filter(Boolean)
+                    : [];
+
                 try {
-                    const { error } = await this.supabase.from('timbres_fichas').upsert({
-                        nombre: nombre,
-                        carta: CARTA_ACTUAL,
-                        ...ficha
-                    }, { onConflict: 'nombre' });
+                    const { error } = await this.supabase
+                        .from('timbres_catalogo')
+                        .update({
+                            tipo_ficha: this.editForm.tipo_ficha,
+                            peso: this.editForm.peso || null,
+                            tiempo: this.editForm.tiempo || null,
+                            alergenos: this.editForm.alergenos,
+                            ingredientes: ingredientes,
+                            elaboracion: this.editForm.tipo_ficha === 'receta' ? this.editForm.elaboracion : null,
+                            notas: this.editForm.notas || null,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', item.id);
                     if (error) throw error;
-                    await this.cargarFichas();
-                    this.showToast(`Ficha de "${nombre}" guardada`, 'success');
+                    await this.cargarCatalogo();
+                    this.showToast(`Ficha de "${item.item_nombre}" guardada`, 'success');
                     this.cerrarModalFicha();
                 } catch (e) {
                     console.error('Error:', e);
@@ -1637,12 +1654,25 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            async eliminarFicha() {
-                if (!this.editandoFichaNombre) return;
-                if (!confirm(`¿Eliminar la ficha de "${this.editandoFichaNombre}"?`)) return;
+            async borrarFichaDeItem(item) {
+                if (!item) return;
+                if (!confirm(`¿Eliminar la ficha de "${item.item_nombre}"?\n\nEl item seguirá en la balda pero sin ficha.`)) return;
                 try {
-                    await this.supabase.from('timbres_fichas').delete().eq('nombre', this.editandoFichaNombre);
-                    await this.cargarFichas();
+                    const { error } = await this.supabase
+                        .from('timbres_catalogo')
+                        .update({
+                            tipo_ficha: 'simple',
+                            peso: null,
+                            tiempo: null,
+                            alergenos: '{}',
+                            ingredientes: '{}',
+                            elaboracion: null,
+                            notas: null,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', item.id);
+                    if (error) throw error;
+                    await this.cargarCatalogo();
                     this.showToast('Ficha eliminada', 'success');
                     this.cerrarModalFicha();
                 } catch (e) {
