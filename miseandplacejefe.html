@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Panel de Control · Timbres</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f2ee;
+            padding: 1rem;
+            color: #1e1e1e;
+        }
+        .app {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.8rem;
+            background: white;
+            padding: 1.2rem 1.5rem;
+            border-radius: 20px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+        .header h1 {
+            font-weight: 600;
+            font-size: 1.4rem;
+            letter-spacing: -0.3px;
+        }
+        .header h1 small {
+            font-weight: 400;
+            font-size: 0.8rem;
+            color: #7a726a;
+            margin-left: 0.5rem;
+        }
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .sync-status {
+            font-size: 0.75rem;
+            color: #7a726a;
+            padding: 0.3rem 0.8rem;
+            border-radius: 30px;
+            background: #f0ebe5;
+        }
+        .sync-status.synced { background: #d4e6d9; color: #1d6b3c; }
+        .sync-status.syncing { background: #f7e3d4; color: #914d2a; }
+        .sync-status.error { background: #f5d6d6; color: #b13e3e; }
+
+        .tabs {
+            display: flex;
+            gap: 0.2rem;
+            background: #f0ebe5;
+            border-radius: 60px;
+            padding: 0.2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #4b4540;
+            flex: 1 1 auto;
+        }
+        .tab-btn.active { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.06); color: #1e1e1e; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .filters-bar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            align-items: center;
+            background: white;
+            padding: 0.8rem 1.2rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .filters-bar label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+        }
+        .filters-bar select,
+        .filters-bar input {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            background: #faf8f6;
+            font-family: inherit;
+        }
+        .turno-selector {
+            display: flex;
+            gap: 0.2rem;
+            background: #f0ebe5;
+            border-radius: 40px;
+            padding: 0.15rem;
+        }
+        .turno-btn {
+            background: transparent;
+            border: none;
+            padding: 0.3rem 0.9rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: #4b4540;
+        }
+        .turno-btn.active { background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.06); color: #1e1e1e; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .stat-card .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1e1e1e;
+            margin-top: 0.2rem;
+        }
+        .stat-card .value.green { color: #1e7e34; }
+        .stat-card .value.red { color: #b13e3e; }
+        .stat-card .value.orange { color: #c97d2b; }
+        .stat-card .value.blue { color: #2b6f8a; }
+
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+        }
+        @media (max-width: 900px) { .panel-grid { grid-template-columns: 1fr; } }
+
+        .panel-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.3rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .panel-card h3 {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: #1e1e1e;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .panel-card h3 .badge {
+            background: #f0ebe5;
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #7a726a;
+        }
+        .panel-card .empty {
+            color: #8f8982;
+            font-style: italic;
+            padding: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0ebe5;
+            font-size: 0.85rem;
+        }
+        .log-item:last-child { border-bottom: none; }
+        .log-item .cocinero { font-weight: 600; }
+        .log-item .fecha { color: #888; font-size: 0.75rem; margin-left: auto; }
+        .log-item .turno-tag {
+            background: #f0ebe5;
+            padding: 0.1rem 0.5rem;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+        .log-item .turno-tag.mediodia { background: #d4e6d9; color: #1d6b3c; }
+        .log-item .turno-tag.noche { background: #dbe6ee; color: #2b6f8a; }
+
+        .pending-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #f0ebe5;
+            font-size: 0.8rem;
+        }
+        .pending-item:last-child { border-bottom: none; }
+        .pending-item .item-name { color: #333; flex: 1; }
+        .pending-item .shelf-tag {
+            background: #f0ebe5;
+            padding: 0.1rem 0.5rem;
+            border-radius: 30px;
+            font-size: 0.6rem;
+            color: #7a726a;
+        }
+        .pending-item .status-tag {
+            font-size: 0.6rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 30px;
+        }
+        .status-tag.elaborar { background: #f7e3d4; color: #914d2a; }
+        .status-tag.descongelar { background: #dbe6ee; color: #2b6f8a; }
+        .status-tag.no { background: #f5d6d6; color: #b13e3e; }
+
+        .shelf-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.8rem;
+        }
+        .shelf-summary-item {
+            background: #faf8f6;
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+        }
+        .shelf-summary-item .shelf-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #333;
+        }
+        .shelf-summary-item .shelf-stats {
+            font-size: 0.75rem;
+            color: #7a726a;
+            margin-top: 0.2rem;
+        }
+
+        .btn {
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.15s;
+            font-family: inherit;
+        }
+        .btn-primary { background: #1e1e1e; color: white; }
+        .btn-primary:hover { background: #333; }
+        .btn-outline { background: transparent; border: 1px solid #d5cdc3; color: #333; }
+        .btn-outline:hover { background: #f0ebe5; }
+        .btn-danger { background: #b13e3e; color: white; }
+        .btn-danger:hover { background: #8f2f2f; }
+        .btn-warning { background: #c97d2b; color: white; }
+        .btn-warning:hover { background: #a86420; }
+        .btn-success { background: #1e7e34; color: white; }
+        .btn-success:hover { background: #15662a; }
+        .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.75rem; }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.3rem 0.5rem;
+            border-radius: 6px;
+            color: #7a726a;
+            transition: 0.15s;
+            min-height: 32px;
+            min-width: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-btn:hover { background: #f0ebe5; color: #1e1e1e; }
+        .icon-btn.danger:hover { background: #f5d6d6; color: #b13e3e; }
+        .icon-btn.move:hover { background: #d4e6d9; color: #1d6b3c; }
+
+        .catalogo-info {
+            background: #f0ebe5;
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #4b4540;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        .catalogo-info .carta-badge {
+            background: #1e1e1e;
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .add-shelf-area {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .add-shelf-area input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            flex: 1;
+            min-width: 150px;
+            font-family: inherit;
+        }
+
+        .shelf-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.2rem;
+            border: 2px solid #e0d7cd;
+            margin-bottom: 1rem;
+        }
+        .shelf-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 0.6rem;
+            border-bottom: 2px solid #d5cdc3;
+            margin-bottom: 0.6rem;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .shelf-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #1e1e1e;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+        .shelf-title .badge {
+            font-weight: 400;
+            font-size: 0.8rem;
+            background: #e0d7cd;
+            padding: 0.15rem 0.7rem;
+            border-radius: 30px;
+            color: #3d3833;
+        }
+        .shelf-actions { display: flex; gap: 0.2rem; flex-shrink: 0; flex-wrap: wrap; }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.4rem 0.2rem;
+            border-bottom: 1px solid #f0ebe5;
+            font-size: 0.95rem;
+            flex-wrap: wrap;
+        }
+        .item-row:last-child { border-bottom: none; }
+        .item-row.bold-item {
+            font-weight: 700;
+            background: #f3efe9;
+            border-radius: 8px;
+            padding: 0.4rem 0.6rem;
+            margin: 0.2rem 0;
+            border-bottom: 2px solid #d5cdc3;
+        }
+        .item-name {
+            flex: 1;
+            min-width: 0;
+            word-break: break-word;
+        }
+        .item-actions { display: flex; gap: 0.2rem; align-items: center; }
+
+        .edit-input {
+            border: 1px solid #d5cdc3;
+            border-radius: 6px;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.95rem;
+            background: white;
+            flex: 1;
+            min-width: 100px;
+            font-family: inherit;
+        }
+
+        .add-item-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px dashed #d5cdc3;
+        }
+        .add-item-row input {
+            flex: 1;
+            border: 1px solid #d5cdc3;
+            border-radius: 8px;
+            padding: 0.4rem 0.7rem;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+        .add-item-row .btn-add {
+            background: #1e1e1e;
+            color: white;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .fichas-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+        .ficha-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            border: 1px solid #e8e1d9;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+        .ficha-card:hover { border-color: #b0a89e; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .ficha-card .ficha-nombre {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1e1e1e;
+            margin-bottom: 0.3rem;
+        }
+        .ficha-card .ficha-meta {
+            font-size: 0.75rem;
+            color: #7a726a;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .tipo-pill {
+            display: inline-block;
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+        .tipo-pill.receta { background: #dbeafe; color: #1e40af; }
+        .tipo-pill.ingrediente { background: #d1fae5; color: #065f46; }
+        .tipo-pill.simple { background: #f1f5f9; color: #475569; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        .modal {
+            background: white;
+            border-radius: 24px;
+            max-width: 650px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 2px solid #eee8e0;
+        }
+        .modal-header h2 {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #1e1e1e;
+        }
+        .modal-header .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #94a3b8;
+            line-height: 1;
+        }
+
+        .edit-form .form-group { margin-bottom: 0.8rem; }
+        .edit-form .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #475569;
+            margin-bottom: 0.2rem;
+        }
+        .edit-form .form-group input,
+        .edit-form .form-group textarea,
+        .edit-form .form-group select {
+            width: 100%;
+            padding: 0.5rem 0.7rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background: #faf8f6;
+        }
+        .edit-form .form-group input:focus,
+        .edit-form .form-group textarea:focus,
+        .edit-form .form-group select:focus {
+            outline: 2px solid #1e1e1e;
+            outline-offset: 1px;
+        }
+        .edit-form .form-group textarea { min-height: 60px; resize: vertical; }
+        .edit-form .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+        }
+        .alergenos-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .alergeno-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            padding: 0.2rem 0.7rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 2px solid transparent;
+            background: #f1f5f9;
+            color: #475569;
+            transition: 0.15s;
+        }
+        .alergeno-chip.selected {
+            border-color: #1e1e1e;
+            background: #e2e8f0;
+        }
+        .alergeno-chip .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .modal-footer {
+            margin-top: 1.2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee8e0;
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e1e1e;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            z-index: 9999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .toast.success { background: #1e7e34; }
+        .toast.error { background: #b13e3e; }
+        .toast.warning { background: #c97d2b; }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f0ebe5;
+            border-top-color: #1e1e1e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.7rem;
+            color: #7a726a;
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px solid #eee8e0;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-bar input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            flex: 1;
+            min-width: 200px;
+            font-family: inherit;
+        }
+
+        @media (max-width: 700px) {
+            .app { padding: 0; }
+            .header { padding: 1rem; }
+            .header h1 { font-size: 1.1rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .panel-grid { grid-template-columns: 1fr; }
+            .fichas-list { grid-template-columns: 1fr; }
+            .modal { padding: 1.2rem; }
+            .edit-form .form-row { grid-template-columns: 1fr; }
+            .tab-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <div class="header">
+        <h1>📊 Panel de Control <small>{{ cartaActual }}</small></h1>
+        <div class="header-actions">
+            <span class="sync-status" :class="syncStatusClass">{{ syncStatusText }}</span>
+            <button class="btn btn-outline btn-sm" @click="recargarTodo">🔄 Recargar</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn" :class="{ active: tab === 'supervision' }" @click="tab = 'supervision'">📊 Supervisión</button>
+        <button class="tab-btn" :class="{ active: tab === 'catalogo' }" @click="tab = 'catalogo'">📋 Catálogo</button>
+        <button class="tab-btn" :class="{ active: tab === 'fichas' }" @click="tab = 'fichas'">📝 Fichas técnicas</button>
+    </div>
+
+    <div v-if="loading" class="loading">
+        <div class="spinner"></div>
+        <p style="margin-top:1rem;color:#7a726a;">Cargando datos...</p>
+    </div>
+
+    <div v-else>
+        <!-- ========== SUPERVISIÓN ========== -->
+        <div class="tab-content" :class="{ active: tab === 'supervision' }">
+            <div class="filters-bar">
+                <label>📅 Fecha:</label>
+                <select v-model="fechaFiltro" @change="recargarSupervision">
+                    <option value="hoy">Hoy</option>
+                    <option value="ayer">Ayer</option>
+                    <option value="semana">Últimos 7 días</option>
+                    <option value="custom">Fecha específica...</option>
+                </select>
+                <input v-if="fechaFiltro === 'custom'" type="date" v-model="fechaCustom" @change="recargarSupervision">
+                <label>🌗 Turno:</label>
+                <div class="turno-selector">
+                    <button class="turno-btn" :class="{ active: turno === 'mediodia' }" @click="cambiarTurno('mediodia')">☀️</button>
+                    <button class="turno-btn" :class="{ active: turno === 'noche' }" @click="cambiarTurno('noche')">🌙</button>
+                </div>
+                <button class="btn btn-warning btn-sm" @click="reiniciarRevision" style="margin-left:auto;">🔄 Reiniciar revisión</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">👨‍🍳 Último cocinero</div>
+                    <div class="value" style="font-size:1.2rem;">{{ ultimoCocinero || '—' }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">📦 Total items</div>
+                    <div class="value">{{ totalItemsCatalogo }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">✅ Marcados hoy</div>
+                    <div class="value green">{{ totalMarcados }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">⏳ Sin revisar</div>
+                    <div class="value orange">{{ totalItemsCatalogo - totalMarcados }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">⚡ Elaborar</div>
+                    <div class="value orange">{{ stats.elaborar }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">❄️ Descongelar</div>
+                    <div class="value blue">{{ stats.descongelar }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">❌ No hay</div>
+                    <div class="value red">{{ stats.no }}</div>
+                </div>
+            </div>
+
+            <div class="panel-grid">
+                <div class="panel-card">
+                    <h3>📋 Registro de revisiones <span class="badge">{{ logs.length }}</span></h3>
+                    <div v-if="logs.length === 0" class="empty">Aún no hay revisiones registradas</div>
+                    <div v-for="(log, i) in logs" :key="i" class="log-item">
+                        <span class="cocinero">{{ log.cocinero || 'Sin nombre' }}</span>
+                        <span class="turno-tag" :class="log.turno">{{ log.turno === 'mediodia' ? '☀️' : '🌙' }}</span>
+                        <span class="fecha">{{ formatFecha(log.updated_at) }}</span>
+                    </div>
+                </div>
+
+                <div class="panel-card">
+                    <h3>⏳ Pendientes por hacer <span class="badge">{{ pendientes.length }}</span></h3>
+                    <div v-if="pendientes.length === 0" class="empty">🎉 ¡Todo completado!</div>
+                    <div v-for="item in pendientes" :key="item.catalogo_id" class="pending-item">
+                        <span class="item-name">{{ item.item_nombre }}</span>
+                        <span class="shelf-tag">{{ item.balda }}</span>
+                        <span class="status-tag" :class="item.status">
+                            {{ item.status === 'elaborar' ? '⚡ Elaborar' : item.status === 'descongelar' ? '❄️ Descongelar' : '❌ No hay' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card" style="margin-top:1.2rem;">
+                <h3>📦 Resumen por balda</h3>
+                <div v-if="Object.keys(resumenPorBalda).length === 0" class="empty">Sin datos</div>
+                <div v-else class="shelf-summary-grid">
+                    <div v-for="(data, balda) in resumenPorBalda" :key="balda" class="shelf-summary-item">
+                        <div class="shelf-name">{{ balda }}</div>
+                        <div class="shelf-stats">
+                            ✅ {{ data.hay }} · ❌ {{ data.no }} · ⚡ {{ data.elaborar }} · ❄️ {{ data.descongelar }}
+                            <br><span style="color:#aaa;">Total: {{ data.total }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== CATÁLOGO ========== -->
+        <div class="tab-content" :class="{ active: tab === 'catalogo' }">
+            <div class="catalogo-info">
+                <div>
+                    📋 Catálogo de la <strong>{{ cartaActual }}</strong> · 
+                    <strong>{{ numBaldasCatalogo }}</strong> baldas · 
+                    <strong>{{ numItemsCatalogo }}</strong> items activos
+                </div>
+                <span class="carta-badge">{{ cartaActual }}</span>
+            </div>
+
+            <div class="add-shelf-area">
+                <input type="text" v-model="newShelfName" placeholder="Nueva balda..." @keyup.enter="addShelf">
+                <button class="btn btn-primary" @click="addShelf">➕ Añadir balda</button>
+                <button class="btn btn-warning" @click="cargarCatalogoInicial" v-if="numBaldasCatalogo === 0">
+                    🌱 Cargar catálogo inicial
+                </button>
+            </div>
+
+            <div v-if="numBaldasCatalogo === 0" style="padding:2rem; text-align:center; background:#faf8f6; border-radius:16px;">
+                <p style="color:#7a726a;">El catálogo está vacío.</p>
+                <p style="color:#7a726a; font-size:0.85rem; margin-top:0.5rem;">
+                    Pulsa <strong>🌱 Cargar catálogo inicial</strong> para partir de la estructura heredada,<br>
+                    o añade baldas una a una con el botón de arriba.
+                </p>
+            </div>
+
+            <div v-else>
+                <div class="shelf-card" v-for="(shelf, baldaKey) in catalogo" :key="baldaKey">
+                    <div class="shelf-header">
+                        <div class="shelf-title">
+                            <template v-if="editingShelf === baldaKey">
+                                <input class="edit-input" v-model="shelfEditName" @keyup.enter="saveShelfEdit(baldaKey)" @blur="saveShelfEdit(baldaKey)" ref="shelfEditInput">
+                            </template>
+                            <template v-else>
+                                {{ baldaKey }}
+                                <span class="badge">{{ shelf.filter(it => !it.item_bold).length }}</span>
+                            </template>
+                        </div>
+                        <div class="shelf-actions">
+                            <button class="icon-btn move" @click="moveShelfUp(baldaKey)" title="Mover arriba">⬆️</button>
+                            <button class="icon-btn move" @click="moveShelfDown(baldaKey)" title="Mover abajo">⬇️</button>
+                            <button class="icon-btn" @click="startEditShelf(baldaKey)" title="Editar nombre">✏️</button>
+                            <button class="icon-btn danger" @click="deleteShelf(baldaKey)" title="Eliminar balda">🗑️</button>
+                        </div>
+                    </div>
+                    <div v-for="item in shelf" :key="item.id" 
+                         class="item-row" 
+                         :class="{ 'bold-item': item.item_bold }">
+                        <template v-if="editingItem === item.id">
+                            <input class="edit-input" v-model="itemEditName" @keyup.enter="saveItemEdit(item)" @blur="saveItemEdit(item)" ref="itemEditInput">
+                            <button class="icon-btn" @click="saveItemEdit(item)">💾</button>
+                        </template>
+                        <template v-else>
+                            <span class="item-name">{{ item.item_nombre }}</span>
+                            <div class="item-actions">
+                                <button class="icon-btn" @click="toggleBold(item)" :title="item.item_bold ? 'Quitar cabecera' : 'Marcar como cabecera'">
+                                    {{ item.item_bold ? '📌' : '📄' }}
+                                </button>
+                                <button class="icon-btn" @click="startEditItem(item)" title="Editar nombre">✏️</button>
+                                <button class="icon-btn danger" @click="deleteItem(item)" title="Desactivar item">✕</button>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="add-item-row">
+                        <input type="text" v-model="newItemNames[baldaKey]" placeholder="Nuevo item..." @keyup.enter="addItem(baldaKey)">
+                        <button class="btn-add" @click="addItem(baldaKey)">➕</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== FICHAS TÉCNICAS ========== -->
+        <div class="tab-content" :class="{ active: tab === 'fichas' }">
+            <div class="search-bar">
+                <input type="text" v-model="busquedaFichas" placeholder="🔍 Buscar ficha por nombre...">
+                <button class="btn btn-primary" @click="nuevaFicha">➕ Nueva ficha</button>
+            </div>
+
+            <div v-if="fichasFiltradas.length === 0" style="padding:2rem; text-align:center; color:#7a726a;">
+                <p v-if="busquedaFichas">No hay fichas que coincidan con "{{ busquedaFichas }}"</p>
+                <p v-else>No hay fichas técnicas. Pulsa "➕ Nueva ficha" para crear la primera.</p>
+            </div>
+
+            <div v-else class="fichas-list">
+                <div v-for="ficha in fichasFiltradas" :key="ficha.nombre" class="ficha-card" @click="editarFicha(ficha.nombre)">
+                    <div class="ficha-nombre">{{ ficha.nombre }}</div>
+                    <div class="ficha-meta">
+                        <span class="tipo-pill" :class="ficha.tipo">
+                            {{ ficha.tipo === 'receta' ? '📝 Receta' : ficha.tipo === 'ingrediente' ? '⚖️ Ingrediente' : '📦 Simple' }}
+                        </span>
+                        <span v-if="ficha.peso">⚖️ {{ ficha.peso }}</span>
+                        <span v-if="ficha.alergenos && ficha.alergenos.length">⚠️ {{ ficha.alergenos.length }} alérgenos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL EDICIÓN FICHA ========== -->
+    <div v-if="modalFichaVisible" class="modal-overlay" @click.self="cerrarModalFicha">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>{{ editandoFichaNombre ? '✏️ ' + editandoFichaNombre : '📝 Nueva ficha' }}</h2>
+                <button class="close-btn" @click="cerrarModalFicha">✕</button>
+            </div>
+            <div class="edit-form">
+                <div class="form-group">
+                    <label>📋 Nombre del item</label>
+                    <input type="text" v-model="editForm.nombre" placeholder="Ej: Croca (200 grm)" required>
+                </div>
+                <div class="form-group">
+                    <label>📂 Tipo</label>
+                    <select v-model="editForm.tipo">
+                        <option value="receta">📝 Receta completa</option>
+                        <option value="ingrediente">⚖️ Solo ingrediente (peso)</option>
+                        <option value="simple">📦 Sin información</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>⚖️ Peso/gramaje</label>
+                        <input type="text" v-model="editForm.peso" placeholder="Ej: 200 grm">
+                    </div>
+                    <div class="form-group" v-if="editForm.tipo === 'receta'">
+                        <label>⏱️ Tiempo preparación</label>
+                        <input type="text" v-model="editForm.tiempo" placeholder="Ej: 15 min">
+                    </div>
+                </div>
+                <div class="form-group" v-if="editForm.tipo === 'receta'">
+                    <label>⚠️ Alérgenos</label>
+                    <div class="alergenos-grid">
+                        <div v-for="a in alergenosDisponibles" :key="a.nombre" 
+                             class="alergeno-chip" 
+                             :class="{ selected: editForm.alergenos.includes(a.nombre) }"
+                             @click="toggleAlergeno(a.nombre)">
+                            <span class="color-dot" :style="{ background: a.color }"></span>
+                            {{ a.nombre }}
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" v-if="editForm.tipo === 'receta'">
+                    <label>📝 Ingredientes (uno por línea)</label>
+                    <textarea v-model="editForm.ingredientesText" rows="4" placeholder="200 gr de croca&#10;Sal marina&#10;Aceite de oliva"></textarea>
+                </div>
+                <div class="form-group" v-if="editForm.tipo === 'receta'">
+                    <label>👨‍🍳 Elaboración (pasos)</label>
+                    <textarea v-model="editForm.elaboracion" rows="5" placeholder="1. Sacar la croca 15 min antes&#10;2. Salpimentar&#10;3. Hornear 12-15 min a 180°C"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>📌 Notas adicionales</label>
+                    <textarea v-model="editForm.notas" rows="3" placeholder="Notas opcionales..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline" @click="cerrarModalFicha">Cancelar</button>
+                    <button class="btn btn-danger" @click="eliminarFicha" v-if="editandoFichaNombre">🗑️ Eliminar</button>
+                    <button class="btn btn-success" @click="guardarFicha">💾 Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="toast.show" class="toast" :class="toast.type">{{ toast.message }}</div>
+
+    <div class="footer">
+        📊 Panel de control · Datos sincronizados con Supabase
+        <br>Catálogo y fichas técnicas editables solo desde aquí.
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
+const CARTA_ACTUAL = 'carta_actual';
+
+(function() {
+    const ALERGENOS_DISPONIBLES = [
+        { nombre: 'Gluten', color: '#dc2626' },
+        { nombre: 'Lácteos', color: '#2563eb' },
+        { nombre: 'Huevo', color: '#d97706' },
+        { nombre: 'Pescado', color: '#059669' },
+        { nombre: 'Frutos secos', color: '#7c3aed' },
+        { nombre: 'Soja', color: '#0284c7' },
+        { nombre: 'Moluscos', color: '#6b21a8' },
+        { nombre: 'Crustáceos', color: '#db2777' },
+        { nombre: 'Apio', color: '#16a34a' },
+        { nombre: 'Mostaza', color: '#ea580c' },
+        { nombre: 'Sésamo', color: '#7c3aed' },
+        { nombre: 'Sulfitos', color: '#0d9488' },
+        { nombre: 'Altramuces', color: '#b91c1c' }
+    ];
+
+    const CATALOGO_INICIAL = {
+        "Balda 1 Puerta A": [
+            { name: "Ensalada Fredie", bold: true },
+            { name: "mezclum" }, { name: "langostinos (pqt3)" }, { name: "salmon marinado (80 grm)" },
+            { name: "tomates cherrys confitados (4)" }, { name: "trigueros (3)" },
+            { name: "pan multicereal(cuarto frio)" }, { name: "Aguacate" }, { name: "vinagreta de miel (Mesado)" }
+        ],
+        "Balda 2 (Ensalada Ventresca)": [
+            { name: "Ensalada de Ventresca", bold: true },
+            { name: "Ventresca (100 grm)" }, { name: "Tomate azul" }, { name: "Rucula" }, { name: "Huevo cocido 1" }
+        ],
+        "Balda 3 (Ensaladilla langostinos)": [
+            { name: "Ensaladilla de langostinos", bold: true },
+            { name: "Ensaladilla" }, { name: "langostinos (3 unidades)" }, { name: "wakame" },
+            { name: "Lechuga" }, { name: "Cebolla roja osmotizada" }, { name: "zumo de limon" },
+            { name: "Verduras bruinose (ceviche)" }
+        ],
+        "Balda 1 Puerta B (especias)": [
+            { name: "Especiero (hb, al, cil, per, cebollino)", bold: true },
+            { name: "Setas" }, { name: "Micro mezclum" }, { name: "Espinaca" }, { name: "ajo laminado" }
+        ],
+        "Balda 2 Puerta B (salsas)": [
+            { name: "salsero", bold: true },
+            { name: "kimchinesa" }, { name: "alioli de lima y perejil" }, { name: "salsa rosa" },
+            { name: "Romescu" }, { name: "aliño de tarta" }, { name: "mojo rojo" },
+            { name: "mojo verde" }, { name: "Tapanade" }
+        ],
+        "Balda 1 Puerta C (pastas)": [
+            { name: "Pastas", bold: true },
+            { name: "Tagliatelle" }, { name: "Boloñesa (160 grm)" }, { name: "Alfredo" },
+            { name: "Napole" }, { name: "Parmesano" }
+        ],
+        "Balda 2 Puerta C (carnes)": [
+            { name: "Carnes cocidas", bold: true },
+            { name: "Carne bao (80 grm)" }, { name: "Carne asada (180 grm)" },
+            { name: "Carne cubano (160 grm)" }, { name: "Salchichas" }
+        ],
+        "Balda 3 Puerta C (salsas calientes)": [
+            { name: "Salsa calientes", bold: true },
+            { name: "Salsa de queso san simon" }, { name: "Salsa de queso chedar" },
+            { name: "Mantequilla de salvia" }, { name: "Huevos Poche" }
+        ],
+        "Balda 1 Puerta D (fast food)": [
+            { name: "Fast food", bold: true },
+            { name: "Jamon" }, { name: "Queso Edam Lomchas" }, { name: "Bacon" },
+            { name: "Cebolla caramelizada" }, { name: "Relish" }, { name: "tomate en rodajas" }, { name: "Arzua" }
+        ],
+        "Balda 2 Puerta D": [
+            { name: "Patata Baby" }, { name: "Brocoli" }, { name: "Paleta" }, { name: "San simon" }, { name: "Tempura" }
+        ],
+        "Balda 3 Puerta D": [
+            { name: "Hamburguesas (200 grm)" }, { name: "Croca (200 grm)" }, { name: "Pollo club (80 grm)" }
+        ],
+        "Balda 1 Puerta E": [
+            { name: "Garbanzos", bold: true }, { name: "Pil Pil" }, { name: "Marca de arroz" }, { name: "mantequilla" }
+        ],
+        "Balda 2 Puerta E (pescados)": [
+            { name: "Pescados", bold: true },
+            { name: "Pargo (150gr)" }, { name: "Bacalao (180 grm)" }, { name: "Chipis bao (80 grm)" },
+            { name: "Chipis fritos (250" }, { name: "Salmón (150 grm)" }, { name: "Pulpo (150 Gr)" },
+            { name: "Langostinos 6" }
+        ],
+        "Balda 3 Puerta E": [ { name: "Croquetas (10)" } ],
+        "Balda 1 Puerta F": [ { name: "Tarta de queso", bold: true } ],
+        "Balda 2 Puerta F": [
+            { name: "Torrijas", bold: true },
+            { name: "Filloas" }, { name: "Mermelada" }, { name: "Crema pastelera" }, { name: "Mantequilla" },
+            { name: "Phisalys" }, { name: "Fresas" }, { name: "Arandanos" }, { name: "nutella" }, { name: "peta setas" }
+        ],
+        "Congelador": [
+            { name: "Helado de vainilla", bold: true }, { name: "Helado de café" },
+            { name: "Taper con Baos Negros" }, { name: "Taper con Baos Blancos" },
+            { name: "Taper con Almejas" }, { name: "Taper con Langostinos crujientes" }, { name: "Taper con Gnochis" }
+        ],
+        "Mesado / Cocina": [
+            { name: "Chips de platano", bold: true }, { name: "Chips de yuca" }, { name: "Vinagreta" },
+            { name: "Tostas Tartar" }, { name: "Merengues" }, { name: "Cramble Negro" },
+            { name: "Cramble Blanco" }, { name: "Dulce de leche" }, { name: "Harina de fritos" }, { name: "Fumet" }
+        ]
+    };
+
+    new Vue({
+        el: '#app',
+        data: {
+            tab: 'supervision',
+            cartaActual: CARTA_ACTUAL,
+            loading: true,
+            syncStatus: 'idle',
+            supabase: null,
+            toast: { show: false, message: '', type: '' },
+            // Supervisión
+            fechaFiltro: 'hoy',
+            fechaCustom: new Date().toISOString().split('T')[0],
+            turno: 'mediodia',
+            catalogo: {},
+            revisiones: [],
+            stats: { hay: 0, no: 0, elaborar: 0, descongelar: 0 },
+            totalItemsCatalogo: 0,
+            totalMarcados: 0,
+            ultimoCocinero: '',
+            logs: [],
+            pendientes: [],
+            resumenPorBalda: {},
+            // Catálogo
+            newShelfName: '',
+            newItemNames: {},
+            editingShelf: null,
+            shelfEditName: '',
+            editingItem: null,
+            itemEditName: '',
+            // Fichas
+            fichasTecnicas: {},
+            busquedaFichas: '',
+            modalFichaVisible: false,
+            editandoFichaNombre: null,
+            editForm: { nombre:'', tipo:'simple', peso:'', tiempo:'', alergenos:[], ingredientesText:'', elaboracion:'', notas:'' },
+            alergenosDisponibles: ALERGENOS_DISPONIBLES,
+        },
+        computed: {
+            syncStatusText() {
+                const map = { idle:'📡', syncing:'🔄', synced:'✅', error:'❌' };
+                return map[this.syncStatus] || '📡';
+            },
+            syncStatusClass() {
+                if (this.syncStatus === 'synced') return 'synced';
+                if (this.syncStatus === 'syncing') return 'syncing';
+                if (this.syncStatus === 'error') return 'error';
+                return '';
+            },
+            numBaldasCatalogo() {
+                return Object.keys(this.catalogo).length;
+            },
+            numItemsCatalogo() {
+                let n = 0;
+                for (const shelf of Object.values(this.catalogo)) {
+                    n += shelf.filter(it => !it.item_bold).length;
+                }
+                return n;
+            },
+            fichasFiltradas() {
+                const lista = [];
+                for (const [nombre, ficha] of Object.entries(this.fichasTecnicas)) {
+                    if (!this.busquedaFichas || nombre.toLowerCase().includes(this.busquedaFichas.toLowerCase())) {
+                        lista.push({ nombre, ...ficha });
+                    }
+                }
+                lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+                return lista;
+            }
+        },
+        methods: {
+            showToast(message, type = 'success') {
+                this.toast = { show: true, message, type };
+                clearTimeout(this.toastTimer);
+                this.toastTimer = setTimeout(() => { this.toast.show = false; }, 2500);
+            },
+
+            formatFecha(fecha) {
+                if (!fecha) return '';
+                const d = new Date(fecha);
+                return d.toLocaleString('es-ES', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+            },
+
+            // ============================================================
+            // FECHA FILTRO
+            // ============================================================
+            getFechaFiltro() {
+                const hoy = new Date();
+                if (this.fechaFiltro === 'hoy') {
+                    return { desde: new Date(hoy), hasta: new Date(hoy) };
+                } else if (this.fechaFiltro === 'ayer') {
+                    const ayer = new Date(hoy);
+                    ayer.setDate(ayer.getDate() - 1);
+                    return { desde: ayer, hasta: ayer };
+                } else if (this.fechaFiltro === 'semana') {
+                    const hace7 = new Date(hoy);
+                    hace7.setDate(hace7.getDate() - 7);
+                    return { desde: hace7, hasta: hoy };
+                } else if (this.fechaFiltro === 'custom') {
+                    const f = new Date(this.fechaCustom);
+                    return { desde: f, hasta: f };
+                }
+                return { desde: hoy, hasta: hoy };
+            },
+
+            // ============================================================
+            // CARGA DE DATOS
+            // ============================================================
+            async recargarTodo() {
+                this.loading = true;
+                this.syncStatus = 'syncing';
+                try {
+                    await Promise.all([
+                        this.cargarCatalogo(),
+                        this.cargarFichas()
+                    ]);
+                    await this.recargarSupervision();
+                    this.syncStatus = 'synced';
+                } catch (e) {
+                    console.error(e);
+                    this.syncStatus = 'error';
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async cargarCatalogo() {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('timbres_catalogo')
+                        .select('*')
+                        .eq('carta', CARTA_ACTUAL)
+                        .eq('activo', true)
+                        .order('balda_orden')
+                        .order('item_orden');
+                    if (error) throw error;
+                    const cat = {};
+                    for (const row of (data || [])) {
+                        if (!cat[row.balda]) cat[row.balda] = [];
+                        cat[row.balda].push(row);
+                    }
+                    this.catalogo = cat;
+                } catch (e) {
+                    console.error('Error cargando catálogo:', e);
+                    this.catalogo = {};
+                }
+            },
+
+            async cargarFichas() {
+                try {
+                    const { data, error } = await this.supabase.from('timbres_fichas').select('*');
+                    if (error) throw error;
+                    const fichas = {};
+                    for (const row of (data || [])) {
+                        fichas[row.nombre] = {
+                            tipo: row.tipo || 'simple',
+                            peso: row.peso || null,
+                            tiempo: row.tiempo || null,
+                            alergenos: row.alergenos || [],
+                            ingredientes: row.ingredientes || [],
+                            elaboracion: row.elaboracion || null,
+                            notas: row.notas || null
+                        };
+                    }
+                    this.fichasTecnicas = fichas;
+                } catch (e) {
+                    console.error('Error cargando fichas:', e);
+                    this.fichasTecnicas = {};
+                }
+            },
+
+            async recargarSupervision() {
+                this.syncStatus = 'syncing';
+                try {
+                    const { desde, hasta } = this.getFechaFiltro();
+                    const fechaDesde = desde.toISOString().split('T')[0];
+                    const fechaHasta = hasta.toISOString().split('T')[0];
+
+                    // Traer revisiones del rango + turno
+                    const { data, error } = await this.supabase
+                        .from('timbres_revision')
+                        .select('*')
+                        .gte('fecha', fechaDesde)
+                        .lte('fecha', fechaHasta)
+                        .eq('turno', this.turno);
+                    if (error) throw error;
+                    this.revisiones = data || [];
+
+                    // Calcular stats
+                    const stats = { hay: 0, no: 0, elaborar: 0, descongelar: 0 };
+                    const logsMap = new Map();
+                    const pendientes = [];
+                    const resumenBalda = {};
+                    let marcados = 0;
+
+                    // Mapa de catalogo_id → item
+                    const catalogoMap = {};
+                    for (const [balda, items] of Object.entries(this.catalogo)) {
+                        for (const item of items) {
+                            catalogoMap[item.id] = { ...item, balda };
+                        }
+                    }
+
+                    for (const rev of this.revisiones) {
+                        const itemCat = catalogoMap[rev.catalogo_id];
+                        if (!itemCat || itemCat.item_bold) continue;
+                        if (rev.status) marcados++;
+
+                        if (rev.status === 'hay') stats.hay++;
+                        else if (rev.status === 'no') { stats.no++; pendientes.push({ ...itemCat, status: 'no', catalogo_id: rev.catalogo_id }); }
+                        else if (rev.status === 'elaborar') { stats.elaborar++; pendientes.push({ ...itemCat, status: 'elaborar', catalogo_id: rev.catalogo_id }); }
+                        else if (rev.status === 'descongelar') { stats.descongelar++; pendientes.push({ ...itemCat, status: 'descongelar', catalogo_id: rev.catalogo_id }); }
+
+                        if (!resumenBalda[itemCat.balda]) {
+                            resumenBalda[itemCat.balda] = { hay:0, no:0, elaborar:0, descongelar:0, total:0 };
+                        }
+                        resumenBalda[itemCat.balda].total++;
+                        if (rev.status === 'hay') resumenBalda[itemCat.balda].hay++;
+                        else if (rev.status === 'no') resumenBalda[itemCat.balda].no++;
+                        else if (rev.status === 'elaborar') resumenBalda[itemCat.balda].elaborar++;
+                        else if (rev.status === 'descongelar') resumenBalda[itemCat.balda].descongelar++;
+
+                        if (rev.cocinero) {
+                            const key = `${rev.cocinero}|${rev.fecha}|${rev.turno}`;
+                            logsMap.set(key, {
+                                cocinero: rev.cocinero,
+                                fecha: rev.fecha,
+                                turno: rev.turno,
+                                updated_at: rev.updated_at
+                            });
+                        }
+                    }
+
+                    this.stats = stats;
+                    this.totalMarcados = marcados;
+                    this.totalItemsCatalogo = this.numItemsCatalogo;
+                    this.pendientes = pendientes;
+                    this.resumenPorBalda = resumenBalda;
+
+                    const logsArr = Array.from(logsMap.values()).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+                    this.logs = logsArr;
+                    this.ultimoCocinero = logsArr[0]?.cocinero || '';
+
+                    this.syncStatus = 'synced';
+                } catch (e) {
+                    console.error('Error supervisión:', e);
+                    this.syncStatus = 'error';
+                }
+            },
+
+            cambiarTurno(t) {
+                this.turno = t;
+                this.recargarSupervision();
+            },
+
+            // ============================================================
+            // REINICIAR REVISIÓN
+            // ============================================================
+            async reiniciarRevision() {
+                const confirmar = confirm(
+                    `⚠️ ¿Reiniciar la revisión?\n\n` +
+                    `Se borrarán los estados del rango seleccionado (${this.fechaFiltro}) en el turno ${this.turno}.\n` +
+                    `El catálogo NO se toca.\n\n` +
+                    `¿Continuar?`
+                );
+                if (!confirmar) return;
+                const confirmar2 = confirm('¿Estás totalmente seguro? Esta acción no se puede deshacer.');
+                if (!confirmar2) return;
+
+                try {
+                    const { desde, hasta } = this.getFechaFiltro();
+                    const fechaDesde = desde.toISOString().split('T')[0];
+                    const fechaHasta = hasta.toISOString().split('T')[0];
+
+                    const { error } = await this.supabase
+                        .from('timbres_revision')
+                        .delete()
+                        .gte('fecha', fechaDesde)
+                        .lte('fecha', fechaHasta)
+                        .eq('turno', this.turno);
+                    if (error) throw error;
+                    await this.recargarSupervision();
+                    this.showToast('Revisión reiniciada', 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al reiniciar', 'error');
+                }
+            },
+
+            // ============================================================
+            // CATÁLOGO CRUD
+            // ============================================================
+            async addShelf() {
+                const name = this.newShelfName.trim();
+                if (!name) { this.showToast('Escribe un nombre', 'error'); return; }
+                if (this.catalogo[name]) { this.showToast('Ya existe una balda con ese nombre', 'error'); return; }
+
+                const maxOrden = Object.values(this.catalogo).flat().reduce((m, it) => Math.max(m, it.balda_orden || 0), 0);
+                try {
+                    await this.supabase.from('timbres_catalogo').insert([{
+                        carta: CARTA_ACTUAL,
+                        balda: name,
+                        balda_orden: maxOrden + 1,
+                        item_orden: 0,
+                        item_nombre: '(vacía)',
+                        item_bold: false,
+                        activo: false
+                    }]);
+                    await this.cargarCatalogo();
+                    this.newShelfName = '';
+                    this.showToast(`Balda "${name}" añadida`, 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al añadir balda', 'error');
+                }
+            },
+
+            async deleteShelf(balda) {
+                if (!confirm(`¿Eliminar la balda "${balda}" y todos sus items del catálogo?`)) return;
+                try {
+                    await this.supabase
+                        .from('timbres_catalogo')
+                        .update({ activo: false })
+                        .eq('carta', CARTA_ACTUAL)
+                        .eq('balda', balda);
+                    await this.cargarCatalogo();
+                    this.showToast(`Balda "${balda}" eliminada`, 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al eliminar', 'error');
+                }
+            },
+
+            startEditShelf(name) {
+                this.editingShelf = name;
+                this.shelfEditName = name;
+                this.$nextTick(() => {
+                    if (this.$refs.shelfEditInput) {
+                        const el = Array.isArray(this.$refs.shelfEditInput) ? this.$refs.shelfEditInput[0] : this.$refs.shelfEditInput;
+                        if (el) { el.focus(); el.select(); }
+                    }
+                });
+            },
+
+            async saveShelfEdit(oldName) {
+                const newName = this.shelfEditName.trim();
+                if (!newName || newName === oldName) {
+                    this.editingShelf = null;
+                    return;
+                }
+                if (this.catalogo[newName]) {
+                    this.showToast('Ya existe una balda con ese nombre', 'error');
+                    return;
+                }
+                try {
+                    await this.supabase
+                        .from('timbres_catalogo')
+                        .update({ balda: newName, updated_at: new Date().toISOString() })
+                        .eq('carta', CARTA_ACTUAL)
+                        .eq('balda', oldName);
+                    await this.cargarCatalogo();
+                    this.editingShelf = null;
+                    this.showToast('Balda renombrada', 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al renombrar', 'error');
+                }
+            },
+
+            async moveShelfUp(name) {
+                const keys = Object.keys(this.catalogo);
+                const index = keys.indexOf(name);
+                if (index <= 0) { this.showToast('Ya está arriba', 'error'); return; }
+                const prevKey = keys[index - 1];
+                const ordenA = this.catalogo[name][0]?.balda_orden || 0;
+                const ordenB = this.catalogo[prevKey][0]?.balda_orden || 0;
+                try {
+                    await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenB }).eq('carta', CARTA_ACTUAL).eq('balda', name);
+                    await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenA }).eq('carta', CARTA_ACTUAL).eq('balda', prevKey);
+                    await this.cargarCatalogo();
+                    this.showToast('Balda movida arriba', 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al mover', 'error');
+                }
+            },
+
+            async moveShelfDown(name) {
+                const keys = Object.keys(this.catalogo);
+                const index = keys.indexOf(name);
+                if (index >= keys.length - 1) { this.showToast('Ya está abajo', 'error'); return; }
+                const nextKey = keys[index + 1];
+                const ordenA = this.catalogo[name][0]?.balda_orden || 0;
+                const ordenB = this.catalogo[nextKey][0]?.balda_orden || 0;
+                try {
+                    await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenB }).eq('carta', CARTA_ACTUAL).eq('balda', name);
+                    await this.supabase.from('timbres_catalogo').update({ balda_orden: ordenA }).eq('carta', CARTA_ACTUAL).eq('balda', nextKey);
+                    await this.cargarCatalogo();
+                    this.showToast('Balda movida abajo', 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al mover', 'error');
+                }
+            },
+
+            async addItem(balda) {
+                const name = (this.newItemNames[balda] || '').trim();
+                if (!name) return;
+                const items = this.catalogo[balda] || [];
+                const maxItemOrden = items.reduce((m, it) => Math.max(m, it.item_orden || 0), 0);
+                const baldaOrden = items[0]?.balda_orden || 0;
+                try {
+                    await this.supabase.from('timbres_catalogo').insert([{
+                        carta: CARTA_ACTUAL,
+                        balda: balda,
+                        balda_orden: baldaOrden,
+                        item_orden: maxItemOrden + 1,
+                        item_nombre: name,
+                        item_bold: false,
+                        activo: true
+                    }]);
+                    // Desactivar el placeholder "(vacía)" si existe
+                    await this.supabase
+                        .from('timbres_catalogo')
+                        .update({ activo: false })
+                        .eq('carta', CARTA_ACTUAL)
+                        .eq('balda', balda)
+                        .eq('item_nombre', '(vacía)');
+                    this.newItemNames[balda] = '';
+                    await this.cargarCatalogo();
+                    this.showToast('Item añadido', 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al añadir', 'error');
+                }
+            },
+
+            startEditItem(item) {
+                this.editingItem = item.id;
+                this.itemEditName = item.item_nombre;
+                this.$nextTick(() => {
+                    if (this.$refs.itemEditInput) {
+                        const refs = this.$refs.itemEditInput;
+                        const el = Array.isArray(refs) ? refs[refs.length - 1] : refs;
+                        if (el) { el.focus(); el.select(); }
+                    }
+                });
+            },
+
+            async saveItemEdit(item) {
+                const newName = this.itemEditName.trim();
+                if (!newName) { this.editingItem = null; return; }
+                try {
+                    await this.supabase
+                        .from('timbres_catalogo')
+                        .update({ item_nombre: newName, updated_at: new Date().toISOString() })
+                        .eq('id', item.id);
+                    this.editingItem = null;
+                    await this.cargarCatalogo();
+                    this.showToast('Item actualizado', 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al actualizar', 'error');
+                }
+            },
+
+            async toggleBold(item) {
+                try {
+                    await this.supabase
+                        .from('timbres_catalogo')
+                        .update({ item_bold: !item.item_bold, updated_at: new Date().toISOString() })
+                        .eq('id', item.id);
+                    await this.cargarCatalogo();
+                } catch (e) {
+                    console.error('Error:', e);
+                }
+            },
+
+            async deleteItem(item) {
+                if (!confirm(`¿Desactivar "${item.item_nombre}" del catálogo?`)) return;
+                try {
+                    await this.supabase
+                        .from('timbres_catalogo')
+                        .update({ activo: false, updated_at: new Date().toISOString() })
+                        .eq('id', item.id);
+                    await this.cargarCatalogo();
+                    this.showToast('Item desactivado', 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al desactivar', 'error');
+                }
+            },
+
+            async cargarCatalogoInicial() {
+                if (!confirm('Esto añadirá la estructura heredada al catálogo de la carta actual.\n\nPodrás editarla después.\n\n¿Continuar?')) return;
+
+                const filas = [];
+                let baldaOrden = 1;
+                for (const [balda, items] of Object.entries(CATALOGO_INICIAL)) {
+                    let itemOrden = 1;
+                    for (const item of items) {
+                        filas.push({
+                            carta: CARTA_ACTUAL,
+                            balda: balda,
+                            balda_orden: baldaOrden,
+                            item_orden: itemOrden,
+                            item_nombre: item.name,
+                            item_bold: item.bold || false,
+                            activo: true
+                        });
+                        itemOrden++;
+                    }
+                    baldaOrden++;
+                }
+
+                try {
+                    const { error } = await this.supabase.from('timbres_catalogo').insert(filas);
+                    if (error) throw error;
+                    await this.cargarCatalogo();
+                    this.showToast(`✅ ${filas.length} items cargados`, 'success');
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al cargar catálogo', 'error');
+                }
+            },
+
+            // ============================================================
+            // FICHAS TÉCNICAS
+            // ============================================================
+            nuevaFicha() {
+                this.editandoFichaNombre = null;
+                this.editForm = { nombre:'', tipo:'receta', peso:'', tiempo:'', alergenos:[], ingredientesText:'', elaboracion:'', notas:'' };
+                this.modalFichaVisible = true;
+            },
+
+            editarFicha(nombre) {
+                const ficha = this.fichasTecnicas[nombre];
+                if (!ficha) return;
+                this.editandoFichaNombre = nombre;
+                this.editForm = {
+                    nombre: nombre,
+                    tipo: ficha.tipo || 'simple',
+                    peso: ficha.peso || '',
+                    tiempo: ficha.tiempo || '',
+                    alergenos: ficha.alergenos ? [...ficha.alergenos] : [],
+                    ingredientesText: ficha.ingredientes ? ficha.ingredientes.join('\n') : '',
+                    elaboracion: ficha.elaboracion || '',
+                    notas: ficha.notas || ''
+                };
+                this.modalFichaVisible = true;
+            },
+
+            cerrarModalFicha() {
+                this.modalFichaVisible = false;
+                this.editandoFichaNombre = null;
+            },
+
+            toggleAlergeno(a) {
+                const i = this.editForm.alergenos.indexOf(a);
+                if (i > -1) this.editForm.alergenos.splice(i, 1);
+                else this.editForm.alergenos.push(a);
+            },
+
+            async guardarFicha() {
+                const nombre = this.editForm.nombre.trim();
+                if (!nombre) { this.showToast('El nombre es obligatorio', 'error'); return; }
+                const ficha = {
+                    tipo: this.editForm.tipo,
+                    peso: this.editForm.peso || null,
+                    tiempo: this.editForm.tiempo || null,
+                    alergenos: this.editForm.tipo === 'receta' ? [...this.editForm.alergenos] : [],
+                    ingredientes: this.editForm.tipo === 'receta' ? this.editForm.ingredientesText.split('\n').filter(i => i.trim()) : [],
+                    elaboracion: this.editForm.tipo === 'receta' ? this.editForm.elaboracion : null,
+                    notas: this.editForm.notas || null
+                };
+                try {
+                    const { error } = await this.supabase.from('timbres_fichas').upsert({
+                        nombre: nombre,
+                        carta: CARTA_ACTUAL,
+                        ...ficha
+                    }, { onConflict: 'nombre' });
+                    if (error) throw error;
+                    await this.cargarFichas();
+                    this.showToast(`Ficha de "${nombre}" guardada`, 'success');
+                    this.cerrarModalFicha();
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al guardar', 'error');
+                }
+            },
+
+            async eliminarFicha() {
+                if (!this.editandoFichaNombre) return;
+                if (!confirm(`¿Eliminar la ficha de "${this.editandoFichaNombre}"?`)) return;
+                try {
+                    await this.supabase.from('timbres_fichas').delete().eq('nombre', this.editandoFichaNombre);
+                    await this.cargarFichas();
+                    this.showToast('Ficha eliminada', 'success');
+                    this.cerrarModalFicha();
+                } catch (e) {
+                    console.error('Error:', e);
+                    this.showToast('Error al eliminar', 'error');
+                }
+            }
+        },
+        async mounted() {
+            try {
+                const { createClient } = supabase;
+                this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+            } catch (e) {
+                this.showToast('Error al conectar', 'error');
+                return;
+            }
+            await this.recargarTodo();
+
+            setInterval(() => {
+                if (this.syncStatus !== 'syncing' && this.tab === 'supervision') {
+                    this.recargarSupervision();
+                }
+            }, 15000);
+        }
+    });
+})();
+</script>
+</body>
+</html>
