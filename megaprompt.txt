@@ -1,0 +1,411 @@
+════════════════════════════════════════════════════════════
+📌 FREDWARE - MEGA PROMPT DE VISIÓN COMPLETA
+📅 Última actualización: 29/09/2026
+════════════════════════════════════════════════════════════
+
+Este documento contiene TODA la visión del ecosistema Fredware:
+fases completadas, fases pendientes, arquitectura, credenciales
+y decisiones tomadas. Es el punto de retorno definitivo.
+
+════════════════════════════════════════════════════════════
+🎯 VISIÓN GENERAL DEL PROYECTO
+════════════════════════════════════════════════════════════
+
+Fredware es un ecosistema de aplicaciones HTML + backend Python +
+Supabase para gestionar cocina, almacén y compras del restaurante
+Attica As Galeras.
+
+El objetivo final es crear un sistema que fusione lo mejor de:
+  · MarketMan      → gestión de inventario, pedidos, proveedores
+  · Apicbase       → recetas, costes, escandallos, producción
+  · Leanpath       → medición y prevención de mermas
+
+Pero hecho a medida, sin costes de licencia, integrado con
+el hardware existente (Brother QL-810W, ngrok, backend Python)
+y adaptado al flujo real de la cocina (timbres, baldas, etc.).
+
+════════════════════════════════════════════════════════════
+📚 FASES COMPLETADAS
+════════════════════════════════════════════════════════════
+
+✅ FASE 1 — Unificación tabla recepciones (455+ filas)
+✅ FASE 2 — Núcleo v2 + 3 apps integradas
+✅ FASE 3 — Integración de 6 apps restantes + sticker Brother
+✅ FASE 4 — Limpieza (borradas 4 tablas obsoletas, 13 escandallos basura)
+✅ Proyecto "Inventario Full" — FASE A (61 productos en productos_raciones)
+✅ Proyecto "Inventario Full" — FASE B1 (sistema matching Levenshtein)
+✅ FASE B2 — Combobox estricto en faltas.html (insumo-falta)
+✅ FASE B2 — Combobox estricto en compras.html (#manual-articulo)
+   · Auto-proveedor desde productos_raciones.proveedor_principal
+   · Modal de creación de producto
+   · Parche de render de proveedores
+✅ FASE B2 — Combobox en Entrada Directa de faltas.html
+✅ FASE C1 — Mise and Place (ronda de timbres/baldas)
+   · Rediseño completo de BD:
+     - timbres_catalogo (nueva, con ficha integrada)
+     - timbres_revision (nueva: fecha+turno+catalogo_id)
+     - timbres_revision_carta_vieja (archivo, 200 registros)
+     - timbres_fichas (archivo, 41 fichas viejas)
+   · 2 apps redesplegadas:
+     - miseandplace.html v4 (cocinero, sin admin, con fichas)
+     - miseandplacejefe.html v3 (jefe, catálogo + fichas editables)
+   · Migración automática: 41 items con ficha
+     (26 producto + 15 preparación)
+   · Diferenciación visual: ⚖️ Producto / 📝 Preparación / 📦 Sin ficha
+   · Botón "Reiniciar revisión" en ambos (doble confirmación)
+   · Cocinero guarda nombre en localStorage
+   · Carta actual: 'carta_actual'
+
+════════════════════════════════════════════════════════════
+📋 FASES PENDIENTES (orden de ejecución)
+════════════════════════════════════════════════════════════
+
+⏳ FASE C2 — Automatización de Mise and Place
+   Inspirado en: (propio)
+
+   C2.1 — Snapshot diario de faltas
+      · Al cerrar la ronda, guardar snapshot en tabla nueva
+        'mise_snapshots' (fecha, turno, items_faltantes JSONB)
+      · Permite consultas históricas rápidas
+
+   C2.2 — Detección de patrones
+      · Vista v_items_cronicos: items que faltan >3 veces en 30 días
+      · Ordenados por frecuencia
+      · Sección nueva "📈 Items crónicos" en miseandplacejefe.html
+
+   C2.3 — Alertas push si no hay ronda
+      · Cron job (backend Python o Supabase Edge Function)
+      · Si a las 10:00 no hay ronda → email/WhatsApp
+      · Configurable en miseandplacejefe.html
+
+   C2.4 — Dashboard de mise
+      · Gráfica últimos 30 días: faltas por balda
+      · Ranking de baldas problemáticas
+      · Comparativa entre turnos
+
+⏳ FASE D — Gestión de inventarios completa
+   Inspirado en: MarketMan + Apicbase
+
+   ARQUITECTURA (5 niveles):
+
+   Nivel 1 — Movimientos (el corazón)
+      · Toda acción que mueve stock pasa por 'stock_movimientos'
+      · Tipos: ENTRADA | SALIDA | AJUSTE | MERMA | TRASPASO
+      · Origen: RECEPCION | COMPRA | MISE | CIERRE | MANUAL
+      · Función SQL única: ajustar_stock(producto_id, cantidad,
+        tipo, origen, origen_id, proveedor, usuario, notas,
+        coste_unitario, metadata)
+
+   Nivel 2 — Stock en vivo
+      · productos_raciones.stock_actual (actualizado por función)
+      · Vista v_stock_en_vivo con joins, estado_stock y
+        totales de entradas/salidas últimos 30 días
+
+   Nivel 3 — Alertas
+      · Vista v_productos_a_reponer (stock_actual < stock_minimo)
+      · Widget en dashboard-unified.html
+      · Sugerencias en compras.html ("Añadir a cesta")
+
+   Nivel 4 — Cuadre
+      · App nueva: inventario_fisico.html
+      · Comparar stock_teorico vs stock_fisico
+      · Registrar diferencias como MERMA/AJUSTE
+
+   Nivel 5 — Análisis
+      · Consumo por producto/semana/mes
+      · Mermas por zona/tipo
+      · Valoración € del stock
+      · Rotación de productos
+
+   SUBFASES:
+
+   D1 — Cimientos (1-2 días)
+      · Auditar trigger fn_recepcion_a_stock actual
+      · Estandarizar stock_movimientos
+      · Crear función ajustar_stock()
+      · Crear función buscar_producto_id_por_nombre()
+      · Crear trigger fn_recepcion_a_stock_v2()
+      · Crear vista v_stock_en_vivo (mejorada)
+      · Crear vista v_productos_a_reponer
+      · Migración inicial (movimientos base por producto)
+      · Integrar recepciones → trigger automático
+      · Integrar compras.html → llamada explícita o trigger
+
+   D2 — Alertas stock mínimo (1 día)
+      · Widget en dashboard-unified.html
+      · Botón "Añadir a cesta" en compras.html
+      · Marcar visualmente productos bajo mínimo
+
+   D3 — Integración con Mise and Place (1-2 días)
+      · Vincular items de timbres_catalogo con productos_raciones
+      · Cuando se genera etiqueta de elaboración:
+        ¿descuenta item o ingredientes?
+        Decisión: A) solo item, C) item + ingredientes
+        → Empezar por A, evolucionar a C
+
+   D4 — Consumo por ventas (2-3 días)
+      · Requiere TPV integrado o registro manual
+      · Descuento por recetas
+
+   D5 — Valoración económica (1 día)
+      · Añadir coste_unitario a productos y recepciones
+      · Vista v_valoracion_stock
+      · Widget en dashboard
+
+   D6 — Cuadre físico (1-2 días)
+      · App inventario_fisico.html
+      · Conteo móvil por zonas/timbres
+      · Comparar teórico vs físico
+      · Registro de diferencias
+
+   D7 — Análisis y reportes (1-2 días)
+      · Consumo, mermas, rotación
+      · Gráficas y tendencias
+
+⏳ FASE E+ — Leanpath Style (Mermas Inteligentes)
+   Inspirado en: Leanpath
+
+   E+1 — Registro rápido de mermas
+      · Botón "🗑️ Tirar producto" en miseandplace.html
+      · Tabla nueva: mermas
+        (producto_id, cantidad, unidad, motivo, zona,
+         cocinero, foto_url, notas, movimiento_id)
+      · Motivos: CADUCADO | MAL_ESTADO | SOBREPRODUCCION |
+                  ERROR_PREP | ROTURA
+      · Regla: registrar merma debe tardar <15 segundos
+
+   E+2 — Integración con stock
+      · Al registrar merma → llama a ajustar_stock() tipo MERMA
+      · Descuenta del stock_actual automáticamente
+      · Auditoría completa en stock_movimientos
+
+   E+3 — Análisis en miseandplacejefe.html
+      · Nueva pestaña "🗑️ Mermas"
+      · Rankings: por producto, por motivo, por zona
+      · Vistas SQL:
+        - v_mermas_por_producto
+        - v_mermas_por_motivo
+        - v_mermas_por_zona
+
+   E+4 — Gráficas y coste
+      · Evolución temporal (línea)
+      · Top 10 productos más tirados (barras)
+      · Distribución por motivo (tarta)
+      · Coste € mensual (requiere D5)
+
+   E+5 — Reportes exportables
+      · PDF/CSV para reuniones mensuales
+      · Comparativa mes anterior
+
+════════════════════════════════════════════════════════════
+🏗️ ESTADO ACTUAL DEL ECOSISTEMA
+════════════════════════════════════════════════════════════
+
+NÚCLEO COMPARTIDO: shared-core.js v3
+────────────────────────────────────────────────────────────
+· Lee de 'recepciones' (480+ filas) — fuente de verdad
+· 3 vistas:
+  - v_recepciones_recientes
+  - v_recepciones_por_dia
+  - v_compras_por_mes
+· Carga productos de 'productos_raciones' (61 productos)
+· Canal broadcast: 'fredware-unified'
+· Polling interno cada 60s
+· Módulo fredware.productos:
+  - cargar() → 61 productos con proveedor_principal,
+    stock_actual, stock_minimo
+  - buscar(texto) → RPC buscar_producto_exacto
+  - filtrar(texto, opciones)
+  - crear(nombre, ...)
+  - mostrarModalCrearProducto(nombrePropuesto)
+  - comboboxEstricto(inputId, opciones)
+
+APPS INTEGRADAS AL NÚCLEO
+────────────────────────────────────────────────────────────
+✅ dashboard-unified.html — vista global en vivo
+✅ recepcion.html — histórico de recepciones
+✅ Inventario.html — cierre mensual + mermas
+✅ faltas.html v17 — cocina + recepción + etiquetas
+✅ compras.html — panel de compras + WhatsApp
+   · Combobox estricto en #manual-articulo
+   · Auto-proveedor desde productos_raciones
+   · Parche de render de proveedores
+✅ listas.html — hojas de pedido con checklist
+✅ fichas_tecnicas.html — fichas de producción A4
+✅ miseandplace.html v4 — ronda de timbres (cocinero)
+   · Lee catálogo desde timbres_catalogo
+   · Fichas integradas en el item
+   · localStorage para cocinero
+   · Sin admin (configuración solo desde jefe)
+✅ miseandplacejefe.html v3 — panel de supervisión (jefe)
+   · Pestañas: Supervisión + Catálogo + Fichas técnicas
+   · Edita catálogo con acordeones
+   · Diferenciación Producto/Preparación/Sin ficha
+   · Botón Reiniciar revisión (doble confirmación)
+
+APPS SATÉLITE (independientes)
+────────────────────────────────────────────────────────────
+✅ etiquetas.html — etiquetas rápidas
+✅ caducidades.html — APPCC
+
+BACKEND PYTHON (oficina)
+────────────────────────────────────────────────────────────
+✅ fww.py — Flask API puerto 8000
+   · /imprimir_lote
+   · /imprimir_etiqueta_rapida_v2
+   · /generar_ficha_a4
+   · /generar_sticker
+   · /guardar_recepcion
+   · /obtener_recepciones
+✅ generador_pdf.py — PDFs 62mm x 60mm
+✅ base_datos.py — SQLite local
+
+TABLAS EN SUPABASE (estado actual)
+────────────────────────────────────────────────────────────
+· recepciones (480+ filas) — fuente de verdad
+· compras_historicas (61 filas)
+· maestro_escandallos (35 insumos)
+· inventario_mensual (35 filas)
+· productos_raciones (61 productos con zona/tipo/stock/proveedor)
+· stock_movimientos (parcialmente usado)
+· consumos_diarios (vacía, sin usar)
+· v_stock_en_vivo (vista agregada)
+· cesta_pedidos (~10 pendientes)
+· faltas_cocina (~15 faltas)
+· proveedores (33)
+· articulos_habituales (510)
+· fichas (66)
+· etiquetas_diarias, etiquetas_rapidas, fotos_trazabilidad
+· timbres_catalogo (~106 items, 41 con ficha)
+· timbres_revision (fecha+turno+catalogo_id)
+· timbres_revision_carta_vieja (200 filas, archivo)
+· timbres_fichas (41 filas, archivo)
+· timbres_log (auditoría)
+
+FUNCIONES SQL ACTUALES
+────────────────────────────────────────────────────────────
+· buscar_producto_inteligente(texto)
+· buscar_producto_exacto(texto)
+· crear_producto_si_no_existe(nombre, ...)
+· marcar_como_configurado(id)
+· fn_recepcion_a_stock() → trigger
+· v_productos_pendientes → vista
+
+CREDENCIALES
+────────────────────────────────────────────────────────────
+· Supabase: https://bhyprsjokwgazzzlfnbf.supabase.co
+· Supabase Key: sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y
+· Ngrok API: https://untried-january-thinning.ngrok-free.dev
+· Impresora: Brother QL-810W (IP 172.20.101.56)
+
+════════════════════════════════════════════════════════════
+🎯 ORDEN DE EJECUCIÓN (roadmap definitivo)
+════════════════════════════════════════════════════════════
+
+1º  ✅ FASE C1 (completada 29/09/2026)
+2º  ⏳ FASE C2.1 — Snapshot diario de faltas
+3º  ⏳ FASE C2.2 — Detección de patrones
+4º  ⏳ FASE C2.3 — Alertas push
+5º  ⏳ FASE C2.4 — Dashboard de mise
+6º  ⏳ FASE D1 — Cimientos de inventario
+7º  ⏳ FASE D2 — Alertas stock mínimo
+8º  ⏳ FASE D3 — Integración mise + stock
+9º  ⏳ FASE D4 — Consumo por ventas
+10º ⏳ FASE D5 — Valoración económica
+11º ⏳ FASE D6 — Cuadre físico
+12º ⏳ FASE D7 — Análisis y reportes
+13º ⏳ FASE E+1 — Registro rápido de mermas
+14º ⏳ FASE E+2 — Integración mermas + stock
+15º ⏳ FASE E+3 — Análisis mermas en jefe
+16º ⏳ FASE E+4 — Gráficas y coste
+17º ⏳ FASE E+5 — Reportes exportables
+
+════════════════════════════════════════════════════════════
+❓ PREGUNTAS PENDIENTES PARA D1
+════════════════════════════════════════════════════════════
+
+1. ¿Qué apps deben registrar movimientos?
+   (recepciones, compras, mise, inventario, etiquetas, TPV...)
+
+2. ¿Cómo se descuenta el stock de preparaciones?
+   A) Solo item elaborado
+   B) Solo ingredientes de la receta
+   C) Ambos (recomendado)
+
+3. ¿Tienes TPV integrado?
+   A) Sí → descuento por ventas
+   B) No
+
+4. ¿Quieres valoración económica en €?
+   A) Sí
+   B) Solo cantidades
+
+5. ¿Cómo se hace inventario físico hoy?
+   A) Papel
+   B) Inventario.html
+   C) No se hace regularmente
+
+════════════════════════════════════════════════════════════
+📁 ARCHIVOS DISPONIBLES PARA ADJUNTAR
+════════════════════════════════════════════════════════════
+
+APPS HTML:
+· compras.html (actualizado con combobox estricto)
+· miseandplace.html v4 (cocinero)
+· miseandplacejefe.html v3 (jefe)
+· faltas.html v17
+· dashboard-unified.html
+· listas.html
+· fichas_tecnicas.html
+· recepcion.html
+· Inventario.html
+· etiquetas.html
+· caducidades.html
+
+BACKEND:
+· shared-core.js v3
+· fww.py
+· generador_pdf.py
+· base_datos.py
+
+════════════════════════════════════════════════════════════
+💬 CÓMO ARRANCAR UN CHAT NUEVO
+════════════════════════════════════════════════════════════
+
+1. Pega este mega prompt completo.
+2. Di por dónde quieres empezar, por ejemplo:
+   "Empezamos por FASE C2.1"
+   "Empezamos por FASE D1"
+   "Empezamos por FASE E+1"
+3. Adjunta los archivos que la IA te pida.
+4. Responde las preguntas que te haga.
+
+════════════════════════════════════════════════════════════
+🎯 RESUMEN EJECUTIVO
+════════════════════════════════════════════════════════════
+
+Fredware es un sistema en evolución que aspira a ser una
+fusión de MarketMan + Apicbase + Leanpath, pero:
+  · Hecho a medida para Attica As Galeras
+  · Sin costes de licencia
+  · Integrado con hardware existente
+  · Adaptado al flujo real de cocina (timbres, baldas)
+
+El sistema tiene 3 grandes bloques:
+  1. MISE AND PLACE (C1 ✅ + C2 pendiente)
+  2. INVENTARIO COMPLETO (D1-D7 pendiente)
+  3. MERMAS INTELIGENTES (E+ pendiente)
+
+Cuando estén las tres fases terminadas, tendrás un sistema
+que:
+  · Sabe qué hay en stock en tiempo real
+  · Sabe qué falta antes de que falte
+  · Sabe cuánto cuesta lo que se tira
+  · Avisa de patrones ("siempre falta X los lunes")
+  · Genera pedidos sugeridos automáticamente
+  · Cuadra el inventario físico con el teórico
+  · Analiza mermas y propone mejoras
+
+════════════════════════════════════════════════════════════
+FIN DEL MEGA PROMPT
+════════════════════════════════════════════════════════════
