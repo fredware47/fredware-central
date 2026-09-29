@@ -1267,44 +1267,78 @@ async function guardarProveedor() {
     }
 }
 
+// ============================================================
+// 🔥 PARCHEADO: carga de proveedores con logs y try/catch por item
+// ============================================================
 async function cargarProveedoresDesdeSupabase() {
     const div = document.getElementById('lista-prov-config'); 
     if (!div) return;
     div.innerHTML = '<div class="loading-box">⏳ Sincronizando con Supabase...</div>';
     
     try {
-        const listaProveedores = proveedoresCache.length > 0 ? proveedoresCache : await obtenerProveedores();
+        console.log('🔍 [Proveedores] Iniciando carga...');
+        console.log('🔍 [Proveedores] Cache actual:', proveedoresCache.length);
+        
+        // 🔥 Consulta directa a Supabase (no fiarse del cache)
+        const { data, error } = await db_nube
+            .from('proveedores')
+            .select('*')
+            .order('nombre', { ascending: true });
+        
+        console.log('🔍 [Proveedores] Respuesta:', { cantidad: data?.length, error });
+        
+        if (error) {
+            console.error('❌ [Proveedores] Error Supabase:', error);
+            throw new Error(error.message || JSON.stringify(error));
+        }
+        
+        const listaProveedores = data || [];
         if (listaProveedores.length > 0) proveedoresCache = listaProveedores;
 
-        if (!listaProveedores || listaProveedores.length === 0) {
+        if (listaProveedores.length === 0) {
             div.innerHTML = '<div style="font-size:12px;color:#94a3b8;text-align:center;padding:12px;">Sin proveedores en la agenda.</div>';
             return;
         }
 
         div.innerHTML = '';
-        listaProveedores.forEach((p) => {
-            let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) ? p.dias_reparto.map(d => DIAS_SEMANA[d].substring(0,2)).join(', ') : "No asignado";
-            let tel = p.telefono ? `📞 ${p.telefono}` : "❌ Sin Tel";
-            let contactoStr = p.contacto ? `👤 ${p.contacto}` : "👤 Sin gestor";
-            
-            const tarjeta = document.createElement('div');
-            tarjeta.style.cssText = "background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1; cursor:pointer;";
-            tarjeta.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
-                    <strong>🏢 ${escapeHtml(p.nombre)}</strong>
-                    <button class="btn-del-row" onclick="event.stopPropagation(); eliminarProveedorSupabase('${p.id}')">Eliminar</button>
-                </div>
-                <div style="margin-top:4px; color:#475569;">
-                    <span>${escapeHtml(contactoStr)}</span> | <span>${escapeHtml(tel)}</span><br>
-                    <span style="color:#64748b; font-size:11px;">Reparte: ${escapeHtml(listado)} | Límite: ${p.hora_limite || '13:00'}</span>
-                </div>
-            `;
-            tarjeta.onclick = () => verProveedorEnFormularioDirecto(p);
-            div.appendChild(tarjeta);
+        listaProveedores.forEach((p, i) => {
+            try {
+                // 🔥 Filtrado de días inválidos (evita el '?' de MERCADONA)
+                let listado = (p.dias_reparto && Array.isArray(p.dias_reparto)) 
+                    ? p.dias_reparto
+                        .filter(d => Number.isInteger(d) && d >= 0 && d <= 6)
+                        .map(d => DIAS_SEMANA[d].substring(0,2))
+                        .join(', ') || 'No asignado'
+                    : "No asignado";
+                let tel = p.telefono ? `📞 ${p.telefono}` : "❌ Sin Tel";
+                let contactoStr = p.contacto ? `👤 ${p.contacto}` : "👤 Sin gestor";
+                
+                const tarjeta = document.createElement('div');
+                tarjeta.style.cssText = "background:white; padding:12px; margin-bottom:6px; border-radius:4px; font-size:12px; border:1px solid #cbd5e1; cursor:pointer;";
+                tarjeta.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                        <strong>🏢 ${escapeHtml(p.nombre)}</strong>
+                        <button class="btn-del-row" onclick="event.stopPropagation(); eliminarProveedorSupabase('${p.id}')">Eliminar</button>
+                    </div>
+                    <div style="margin-top:4px; color:#475569;">
+                        <span>${escapeHtml(contactoStr)}</span> | <span>${escapeHtml(tel)}</span><br>
+                        <span style="color:#64748b; font-size:11px;">Reparte: ${escapeHtml(listado)} | Límite: ${p.hora_limite || '13:00'}</span>
+                    </div>
+                `;
+                tarjeta.onclick = () => verProveedorEnFormularioDirecto(p);
+                div.appendChild(tarjeta);
+            } catch (errItem) {
+                console.error(`💥 [Proveedores] Peta el item #${i}:`, p, errItem);
+            }
         });
+        
+        console.log('✅ [Proveedores] Renderizados', listaProveedores.length);
         actualizarStatusBar(`✅ ${listaProveedores.length} proveedores cargados`);
+        
     } catch (error) {
-        div.innerHTML = `<div class="error-box">❌ Error de conexión. Usando datos en caché.</div>`;
+        console.error('❌ [Proveedores] ERROR COMPLETO:', error);
+        console.error('❌ [Proveedores] Stack:', error.stack);
+        div.innerHTML = `<div class="error-box">❌ ${escapeHtml(error.message)}</div>`;
     }
 }
 
