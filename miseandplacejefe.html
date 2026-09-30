@@ -708,6 +708,7 @@
         <button class="tab-btn" :class="{ active: tab === 'supervision' }" @click="tab = 'supervision'">📊 Supervisión</button>
         <button class="tab-btn" :class="{ active: tab === 'catalogo' }" @click="tab = 'catalogo'">📋 Catálogo</button>
         <button class="tab-btn" :class="{ active: tab === 'fichas' }" @click="tab = 'fichas'">📝 Fichas técnicas</button>
+        <button class="tab-btn" :class="{ active: tab === 'snapshots' }" @click="tab = 'snapshots'; cargarSnapshots()">📸 Snapshots</button>
     </div>
 
     <div v-if="loading" class="loading">
@@ -917,6 +918,57 @@
                 </div>
             </div>
         </div>
+
+        <!-- ========== SNAPSHOTS (C2.1) ========== -->
+        <div class="tab-content" :class="{ active: tab === 'snapshots' }">
+            <div class="filters-bar">
+                <label>📅 Rango:</label>
+                <select v-model="snapshotsRango" @change="cargarSnapshots">
+                    <option value="7">Últimos 7 días</option>
+                    <option value="30">Últimos 30 días</option>
+                    <option value="90">Últimos 90 días</option>
+                </select>
+                <button class="btn btn-outline btn-sm" @click="cargarSnapshots">🔄 Recargar</button>
+                <span style="margin-left:auto;font-size:0.8rem;color:#7a726a;">
+                    {{ snapshots.length }} snapshot{{ snapshots.length === 1 ? '' : 's' }}
+                </span>
+            </div>
+
+            <div v-if="snapshots.length === 0" style="padding:2rem;text-align:center;color:#7a726a;">
+                <p>📭 No hay snapshots en este rango.</p>
+                <p style="font-size:0.8rem;margin-top:0.5rem;">
+                    Los snapshots se guardan cuando el cocinero pulsa "✅ Cerrar ronda" en miseandplace.html.
+                </p>
+            </div>
+
+            <div v-else style="display:flex;flex-direction:column;gap:0.6rem;">
+                <div v-for="snap in snapshots" :key="snap.id" 
+                     style="background:white;border-radius:16px;padding:1rem 1.2rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);border-left:4px solid #1e1e1e;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:0.8rem;flex-wrap:wrap;">
+                        <div>
+                            <strong style="font-size:0.95rem;">
+                                📅 {{ formatFechaSnap(snap.fecha) }}
+                            </strong>
+                            <span class="turno-tag" :class="snap.turno" style="margin-left:0.5rem;">
+                                {{ snap.turno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche' }}
+                            </span>
+                            <span style="margin-left:0.8rem;font-size:0.8rem;color:#7a726a;">
+                                👨‍🍳 {{ snap.cocinero || 'Sin nombre' }}
+                            </span>
+                        </div>
+                        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                            <span style="background:#f0ebe5;padding:0.15rem 0.7rem;border-radius:30px;font-size:0.75rem;">
+                                📦 {{ snap.items_totales }}
+                            </span>
+                            <span style="background:#f5d6d6;color:#b13e3e;padding:0.15rem 0.7rem;border-radius:30px;font-size:0.75rem;font-weight:600;">
+                                ❌ {{ snap.items_faltantes }} ({{ snap.pct_faltantes }}%)
+                            </span>
+                            <button class="btn btn-outline btn-sm" @click="verDetalleSnapshot(snap)">👁️ Ver</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ========== MODAL EDICIÓN FICHA DE ITEM ========== -->
@@ -988,6 +1040,55 @@
                     </button>
                     <button class="btn btn-success" @click="guardarFichaDeItem">💾 Guardar</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL DETALLE SNAPSHOT (C2.1) ========== -->
+    <div v-if="snapshotModalVisible" class="modal-overlay" @click.self="snapshotModalVisible = false">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>
+                    📸 Snapshot · {{ snapshotDetalle ? formatFechaSnap(snapshotDetalle.fecha) : '' }}
+                    <span v-if="snapshotDetalle" class="turno-tag" :class="snapshotDetalle.turno" style="font-size:0.7rem;">
+                        {{ snapshotDetalle.turno === 'mediodia' ? '☀️' : '🌙' }}
+                    </span>
+                </h2>
+                <button class="close-btn" @click="snapshotModalVisible = false">✕</button>
+            </div>
+            <div v-if="snapshotDetalle">
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+                    <span style="background:#f0ebe5;padding:0.2rem 0.8rem;border-radius:30px;font-size:0.8rem;">
+                        👨‍🍳 {{ snapshotDetalle.cocinero || 'Sin nombre' }}
+                    </span>
+                    <span style="background:#f0ebe5;padding:0.2rem 0.8rem;border-radius:30px;font-size:0.8rem;">
+                        📦 {{ snapshotDetalle.items_totales }} totales
+                    </span>
+                    <span style="background:#f5d6d6;color:#b13e3e;padding:0.2rem 0.8rem;border-radius:30px;font-size:0.8rem;font-weight:600;">
+                        ❌ {{ snapshotDetalle.items_faltantes }} faltantes ({{ snapshotDetalle.pct_faltantes }}%)
+                    </span>
+                </div>
+
+                <h3 style="font-size:0.9rem;margin-bottom:0.5rem;color:#475569;">
+                    📋 Faltantes ({{ (snapshotDetalle.faltantes || []).length }})
+                </h3>
+                <div v-if="!snapshotDetalle.faltantes || snapshotDetalle.faltantes.length === 0" 
+                     style="padding:1rem;text-align:center;color:#7a726a;font-style:italic;">
+                    🎉 No hubo faltantes
+                </div>
+                <div v-else style="max-height:400px;overflow-y:auto;">
+                    <div v-for="(f, i) in snapshotDetalle.faltantes" :key="i"
+                         class="pending-item" style="padding:0.5rem 0;border-bottom:1px solid #f0ebe5;">
+                        <span class="item-name" style="flex:1;">{{ f.nombre }}</span>
+                        <span class="shelf-tag">{{ f.balda }}</span>
+                        <span class="status-tag" :class="f.status">
+                            {{ f.status === 'elaborar' ? '⚡ Elaborar' : f.status === 'descongelar' ? '❄️ Descongelar' : '❌ No hay' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" @click="snapshotModalVisible = false">Cerrar</button>
             </div>
         </div>
     </div>
@@ -1141,6 +1242,11 @@ const CARTA_ACTUAL = 'carta_actual';
             editandoFichaItem: null,
             editForm: { tipo_ficha:'simple', peso:'', tiempo:'', alergenos:[], ingredientesText:'', elaboracion:'', notas:'' },
             alergenosDisponibles: ALERGENOS_DISPONIBLES,
+            // Snapshots (C2.1)
+            snapshots: [],
+            snapshotsRango: '30',
+            snapshotDetalle: null,
+            snapshotModalVisible: false,
         },
         computed: {
             syncStatusText() {
@@ -1679,7 +1785,48 @@ const CARTA_ACTUAL = 'carta_actual';
                     console.error('Error:', e);
                     this.showToast('Error al eliminar', 'error');
                 }
-            }
+            },
+
+            // ============================================================
+            // C2.1 — SNAPSHOTS
+            // ============================================================
+            formatFechaSnap(fechaStr) {
+                if (!fechaStr) return '';
+                const d = new Date(fechaStr + 'T00:00:00');
+                return d.toLocaleDateString('es-ES', { weekday:'short', day:'2-digit', month:'short' });
+            },
+
+            async cargarSnapshots() {
+                try {
+                    const dias = parseInt(this.snapshotsRango) || 30;
+                    const desde = new Date();
+                    desde.setDate(desde.getDate() - dias);
+
+                    const { data, error } = await this.supabase
+                        .from('mise_snapshots')
+                        .select('*')
+                        .gte('fecha', desde.toISOString().split('T')[0])
+                        .order('fecha', { ascending: false })
+                        .order('turno', { ascending: true });
+
+                    if (error) throw error;
+
+                    this.snapshots = (data || []).map(s => ({
+                        ...s,
+                        pct_faltantes: s.items_totales > 0
+                            ? ((s.items_faltantes / s.items_totales) * 100).toFixed(1)
+                            : '0.0'
+                    }));
+                } catch (e) {
+                    console.error('Error cargando snapshots:', e);
+                    this.snapshots = [];
+                }
+            },
+
+            verDetalleSnapshot(snap) {
+                this.snapshotDetalle = snap;
+                this.snapshotModalVisible = true;
+            },
         },
         async mounted() {
             try {
@@ -1690,6 +1837,7 @@ const CARTA_ACTUAL = 'carta_actual';
                 return;
             }
             await this.recargarTodo();
+            await this.cargarSnapshots();
 
             setInterval(() => {
                 if (this.syncStatus !== 'syncing' && this.tab === 'supervision') {
