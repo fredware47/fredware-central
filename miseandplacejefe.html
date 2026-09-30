@@ -681,6 +681,35 @@
             font-family: inherit;
         }
 
+        .cronicos-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .cronicos-table th {
+            padding: 0.5rem 0.4rem;
+            font-weight: 600;
+            color: #475569;
+            text-align: left;
+            border-bottom: 2px solid #d5cdc3;
+        }
+        .cronicos-table th.center { text-align: center; }
+        .cronicos-table td {
+            padding: 0.5rem 0.4rem;
+            border-bottom: 1px solid #f0ebe5;
+        }
+        .cronicos-table td.center { text-align: center; }
+        .cronicos-badge {
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+        .cronicos-badge.no { background: #f5d6d6; color: #b13e3e; }
+        .cronicos-badge.elaborar { background: #f7e3d4; color: #914d2a; }
+        .cronicos-badge.descongelar { background: #dbe6ee; color: #2b6f8a; }
+
         @media (max-width: 700px) {
             .app { padding: 0; }
             .header { padding: 1rem; }
@@ -691,6 +720,8 @@
             .modal { padding: 1.2rem; }
             .edit-form .form-row { grid-template-columns: 1fr; }
             .tab-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
+            .cronicos-table { font-size: 0.75rem; }
+            .cronicos-table th, .cronicos-table td { padding: 0.3rem 0.2rem; }
         }
     </style>
 </head>
@@ -708,7 +739,7 @@
         <button class="tab-btn" :class="{ active: tab === 'supervision' }" @click="tab = 'supervision'">📊 Supervisión</button>
         <button class="tab-btn" :class="{ active: tab === 'catalogo' }" @click="tab = 'catalogo'">📋 Catálogo</button>
         <button class="tab-btn" :class="{ active: tab === 'fichas' }" @click="tab = 'fichas'">📝 Fichas técnicas</button>
-        <button class="tab-btn" :class="{ active: tab === 'snapshots' }" @click="tab = 'snapshots'; cargarSnapshots()">📸 Snapshots</button>
+        <button class="tab-btn" :class="{ active: tab === 'snapshots' }" @click="tab = 'snapshots'; recargarSnapshotsYCronicos()">📸 Snapshots</button>
     </div>
 
     <div v-if="loading" class="loading">
@@ -919,7 +950,7 @@
             </div>
         </div>
 
-        <!-- ========== SNAPSHOTS (C2.1) ========== -->
+        <!-- ========== SNAPSHOTS + CRÓNICOS ========== -->
         <div class="tab-content" :class="{ active: tab === 'snapshots' }">
             <div class="filters-bar">
                 <label>📅 Rango:</label>
@@ -928,12 +959,87 @@
                     <option value="30">Últimos 30 días</option>
                     <option value="90">Últimos 90 días</option>
                 </select>
-                <button class="btn btn-outline btn-sm" @click="cargarSnapshots">🔄 Recargar</button>
+                <label>🌗 Turno:</label>
+                <select v-model="cronicosTurno" @change="cargarCronicos">
+                    <option value="">Todos</option>
+                    <option value="mediodia">☀️ Mediodía</option>
+                    <option value="noche">🌙 Noche</option>
+                </select>
+                <button class="btn btn-outline btn-sm" @click="recargarSnapshotsYCronicos">🔄 Recargar</button>
                 <span style="margin-left:auto;font-size:0.8rem;color:#7a726a;">
                     {{ snapshots.length }} snapshot{{ snapshots.length === 1 ? '' : 's' }}
                 </span>
             </div>
 
+            <!-- ========== ITEMS CRÓNICOS ========== -->
+            <div v-if="cronicos.length > 0" class="panel-card" style="margin-bottom:1.2rem;">
+                <h3>
+                    📈 Items crónicos
+                    <span class="badge">{{ cronicos.length }}</span>
+                    <span style="margin-left:auto;font-size:0.7rem;color:#7a726a;font-weight:400;">
+                        ≥3 fallos en 30 días
+                    </span>
+                </h3>
+                <div style="overflow-x:auto;">
+                    <table class="cronicos-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Item</th>
+                                <th>Balda</th>
+                                <th class="center">❌ No</th>
+                                <th class="center">⚡ Elab</th>
+                                <th class="center">❄️ Desc</th>
+                                <th class="center">Total</th>
+                                <th class="center">Último</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item, i) in cronicos" :key="i"
+                                :style="{ background: getCronicoFondo(item.veces_total) }">
+                                <td>
+                                    <span :style="{ fontWeight:'700', color: getCronicoColor(item.veces_total) }">
+                                        {{ i + 1 }}
+                                    </span>
+                                </td>
+                                <td style="font-weight:600;">{{ item.nombre }}</td>
+                                <td style="font-size:0.75rem;color:#7a726a;">{{ item.balda }}</td>
+                                <td class="center">
+                                    <span v-if="item.veces_no > 0" class="cronicos-badge no">{{ item.veces_no }}</span>
+                                    <span v-else style="color:#ccc;">—</span>
+                                </td>
+                                <td class="center">
+                                    <span v-if="item.veces_elaborar > 0" class="cronicos-badge elaborar">{{ item.veces_elaborar }}</span>
+                                    <span v-else style="color:#ccc;">—</span>
+                                </td>
+                                <td class="center">
+                                    <span v-if="item.veces_descongelar > 0" class="cronicos-badge descongelar">{{ item.veces_descongelar }}</span>
+                                    <span v-else style="color:#ccc;">—</span>
+                                </td>
+                                <td class="center">
+                                    <span :style="{ fontWeight:'700', color: getCronicoColor(item.veces_total) }">
+                                        {{ item.veces_total }}
+                                    </span>
+                                </td>
+                                <td class="center" style="font-size:0.75rem;color:#7a726a;">
+                                    {{ formatFechaSnap(item.ultimo_fallo) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:0.8rem;display:flex;gap:1rem;flex-wrap:wrap;font-size:0.7rem;color:#7a726a;">
+                    <span>🔴 Crítico (≥7)</span>
+                    <span>🟠 Recurrente (4-6)</span>
+                    <span>🟡 Ocasional (3)</span>
+                </div>
+            </div>
+
+            <div v-else-if="!cronicosCargando" style="padding:1rem 2rem;text-align:center;color:#7a726a;background:white;border-radius:16px;margin-bottom:1rem;font-size:0.85rem;">
+                📈 Sin items crónicos · Ningún item ha fallado ≥3 veces en 30 días
+            </div>
+
+            <!-- ========== LISTA DE SNAPSHOTS ========== -->
             <div v-if="snapshots.length === 0" style="padding:2rem;text-align:center;color:#7a726a;">
                 <p>📭 No hay snapshots en este rango.</p>
                 <p style="font-size:0.8rem;margin-top:0.5rem;">
@@ -1044,7 +1150,7 @@
         </div>
     </div>
 
-    <!-- ========== MODAL DETALLE SNAPSHOT (C2.1) ========== -->
+    <!-- ========== MODAL DETALLE SNAPSHOT ========== -->
     <div v-if="snapshotModalVisible" class="modal-overlay" @click.self="snapshotModalVisible = false">
         <div class="modal">
             <div class="modal-header">
@@ -1247,6 +1353,10 @@ const CARTA_ACTUAL = 'carta_actual';
             snapshotsRango: '30',
             snapshotDetalle: null,
             snapshotModalVisible: false,
+            // Crónicos (C2.2)
+            cronicos: [],
+            cronicosTurno: '',
+            cronicosCargando: false,
         },
         computed: {
             syncStatusText() {
@@ -1827,6 +1937,99 @@ const CARTA_ACTUAL = 'carta_actual';
                 this.snapshotDetalle = snap;
                 this.snapshotModalVisible = true;
             },
+
+            // ============================================================
+            // C2.2 — ITEMS CRÓNICOS
+            // ============================================================
+            async recargarSnapshotsYCronicos() {
+                await this.cargarSnapshots();
+                await this.cargarCronicos();
+            },
+
+            async cargarCronicos() {
+                this.cronicosCargando = true;
+                try {
+                    if (this.cronicosTurno) {
+                        // Filtrado por turno: recalculamos desde snapshots del turno
+                        this.cronicos = await this.calcularCronicosPorTurno(this.cronicosTurno);
+                    } else {
+                        // Sin filtro: usamos la vista SQL
+                        const { data, error } = await this.supabase
+                            .from('v_items_cronicos')
+                            .select('*')
+                            .order('veces_total', { ascending: false })
+                            .order('ultimo_fallo', { ascending: false });
+
+                        if (error) throw error;
+                        this.cronicos = data || [];
+                    }
+                } catch (e) {
+                    console.error('Error cargando crónicos:', e);
+                    this.cronicos = [];
+                } finally {
+                    this.cronicosCargando = false;
+                }
+            },
+
+            async calcularCronicosPorTurno(turno) {
+                try {
+                    const desde = new Date();
+                    desde.setDate(desde.getDate() - 30);
+                    const desdeStr = desde.toISOString().split('T')[0];
+
+                    const { data, error } = await this.supabase
+                        .from('mise_snapshots')
+                        .select('fecha, faltantes, turno')
+                        .eq('turno', turno)
+                        .gte('fecha', desdeStr);
+
+                    if (error) throw error;
+
+                    const mapa = new Map();
+                    for (const snap of (data || [])) {
+                        for (const f of (snap.faltantes || [])) {
+                            const key = `${f.nombre}|${f.balda}`;
+                            if (!mapa.has(key)) {
+                                mapa.set(key, {
+                                    nombre: f.nombre,
+                                    balda: f.balda,
+                                    veces_no: 0,
+                                    veces_elaborar: 0,
+                                    veces_descongelar: 0,
+                                    veces_total: 0,
+                                    ultimo_fallo: snap.fecha,
+                                    dias_distintos: 0
+                                });
+                            }
+                            const item = mapa.get(key);
+                            item.veces_total++;
+                            if (f.status === 'no') item.veces_no++;
+                            else if (f.status === 'elaborar') item.veces_elaborar++;
+                            else if (f.status === 'descongelar') item.veces_descongelar++;
+                            if (snap.fecha > item.ultimo_fallo) item.ultimo_fallo = snap.fecha;
+                        }
+                    }
+
+                    return Array.from(mapa.values())
+                        .filter(it => it.veces_total >= 3)
+                        .sort((a, b) => b.veces_total - a.veces_total);
+                } catch (e) {
+                    console.error('Error calculando crónicos por turno:', e);
+                    return [];
+                }
+            },
+
+            getCronicoColor(total) {
+                if (total >= 7) return '#b13e3e';
+                if (total >= 4) return '#c97d2b';
+                return '#a1a1aa';
+            },
+
+            getCronicoFondo(total) {
+                if (total >= 7) return '#fdf2f2';
+                if (total >= 4) return '#fff8f0';
+                return 'transparent';
+            },
         },
         async mounted() {
             try {
@@ -1838,6 +2041,7 @@ const CARTA_ACTUAL = 'carta_actual';
             }
             await this.recargarTodo();
             await this.cargarSnapshots();
+            await this.cargarCronicos();
 
             setInterval(() => {
                 if (this.syncStatus !== 'syncing' && this.tab === 'supervision') {
