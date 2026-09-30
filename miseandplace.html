@@ -393,6 +393,18 @@
             font-size: 0.8rem;
         }
         .btn-warning:hover { background: #a86420; }
+        .btn-success {
+            background: #1e7e34;
+            border: none;
+            padding: 0.4rem 1.2rem;
+            border-radius: 60px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-success:hover { background: #15662a; }
+        .btn-success:disabled { opacity: 0.6; cursor: not-allowed; }
         .registro {
             background: #f0ebe5;
             padding: 0.4rem 1rem;
@@ -782,6 +794,9 @@
                 </div>
                 <div class="toolbar">
                     <button class="btn-primary" @click="tab = 'accion'">📊 Ver listas</button>
+                    <button class="btn-success" @click="cerrarRonda" :disabled="cerrandoSala">
+                        {{ cerrandoSala ? '⏳ Cerrando...' : '✅ Cerrar ronda' }}
+                    </button>
                     <button class="btn-warning" @click="reiniciarRevision">🔄 Reiniciar revisión de hoy</button>
                 </div>
             </div>
@@ -1051,6 +1066,7 @@ const CARTA_ACTUAL = 'carta_actual';
             etiquetaItemActual: null,
             historialProduccion: {},
             historialProduccionList: [],
+            cerrandoSala: false,
         },
         computed: {
             syncStatusText() {
@@ -1177,7 +1193,6 @@ const CARTA_ACTUAL = 'carta_actual';
                         item_orden: item.item_orden,
                         balda_orden: item.balda_orden,
                         balda: balda,
-                        // 🔥 Campos de ficha vienen del catálogo directamente
                         tipo_ficha: item.tipo_ficha || 'simple',
                         peso: item.peso || null,
                         tiempo: item.tiempo || null,
@@ -1185,7 +1200,6 @@ const CARTA_ACTUAL = 'carta_actual';
                         ingredientes: item.ingredientes || [],
                         elaboracion: item.elaboracion || null,
                         notas: item.notas || null,
-                        // Estado de la revisión
                         status: this.revisionHoy[item.id]?.status || null,
                         hecho: this.revisionHoy[item.id]?.hecho || false,
                         cantidad: this.revisionHoy[item.id]?.cantidad || 1,
@@ -1351,7 +1365,89 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            // 🔥 Ahora la ficha viene directamente del item (fusionada en shelfItems)
+            // ============================================================
+            // C2.1 — CERRAR RONDA (SNAPSHOT)
+            // ============================================================
+            async cerrarRonda() {
+                if (!this.cocinero) {
+                    this.showToast('⚠️ Pon tu nombre antes de cerrar la ronda', 'error');
+                    return;
+                }
+                if (this.totalItems === 0) {
+                    this.showToast('⚠️ No hay items en el catálogo', 'error');
+                    return;
+                }
+
+                let marcados = 0;
+                let faltantes = [];
+                for (const [balda, items] of Object.entries(this.shelfItems)) {
+                    for (const item of items) {
+                        if (item.bold) continue;
+                        if (item.status) marcados++;
+                        if (item.status === 'no' || item.status === 'elaborar' || item.status === 'descongelar') {
+                            faltantes.push({
+                                catalogo_id: item.catalogo_id,
+                                nombre: item.name,
+                                balda: balda,
+                                status: item.status,
+                                notas: item.notas || null
+                            });
+                        }
+                    }
+                }
+
+                const sinRevisar = this.totalItems - marcados;
+                if (sinRevisar > 0) {
+                    const ok = confirm(
+                        `⚠️ Quedan ${sinRevisar} items sin revisar.\n\n` +
+                        `¿Cerrar la ronda igualmente?`
+                    );
+                    if (!ok) return;
+                }
+
+                const ok2 = confirm(
+                    `✅ Cerrar ronda\n\n` +
+                    `📅 Fecha: ${this.fechaHoy}\n` +
+                    `🌗 Turno: ${this.turno === 'mediodia' ? '☀️ Mediodía' : '🌙 Noche'}\n` +
+                    `👨‍🍳 Cocinero: ${this.cocinero}\n` +
+                    `📦 Items totales: ${this.totalItems}\n` +
+                    `✅ Marcados: ${marcados}\n` +
+                    `❌ Faltantes: ${faltantes.length}\n\n` +
+                    `¿Guardar snapshot?`
+                );
+                if (!ok2) return;
+
+                this.cerrandoSala = true;
+                try {
+                    const payload = {
+                        fecha: this.fechaHoy,
+                        turno: this.turno,
+                        cocinero: this.cocinero,
+                        carta: CARTA_ACTUAL,
+                        items_totales: this.totalItems,
+                        items_faltantes: faltantes.length,
+                        faltantes: faltantes,
+                        created_at: new Date().toISOString()
+                    };
+
+                    const { error } = await this.supabase
+                        .from('mise_snapshots')
+                        .upsert(payload, { onConflict: 'fecha,turno' });
+
+                    if (error) throw error;
+
+                    this.showToast(
+                        `✅ Ronda cerrada · ${faltantes.length} faltante${faltantes.length === 1 ? '' : 's'}`,
+                        'success'
+                    );
+                } catch (e) {
+                    console.error('Error cerrando ronda:', e);
+                    this.showToast('❌ Error al cerrar ronda', 'error');
+                } finally {
+                    this.cerrandoSala = false;
+                }
+            },
+
             openFicha(item) {
                 if (item.bold) return;
                 this.fichaActual = {
