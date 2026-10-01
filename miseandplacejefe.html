@@ -710,6 +710,71 @@
         .cronicos-badge.elaborar { background: #f7e3d4; color: #914d2a; }
         .cronicos-badge.descongelar { background: #dbe6ee; color: #2b6f8a; }
 
+        /* ========== C2.4 — NUEVOS ESTILOS ========== */
+        .tendencia-card {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+        }
+        .tendencia-valor {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .tendencia-valor.up { color: #b13e3e; }
+        .tendencia-valor.down { color: #1e7e34; }
+        .tendencia-valor.neutral { color: #7a726a; }
+        .tendencia-detalle {
+            font-size: 0.85rem;
+            color: #475569;
+        }
+        .tendencia-sub {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 0.2rem;
+        }
+        .balda-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #f0ebe5;
+            font-size: 0.85rem;
+        }
+        .balda-row:last-child { border-bottom: none; }
+        .balda-nombre {
+            flex: 1;
+            min-width: 0;
+            word-break: break-word;
+            font-weight: 500;
+        }
+        .balda-bar-wrap {
+            flex: 1.5;
+            height: 14px;
+            background: #f0ebe5;
+            border-radius: 7px;
+            overflow: hidden;
+            min-width: 80px;
+        }
+        .balda-bar {
+            height: 100%;
+            border-radius: 7px;
+            transition: width 0.4s ease;
+        }
+        .balda-pct {
+            font-weight: 700;
+            font-size: 0.8rem;
+            min-width: 45px;
+            text-align: right;
+        }
+        .balda-count {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            min-width: 50px;
+            text-align: right;
+        }
+
         @media (max-width: 700px) {
             .app { padding: 0; }
             .header { padding: 1rem; }
@@ -722,6 +787,8 @@
             .tab-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
             .cronicos-table { font-size: 0.75rem; }
             .cronicos-table th, .cronicos-table td { padding: 0.3rem 0.2rem; }
+            .balda-bar-wrap { min-width: 50px; }
+            .balda-count { display: none; }
         }
     </style>
 </head>
@@ -950,7 +1017,7 @@
             </div>
         </div>
 
-        <!-- ========== SNAPSHOTS + CRÓNICOS ========== -->
+        <!-- ========== SNAPSHOTS + CRÓNICOS + C2.4 ========== -->
         <div class="tab-content" :class="{ active: tab === 'snapshots' }">
             <div class="filters-bar">
                 <label>📅 Rango:</label>
@@ -971,7 +1038,47 @@
                 </span>
             </div>
 
-            <!-- ========== ITEMS CRÓNICOS ========== -->
+            <!-- ========== C2.4 — TENDENCIA ========== -->
+            <div v-if="tendencia && tendencia.hayDatos" class="panel-card" style="margin-bottom:1.2rem;">
+                <h3>
+                    📈 Tendencia
+                    <span class="badge">últimos 7d vs 7d anteriores</span>
+                </h3>
+                <div class="tendencia-card">
+                    <div class="tendencia-valor" :class="tendencia.direccion">
+                        {{ tendencia.flecha }} {{ tendencia.pctAbs }}%
+                    </div>
+                    <div>
+                        <div class="tendencia-detalle">
+                            <strong>{{ tendencia.faltasRecientes }}</strong> faltas últimos 7 días
+                            vs <strong>{{ tendencia.faltasAnteriores }}</strong> en los 7 anteriores
+                        </div>
+                        <div class="tendencia-sub">
+                            {{ tendencia.mensaje }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== C2.4 — FALTAS POR BALDA ========== -->
+            <div v-if="faltasPorBalda.length > 0" class="panel-card" style="margin-bottom:1.2rem;">
+                <h3>
+                    📊 Faltas por balda
+                    <span class="badge">{{ snapshots.length }} snapshots</span>
+                </h3>
+                <div>
+                    <div v-for="(b, i) in faltasPorBalda" :key="i" class="balda-row">
+                        <span class="balda-nombre">{{ b.balda }}</span>
+                        <div class="balda-bar-wrap">
+                            <div class="balda-bar" :style="{ width: b.pct + '%', background: getBaldaColor(b.pct) }"></div>
+                        </div>
+                        <span class="balda-pct" :style="{ color: getBaldaColor(b.pct) }">{{ b.pct }}%</span>
+                        <span class="balda-count">{{ b.faltas }}/{{ b.total }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== ITEMS CRÓNICOS (C2.2) ========== -->
             <div v-if="cronicos.length > 0" class="panel-card" style="margin-bottom:1.2rem;">
                 <h3>
                     📈 Items crónicos
@@ -1035,7 +1142,7 @@
                 </div>
             </div>
 
-            <div v-else-if="!cronicosCargando" style="padding:1rem 2rem;text-align:center;color:#7a726a;background:white;border-radius:16px;margin-bottom:1rem;font-size:0.85rem;">
+            <div v-else-if="!cronicosCargando && snapshots.length > 0" style="padding:1rem 2rem;text-align:center;color:#7a726a;background:white;border-radius:16px;margin-bottom:1rem;font-size:0.85rem;">
                 📈 Sin items crónicos · Ningún item ha fallado ≥3 veces en 30 días
             </div>
 
@@ -1400,7 +1507,144 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
                 lista.sort((a, b) => a.item_nombre.localeCompare(b.item_nombre));
                 return lista;
-            }
+            },
+
+            // ============================================================
+            // C2.4 — TENDENCIA (7d vs 7d anteriores)
+            // ============================================================
+            tendencia() {
+                if (!this.snapshots || this.snapshots.length === 0) {
+                    return { hayDatos: false };
+                }
+                const hoy = new Date();
+                hoy.setHours(0,0,0,0);
+                const hace7 = new Date(hoy);
+                hace7.setDate(hace7.getDate() - 7);
+                const hace14 = new Date(hoy);
+                hace14.setDate(hace14.getDate() - 14);
+
+                let faltasRecientes = 0;
+                let faltasAnteriores = 0;
+                let snapRecientes = 0;
+                let snapAnteriores = 0;
+
+                for (const s of this.snapshots) {
+                    const f = new Date(s.fecha + 'T00:00:00');
+                    const faltas = parseInt(s.items_faltantes) || 0;
+                    if (f >= hace7 && f <= hoy) {
+                        faltasRecientes += faltas;
+                        snapRecientes++;
+                    } else if (f >= hace14 && f < hace7) {
+                        faltasAnteriores += faltas;
+                        snapAnteriores++;
+                    }
+                }
+
+                if (snapRecientes === 0 && snapAnteriores === 0) {
+                    return { hayDatos: false };
+                }
+
+                // Normalizar por número de snapshots para comparar manzanas con manzanas
+                const promRecientes = snapRecientes > 0 ? faltasRecientes / snapRecientes : 0;
+                const promAnteriores = snapAnteriores > 0 ? faltasAnteriores / snapAnteriores : 0;
+
+                let pct = 0;
+                let direccion = 'neutral';
+                let flecha = '→';
+                let mensaje = 'Sin cambios significativos';
+
+                if (promAnteriores === 0 && promRecientes > 0) {
+                    pct = 100;
+                    direccion = 'up';
+                    flecha = '↑';
+                    mensaje = '🔴 Empeorando (antes no había faltas)';
+                } else if (promAnteriores > 0) {
+                    const diff = ((promRecientes - promAnteriores) / promAnteriores) * 100;
+                    pct = Math.abs(diff).toFixed(0);
+                    if (diff > 5) {
+                        direccion = 'up';
+                        flecha = '↑';
+                        mensaje = '🔴 Empeorando respecto a la semana anterior';
+                    } else if (diff < -5) {
+                        direccion = 'down';
+                        flecha = '↓';
+                        mensaje = '🟢 Mejorando respecto a la semana anterior';
+                    } else {
+                        direccion = 'neutral';
+                        flecha = '→';
+                        mensaje = '⚪ Estable respecto a la semana anterior';
+                    }
+                }
+
+                return {
+                    hayDatos: true,
+                    pctAbs: pct,
+                    direccion,
+                    flecha,
+                    mensaje,
+                    faltasRecientes: faltasRecientes.toFixed(0),
+                    faltasAnteriores: faltasAnteriores.toFixed(0),
+                    snapRecientes,
+                    snapAnteriores
+                };
+            },
+
+            // ============================================================
+            // C2.4 — FALTAS POR BALDA (% promedio sobre snapshots)
+            // ============================================================
+            faltasPorBalda() {
+                if (!this.snapshots || this.snapshots.length === 0) return [];
+                if (!this.catalogo || Object.keys(this.catalogo).length === 0) return [];
+
+                // Total de items activos por balda (del catálogo actual)
+                const totalPorBalda = {};
+                for (const [balda, items] of Object.entries(this.catalogo)) {
+                    totalPorBalda[balda] = items.filter(it => !it.item_bold).length;
+                }
+
+                // Acumular faltas por balda a lo largo de todos los snapshots
+                const faltasPorBalda = {};   // balda → total faltas
+                let snapshotsConDatos = 0;
+
+                for (const snap of this.snapshots) {
+                    const faltantes = snap.faltantes || [];
+                    if (faltantes.length === 0 && parseInt(snap.items_faltantes) === 0) {
+                        // Snapshot sin faltas: cuenta igual para el denominador
+                    }
+                    snapshotsConDatos++;
+
+                    const porBalda = {};
+                    for (const f of faltantes) {
+                        const b = f.balda || 'Sin balda';
+                        porBalda[b] = (porBalda[b] || 0) + 1;
+                    }
+                    for (const [b, n] of Object.entries(porBalda)) {
+                        faltasPorBalda[b] = (faltasPorBalda[b] || 0) + n;
+                    }
+                }
+
+                if (snapshotsConDatos === 0) return [];
+
+                // Calcular % por balda
+                // % = (faltas totales de la balda en todos los snapshots) / (items totales balda × snapshots)
+                const resultado = [];
+                for (const [balda, totalItems] of Object.entries(totalPorBalda)) {
+                    if (totalItems === 0) continue;
+                    const faltas = faltasPorBalda[balda] || 0;
+                    const pct = (faltas / (totalItems * snapshotsConDatos)) * 100;
+                    resultado.push({
+                        balda,
+                        faltas,
+                        total: totalItems,
+                        pct: pct.toFixed(1)
+                    });
+                }
+
+                // Ordenar por % descendente y filtrar las que tienen 0
+                return resultado
+                    .filter(r => parseFloat(r.pct) > 0)
+                    .sort((a, b) => parseFloat(b.pct) - parseFloat(a.pct));
+            },
         },
         methods: {
             showToast(message, type = 'success') {
@@ -1950,10 +2194,8 @@ const CARTA_ACTUAL = 'carta_actual';
                 this.cronicosCargando = true;
                 try {
                     if (this.cronicosTurno) {
-                        // Filtrado por turno: recalculamos desde snapshots del turno
                         this.cronicos = await this.calcularCronicosPorTurno(this.cronicosTurno);
                     } else {
-                        // Sin filtro: usamos la vista SQL
                         const { data, error } = await this.supabase
                             .from('v_items_cronicos')
                             .select('*')
@@ -2029,6 +2271,17 @@ const CARTA_ACTUAL = 'carta_actual';
                 if (total >= 7) return '#fdf2f2';
                 if (total >= 4) return '#fff8f0';
                 return 'transparent';
+            },
+
+            // ============================================================
+            // C2.4 — COLORES DE BARRAS
+            // ============================================================
+            getBaldaColor(pct) {
+                const p = parseFloat(pct);
+                if (p >= 30) return '#b13e3e';
+                if (p >= 15) return '#c97d2b';
+                if (p >= 5)  return '#eab308';
+                return '#94a3b8';
             },
         },
         async mounted() {
