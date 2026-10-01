@@ -81,7 +81,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.0</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.1</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -103,7 +103,6 @@
                     <span>📝</span> Control de Faltas Diarias
                 </h2>
                 <div class="flex gap-2 items-center">
-                    <!-- 🆕 INPUT CON COMBOBOX ESTRICTO -->
                     <div class="flex-1 relative">
                         <input type="text" 
                                id="insumo-falta" 
@@ -475,11 +474,9 @@
                 return;
             }
 
-            // 🆕 Validar que se ha seleccionado un producto del combobox
             const seleccionado = input.fredwareGetSeleccionado ? input.fredwareGetSeleccionado() : null;
 
             if (!seleccionado) {
-                // Intentar matchear automáticamente con la función de Supabase
                 try {
                     const matchId = await fredware.productos.buscar(valor);
                     
@@ -543,7 +540,6 @@
                 return;
             }
 
-            // 🆕 Si hay selección → usar el nombre exacto del producto
             const nombreExacto = seleccionado.nombre_articulo;
 
             try {
@@ -566,7 +562,6 @@
             }
         }
 
-        // 🆕 Función auxiliar: modal de creación de producto
         async function abrirModalCrearProductoDesdeFalta(nombrePropuesto) {
             const nuevo = await fredware.productos.mostrarModalCrearProducto(nombrePropuesto);
             if (nuevo) {
@@ -1535,6 +1530,10 @@
                     });
                     document.getElementById('dir-producto')?.focus();
                 },
+                // ═══════════════════════════════════════════════════════════
+                // 🔥 FIX: preConfirm corregido — guarda el producto en variable
+                //    en lugar de leerlo del DOM después de crear uno nuevo
+                // ═══════════════════════════════════════════════════════════
                 preConfirm: async () => {
                     const productoInput = document.getElementById('dir-producto');
                     const producto = productoInput.value.trim().toUpperCase();
@@ -1543,6 +1542,10 @@
                         Swal.showValidationMessage('⚠️ El nombre del producto es obligatorio');
                         return false;
                     }
+
+                    // Variable que guardará el nombre definitivo del producto.
+                    // Ya no dependemos de leer el input tras crear el producto.
+                    let productoFinal = producto;
 
                     // 🔥 MATCHEO INTELIGENTE
                     try {
@@ -1554,6 +1557,7 @@
                             if (productoEncontrado) {
                                 if (productoEncontrado.nombre_articulo.toUpperCase() === producto) {
                                     console.log('✅ [EntradaDirecta] Coincidencia exacta:', producto);
+                                    productoFinal = productoEncontrado.nombre_articulo;
                                 } else {
                                     const conf = await Swal.fire({
                                         title: '🔍 ¿Querías decir...?',
@@ -1570,11 +1574,13 @@
                                     });
                                     
                                     if (conf.isConfirmed) {
-                                        productoInput.value = productoEncontrado.nombre_articulo;
+                                        productoFinal = productoEncontrado.nombre_articulo;
                                     } else {
                                         const nuevo = await fredware.productos.mostrarModalCrearProducto(producto);
-                                        if (nuevo) {
-                                            productoInput.value = nuevo.nombre;
+                                        if (nuevo && nuevo.nombre) {
+                                            productoFinal = nuevo.nombre;
+                                            // Refrescar catálogo en memoria para que esté disponible ya
+                                            await fredware.productos.cargar();
                                         } else {
                                             return false;
                                         }
@@ -1595,8 +1601,10 @@
                             
                             if (conf.isConfirmed) {
                                 const nuevo = await fredware.productos.mostrarModalCrearProducto(producto);
-                                if (nuevo) {
-                                    productoInput.value = nuevo.nombre;
+                                if (nuevo && nuevo.nombre) {
+                                    productoFinal = nuevo.nombre;
+                                    // Refrescar catálogo en memoria
+                                    await fredware.productos.cargar();
                                 } else {
                                     return false;
                                 }
@@ -1608,16 +1616,27 @@
                         console.error('Error validando producto en entrada directa:', error);
                     }
 
+                    // 🔥 Leer el resto del formulario desde el contenedor del modal
+                    // (Swal.getHtmlContainer devuelve el contenedor del modal activo)
+                    const modal = Swal.getHtmlContainer();
+                    const getVal = (id, fallback) => {
+                        const el = modal?.querySelector('#' + id) || document.getElementById(id);
+                        return el ? el.value : fallback;
+                    };
+
                     return {
-                        producto: document.getElementById('dir-producto').value.trim().toUpperCase(),
-                        proveedor: document.getElementById('dir-proveedor').value,
-                        cantidad: parseInt(document.getElementById('dir-cantidad').value) || 1,
-                        unidad: document.getElementById('dir-unidad').value,
-                        conservacion: document.getElementById('dir-conservacion').value,
-                        temperatura: parseFloat(document.getElementById('dir-temperatura').value) || 4.0,
-                        imprimir_etiqueta: document.getElementById('dir-imprimir-etiqueta').checked,
-                        num_etiquetas: parseInt(document.getElementById('dir-num-etiquetas').value) || 1,
-                        observaciones: document.getElementById('dir-observaciones').value.trim()
+                        producto: productoFinal,  // 👈 usamos la variable, NO el input
+                        proveedor: getVal('dir-proveedor', 'S/P'),
+                        cantidad: parseInt(getVal('dir-cantidad', '1')) || 1,
+                        unidad: getVal('dir-unidad', 'KG'),
+                        conservacion: getVal('dir-conservacion', 'NEVERA'),
+                        temperatura: parseFloat(getVal('dir-temperatura', '4.0')) || 4.0,
+                        imprimir_etiqueta: (() => {
+                            const el = modal?.querySelector('#dir-imprimir-etiqueta') || document.getElementById('dir-imprimir-etiqueta');
+                            return el ? el.checked : true;
+                        })(),
+                        num_etiquetas: parseInt(getVal('dir-num-etiquetas', '1')) || 1,
+                        observaciones: getVal('dir-observaciones', '')
                     }
                 }
             });
@@ -2134,7 +2153,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Faltas v17] Init — esperando al núcleo...');
+            console.log('🚀 [Faltas v17.1] Init — esperando al núcleo...');
 
             suscribirseCambios();
             await esperarAlNucleo();
@@ -2142,7 +2161,6 @@
             await cargarDatosIniciales();
             cargaInicialCompletada = true;
 
-            // CARGAR PRODUCTOS Y MONTAR COMBOBOX ESTRICTO
             try {
                 await fredware.productos.cargar();
                 console.log('✅ [Faltas] Productos cargados para el combobox');
@@ -2164,7 +2182,6 @@
             setInterval(actualizarContadorEtiquetas, 30000);
         }
 
-        // Exponer funciones globales
         window.registrarFaltaCocina = registrarFaltaCocina;
         window.borrarFaltaLocal = borrarFaltaLocal;
         window.abrirEntradaDirecta = abrirEntradaDirecta;
