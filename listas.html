@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,7 +7,7 @@
     <title>👨‍🍳 Fredware - Hojas de Pedido Dinámicas</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 🔥 NÚCLEO UNIFICADO v2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="shared-core.js"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; }
@@ -39,6 +40,10 @@
         .btn-q { background: #e2e8f0; color: #475569; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; }
         .btn-q:hover { background: #cbd5e1; }
         .btn-q:active { transform: scale(0.95); }
+
+        .btn-urgente { background: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+        .btn-urgente:hover { background: #b91c1c; transform: scale(1.02); }
+        .btn-urgente:active { transform: scale(0.96); }
 
         .btn-eliminar { background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: all 0.2s; opacity: 0.4; }
         .btn-eliminar:hover { background: #fef2f2; opacity: 1; transform: scale(1.1); }
@@ -160,7 +165,7 @@
 
     <script>
         // ============================================================
-        // CONFIGURACIÓN — usa el núcleo unificado v2
+        // CONFIGURACIÓN — usa el núcleo unificado v3
         // ============================================================
         const db_nube = window.fredware.supabase;
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
@@ -168,11 +173,11 @@
         // Estado
         let proveedorActivo = null;
         let proveedorNombre = null;
-        let articulosCargados = [];       // artículos de articulos_habituales
-        let faltasCargadas = [];          // faltas del proveedor activo
-        let articulosFiltrados = [];      // artículos visibles (habituales + faltas)
-        let seleccion = {};               // { 'habitual_ID': cant, 'falta_ID': cant }
+        let articulosCargados = [];
+        let faltasCargadas = [];
+        let seleccion = {};
         let textoBusqueda = '';
+        let proveedoresCache = [];
 
         // ============================================================
         // ALIAS A UTILIDADES DEL NÚCLEO
@@ -185,9 +190,6 @@
             return window.fredware.util.escapeHtml(text);
         }
 
-        // ============================================================
-        // LIMPIAR SUFIJOS DE FALTAS
-        // ============================================================
         function limpiarSufijosInsumo(texto) {
             if (!texto) return '';
             return texto
@@ -203,19 +205,14 @@
         window.fredware.subscribe((state) => {
             console.log('📡 [Listas] Estado del núcleo:', {
                 recepciones: state.recepciones?.length,
-                escandallos: state.escandallos?.length,
                 inicializado: state.inicializado
             });
         });
 
-        // ============================================================
-        // ESPERAR AL NÚCLEO
-        // ============================================================
         async function esperarAlNucleo() {
             const MAX_INTENTOS = 30;
             for (let i = 0; i < MAX_INTENTOS; i++) {
                 if (window.fredware && window.fredware.state && window.fredware.state.inicializado) {
-                    console.log(`✅ [Listas] Núcleo listo tras ${i + 1}s`);
                     return true;
                 }
                 await new Promise(r => setTimeout(r, 1000));
@@ -231,9 +228,6 @@
             }
         }
 
-        // ============================================================
-        // GENERADORES
-        // ============================================================
         function generarIdUnico() {
             return "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
         }
@@ -245,13 +239,8 @@
             return manana.toISOString().split('T')[0];
         }
 
-        function formatearFecha(fechaStr) {
-            if (!fechaStr) return 'S/F';
-            try {
-                const d = new Date(fechaStr);
-                if (isNaN(d)) return fechaStr;
-                return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            } catch { return fechaStr; }
+        function calcularFechaHoy() {
+            return new Date().toISOString().split('T')[0];
         }
 
         // ============================================================
@@ -268,19 +257,15 @@
                     .order('nombre', { ascending: true });
 
                 if (errProv) throw errProv;
+                proveedoresCache = proveedores || [];
 
-                const { data: articulos, error: errArt } = await db_nube
+                const { data: articulos } = await db_nube
                     .from('articulos_habituales')
                     .select('proveedor_id');
 
-                if (errArt) throw errArt;
-
-                // 🆕 Contar faltas por proveedor
-                const { data: faltas, error: errFaltas } = await db_nube
+                const { data: faltas } = await db_nube
                     .from('faltas_cocina')
                     .select('proveedor_id');
-
-                if (errFaltas) console.warn('Error leyendo faltas:', errFaltas);
 
                 const contadores = {};
                 (articulos || []).forEach(a => {
@@ -323,7 +308,7 @@
         }
 
         // ============================================================
-        // CARGAR HOJA DE UN PROVEEDOR (con faltas integradas)
+        // CARGAR HOJA DE UN PROVEEDOR
         // ============================================================
         async function cargarHojaInteractiva(provId, provNombre) {
             proveedorActivo = provId;
@@ -343,7 +328,6 @@
             contenedor.innerHTML = '<div class="text-center italic text-slate-400 text-sm py-12">⏳ Descargando artículos y faltas...</div>';
 
             try {
-                // 🔥 Cargar artículos habituales + faltas en paralelo
                 const [resArt, resFaltas] = await Promise.all([
                     db_nube
                         .from('articulos_habituales')
@@ -358,7 +342,6 @@
                 ]);
 
                 if (resArt.error) throw resArt.error;
-                if (resFaltas.error) console.warn('Error faltas:', resFaltas.error);
 
                 articulosCargados = resArt.data || [];
                 faltasCargadas = resFaltas.data || [];
@@ -376,7 +359,6 @@
                 document.getElementById('btn-add-articulo').classList.remove('hidden');
                 document.getElementById('contenedor-buscador').classList.remove('hidden');
 
-                // Limpiar selección previa de artículos que ya no existen
                 Object.keys(seleccion).forEach(k => {
                     if (k.startsWith('habitual_')) {
                         const id = k.replace('habitual_', '');
@@ -391,11 +373,11 @@
                     }
                 });
 
-                // 🆕 Preseleccionar las faltas automáticamente
+                // Preseleccionar faltas
                 faltasCargadas.forEach(f => {
                     const key = `falta_${f.id}`;
                     if (seleccion[key] === undefined) {
-                        seleccion[key] = 1; // cantidad por defecto 1
+                        seleccion[key] = 1;
                     }
                 });
 
@@ -409,16 +391,14 @@
         }
 
         // ============================================================
-        // RENDERIZAR ARTÍCULOS + FALTAS (con filtro)
+        // RENDERIZAR ARTÍCULOS + FALTAS
         // ============================================================
         function renderIngredientes() {
             const container = document.getElementById('contenedor-ingredientes');
             container.innerHTML = '';
 
-            // 🆕 Construir array unificado
             const itemsUnificados = [];
 
-            // Faltas (van primero, son más urgentes)
             faltasCargadas.forEach(f => {
                 const insumoLimpio = limpiarSufijosInsumo(f.insumo);
                 if (textoBusqueda && !insumoLimpio.toLowerCase().includes(textoBusqueda)) return;
@@ -428,7 +408,6 @@
                     id: f.id,
                     key: `falta_${f.id}`,
                     nombre: insumoLimpio,
-                    unidad: 'UNIDADES',
                     unidadOriginal: f.unidad_defecto || 'UNIDADES',
                     veces_pedido: 0,
                     cantidad_habitual: 1,
@@ -436,7 +415,6 @@
                 });
             });
 
-            // Artículos habituales
             articulosCargados.forEach(a => {
                 if (textoBusqueda && !a.nombre_articulo.toLowerCase().includes(textoBusqueda)) return;
 
@@ -445,7 +423,6 @@
                     id: a.id,
                     key: `habitual_${a.id}`,
                     nombre: a.nombre_articulo,
-                    unidad: a.unidad_defecto,
                     unidadOriginal: a.unidad_defecto,
                     veces_pedido: a.veces_pedido || 0,
                     cantidad_habitual: a.cantidad_habitual || 1,
@@ -462,7 +439,6 @@
                 return;
             }
 
-            // 🆕 Orden: primero faltas (reincidentes primero), luego habituales
             itemsUnificados.sort((a, b) => {
                 if (a.tipo !== b.tipo) return a.tipo === 'falta' ? -1 : 1;
                 if (a.tipo === 'falta') {
@@ -504,6 +480,9 @@
 
                 const colorNombre = esFalta ? (esReincidente ? '#dc2626' : '#92400e') : '#1e293b';
 
+                // 🆕 Botón URGENTE en todas las líneas
+                const btnUrgente = `<button class="btn-urgente" onclick="abrirModalUrgente('${key}')" title="Pedir a otro proveedor urgente">⚡ URGENTE</button>`;
+
                 container.innerHTML += `
                     <div class="${rowClass}" data-key="${key}" data-nombre="${escapeHtml(item.nombre).toLowerCase()}">
                         <input type="checkbox" class="art-check" ${seleccionado ? 'checked' : ''} onchange="toggleSeleccion('${key}')">
@@ -514,7 +493,7 @@
                                 ${infoBadge}
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <input type="number" class="art-cant" min="0" step="1"
                                 value="${cantidadActual}"
                                 placeholder="0"
@@ -525,6 +504,7 @@
                                 <button class="btn-q" onclick="cantidadRapida('${key}', 5)">+5</button>
                                 <button class="btn-q" onclick="cantidadRapida('${key}', 10)">+10</button>
                             </div>
+                            ${btnUrgente}
                             ${item.tipo === 'habitual' ? `<button class="btn-eliminar" onclick="eliminarIngrediente(${item.id}, '${escapeHtml(item.nombre).replace(/'/g, "\\'")}')" title="Eliminar artículo">🗑️</button>` : ''}
                         </div>
                     </div>
@@ -533,13 +513,229 @@
         }
 
         // ============================================================
-        // SELECCIÓN Y CANTIDADES (soportan faltas y habituales)
+        // ⚡ BLOQUE C — MODAL URGENTE
+        // ============================================================
+        async function abrirModalUrgente(key) {
+            // Encontrar el item
+            let item = null;
+            let tipoOriginal = null;
+
+            if (key.startsWith('falta_')) {
+                const id = key.replace('falta_', '');
+                const falta = faltasCargadas.find(f => f.id.toString() === id);
+                if (falta) {
+                    item = {
+                        nombre: limpiarSufijosInsumo(falta.insumo),
+                        unidad: 'UNIDADES',
+                        tipo: 'falta',
+                        faltaId: falta.id
+                    };
+                    tipoOriginal = 'falta';
+                }
+            } else if (key.startsWith('habitual_')) {
+                const id = key.replace('habitual_', '');
+                const art = articulosCargados.find(a => a.id.toString() === id);
+                if (art) {
+                    item = {
+                        nombre: art.nombre_articulo,
+                        unidad: art.unidad_defecto,
+                        tipo: 'habitual',
+                        habitualId: art.id
+                    };
+                    tipoOriginal = 'habitual';
+                }
+            }
+
+            if (!item) {
+                lanzarToast('No se encontró el artículo', 'error');
+                return;
+            }
+
+            // Buscar otros proveedores que tengan este artículo
+            let proveedorSugerido = null;
+            try {
+                const { data: otrosProvs } = await db_nube
+                    .from('articulos_habituales')
+                    .select('proveedor_id')
+                    .eq('nombre_articulo', item.nombre);
+
+                if (otrosProvs && otrosProvs.length > 0) {
+                    const candidatos = otrosProvs
+                        .map(o => o.proveedor_id)
+                        .filter(p => p && p !== proveedorActivo);
+                    if (candidatos.length > 0) {
+                        proveedorSugerido = candidatos[0];
+                    }
+                }
+            } catch (e) {
+                console.warn('No se pudo buscar proveedor sugerido:', e);
+            }
+
+            // Construir opciones del dropdown
+            const provsDisponibles = proveedoresCache.filter(p => p.id !== proveedorActivo);
+            let opcionesHTML = '<option value="">— Selecciona proveedor —</option>';
+            provsDisponibles.forEach(p => {
+                const selected = (proveedorSugerido === p.id) ? 'selected' : '';
+                opcionesHTML += `<option value="${escapeHtml(p.id)}" ${selected}>${escapeHtml(p.nombre)}${proveedorSugerido === p.id ? ' ⭐ (sugerido)' : ''}</option>`;
+            });
+
+            const { value: formValues } = await Swal.fire({
+                title: '⚡ Pedido URGENTE',
+                background: '#ffffff',
+                color: '#0f172a',
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                showCancelButton: true,
+                confirmButtonText: '⚡ Pedir urgente',
+                cancelButtonText: 'Cancelar',
+                html: `
+                    <div style="text-align:left; font-size:14px; padding:4px;">
+                        <div style="background:#fef2f2; border-left:4px solid #dc2626; padding:10px 14px; border-radius:8px; margin-bottom:14px;">
+                            <div style="font-size:11px; color:#991b1b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Producto</div>
+                            <div style="font-size:16px; font-weight:900; color:#1e293b; margin-top:2px;">${escapeHtml(item.nombre)}</div>
+                            <div style="font-size:11px; color:#64748b; margin-top:4px;">Proveedor habitual: <strong>${escapeHtml(proveedorNombre)}</strong></div>
+                        </div>
+
+                        <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Proveedor alternativo *</label>
+                        <select id="urg-proveedor" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; background:#f8fafc; font-weight:600;">
+                            ${opcionesHTML}
+                        </select>
+
+                        <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-top:12px; margin-bottom:4px;">Cantidad *</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input id="urg-cantidad" type="number" min="1" value="1" style="width:100px; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; text-align:center; font-weight:700;">
+                            <span style="font-size:13px; color:#64748b;">${escapeHtml(item.unidad)}</span>
+                        </div>
+
+                        <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-top:12px; margin-bottom:4px;">Motivo (opcional)</label>
+                        <input id="urg-motivo" type="text" placeholder="Ej: MAKRO no reparte hasta viernes" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; background:#f8fafc;">
+
+                        <div style="display:flex; align-items:center; gap:8px; margin-top:14px; padding:10px; background:#fef2f2; border-radius:8px;">
+                            <input type="checkbox" id="urg-etiqueta" checked style="width:18px; height:18px; accent-color:#dc2626; cursor:pointer;">
+                            <label for="urg-etiqueta" style="font-size:13px; font-weight:600; color:#991b1b; cursor:pointer;">Marcar como <strong>[URGENTE]</strong> en el WhatsApp</label>
+                        </div>
+
+                        <div style="margin-top:14px; padding:10px; background:#fffbeb; border-radius:8px; font-size:11px; color:#92400e; line-height:1.5;">
+                            ℹ️ La línea se moverá al proveedor alternativo con entrega <strong>HOY</strong>.
+                            ${item.tipo === 'falta' ? 'La falta original se marcará como gestionada.' : ''}
+                        </div>
+                    </div>
+                `,
+                didOpen: () => {
+                    document.getElementById('urg-cantidad')?.focus();
+                },
+                preConfirm: () => {
+                    const provAlt = document.getElementById('urg-proveedor').value;
+                    const cant = parseInt(document.getElementById('urg-cantidad').value) || 0;
+                    const motivo = document.getElementById('urg-motivo').value.trim();
+                    const etiqueta = document.getElementById('urg-etiqueta').checked;
+
+                    if (!provAlt) {
+                        Swal.showValidationMessage('⚠️ Selecciona un proveedor alternativo');
+                        return false;
+                    }
+                    if (cant <= 0) {
+                        Swal.showValidationMessage('⚠️ La cantidad debe ser mayor que 0');
+                        return false;
+                    }
+
+                    return { proveedorAlt: provAlt, cantidad: cant, motivo, etiqueta };
+                }
+            });
+
+            if (!formValues) return;
+
+            // Confirmar
+            const confirm = await Swal.fire({
+                title: '⚡ Confirmar pedido urgente',
+                html: `
+                    <div style="text-align:left; font-size:14px;">
+                        <p><strong>Producto:</strong> ${escapeHtml(item.nombre)}</p>
+                        <p><strong>Proveedor:</strong> ${escapeHtml(proveedorNombre)} → <span style="color:#dc2626;font-weight:700;">${escapeHtml(formValues.proveedorAlt)}</span></p>
+                        <p><strong>Cantidad:</strong> ${formValues.cantidad} ${escapeHtml(item.unidad)}</p>
+                        ${formValues.motivo ? `<p><strong>Motivo:</strong> ${escapeHtml(formValues.motivo)}</p>` : ''}
+                        <p><strong>Entrega:</strong> <span style="color:#dc2626;font-weight:700;">HOY (urgente)</span></p>
+                        ${formValues.etiqueta ? '<p><strong>Etiqueta:</strong> ⚡ [URGENTE]</p>' : ''}
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: '⚡ Confirmar urgente',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            // Ejecutar pedido urgente
+            try {
+                const prefijo = formValues.etiqueta ? '[URGENTE] ' : '';
+                const detalle = `${prefijo}[${formValues.cantidad} ${item.unidad}] ${item.nombre}`;
+
+                // 1) Insertar en cesta_pedidos con proveedor alternativo
+                const nuevoItem = {
+                    id: generarIdUnico(),
+                    detalle: detalle,
+                    proveedor_id: formValues.proveedorAlt,
+                    estado: "PENDIENTE",
+                    fecha_registro: new Date().toISOString(),
+                    fecha_entrega_esperada: calcularFechaHoy() // HOY, no mañana
+                };
+
+                const { error: errInsert } = await db_nube
+                    .from('cesta_pedidos')
+                    .insert([nuevoItem]);
+
+                if (errInsert) throw errInsert;
+
+                // 2) Si era falta → borrar la falta
+                if (item.tipo === 'falta' && item.faltaId) {
+                    const { error: errDelete } = await db_nube
+                        .from('faltas_cocina')
+                        .delete()
+                        .eq('id', item.faltaId);
+
+                    if (errDelete) {
+                        console.warn('No se pudo borrar la falta:', errDelete);
+                    } else {
+                        // Quitar de la selección local
+                        delete seleccion[key];
+                    }
+                }
+
+                // 3) Si era habitual → nada extra (la línea original se queda como está)
+
+                // 4) Mensaje final
+                lanzarToast(`⚡ "${item.nombre}" movida a ${formValues.proveedorAlt} (URGENTE)`, 'success');
+
+                // 5) Recargar todo
+                await cargarProveedoresDesdeSupabase();
+                await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+
+                // 6) Broadcast al núcleo
+                try {
+                    await window.fredware.broadcastEvent('nuevo_pedido_urgente', {
+                        producto: item.nombre,
+                        proveedor_original: proveedorNombre,
+                        proveedor_urgente: formValues.proveedorAlt,
+                        cantidad: formValues.cantidad,
+                        motivo: formValues.motivo
+                    });
+                } catch (e) {}
+
+            } catch (error) {
+                console.error('Error en pedido urgente:', error);
+                lanzarToast('❌ Error al crear pedido urgente: ' + error.message, 'error');
+            }
+        }
+
+        // ============================================================
+        // SELECCIÓN Y CANTIDADES
         // ============================================================
         function toggleSeleccion(key) {
             if (seleccion[key] !== undefined) {
                 delete seleccion[key];
             } else {
-                // Autocompletar con cantidad_habitual si es habitual y tiene histórico
                 if (key.startsWith('habitual_')) {
                     const id = key.replace('habitual_', '');
                     const art = articulosCargados.find(a => a.id.toString() === id);
@@ -604,9 +800,6 @@
             lanzarToast('🧹 Selección limpiada');
         }
 
-        // ============================================================
-        // FOOTER
-        // ============================================================
         function actualizarFooter() {
             const keys = Object.keys(seleccion);
             const numSeleccionados = keys.length;
@@ -623,9 +816,6 @@
             }
         }
 
-        // ============================================================
-        // BUSCADOR (filtra sobre el array unificado)
-        // ============================================================
         function filtrarArticulos() {
             const input = document.getElementById('buscador');
             textoBusqueda = input.value.trim().toLowerCase();
@@ -633,7 +823,7 @@
         }
 
         // ============================================================
-        // AÑADIR ARTÍCULO A LA PLANTILLA
+        // AÑADIR / ELIMINAR ARTÍCULO
         // ============================================================
         function toggleFormNuevoArticulo() {
             const form = document.getElementById('form-nuevo-articulo');
@@ -675,7 +865,6 @@
                 lanzarToast(`✅ "${nombre}" añadido a la plantilla`, 'success');
                 
                 await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
-                
                 document.getElementById('form-nuevo-articulo').classList.add('hidden');
             } catch (error) {
                 console.error('Error añadiendo artículo:', error);
@@ -683,13 +872,8 @@
             }
         }
 
-        // ============================================================
-        // ELIMINAR ARTÍCULO DE LA PLANTILLA
-        // ============================================================
         async function eliminarIngrediente(id, nombre) {
-            if (!confirm(`¿Eliminar "${nombre}" de la plantilla de ${proveedorNombre}?`)) {
-                return;
-            }
+            if (!confirm(`¿Eliminar "${nombre}" de la plantilla de ${proveedorNombre}?`)) return;
 
             try {
                 const { error } = await db_nube
@@ -700,7 +884,6 @@
                 if (error) throw error;
 
                 delete seleccion[`habitual_${id}`];
-
                 lanzarToast(`🗑️ "${nombre}" eliminado`, 'success');
                 await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
             } catch (error) {
@@ -710,7 +893,7 @@
         }
 
         // ============================================================
-        // ENVIAR PEDIDO A COMPRAS (con borrado de faltas)
+        // ENVIAR PEDIDO A COMPRAS
         // ============================================================
         async function enviarPedidoCentral() {
             const keys = Object.keys(seleccion);
@@ -720,9 +903,8 @@
                 return;
             }
 
-            // 🆕 Construir líneas separando habituales de faltas
             const lineasInyectar = [];
-            const faltasAEnviar = []; // ids de faltas para borrar
+            const faltasAEnviar = [];
 
             keys.forEach(key => {
                 const cant = parseFloat(seleccion[key]) || 0;
@@ -801,7 +983,6 @@
 
                 if (errInsert) throw errInsert;
 
-                // 🆕 Borrar las faltas que se han enviado (aunque hubiera duplicados, se consideran gestionadas)
                 if (faltasAEnviar.length > 0) {
                     const { error: errDelete } = await db_nube
                         .from('faltas_cocina')
@@ -810,13 +991,9 @@
 
                     if (errDelete) {
                         console.error('Error borrando faltas:', errDelete);
-                        lanzarToast(`⚠️ ${faltasAEnviar.length} faltas no se pudieron borrar`, 'warning');
-                    } else {
-                        console.log(`✅ ${faltasAEnviar.length} faltas borradas tras enviar pedido`);
                     }
                 }
 
-                // Mensaje según duplicados
                 const mensajeDuplicados = duplicados > 0 ? ` · ⚠️ ${duplicados} ya estaban en cesta` : '';
                 const mensajeFaltas = faltasAEnviar.length > 0 ? ` · 🔔 ${faltasAEnviar.length} faltas gestionadas` : '';
 
@@ -826,35 +1003,20 @@
                     lanzarToast(`🛒 ¡Enviados ${noDuplicados.length} artículos a compras!`, 'success');
                 }
 
-                // Limpiar selección
                 seleccion = {};
                 renderIngredientes();
                 actualizarFooter();
 
-                // Recargar proveedores para actualizar badges de faltas
                 await cargarProveedoresDesdeSupabase();
-
-                // Recargar la hoja actual para reflejar las faltas borradas
                 await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
 
                 try {
                     await window.fredware.broadcastEvent('nuevo_pedido', {
                         proveedor: proveedorActivo,
                         num_articulos: noDuplicados.length,
-                        num_faltas: faltasAEnviar.length,
                         origen: 'LISTAS'
                     });
                 } catch (e) {}
-
-                try {
-                    await fetch(`${API_URL}/api/cesta`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                        body: JSON.stringify(noDuplicados)
-                    });
-                } catch (e) {
-                    console.log("ℹ️ Ngrok no disponible.");
-                }
 
             } catch (error) {
                 console.error('Error enviando pedido:', error);
@@ -871,7 +1033,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function initApp() {
-            console.log('🚀 [Listas v2] Init — esperando al núcleo...');
+            console.log('🚀 [Listas v3 — Bloque C] Init — esperando al núcleo...');
 
             await cargarProveedoresDesdeSupabase();
 
@@ -880,7 +1042,6 @@
             });
         }
 
-        // Exponer funciones globales
         window.cargarProveedoresDesdeSupabase = cargarProveedoresDesdeSupabase;
         window.cargarHojaInteractiva = cargarHojaInteractiva;
         window.toggleSeleccion = toggleSeleccion;
@@ -892,6 +1053,7 @@
         window.agregarIngredienteASupabase = agregarIngredienteASupabase;
         window.eliminarIngrediente = eliminarIngrediente;
         window.enviarPedidoCentral = enviarPedidoCentral;
+        window.abrirModalUrgente = abrirModalUrgente;
 
         initApp();
     </script>
