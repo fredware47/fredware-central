@@ -80,7 +80,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.2</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.3</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -213,6 +213,18 @@
         }
 
         // ============================================================
+        // LIMPIAR SUFIJOS ANTIGUOS
+        // ============================================================
+        function limpiarSufijosInsumo(texto) {
+            if (!texto) return '';
+            return texto
+                .replace(/\s*\(PROVEEDOR NO ENTREGÓ EN REPARTO\)/gi, '')
+                .replace(/\s*\(FALTARON.*?\)/gi, '')
+                .replace(/\s*\(PROVEEDOR NO ENTREGÓ.*?\)/gi, '')
+                .trim();
+        }
+
+        // ============================================================
         // SUSCRIPCIÓN AL NÚCLEO
         // ============================================================
         window.fredware.subscribe((state) => {
@@ -308,9 +320,6 @@
             return data || [];
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // 🔥 BLOQUE A: agregarFalta ahora guarda proveedor_id y catalogo_id
-        // ═══════════════════════════════════════════════════════════
         async function agregarFalta(insumo, productoInfo = null) {
             let proveedorId = 'S/P';
             let catalogoId = null;
@@ -318,7 +327,6 @@
             try {
                 let producto = productoInfo;
                 
-                // Si no hay productoInfo, intentar match por nombre
                 if (!producto) {
                     const matchId = await fredware.productos.buscar(insumo);
                     if (matchId) {
@@ -328,7 +336,6 @@
 
                 if (producto) {
                     proveedorId = producto.proveedor_principal || 'S/P';
-                    // Convertir a número si es posible (catalogo_id es bigint)
                     const idNum = parseInt(producto.id);
                     catalogoId = isNaN(idNum) ? null : idNum;
                 }
@@ -341,7 +348,8 @@
                 .insert({ 
                     insumo: insumo,
                     proveedor_id: proveedorId,
-                    catalogo_id: catalogoId
+                    catalogo_id: catalogoId,
+                    intentos: 0
                 });
             if (error) throw error;
 
@@ -537,7 +545,6 @@
                                     if (input.fredwareReset) input.fredwareReset();
                                     return;
                                 }
-                                // 🔥 BLOQUE A: pasamos el producto del match
                                 await agregarFalta(producto.nombre_articulo, producto);
                                 input.value = '';
                                 if (input.fredwareReset) input.fredwareReset();
@@ -584,7 +591,6 @@
                     return;
                 }
 
-                // 🔥 BLOQUE A: pasamos el producto seleccionado del combobox
                 await agregarFalta(nombreExacto, seleccionado);
                 input.value = '';
                 if (input.fredwareReset) input.fredwareReset();
@@ -618,7 +624,6 @@
                 
                 if (conf.isConfirmed) {
                     try {
-                        // 🔥 BLOQUE A: buscamos el producto recién creado para tener su info completa
                         await fredware.productos.cargar();
                         const productoCreado = fredware.state.productos.find(p => 
                             p.nombre_articulo && p.nombre_articulo.toUpperCase() === nuevo.nombre.toUpperCase()
@@ -636,7 +641,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════
-        // 🔥 BLOQUE A: renderFaltasLocales con badge de proveedor
+        // 🔥 v17.3: renderFaltasLocales con colores según intentos
         // ═══════════════════════════════════════════════════════════
         async function renderFaltasLocales() {
             try {
@@ -649,7 +654,25 @@
                     return;
                 }
                 faltas.forEach((item) => {
-                    // Badge del proveedor si lo tiene
+                    // Limpiar sufijos antiguos por si quedan en BD
+                    const insumoLimpio = limpiarSufijosInsumo(item.insumo);
+                    const intentos = item.intentos || 0;
+                    const esReincidente = intentos > 0;
+
+                    // Color según reincidencia
+                    let colorTexto = 'text-amber-600';
+                    let icono = '⚠️';
+                    let estiloFondo = 'bg-slate-50 border-slate-200';
+                    let badgeIntentos = '';
+
+                    if (esReincidente) {
+                        colorTexto = 'text-red-600';
+                        icono = '🔴';
+                        estiloFondo = 'bg-red-50 border-red-300';
+                        badgeIntentos = `<span class="ml-2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-md font-bold animate-pulse">⚠️ NO ENTREGADO x${intentos}</span>`;
+                    }
+
+                    // Badge del proveedor
                     let badgeProveedor = '';
                     if (item.proveedor_id && item.proveedor_id !== 'S/P') {
                         badgeProveedor = `<span class="ml-2 bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-md font-bold">🏢 ${escapeHtml(item.proveedor_id)}</span>`;
@@ -658,9 +681,10 @@
                     }
 
                     container.innerHTML += `
-                        <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
+                        <div class="flex justify-between items-center ${estiloFondo} border px-4 py-2.5 rounded-xl shadow-sm">
                             <div class="flex items-center flex-wrap">
-                                <span class="text-sm font-bold text-amber-600">⚠️ ${escapeHtml(item.insumo)}</span>
+                                <span class="text-sm font-bold ${colorTexto}">${icono} ${escapeHtml(insumoLimpio)}</span>
+                                ${badgeIntentos}
                                 ${badgeProveedor}
                             </div>
                             <button onclick="borrarFaltaLocal(${item.id})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
@@ -942,6 +966,7 @@
         async function abrirFlujoRecepcion(detalleCompleto, proveedor, uIdUnique) {
             let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
             let productoLimpio = detalleCompleto.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+            productoLimpio = limpiarSufijosInsumo(productoLimpio);
             let cantidadEsperada = 1;
             let matchCant = detalleCompleto.match(/^\[(\d+)\s*\w+\]/);
             if(matchCant) { cantidadEsperada = parseInt(matchCant[1]); }
@@ -1043,7 +1068,19 @@
             }
 
             if(huboRotura) {
-                await agregarFalta(`${productoLimpio} (FALTARON ${cantidadFaltante} UNID DEL PEDIDO)`);
+                // 🔥 v17.3: añadir falta limpia con intentos=1
+                const faltaExistente = (await obtenerFaltas()).find(f => 
+                    limpiarSufijosInsumo(f.insumo).toUpperCase() === productoLimpio.toUpperCase()
+                );
+                if (faltaExistente) {
+                    await db_nube.from('faltas_cocina').update({
+                        intentos: (faltaExistente.intentos || 0) + 1,
+                        ultimo_intento: new Date().toISOString(),
+                        motivo_reintento: `FALTARON ${cantidadFaltante} UNID`
+                    }).eq('id', faltaExistente.id);
+                } else {
+                    await agregarFalta(productoLimpio);
+                }
             }
 
             Swal.fire({ title: '📡 Guardando en la nube...', background: '#ffffff', showConfirmButton: false, allowOutsideClick: false });
@@ -1331,15 +1368,16 @@
             renderCheckMercancia(cestaGlobal);
         }
 
-        // ============================================================
-        // MARCAR COMO NO LLEGÓ
-        // ============================================================
+        // ═══════════════════════════════════════════════════════════
+        // 🔥 v17.3: marcarProductoNoLlego con sistema de intentos
+        // ═══════════════════════════════════════════════════════════
         async function marcarProductoNoLlego(uIdUnique) {
             let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
             if(idxGlobal === -1) return;
             
             const item = cestaGlobal[idxGlobal];
             let productoLimpio = item.detalle.replace(/^\[.*?\]\s*/, '').trim().toUpperCase();
+            productoLimpio = limpiarSufijosInsumo(productoLimpio);
 
             const confirmacion = await Swal.fire({
                 title: '¿Confirmas incidencia?',
@@ -1353,18 +1391,61 @@
 
             if (!confirmacion.isConfirmed) return;
 
-            await eliminarItemCesta(item.id);
-            cestaGlobal.splice(idxGlobal, 1);
-            await agregarFalta(`${productoLimpio} (PROVEEDOR NO ENTREGÓ EN REPARTO)`);
-
             try {
+                // Buscar si YA existe una falta con ese nombre limpio
+                const faltas = await obtenerFaltas();
+                const faltaExistente = faltas.find(f => 
+                    limpiarSufijosInsumo(f.insumo).toUpperCase() === productoLimpio.toUpperCase()
+                );
+
+                if (faltaExistente) {
+                    // Incrementar contador de intentos
+                    await db_nube
+                        .from('faltas_cocina')
+                        .update({
+                            intentos: (faltaExistente.intentos || 0) + 1,
+                            ultimo_intento: new Date().toISOString(),
+                            motivo_reintento: 'PROVEEDOR NO ENTREGÓ'
+                        })
+                        .eq('id', faltaExistente.id);
+                    console.log(`🔴 Falta reincidente incrementada: ${productoLimpio} (x${(faltaExistente.intentos || 0) + 1})`);
+                } else {
+                    // Crear falta nueva con intentos=1
+                    const matchId = await fredware.productos.buscar(productoLimpio);
+                    let producto = null;
+                    if (matchId) {
+                        producto = fredware.state.productos.find(p => p.id === matchId);
+                    }
+                    
+                    const proveedorId = producto?.proveedor_principal || 'S/P';
+                    const catalogoId = producto ? parseInt(producto.id) : null;
+                    
+                    await db_nube
+                        .from('faltas_cocina')
+                        .insert({
+                            insumo: productoLimpio,
+                            proveedor_id: proveedorId,
+                            catalogo_id: isNaN(catalogoId) ? null : catalogoId,
+                            intentos: 1,
+                            ultimo_intento: new Date().toISOString(),
+                            motivo_reintento: 'PROVEEDOR NO ENTREGÓ'
+                        });
+                    console.log(`🔴 Falta reincidente creada: ${productoLimpio} (x1)`);
+                }
+
+                // Eliminar de la cesta
+                await eliminarItemCesta(item.id);
+                cestaGlobal.splice(idxGlobal, 1);
+
                 await sincronizarConOficina('cesta', cestaGlobal);
                 await sincronizarConOficina('faltas', await obtenerFaltas());
-                lanzarToast("Incidencia comunicada.", "error");
+                lanzarToast(`⚠️ Incidencia registrada. "${productoLimpio}" vuelve a vista de control.`, "warning");
                 await renderFaltasLocales();
                 renderCheckMercancia(cestaGlobal);
+
             } catch (error) {
-                lanzarToast('Guardado en local.', 'warning');
+                console.error('Error:', error);
+                lanzarToast('Error al registrar incidencia.', 'error');
             }
         }
 
@@ -1755,7 +1836,7 @@
                 }
 
                 const faltas = await obtenerFaltas();
-                const faltaEncontrada = faltas.find(f => f.insumo && f.insumo.toUpperCase().includes(directoValues.producto));
+                const faltaEncontrada = faltas.find(f => limpiarSufijosInsumo(f.insumo).toUpperCase().includes(directoValues.producto));
                 if (faltaEncontrada) {
                     await db_nube.from('faltas_cocina').delete().eq('id', faltaEncontrada.id);
                 }
@@ -1801,11 +1882,23 @@
                     </div>
                 `;
                 document.body.appendChild(overlay);
-                new QRCode(document.getElementById("qr-code-container"), {
-                    text: data, width: 160, height: 160,
-                    colorDark: "#000000", colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
+                
+                // QR corto para evitar overflow
+                const ahora = new Date();
+                const pad = (n) => n.toString().padStart(2, '0');
+                const tsCorto = `${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}`;
+                const qrTexto = `REC|${producto.substring(0, 30)}|${tsCorto}`;
+                
+                try {
+                    new QRCode(document.getElementById("qr-code-container"), {
+                        text: qrTexto, width: 160, height: 160,
+                        colorDark: "#000000", colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                } catch (e) {
+                    console.warn('QR no se pudo generar:', e);
+                    document.getElementById("qr-code-container").innerHTML = '<p style="font-size:11px;color:#94a3b8;">QR no disponible</p>';
+                }
             } catch (e) {
                 console.error('Error generando QR:', e);
             }
@@ -2196,7 +2289,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Faltas v17.2] Init — esperando al núcleo...');
+            console.log('🚀 [Faltas v17.3] Init — esperando al núcleo...');
 
             suscribirseCambios();
             await esperarAlNucleo();
