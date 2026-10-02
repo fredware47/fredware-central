@@ -28,6 +28,8 @@
         .art-row:hover { background: #f8fafc; }
         .art-row.seleccionado { background: #f0fdf4; }
         .art-row.tiene-historico { border-left: 3px solid #10b981; }
+        .art-row.es-falta { border-left: 3px solid #f59e0b; background: #fffbeb; }
+        .art-row.es-falta.reincidente { border-left: 3px solid #dc2626; background: #fef2f2; }
         .art-row:last-child { border-bottom: none; }
 
         .art-check { width: 22px; height: 22px; cursor: pointer; accent-color: #10b981; flex-shrink: 0; }
@@ -46,6 +48,8 @@
 
         .hist-badge { font-size: 10px; background: #ecfdf5; color: #065f46; padding: 2px 8px; border-radius: 10px; font-weight: 700; display: inline-block; }
         .hist-badge.nuevo { background: #f1f5f9; color: #64748b; }
+        .falta-badge { font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 10px; font-weight: 700; display: inline-block; }
+        .falta-badge.reincidente { background: #dc2626; color: white; }
 
         .buscador { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; }
         .buscador:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
@@ -164,9 +168,10 @@
         // Estado
         let proveedorActivo = null;
         let proveedorNombre = null;
-        let articulosCargados = [];
-        let articulosFiltrados = [];
-        let seleccion = {}; // { idArticulo: cantidad }
+        let articulosCargados = [];       // artículos de articulos_habituales
+        let faltasCargadas = [];          // faltas del proveedor activo
+        let articulosFiltrados = [];      // artículos visibles (habituales + faltas)
+        let seleccion = {};               // { 'habitual_ID': cant, 'falta_ID': cant }
         let textoBusqueda = '';
 
         // ============================================================
@@ -178,6 +183,18 @@
 
         function escapeHtml(text) {
             return window.fredware.util.escapeHtml(text);
+        }
+
+        // ============================================================
+        // LIMPIAR SUFIJOS DE FALTAS
+        // ============================================================
+        function limpiarSufijosInsumo(texto) {
+            if (!texto) return '';
+            return texto
+                .replace(/\s*\(PROVEEDOR NO ENTREGÓ EN REPARTO\)/gi, '')
+                .replace(/\s*\(FALTARON.*?\)/gi, '')
+                .replace(/\s*\(PROVEEDOR NO ENTREGÓ.*?\)/gi, '')
+                .trim();
         }
 
         // ============================================================
@@ -245,7 +262,6 @@
             container.innerHTML = '<div class="text-xs text-slate-400 p-2">⏳ Sincronizando...</div>';
 
             try {
-                // Obtener proveedores
                 const { data: proveedores, error: errProv } = await db_nube
                     .from('proveedores')
                     .select('id, nombre')
@@ -253,20 +269,31 @@
 
                 if (errProv) throw errProv;
 
-                // Obtener contadores de artículos por proveedor
                 const { data: articulos, error: errArt } = await db_nube
                     .from('articulos_habituales')
                     .select('proveedor_id');
 
                 if (errArt) throw errArt;
 
-                // Contar artículos por proveedor
+                // 🆕 Contar faltas por proveedor
+                const { data: faltas, error: errFaltas } = await db_nube
+                    .from('faltas_cocina')
+                    .select('proveedor_id');
+
+                if (errFaltas) console.warn('Error leyendo faltas:', errFaltas);
+
                 const contadores = {};
                 (articulos || []).forEach(a => {
                     contadores[a.proveedor_id] = (contadores[a.proveedor_id] || 0) + 1;
                 });
 
-                // Renderizar
+                const contadoresFaltas = {};
+                (faltas || []).forEach(f => {
+                    if (f.proveedor_id && f.proveedor_id !== 'S/P') {
+                        contadoresFaltas[f.proveedor_id] = (contadoresFaltas[f.proveedor_id] || 0) + 1;
+                    }
+                });
+
                 container.innerHTML = '';
                 if (!proveedores || proveedores.length === 0) {
                     container.innerHTML = '<div class="text-xs text-slate-400 p-2">Sin proveedores.</div>';
@@ -275,10 +302,16 @@
 
                 proveedores.forEach(p => {
                     const numArt = contadores[p.id] || 0;
+                    const numFaltas = contadoresFaltas[p.id] || 0;
                     const safeId = `btn-prov-${p.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+                    const badgeFaltas = numFaltas > 0
+                        ? `<span class="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-black ml-1">🔔 ${numFaltas}</span>`
+                        : '';
+
                     container.innerHTML += `
                         <button onclick="cargarHojaInteractiva('${escapeHtml(p.id)}', '${escapeHtml(p.nombre)}')" id="${safeId}" class="prov-btn">
-                            <span>🏢 ${escapeHtml(p.nombre)}</span>
+                            <span>🏢 ${escapeHtml(p.nombre)} ${badgeFaltas}</span>
                             <span class="text-xs ${numArt > 0 ? 'text-blue-600 font-bold' : 'text-slate-400'}">${numArt}</span>
                         </button>
                     `;
@@ -290,7 +323,7 @@
         }
 
         // ============================================================
-        // CARGAR HOJA DE UN PROVEEDOR
+        // CARGAR HOJA DE UN PROVEEDOR (con faltas integradas)
         // ============================================================
         async function cargarHojaInteractiva(provId, provNombre) {
             proveedorActivo = provId;
@@ -298,42 +331,71 @@
             textoBusqueda = '';
             document.getElementById('buscador').value = '';
 
-            // Highlight del botón activo
             document.querySelectorAll('#lista-proveedores button').forEach(b => b.classList.remove('active'));
             const safeBtnId = `btn-prov-${provId.replace(/[^a-zA-Z0-9]/g, '_')}`;
             const btn = document.getElementById(safeBtnId);
             if (btn) btn.classList.add('active');
 
-            // Actualizar header
             document.getElementById('nombre-proveedor-activo').innerText = `🏢 ${provNombre}`;
-            document.getElementById('info-proveedor-activo').innerText = 'Cargando plantilla...';
+            document.getElementById('info-proveedor-activo').innerText = 'Cargando plantilla y faltas...';
 
-            // Cargar artículos
             const contenedor = document.getElementById('contenedor-ingredientes');
-            contenedor.innerHTML = '<div class="text-center italic text-slate-400 text-sm py-12">⏳ Descargando artículos...</div>';
+            contenedor.innerHTML = '<div class="text-center italic text-slate-400 text-sm py-12">⏳ Descargando artículos y faltas...</div>';
 
             try {
-                const { data: articulos, error } = await db_nube
-                    .from('articulos_habituales')
-                    .select('*')
-                    .eq('proveedor_id', provId)
-                    .order('nombre_articulo', { ascending: true });
+                // 🔥 Cargar artículos habituales + faltas en paralelo
+                const [resArt, resFaltas] = await Promise.all([
+                    db_nube
+                        .from('articulos_habituales')
+                        .select('*')
+                        .eq('proveedor_id', provId)
+                        .order('nombre_articulo', { ascending: true }),
+                    db_nube
+                        .from('faltas_cocina')
+                        .select('*')
+                        .eq('proveedor_id', provId)
+                        .order('fecha_anotado', { ascending: false })
+                ]);
 
-                if (error) throw error;
+                if (resArt.error) throw resArt.error;
+                if (resFaltas.error) console.warn('Error faltas:', resFaltas.error);
 
-                articulosCargados = articulos || [];
-                articulosFiltrados = [...articulosCargados];
+                articulosCargados = resArt.data || [];
+                faltasCargadas = resFaltas.data || [];
 
-                document.getElementById('info-proveedor-activo').innerText = `${articulosCargados.length} artículos en la plantilla`;
+                const numFaltas = faltasCargadas.length;
+                const numFaltasReincidentes = faltasCargadas.filter(f => (f.intentos || 0) > 0).length;
 
-                // Mostrar buscador y botón añadir
+                let infoTexto = `${articulosCargados.length} artículos en la plantilla`;
+                if (numFaltas > 0) {
+                    infoTexto += ` · 🔔 ${numFaltas} faltas de cocina`;
+                    if (numFaltasReincidentes > 0) infoTexto += ` (${numFaltasReincidentes} reincidentes)`;
+                }
+                document.getElementById('info-proveedor-activo').innerText = infoTexto;
+
                 document.getElementById('btn-add-articulo').classList.remove('hidden');
                 document.getElementById('contenedor-buscador').classList.remove('hidden');
 
-                // Limpiar selección previa de este proveedor
+                // Limpiar selección previa de artículos que ya no existen
                 Object.keys(seleccion).forEach(k => {
-                    if (!articulosCargados.find(a => a.id.toString() === k)) {
-                        delete seleccion[k];
+                    if (k.startsWith('habitual_')) {
+                        const id = k.replace('habitual_', '');
+                        if (!articulosCargados.find(a => a.id.toString() === id)) {
+                            delete seleccion[k];
+                        }
+                    } else if (k.startsWith('falta_')) {
+                        const id = k.replace('falta_', '');
+                        if (!faltasCargadas.find(f => f.id.toString() === id)) {
+                            delete seleccion[k];
+                        }
+                    }
+                });
+
+                // 🆕 Preseleccionar las faltas automáticamente
+                faltasCargadas.forEach(f => {
+                    const key = `falta_${f.id}`;
+                    if (seleccion[key] === undefined) {
+                        seleccion[key] = 1; // cantidad por defecto 1
                     }
                 });
 
@@ -347,13 +409,51 @@
         }
 
         // ============================================================
-        // RENDERIZAR ARTÍCULOS
+        // RENDERIZAR ARTÍCULOS + FALTAS (con filtro)
         // ============================================================
         function renderIngredientes() {
             const container = document.getElementById('contenedor-ingredientes');
             container.innerHTML = '';
 
-            if (articulosFiltrados.length === 0) {
+            // 🆕 Construir array unificado
+            const itemsUnificados = [];
+
+            // Faltas (van primero, son más urgentes)
+            faltasCargadas.forEach(f => {
+                const insumoLimpio = limpiarSufijosInsumo(f.insumo);
+                if (textoBusqueda && !insumoLimpio.toLowerCase().includes(textoBusqueda)) return;
+
+                itemsUnificados.push({
+                    tipo: 'falta',
+                    id: f.id,
+                    key: `falta_${f.id}`,
+                    nombre: insumoLimpio,
+                    unidad: 'UNIDADES',
+                    unidadOriginal: f.unidad_defecto || 'UNIDADES',
+                    veces_pedido: 0,
+                    cantidad_habitual: 1,
+                    intentos: f.intentos || 0
+                });
+            });
+
+            // Artículos habituales
+            articulosCargados.forEach(a => {
+                if (textoBusqueda && !a.nombre_articulo.toLowerCase().includes(textoBusqueda)) return;
+
+                itemsUnificados.push({
+                    tipo: 'habitual',
+                    id: a.id,
+                    key: `habitual_${a.id}`,
+                    nombre: a.nombre_articulo,
+                    unidad: a.unidad_defecto,
+                    unidadOriginal: a.unidad_defecto,
+                    veces_pedido: a.veces_pedido || 0,
+                    cantidad_habitual: a.cantidad_habitual || 1,
+                    intentos: 0
+                });
+            });
+
+            if (itemsUnificados.length === 0) {
                 if (textoBusqueda) {
                     container.innerHTML = `<div class="text-center italic text-slate-400 text-sm py-12 px-4">No hay artículos que coincidan con "<strong>${escapeHtml(textoBusqueda)}</strong>"</div>`;
                 } else {
@@ -362,43 +462,70 @@
                 return;
             }
 
-            articulosFiltrados.forEach((art, index) => {
-                const idStr = art.id.toString();
-                const seleccionado = seleccion[idStr] !== undefined;
-                const cantidadActual = seleccion[idStr] || '';
-                const tieneHistorico = art.veces_pedido > 0;
-                
-                let histInfo = '';
-                if (tieneHistorico) {
-                    histInfo = `<span class="hist-badge">📊 ${art.veces_pedido}x · Últ: ${art.cantidad_habitual} ${escapeHtml(art.unidad_defecto.substring(0,4).toLowerCase())}</span>`;
+            // 🆕 Orden: primero faltas (reincidentes primero), luego habituales
+            itemsUnificados.sort((a, b) => {
+                if (a.tipo !== b.tipo) return a.tipo === 'falta' ? -1 : 1;
+                if (a.tipo === 'falta') {
+                    if (a.intentos !== b.intentos) return b.intentos - a.intentos;
+                    return a.nombre.localeCompare(b.nombre);
+                }
+                return a.nombre.localeCompare(b.nombre);
+            });
+
+            itemsUnificados.forEach((item) => {
+                const key = item.key;
+                const seleccionado = seleccion[key] !== undefined;
+                const cantidadActual = seleccion[key] !== undefined ? seleccion[key] : '';
+                const esFalta = item.tipo === 'falta';
+                const esReincidente = esFalta && item.intentos > 0;
+                const tieneHistorico = !esFalta && item.veces_pedido > 0;
+
+                let infoBadge = '';
+                if (esFalta) {
+                    if (esReincidente) {
+                        infoBadge = `<span class="falta-badge reincidente">🔔 FALTA REINCIDENTE x${item.intentos}</span>`;
+                    } else {
+                        infoBadge = `<span class="falta-badge">🔔 FALTA COCINA</span>`;
+                    }
+                } else if (tieneHistorico) {
+                    infoBadge = `<span class="hist-badge">📊 ${item.veces_pedido}x · Últ: ${item.cantidad_habitual} ${escapeHtml(item.unidadOriginal.substring(0,4).toLowerCase())}</span>`;
                 } else {
-                    histInfo = `<span class="hist-badge nuevo">🆕 Sin histórico</span>`;
+                    infoBadge = `<span class="hist-badge nuevo">🆕 Sin histórico</span>`;
                 }
 
-                const rowClass = `art-row ${seleccionado ? 'seleccionado' : ''} ${tieneHistorico ? 'tiene-historico' : ''}`;
+                let rowClass = 'art-row';
+                if (seleccionado) rowClass += ' seleccionado';
+                if (esFalta) {
+                    rowClass += ' es-falta';
+                    if (esReincidente) rowClass += ' reincidente';
+                } else if (tieneHistorico) {
+                    rowClass += ' tiene-historico';
+                }
+
+                const colorNombre = esFalta ? (esReincidente ? '#dc2626' : '#92400e') : '#1e293b';
 
                 container.innerHTML += `
-                    <div class="${rowClass}" data-id="${idStr}" data-nombre="${escapeHtml(art.nombre_articulo).toLowerCase()}">
-                        <input type="checkbox" class="art-check" ${seleccionado ? 'checked' : ''} onchange="toggleSeleccion(${art.id})">
+                    <div class="${rowClass}" data-key="${key}" data-nombre="${escapeHtml(item.nombre).toLowerCase()}">
+                        <input type="checkbox" class="art-check" ${seleccionado ? 'checked' : ''} onchange="toggleSeleccion('${key}')">
                         <div class="flex-1 min-w-[150px]">
-                            <div class="text-sm font-bold tracking-tight uppercase text-slate-800">${escapeHtml(art.nombre_articulo)}</div>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${escapeHtml(art.unidad_defecto)}</span>
-                                ${histInfo}
+                            <div class="text-sm font-bold tracking-tight uppercase" style="color:${colorNombre};">${escapeHtml(item.nombre)}</div>
+                            <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${escapeHtml(item.unidadOriginal)}</span>
+                                ${infoBadge}
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <input type="number" class="art-cant" min="0" step="1" 
+                            <input type="number" class="art-cant" min="0" step="1"
                                 value="${cantidadActual}"
                                 placeholder="0"
-                                onchange="cambiarCantidad(${art.id}, this.value)"
-                                oninput="cambiarCantidad(${art.id}, this.value)">
+                                onchange="cambiarCantidad('${key}', this.value)"
+                                oninput="cambiarCantidad('${key}', this.value)">
                             <div class="flex gap-1">
-                                <button class="btn-q" onclick="cantidadRapida(${art.id}, 1)">+1</button>
-                                <button class="btn-q" onclick="cantidadRapida(${art.id}, 5)">+5</button>
-                                <button class="btn-q" onclick="cantidadRapida(${art.id}, 10)">+10</button>
+                                <button class="btn-q" onclick="cantidadRapida('${key}', 1)">+1</button>
+                                <button class="btn-q" onclick="cantidadRapida('${key}', 5)">+5</button>
+                                <button class="btn-q" onclick="cantidadRapida('${key}', 10)">+10</button>
                             </div>
-                            <button class="btn-eliminar" onclick="eliminarIngrediente(${art.id}, '${escapeHtml(art.nombre_articulo).replace(/'/g, "\\'")}')" title="Eliminar artículo">🗑️</button>
+                            ${item.tipo === 'habitual' ? `<button class="btn-eliminar" onclick="eliminarIngrediente(${item.id}, '${escapeHtml(item.nombre).replace(/'/g, "\\'")}')" title="Eliminar artículo">🗑️</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -406,38 +533,37 @@
         }
 
         // ============================================================
-        // SELECCIÓN Y CANTIDADES
+        // SELECCIÓN Y CANTIDADES (soportan faltas y habituales)
         // ============================================================
-        function toggleSeleccion(idArticulo) {
-            const idStr = idArticulo.toString();
-            const art = articulosCargados.find(a => a.id === idArticulo);
-            if (!art) return;
-
-            if (seleccion[idStr] !== undefined) {
-                // Deseleccionar
-                delete seleccion[idStr];
+        function toggleSeleccion(key) {
+            if (seleccion[key] !== undefined) {
+                delete seleccion[key];
             } else {
-                // Seleccionar — autocompletar con cantidad_habitual si existe
-                const cant = art.cantidad_habitual && art.cantidad_habitual > 0 ? art.cantidad_habitual : 1;
-                seleccion[idStr] = cant;
+                // Autocompletar con cantidad_habitual si es habitual y tiene histórico
+                if (key.startsWith('habitual_')) {
+                    const id = key.replace('habitual_', '');
+                    const art = articulosCargados.find(a => a.id.toString() === id);
+                    const cant = (art && art.cantidad_habitual && art.cantidad_habitual > 0) ? art.cantidad_habitual : 1;
+                    seleccion[key] = cant;
+                } else {
+                    seleccion[key] = 1;
+                }
             }
 
             renderIngredientes();
             actualizarFooter();
         }
 
-        function cambiarCantidad(idArticulo, valor) {
-            const idStr = idArticulo.toString();
+        function cambiarCantidad(key, valor) {
             const cant = parseFloat(valor) || 0;
 
             if (cant > 0) {
-                seleccion[idStr] = cant;
+                seleccion[key] = cant;
             } else {
-                delete seleccion[idStr];
+                delete seleccion[key];
             }
 
-            // Actualizar checkbox visual sin re-renderizar todo
-            const row = document.querySelector(`.art-row[data-id="${idStr}"]`);
+            const row = document.querySelector(`.art-row[data-key="${key}"]`);
             if (row) {
                 const checkbox = row.querySelector('.art-check');
                 if (cant > 0 && checkbox && !checkbox.checked) {
@@ -452,14 +578,12 @@
             actualizarFooter();
         }
 
-        function cantidadRapida(idArticulo, cantidad) {
-            const idStr = idArticulo.toString();
-            const actual = parseFloat(seleccion[idStr]) || 0;
+        function cantidadRapida(key, cantidad) {
+            const actual = parseFloat(seleccion[key]) || 0;
             const nueva = actual + cantidad;
-            seleccion[idStr] = nueva;
+            seleccion[key] = nueva;
 
-            // Actualizar input visual
-            const row = document.querySelector(`.art-row[data-id="${idStr}"]`);
+            const row = document.querySelector(`.art-row[data-key="${key}"]`);
             if (row) {
                 const input = row.querySelector('.art-cant');
                 if (input) input.value = nueva;
@@ -484,9 +608,9 @@
         // FOOTER
         // ============================================================
         function actualizarFooter() {
-            const ids = Object.keys(seleccion);
-            const numSeleccionados = ids.length;
-            const totalUnidades = ids.reduce((sum, id) => sum + (parseFloat(seleccion[id]) || 0), 0);
+            const keys = Object.keys(seleccion);
+            const numSeleccionados = keys.length;
+            const totalUnidades = keys.reduce((sum, k) => sum + (parseFloat(seleccion[k]) || 0), 0);
 
             document.getElementById('contador-seleccionados').textContent = numSeleccionados;
             document.getElementById('total-unidades').textContent = totalUnidades;
@@ -500,20 +624,11 @@
         }
 
         // ============================================================
-        // BUSCADOR
+        // BUSCADOR (filtra sobre el array unificado)
         // ============================================================
         function filtrarArticulos() {
             const input = document.getElementById('buscador');
             textoBusqueda = input.value.trim().toLowerCase();
-
-            if (!textoBusqueda) {
-                articulosFiltrados = [...articulosCargados];
-            } else {
-                articulosFiltrados = articulosCargados.filter(a => 
-                    a.nombre_articulo.toLowerCase().includes(textoBusqueda)
-                );
-            }
-
             renderIngredientes();
         }
 
@@ -559,10 +674,8 @@
                 input.value = '';
                 lanzarToast(`✅ "${nombre}" añadido a la plantilla`, 'success');
                 
-                // Recargar hoja
                 await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
                 
-                // Cerrar formulario
                 document.getElementById('form-nuevo-articulo').classList.add('hidden');
             } catch (error) {
                 console.error('Error añadiendo artículo:', error);
@@ -586,8 +699,7 @@
 
                 if (error) throw error;
 
-                // Quitar de la selección
-                delete seleccion[id.toString()];
+                delete seleccion[`habitual_${id}`];
 
                 lanzarToast(`🗑️ "${nombre}" eliminado`, 'success');
                 await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
@@ -598,23 +710,29 @@
         }
 
         // ============================================================
-        // ENVIAR PEDIDO A COMPRAS
+        // ENVIAR PEDIDO A COMPRAS (con borrado de faltas)
         // ============================================================
         async function enviarPedidoCentral() {
-            const ids = Object.keys(seleccion);
+            const keys = Object.keys(seleccion);
 
-            if (ids.length === 0) {
+            if (keys.length === 0) {
                 lanzarToast("Selecciona al menos 1 artículo.", "warning");
                 return;
             }
 
-            // Construir líneas
+            // 🆕 Construir líneas separando habituales de faltas
             const lineasInyectar = [];
-            ids.forEach(idStr => {
-                const art = articulosCargados.find(a => a.id.toString() === idStr);
-                if (!art) return;
-                const cant = parseFloat(seleccion[idStr]) || 0;
-                if (cant > 0) {
+            const faltasAEnviar = []; // ids de faltas para borrar
+
+            keys.forEach(key => {
+                const cant = parseFloat(seleccion[key]) || 0;
+                if (cant <= 0) return;
+
+                if (key.startsWith('habitual_')) {
+                    const id = key.replace('habitual_', '');
+                    const art = articulosCargados.find(a => a.id.toString() === id);
+                    if (!art) return;
+
                     lineasInyectar.push({
                         id: generarIdUnico(),
                         detalle: `[${cant} ${art.unidad_defecto}] ${art.nombre_articulo}`,
@@ -623,6 +741,23 @@
                         fecha_registro: new Date().toISOString(),
                         fecha_entrega_esperada: calcularFechaManana()
                     });
+                } else if (key.startsWith('falta_')) {
+                    const id = key.replace('falta_', '');
+                    const falta = faltasCargadas.find(f => f.id.toString() === id);
+                    if (!falta) return;
+
+                    const insumoLimpio = limpiarSufijosInsumo(falta.insumo);
+
+                    lineasInyectar.push({
+                        id: generarIdUnico(),
+                        detalle: `[${cant} UNIDADES] ${insumoLimpio}`,
+                        proveedor_id: proveedorActivo,
+                        estado: "PENDIENTE",
+                        fecha_registro: new Date().toISOString(),
+                        fecha_entrega_esperada: calcularFechaManana()
+                    });
+
+                    faltasAEnviar.push(falta.id);
                 }
             });
 
@@ -631,7 +766,6 @@
                 return;
             }
 
-            // Verificar duplicados en cesta
             const btn = document.getElementById('btn-enviar-pedido');
             const btnText = document.getElementById('btn-text');
             if (btn && btnText) {
@@ -661,16 +795,33 @@
                     return;
                 }
 
-                // Insertar los no duplicados
                 const { error: errInsert } = await db_nube
                     .from('cesta_pedidos')
                     .insert(noDuplicados);
 
                 if (errInsert) throw errInsert;
 
-                // Mensaje según si hubo duplicados
-                if (duplicados > 0) {
-                    lanzarToast(`✅ ${noDuplicados.length} enviados · ⚠️ ${duplicados} ya estaban en cesta`, 'warning');
+                // 🆕 Borrar las faltas que se han enviado (aunque hubiera duplicados, se consideran gestionadas)
+                if (faltasAEnviar.length > 0) {
+                    const { error: errDelete } = await db_nube
+                        .from('faltas_cocina')
+                        .delete()
+                        .in('id', faltasAEnviar);
+
+                    if (errDelete) {
+                        console.error('Error borrando faltas:', errDelete);
+                        lanzarToast(`⚠️ ${faltasAEnviar.length} faltas no se pudieron borrar`, 'warning');
+                    } else {
+                        console.log(`✅ ${faltasAEnviar.length} faltas borradas tras enviar pedido`);
+                    }
+                }
+
+                // Mensaje según duplicados
+                const mensajeDuplicados = duplicados > 0 ? ` · ⚠️ ${duplicados} ya estaban en cesta` : '';
+                const mensajeFaltas = faltasAEnviar.length > 0 ? ` · 🔔 ${faltasAEnviar.length} faltas gestionadas` : '';
+
+                if (duplicados > 0 || faltasAEnviar.length > 0) {
+                    lanzarToast(`✅ ${noDuplicados.length} enviados${mensajeDuplicados}${mensajeFaltas}`, 'success');
                 } else {
                     lanzarToast(`🛒 ¡Enviados ${noDuplicados.length} artículos a compras!`, 'success');
                 }
@@ -680,16 +831,21 @@
                 renderIngredientes();
                 actualizarFooter();
 
-                // Notificar al núcleo (opcional)
+                // Recargar proveedores para actualizar badges de faltas
+                await cargarProveedoresDesdeSupabase();
+
+                // Recargar la hoja actual para reflejar las faltas borradas
+                await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+
                 try {
                     await window.fredware.broadcastEvent('nuevo_pedido', {
                         proveedor: proveedorActivo,
                         num_articulos: noDuplicados.length,
+                        num_faltas: faltasAEnviar.length,
                         origen: 'LISTAS'
                     });
                 } catch (e) {}
 
-                // Notificar a ngrok (opcional)
                 try {
                     await fetch(`${API_URL}/api/cesta`, {
                         method: 'POST',
@@ -715,12 +871,10 @@
         // INICIALIZACIÓN
         // ============================================================
         async function initApp() {
-            console.log('🚀 [Listas] Init — esperando al núcleo...');
+            console.log('🚀 [Listas v2] Init — esperando al núcleo...');
 
-            // Cargar proveedores inmediatamente
             await cargarProveedoresDesdeSupabase();
 
-            // Esperar al núcleo en background
             esperarAlNucleo().then(() => {
                 actualizarBadgeOnline();
             });
@@ -739,7 +893,6 @@
         window.eliminarIngrediente = eliminarIngrediente;
         window.enviarPedidoCentral = enviarPedidoCentral;
 
-        // Arrancar
         initApp();
     </script>
 </body>
