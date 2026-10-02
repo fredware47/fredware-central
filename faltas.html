@@ -80,7 +80,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.3</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.4</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -641,7 +641,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════
-        // 🔥 v17.3: renderFaltasLocales con colores según intentos
+        // 🔥 v17.4: renderFaltasLocales SOLO color rojo, sin badges
         // ═══════════════════════════════════════════════════════════
         async function renderFaltasLocales() {
             try {
@@ -656,37 +656,14 @@
                 faltas.forEach((item) => {
                     // Limpiar sufijos antiguos por si quedan en BD
                     const insumoLimpio = limpiarSufijosInsumo(item.insumo);
-                    const intentos = item.intentos || 0;
-                    const esReincidente = intentos > 0;
-
-                    // Color según reincidencia
-                    let colorTexto = 'text-amber-600';
-                    let icono = '⚠️';
-                    let estiloFondo = 'bg-slate-50 border-slate-200';
-                    let badgeIntentos = '';
-
-                    if (esReincidente) {
-                        colorTexto = 'text-red-600';
-                        icono = '🔴';
-                        estiloFondo = 'bg-red-50 border-red-300';
-                        badgeIntentos = `<span class="ml-2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-md font-bold animate-pulse">⚠️ NO ENTREGADO x${intentos}</span>`;
-                    }
-
-                    // Badge del proveedor
-                    let badgeProveedor = '';
-                    if (item.proveedor_id && item.proveedor_id !== 'S/P') {
-                        badgeProveedor = `<span class="ml-2 bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-md font-bold">🏢 ${escapeHtml(item.proveedor_id)}</span>`;
-                    } else {
-                        badgeProveedor = `<span class="ml-2 bg-slate-200 text-slate-500 text-[10px] px-2 py-0.5 rounded-md font-bold">Sin proveedor</span>`;
-                    }
+                    // 🔥 Solo color rojo si tiene intentos > 0
+                    const esReincidente = (item.intentos || 0) > 0;
+                    const colorTexto = esReincidente ? 'text-red-600' : 'text-amber-600';
+                    const estiloFondo = esReincidente ? 'bg-red-50 border-red-300' : 'bg-slate-50 border-slate-200';
 
                     container.innerHTML += `
                         <div class="flex justify-between items-center ${estiloFondo} border px-4 py-2.5 rounded-xl shadow-sm">
-                            <div class="flex items-center flex-wrap">
-                                <span class="text-sm font-bold ${colorTexto}">${icono} ${escapeHtml(insumoLimpio)}</span>
-                                ${badgeIntentos}
-                                ${badgeProveedor}
-                            </div>
+                            <span class="text-sm font-bold ${colorTexto}">⚠️ ${escapeHtml(insumoLimpio)}</span>
                             <button onclick="borrarFaltaLocal(${item.id})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
                         </div>
                     `;
@@ -1068,7 +1045,7 @@
             }
 
             if(huboRotura) {
-                // 🔥 v17.3: añadir falta limpia con intentos=1
+                // 🔥 v17.4: añadir falta limpia con intentos=1
                 const faltaExistente = (await obtenerFaltas()).find(f => 
                     limpiarSufijosInsumo(f.insumo).toUpperCase() === productoLimpio.toUpperCase()
                 );
@@ -1369,7 +1346,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════
-        // 🔥 v17.3: marcarProductoNoLlego con sistema de intentos
+        // 🔥 v17.4: marcarProductoNoLlego SIN badges, solo incrementa intentos
         // ═══════════════════════════════════════════════════════════
         async function marcarProductoNoLlego(uIdUnique) {
             let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
@@ -1408,7 +1385,6 @@
                             motivo_reintento: 'PROVEEDOR NO ENTREGÓ'
                         })
                         .eq('id', faltaExistente.id);
-                    console.log(`🔴 Falta reincidente incrementada: ${productoLimpio} (x${(faltaExistente.intentos || 0) + 1})`);
                 } else {
                     // Crear falta nueva con intentos=1
                     const matchId = await fredware.productos.buscar(productoLimpio);
@@ -1430,7 +1406,6 @@
                             ultimo_intento: new Date().toISOString(),
                             motivo_reintento: 'PROVEEDOR NO ENTREGÓ'
                         });
-                    console.log(`🔴 Falta reincidente creada: ${productoLimpio} (x1)`);
                 }
 
                 // Eliminar de la cesta
@@ -1883,7 +1858,6 @@
                 `;
                 document.body.appendChild(overlay);
                 
-                // QR corto para evitar overflow
                 const ahora = new Date();
                 const pad = (n) => n.toString().padStart(2, '0');
                 const tsCorto = `${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}`;
@@ -2289,7 +2263,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Faltas v17.3] Init — esperando al núcleo...');
+            console.log('🚀 [Faltas v17.4] Init — esperando al núcleo...');
 
             suscribirseCambios();
             await esperarAlNucleo();
