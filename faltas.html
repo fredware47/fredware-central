@@ -14,7 +14,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <!-- 🔥 NÚCLEO UNIFICADO v3 -->
     <script src="shared-core.js"></script>
     <style>
         .accordion-header { padding: 14px; font-size: 14px; font-weight: bold; border-radius: 12px; margin-top: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1; user-select: none; transition: background 0.2s, transform 0.1s; }
@@ -81,7 +80,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.1</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.2</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -309,11 +308,44 @@
             return data || [];
         }
 
-        async function agregarFalta(insumo) {
+        // ═══════════════════════════════════════════════════════════
+        // 🔥 BLOQUE A: agregarFalta ahora guarda proveedor_id y catalogo_id
+        // ═══════════════════════════════════════════════════════════
+        async function agregarFalta(insumo, productoInfo = null) {
+            let proveedorId = 'S/P';
+            let catalogoId = null;
+
+            try {
+                let producto = productoInfo;
+                
+                // Si no hay productoInfo, intentar match por nombre
+                if (!producto) {
+                    const matchId = await fredware.productos.buscar(insumo);
+                    if (matchId) {
+                        producto = fredware.state.productos.find(p => p.id === matchId);
+                    }
+                }
+
+                if (producto) {
+                    proveedorId = producto.proveedor_principal || 'S/P';
+                    // Convertir a número si es posible (catalogo_id es bigint)
+                    const idNum = parseInt(producto.id);
+                    catalogoId = isNaN(idNum) ? null : idNum;
+                }
+            } catch (e) {
+                console.warn('No se pudo asignar proveedor a la falta:', e);
+            }
+
             const { error } = await db_nube
                 .from('faltas_cocina')
-                .insert({ insumo: insumo });
+                .insert({ 
+                    insumo: insumo,
+                    proveedor_id: proveedorId,
+                    catalogo_id: catalogoId
+                });
             if (error) throw error;
+
+            return { proveedor_id: proveedorId, catalogo_id: catalogoId };
         }
 
         async function eliminarFalta(id) {
@@ -505,7 +537,8 @@
                                     if (input.fredwareReset) input.fredwareReset();
                                     return;
                                 }
-                                await agregarFalta(producto.nombre_articulo);
+                                // 🔥 BLOQUE A: pasamos el producto del match
+                                await agregarFalta(producto.nombre_articulo, producto);
                                 input.value = '';
                                 if (input.fredwareReset) input.fredwareReset();
                                 lanzarToast(`⚠️ Falta añadida: ${producto.nombre_articulo}`);
@@ -551,7 +584,8 @@
                     return;
                 }
 
-                await agregarFalta(nombreExacto);
+                // 🔥 BLOQUE A: pasamos el producto seleccionado del combobox
+                await agregarFalta(nombreExacto, seleccionado);
                 input.value = '';
                 if (input.fredwareReset) input.fredwareReset();
                 lanzarToast(`⚠️ Falta añadida: ${nombreExacto}`);
@@ -584,7 +618,13 @@
                 
                 if (conf.isConfirmed) {
                     try {
-                        await agregarFalta(nuevo.nombre);
+                        // 🔥 BLOQUE A: buscamos el producto recién creado para tener su info completa
+                        await fredware.productos.cargar();
+                        const productoCreado = fredware.state.productos.find(p => 
+                            p.nombre_articulo && p.nombre_articulo.toUpperCase() === nuevo.nombre.toUpperCase()
+                        );
+                        
+                        await agregarFalta(nuevo.nombre, productoCreado || null);
                         lanzarToast(`⚠️ Falta añadida: ${nuevo.nombre}`);
                         await renderFaltasLocales();
                         sincronizarConOficina('faltas', await obtenerFaltas());
@@ -595,6 +635,9 @@
             }
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // 🔥 BLOQUE A: renderFaltasLocales con badge de proveedor
+        // ═══════════════════════════════════════════════════════════
         async function renderFaltasLocales() {
             try {
                 const faltas = await obtenerFaltas();
@@ -606,9 +649,20 @@
                     return;
                 }
                 faltas.forEach((item) => {
+                    // Badge del proveedor si lo tiene
+                    let badgeProveedor = '';
+                    if (item.proveedor_id && item.proveedor_id !== 'S/P') {
+                        badgeProveedor = `<span class="ml-2 bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-md font-bold">🏢 ${escapeHtml(item.proveedor_id)}</span>`;
+                    } else {
+                        badgeProveedor = `<span class="ml-2 bg-slate-200 text-slate-500 text-[10px] px-2 py-0.5 rounded-md font-bold">Sin proveedor</span>`;
+                    }
+
                     container.innerHTML += `
                         <div class="flex justify-between items-center bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
-                            <span class="text-sm font-bold text-amber-600">⚠️ ${escapeHtml(item.insumo)}</span>
+                            <div class="flex items-center flex-wrap">
+                                <span class="text-sm font-bold text-amber-600">⚠️ ${escapeHtml(item.insumo)}</span>
+                                ${badgeProveedor}
+                            </div>
                             <button onclick="borrarFaltaLocal(${item.id})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
                         </div>
                     `;
@@ -1530,10 +1584,6 @@
                     });
                     document.getElementById('dir-producto')?.focus();
                 },
-                // ═══════════════════════════════════════════════════════════
-                // 🔥 FIX: preConfirm corregido — guarda el producto en variable
-                //    en lugar de leerlo del DOM después de crear uno nuevo
-                // ═══════════════════════════════════════════════════════════
                 preConfirm: async () => {
                     const productoInput = document.getElementById('dir-producto');
                     const producto = productoInput.value.trim().toUpperCase();
@@ -1543,11 +1593,8 @@
                         return false;
                     }
 
-                    // Variable que guardará el nombre definitivo del producto.
-                    // Ya no dependemos de leer el input tras crear el producto.
                     let productoFinal = producto;
 
-                    // 🔥 MATCHEO INTELIGENTE
                     try {
                         const matchId = await fredware.productos.buscar(producto);
                         
@@ -1579,7 +1626,6 @@
                                         const nuevo = await fredware.productos.mostrarModalCrearProducto(producto);
                                         if (nuevo && nuevo.nombre) {
                                             productoFinal = nuevo.nombre;
-                                            // Refrescar catálogo en memoria para que esté disponible ya
                                             await fredware.productos.cargar();
                                         } else {
                                             return false;
@@ -1603,7 +1649,6 @@
                                 const nuevo = await fredware.productos.mostrarModalCrearProducto(producto);
                                 if (nuevo && nuevo.nombre) {
                                     productoFinal = nuevo.nombre;
-                                    // Refrescar catálogo en memoria
                                     await fredware.productos.cargar();
                                 } else {
                                     return false;
@@ -1616,8 +1661,6 @@
                         console.error('Error validando producto en entrada directa:', error);
                     }
 
-                    // 🔥 Leer el resto del formulario desde el contenedor del modal
-                    // (Swal.getHtmlContainer devuelve el contenedor del modal activo)
                     const modal = Swal.getHtmlContainer();
                     const getVal = (id, fallback) => {
                         const el = modal?.querySelector('#' + id) || document.getElementById(id);
@@ -1625,7 +1668,7 @@
                     };
 
                     return {
-                        producto: productoFinal,  // 👈 usamos la variable, NO el input
+                        producto: productoFinal,
                         proveedor: getVal('dir-proveedor', 'S/P'),
                         cantidad: parseInt(getVal('dir-cantidad', '1')) || 1,
                         unidad: getVal('dir-unidad', 'KG'),
@@ -2153,7 +2196,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Faltas v17.1] Init — esperando al núcleo...');
+            console.log('🚀 [Faltas v17.2] Init — esperando al núcleo...');
 
             suscribirseCambios();
             await esperarAlNucleo();
