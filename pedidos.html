@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📋 Fredware - Pedidos</title>
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E📋%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E📋%3C/text%3E%3C/svg%3E">
+    <meta name="theme-color" content="#1e293b">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="shared-core.js"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tabs-container { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 14px; color: #475569; background: transparent; }
+        .tab-btn.active { background: white; color: #1e293b; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.5); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .etiqueta-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+        .etiqueta-card:hover { background: #f1f5f9; border-color: #8b5cf6; }
+        .etiqueta-producto { font-weight: 700; color: #1e293b; }
+        .etiqueta-fecha { font-size: 11px; color: #94a3b8; }
+
+        .btn-resumen { background: #8b5cf6; color: white; font-weight: bold; padding: 14px 28px; border: none; border-radius: 12px; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 10px; font-size: 16px; }
+        .btn-resumen:hover { background: #7c3aed; transform: scale(1.02); }
+        .btn-resumen:active { transform: scale(0.97); }
+        .btn-resumen:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-guardar-supabase { background: #3b82f6; color: white; font-weight: bold; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 13px; }
+        .btn-guardar-supabase:hover { background: #2563eb; }
+
+        /* Botón urgente en faltas */
+        .btn-urgente-falta { background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; margin-right: 6px; }
+        .btn-urgente-falta:hover { background: #d97706; transform: scale(1.03); }
+        .btn-urgente-falta.activo { background: #dc2626; animation: pulse-urgente 1.5s ease-in-out infinite; }
+        @keyframes pulse-urgente { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.7); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
+
+        /* Pestaña Pedidos — estilos heredados de listas.html */
+        .badge-conn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-conn.loading { background: #fef3c7; color: #92400e; animation: pulse-badge 1.5s ease-in-out infinite; }
+        .badge-conn.online { background: #d1fae5; color: #065f46; }
+        @keyframes pulse-badge { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        .prov-btn { width: 100%; text-align: left; padding: 12px 16px; border-radius: 12px; font-weight: 700; font-size: 13px; transition: all 0.2s; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .prov-btn:hover { background: #f1f5f9; }
+        .prov-btn.active { background: #dbeafe; color: #1e40af; border-color: #93c5fd; box-shadow: inset 0 2px 4px rgba(0,0,0,0.04); }
+
+        .art-row { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; transition: background 0.15s; }
+        .art-row:hover { background: #f8fafc; }
+        .art-row.seleccionado { background: #f0fdf4; }
+        .art-row.tiene-historico { border-left: 3px solid #10b981; }
+        .art-row.es-falta { border-left: 3px solid #f59e0b; background: #fffbeb; }
+        .art-row.es-falta.reincidente { border-left: 3px solid #dc2626; background: #fef2f2; }
+        .art-row.es-falta.es-urgente { border-left: 4px solid #dc2626; background: #ffedd5; box-shadow: inset 0 0 0 1px #f59e0b; }
+        .art-row:last-child { border-bottom: none; }
+
+        .art-check { width: 22px; height: 22px; cursor: pointer; accent-color: #10b981; flex-shrink: 0; }
+        .art-cant { width: 70px; padding: 8px 4px; text-align: center; font-weight: 800; font-size: 15px; border: 2px solid #cbd5e1; border-radius: 8px; background: #f8fafc; color: #1e293b; }
+        .art-cant:focus { outline: none; border-color: #10b981; background: white; }
+
+        .btn-q { background: #e2e8f0; color: #475569; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; }
+        .btn-q:hover { background: #cbd5e1; }
+        .btn-q:active { transform: scale(0.95); }
+
+        .btn-urgente { background: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+        .btn-urgente:hover { background: #b91c1c; transform: scale(1.02); }
+        .btn-urgente:active { transform: scale(0.96); }
+
+        .btn-eliminar { background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: all 0.2s; opacity: 0.4; }
+        .btn-eliminar:hover { background: #fef2f2; opacity: 1; transform: scale(1.1); }
+
+        .footer-sticky { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 2px solid #10b981; padding: 14px 20px; z-index: 40; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); transform: translateY(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .footer-sticky.visible { transform: translateY(0); }
+
+        .hist-badge { font-size: 10px; background: #ecfdf5; color: #065f46; padding: 2px 8px; border-radius: 10px; font-weight: 700; display: inline-block; }
+        .hist-badge.nuevo { background: #f1f5f9; color: #64748b; }
+        .falta-badge { font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 10px; font-weight: 700; display: inline-block; }
+        .falta-badge.reincidente { background: #dc2626; color: white; }
+        .falta-badge.urgente { background: #dc2626; color: white; animation: pulse-urgente-badge 1.5s ease-in-out infinite; }
+        @keyframes pulse-urgente-badge { 0%, 100% { transform: scale(1); background: #dc2626; } 50% { transform: scale(1.08); background: #b91c1c; } }
+
+        .buscador { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; }
+        .buscador:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+
+        @media (max-width: 640px) {
+            .tabs-container { flex-direction: column; gap: 4px; }
+            .tab-btn { padding: 10px; font-size: 13px; }
+            .etiqueta-card { flex-direction: column; gap: 8px; text-align: center; }
+        }
+        @media (max-width: 768px) {
+            .art-row { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-8 select-none font-sans">
+
+    <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-4xl mx-auto flex justify-between items-center flex-wrap gap-3">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">📋</span>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-slate-900">FREDWARE PEDIDOS</h1>
+                    <p class="text-xs text-blue-600 font-bold tracking-widest uppercase">Faltas · Pedidos · Etiquetas</p>
+                </div>
+            </div>
+            <div class="flex flex-col items-end space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.0</span>
+                </div>
+                <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto w-full px-4 mt-6 space-y-6">
+
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="tab-faltas" onclick="setTab('faltas')">📝 Faltas</button>
+            <button class="tab-btn" data-tab="tab-pedidos" onclick="setTab('pedidos')">📋 Pedidos</button>
+            <button class="tab-btn" data-tab="tab-etiquetas" onclick="setTab('etiquetas')">🏷️ Etiquetas</button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 1: FALTAS
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="tab-faltas" class="tab-content active">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                    <span>📝</span> Control de Faltas Diarias
+                </h2>
+                <div class="flex gap-2 items-center">
+                    <div class="flex-1 relative">
+                        <input type="text" 
+                               id="insumo-falta" 
+                               placeholder="Escribe para buscar producto..." 
+                               class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 uppercase text-base shadow-inner">
+                    </div>
+                    <button onclick="registrarFaltaCocina()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
+                        ➕ Añadir
+                    </button>
+                </div>
+                <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-[60vh] overflow-y-auto">
+                    <div class="text-center italic text-slate-400 text-xs py-2">⏳ Cargando faltas...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 2: PEDIDOS
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="tab-pedidos" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <!-- COLUMNA IZQUIERDA: PROVEEDORES -->
+                <div class="md:col-span-1 space-y-4">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">🏢 Distribuidores</h2>
+                            <button onclick="cargarProveedoresDesdeSupabase()" class="text-blue-600 text-xs font-bold hover:underline">🔄 Refrescar</button>
+                        </div>
+                        <div id="lista-proveedores" class="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
+                            <div class="text-xs text-slate-400 p-2">⏳ Leyendo agenda...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMNA DERECHA: PLANTILLA + FALTAS -->
+                <div class="md:col-span-2 space-y-4">
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div class="p-5 border-b border-slate-100">
+                            <div class="flex justify-between items-start flex-wrap gap-3">
+                                <div>
+                                    <h2 id="nombre-proveedor-activo" class="text-lg font-black text-slate-900">Selecciona un proveedor</h2>
+                                    <p id="info-proveedor-activo" class="text-xs text-slate-400 font-medium mt-1">Elige un distribuidor de la izquierda</p>
+                                </div>
+                                <button id="btn-add-articulo" onclick="toggleFormNuevoArticulo()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95 hidden">
+                                    ➕ Añadir Artículo
+                                </button>
+                            </div>
+
+                            <div id="form-nuevo-articulo" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+                                <input type="text" id="nuevo-nombre-articulo" placeholder="Nombre del artículo..." class="flex-1 min-w-[180px] bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 uppercase">
+                                <select id="nueva-unidad-articulo" class="bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm font-semibold focus:outline-none text-slate-600">
+                                    <option value="UNIDADES">Ud</option>
+                                    <option value="KG">Kg</option>
+                                    <option value="L">Litros</option>
+                                    <option value="CAJAS">Cajas</option>
+                                    <option value="BOTES">Botes</option>
+                                </select>
+                                <button onclick="agregarIngredienteASupabase()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm active:scale-95 transition-all">
+                                    💾 Guardar
+                                </button>
+                            </div>
+
+                            <div id="contenedor-buscador" class="mt-4 hidden">
+                                <input type="text" id="buscador" class="buscador" placeholder="🔍 Buscar artículo en esta plantilla..." oninput="filtrarArticulos()">
+                            </div>
+                        </div>
+
+                        <div id="contenedor-ingredientes" class="max-h-[60vh] overflow-y-auto">
+                            <div class="text-center italic text-slate-400 text-sm py-12 px-4">
+                                👈 Haz clic en un distribuidor de la izquierda para ver su plantilla de pedido
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 3: ETIQUETAS
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="tab-etiquetas" class="tab-content">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 class="text-sm font-bold text-purple-600 uppercase tracking-wider flex items-center gap-2">
+                    <span>🏷️</span> Gestión de Etiquetas Diarias
+                </h2>
+                <p class="text-xs text-slate-500">Aquí puedes gestionar todas las etiquetas acumuladas durante el día</p>
+
+                <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 flex justify-between items-center flex-wrap gap-3">
+                    <div>
+                        <span class="text-sm font-bold text-slate-600">Etiquetas acumuladas hoy:</span>
+                        <span id="total-etiquetas-dia" class="text-2xl font-black text-purple-600 ml-2">0</span>
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="actualizarContadorEtiquetas()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-sm transition-all">
+                            🔄 Actualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div id="lista-etiquetas-dia" class="max-h-[300px] overflow-y-auto space-y-2">
+                    <div class="text-center text-slate-400 py-4 text-sm">No hay etiquetas registradas hoy</div>
+                </div>
+
+                <div class="flex flex-wrap gap-3 pt-2 border-t border-slate-200">
+                    <button onclick="imprimirResumenDia()" class="btn-resumen">
+                        🖨️ Imprimir Resumen del Día
+                    </button>
+                    <button onclick="guardarEtiquetasSupabase()" class="btn-guardar-supabase">
+                        ☁️ Guardar en Supabase
+                    </button>
+                    <button onclick="verificarSincronizacionEtiquetas()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-all">
+                        📊 Ver sincronización
+                    </button>
+                    <button onclick="sincronizarEtiquetasConSupabase()" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-all">
+                        ☁️ Sincronizar todo
+                    </button>
+                    <button onclick="limpiarEtiquetasDia()" class="bg-red-500 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-all">
+                        🗑️ Limpiar etiquetas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FOOTER STICKY (solo visible en pestaña Pedidos)
+         ═══════════════════════════════════════════════════════════ -->
+    <div id="footer-sticky" class="footer-sticky">
+        <div class="max-w-4xl mx-auto flex justify-between items-center flex-wrap gap-3">
+            <div>
+                <span class="text-sm font-bold text-slate-700">
+                    <span id="contador-seleccionados">0</span> seleccionados
+                </span>
+                <span class="text-xs text-slate-400 ml-2">
+                    · Total: <span id="total-unidades" class="font-black text-emerald-600">0</span> unidades
+                </span>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="limpiarSeleccion()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-sm px-4 py-3 rounded-xl transition-all active:scale-95">
+                    🧹 Limpiar
+                </button>
+                <button onclick="enviarPedidoCentral()" id="btn-enviar-pedido" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2">
+                    <span id="btn-text">⚡ Enviar a Compras</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN
+        // ============================================================
+        const db_nube = window.fredware.supabase;
+        const API_URL = "https://untried-january-thinning.ngrok-free.dev";
+        const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+        // ============================================================
+        // ESTADO GLOBAL
+        // ============================================================
+        let tabActual = 'faltas';
+        let cestaGlobal = [];
+        let faltasPendientesCache = [];
+
+        // Estado pestaña Pedidos
+        let proveedorActivo = null;
+        let proveedorNombre = null;
+        let articulosCargados = [];
+        let faltasCargadas = [];
+        let seleccion = {};
+        let textoBusqueda = '';
+        let proveedoresCache = [];
+
+        // ============================================================
+        // UTILIDADES DEL NÚCLEO
+        // ============================================================
+        function lanzarToast(mensaje, tipo = 'success') {
+            window.fredware.ui.toast(mensaje, tipo);
+        }
+
+        function escapeHtml(text) {
+            return window.fredware.util.escapeHtml(text);
+        }
+
+        function limpiarSufijosInsumo(texto) {
+            if (!texto) return '';
+            return texto
+                .replace(/\s*\(PROVEEDOR NO ENTREGÓ EN REPARTO\)/gi, '')
+                .replace(/\s*\(FALTARON.*?\)/gi, '')
+                .replace(/\s*\(PROVEEDOR NO ENTREGÓ.*?\)/gi, '')
+                .trim();
+        }
+
+        function generarIdUnico() {
+            return "ID_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
+        }
+
+        function calcularFechaManana() {
+            const hoy = new Date();
+            const manana = new Date(hoy);
+            manana.setDate(hoy.getDate() + 1);
+            return manana.toISOString().split('T')[0];
+        }
+
+        function calcularFechaHoy() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // ============================================================
+        // GESTIÓN DE PESTAÑAS
+        // ============================================================
+        function setTab(nombre) {
+            tabActual = nombre;
+            localStorage.setItem('fredware_pedidos_tab', nombre);
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                const tab = btn.dataset.tab;
+                btn.classList.toggle('active', tab === 'tab-' + nombre);
+            });
+
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.toggle('active', c.id === 'tab-' + nombre);
+            });
+
+            // Footer sticky solo visible en Pedidos cuando hay selección
+            const footer = document.getElementById('footer-sticky');
+            if (footer) {
+                if (nombre === 'pedidos' && Object.keys(seleccion).length > 0) {
+                    footer.classList.add('visible');
+                } else {
+                    footer.classList.remove('visible');
+                }
+            }
+
+            // Cargar datos al entrar en una pestaña
+            if (nombre === 'pedidos') {
+                if (proveedoresCache.length === 0) {
+                    cargarProveedoresDesdeSupabase();
+                }
+            }
+            if (nombre === 'etiquetas') {
+                actualizarContadorEtiquetas();
+            }
+        }
+
+        // ============================================================
+        // SUSCRIPCIÓN AL NÚCLEO
+        // ============================================================
+        window.fredware.subscribe((state) => {
+            console.log('📡 [Pedidos] Estado del núcleo:', {
+                recepciones: state.recepciones?.length,
+                productos: state.productos?.length,
+                inicializado: state.inicializado
+            });
+
+            const badgeRed = document.getElementById('badge-red');
+            if (badgeRed && !badgeRed.dataset.online) {
+                if (state.inicializado) {
+                    badgeRed.className = 'badge-conn online';
+                    badgeRed.textContent = '🟢 ONLINE';
+                    badgeRed.dataset.online = 'true';
+                } else {
+                    badgeRed.className = 'badge-conn loading';
+                    badgeRed.textContent = '🟡 CONECTANDO...';
+                }
+            }
+
+            const timestamp = document.getElementById('timestamp-sincro');
+            if (timestamp && state.ultimaActualizacion) {
+                const hora = new Date(state.ultimaActualizacion).toTimeString().split(' ')[0];
+                timestamp.textContent = `Última actualización: ${hora}`;
+            }
+        });
+
+        // ============================================================
+        // ESPERAR AL NÚCLEO
+        // ============================================================
+        async function esperarAlNucleo() {
+            const MAX_INTENTOS = 30;
+            for (let i = 0; i < MAX_INTENTOS; i++) {
+                if (window.fredware && window.fredware.state && window.fredware.state.inicializado) {
+                    return true;
+                }
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            return false;
+        }
+
+        // ============================================================
+        // ═══════════════════════════════════════════════════════════
+        // BLOQUE FALTAS
+        // ═══════════════════════════════════════════════════════════
+        // ============================================================
+
+        async function obtenerFaltas() {
+            const { data, error } = await db_nube
+                .from('faltas_cocina')
+                .select('*')
+                .order('fecha_anotado', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        }
+
+        async function agregarFalta(insumo, productoInfo = null) {
+            if (!insumo || !String(insumo).trim()) {
+                console.error('❌ [agregarFalta] insumo vacío, abortando');
+                lanzarToast('Error: el nombre del producto está vacío', 'error');
+                return { error: 'insumo vacío' };
+            }
+
+            const insumoLimpio = String(insumo).trim();
+
+            if (productoInfo && !productoInfo.nombre_articulo) {
+                productoInfo = null;
+            }
+
+            let proveedorId = 'S/P';
+            let catalogoId = null;
+
+            try {
+                let producto = productoInfo;
+                if (!producto) {
+                    const matchId = await fredware.productos.buscar(insumoLimpio);
+                    if (matchId) {
+                        producto = fredware.state.productos.find(p => p.id === matchId);
+                    }
+                }
+                if (producto && producto.nombre_articulo) {
+                    proveedorId = producto.proveedor_principal || 'S/P';
+                    const idNum = parseInt(producto.id);
+                    catalogoId = isNaN(idNum) ? null : idNum;
+                }
+            } catch (e) {
+                console.warn('No se pudo asignar proveedor a la falta:', e);
+            }
+
+            const { error } = await db_nube
+                .from('faltas_cocina')
+                .insert({ 
+                    insumo: insumoLimpio,
+                    proveedor_id: proveedorId,
+                    catalogo_id: catalogoId,
+                    intentos: 0,
+                    urgente: false
+                });
+            if (error) throw error;
+
+            return { proveedor_id: proveedorId, catalogo_id: catalogoId };
+        }
+
+        async function eliminarFalta(id) {
+            const { error } = await db_nube
+                .from('faltas_cocina')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+        }
+
+        async function toggleUrgente(id, urgenteActual) {
+            try {
+                const nuevoEstado = !urgenteActual;
+                const { error } = await db_nube
+                    .from('faltas_cocina')
+                    .update({ urgente: nuevoEstado })
+                    .eq('id', id);
+                if (error) throw error;
+
+                lanzarToast(
+                    nuevoEstado ? '🚨 Marcada como URGENTE' : '✅ Urgencia quitada',
+                    nuevoEstado ? 'warning' : 'success'
+                );
+                await renderFaltasLocales();
+                sincronizarConOficina('faltas', await obtenerFaltas());
+            } catch (error) {
+                console.error('Error toggle urgente:', error);
+                lanzarToast('Error al cambiar urgencia', 'error');
+            }
+        }
+
+        async function renderFaltasLocales() {
+            try {
+                const faltas = await obtenerFaltas();
+                const container = document.getElementById('contenedor-faltas-local');
+                if (!container) return;
+                container.innerHTML = '';
+                if (faltas.length === 0) {
+                    container.innerHTML = `<div class="text-center italic text-slate-400 text-xs py-2">No hay faltas apuntadas hoy.</div>`;
+                    return;
+                }
+                faltas.forEach((item) => {
+                    const insumoLimpio = limpiarSufijosInsumo(item.insumo);
+                    const esReincidente = (item.intentos || 0) > 0;
+                    const esUrgente = item.urgente === true;
+
+                    let colorTexto = 'text-amber-600';
+                    let estiloFondo = 'bg-slate-50 border-slate-200';
+                    let icono = '⚠️';
+
+                    if (esUrgente) {
+                        colorTexto = 'text-orange-600';
+                        estiloFondo = 'bg-orange-50 border-orange-400';
+                        icono = '🚨';
+                    } else if (esReincidente) {
+                        colorTexto = 'text-red-600';
+                        estiloFondo = 'bg-red-50 border-red-300';
+                    }
+
+                    const btnUrgente = `<button class="btn-urgente-falta ${esUrgente ? 'activo' : ''}" onclick="toggleUrgente(${item.id}, ${esUrgente})" title="${esUrgente ? 'Quitar urgencia' : 'Marcar como urgente'}">
+                        ${esUrgente ? '🚨 URGENTE' : '⚡ URGENTE'}
+                    </button>`;
+
+                    container.innerHTML += `
+                        <div class="flex justify-between items-center ${estiloFondo} border px-4 py-2.5 rounded-xl shadow-sm">
+                            <span class="text-sm font-bold ${colorTexto} flex-1">${icono} ${escapeHtml(insumoLimpio)}</span>
+                            <div class="flex items-center gap-2">
+                                ${btnUrgente}
+                                <button onclick="borrarFaltaLocal(${item.id})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Error renderizando faltas:", error);
+            }
+        }
+
+        async function borrarFaltaLocal(id) {
+            try {
+                await eliminarFalta(id);
+                lanzarToast("Falta eliminada.");
+                await renderFaltasLocales();
+                sincronizarConOficina('faltas', await obtenerFaltas());
+            } catch (error) {
+                lanzarToast("Error al eliminar falta.", "error");
+            }
+        }
+
+        async function registrarFaltaCocina() {
+            const input = document.getElementById('insumo-falta');
+            const valor = input.value.trim().toUpperCase();
+
+            if (!valor) {
+                lanzarToast('Escribe el nombre de un producto', 'warning');
+                return;
+            }
+
+            if (valor.length < 3) {
+                Swal.fire({ icon: 'warning', title: 'Texto muy corto', text: 'Escribe al menos 3 letras.', confirmButtonColor: '#0284c7' });
+                return;
+            }
+
+            const seleccionado = input.fredwareGetSeleccionado ? input.fredwareGetSeleccionado() : null;
+
+            if (!seleccionado) {
+                try {
+                    const matchId = await fredware.productos.buscar(valor);
+                    if (matchId) {
+                        const producto = fredware.state.productos.find(p => p.id === matchId);
+                        if (producto) {
+                            const conf = await Swal.fire({
+                                title: '🔍 ¿Querías decir...?',
+                                html: `<p style="font-size:14px;color:#64748b;">Escribiste:</p>
+                                       <p style="font-size:16px;font-weight:700;color:#475569;">"${escapeHtml(valor)}"</p>
+                                       <p style="font-size:14px;color:#64748b;margin-top:12px;">Producto encontrado:</p>
+                                       <p style="font-size:20px;font-weight:900;color:#0ea5e9;">${escapeHtml(producto.nombre_articulo)}</p>
+                                       <p style="font-size:11px;color:#94a3b8;margin-top:8px;">Zona: ${escapeHtml(producto.zona)} · Tipo: ${escapeHtml(producto.tipo)}</p>`,
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#10b981',
+                                confirmButtonText: '✅ Sí, es ese',
+                                cancelButtonText: '➕ Crear nuevo'
+                            });
+                            if (conf.isConfirmed) {
+                                const faltas = await obtenerFaltas();
+                                if (faltas.some(f => f.insumo === producto.nombre_articulo)) {
+                                    lanzarToast("Ya está anotado.", "warning");
+                                    input.value = '';
+                                    if (input.fredwareReset) input.fredwareReset();
+                                    return;
+                                }
+                                await agregarFalta(producto.nombre_articulo, producto);
+                                input.value = '';
+                                if (input.fredwareReset) input.fredwareReset();
+                                lanzarToast(`⚠️ Falta añadida: ${producto.nombre_articulo}`);
+                                await renderFaltasLocales();
+                                sincronizarConOficina('faltas', await obtenerFaltas());
+                                return;
+                            } else {
+                                await abrirModalCrearProductoDesdeFalta(valor);
+                                return;
+                            }
+                        }
+                    }
+                    const conf = await Swal.fire({
+                        title: '🆕 Producto nuevo',
+                        html: `<p style="font-size:14px;">"<strong>${escapeHtml(valor)}</strong>" no está en el catálogo.</p>
+                               <p style="font-size:12px;color:#64748b;margin-top:8px;">¿Quieres crearlo como producto nuevo?</p>`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#f59e0b',
+                        confirmButtonText: '➕ Crear producto',
+                        cancelButtonText: 'Cancelar'
+                    });
+                    if (conf.isConfirmed) {
+                        await abrirModalCrearProductoDesdeFalta(valor);
+                    }
+                } catch (error) {
+                    console.error('Error al validar producto:', error);
+                    lanzarToast('Error al validar el producto', 'error');
+                }
+                return;
+            }
+
+            const nombreExacto = seleccionado?.nombre_articulo || seleccionado?.nombre;
+            if (!nombreExacto) {
+                lanzarToast('⚠️ El producto seleccionado no tiene nombre.', 'warning');
+                return;
+            }
+
+            try {
+                const faltas = await obtenerFaltas();
+                if (faltas.some(f => f.insumo === nombreExacto)) {
+                    lanzarToast("Insumo ya anotado anteriormente.", "warning");
+                    input.value = '';
+                    if (input.fredwareReset) input.fredwareReset();
+                    return;
+                }
+                await agregarFalta(nombreExacto, seleccionado);
+                input.value = '';
+                if (input.fredwareReset) input.fredwareReset();
+                lanzarToast(`⚠️ Falta añadida: ${nombreExacto}`);
+                await renderFaltasLocales();
+                sincronizarConOficina('faltas', await obtenerFaltas());
+            } catch (error) {
+                lanzarToast("Error al registrar falta en la nube.", "error");
+            }
+        }
+
+        async function abrirModalCrearProductoDesdeFalta(nombrePropuesto) {
+            const nuevo = await fredware.productos.mostrarModalCrearProducto(nombrePropuesto);
+            if (nuevo) {
+                const input = document.getElementById('insumo-falta');
+                if (input) {
+                    input.value = '';
+                    if (input.fredwareReset) input.fredwareReset();
+                }
+                const nombreProducto = nuevo?.nombre || nuevo?.nombre_articulo || nombrePropuesto;
+                const conf = await Swal.fire({
+                    title: '✅ Producto creado',
+                    html: `<p style="font-size:15px;"><strong>${escapeHtml(nombreProducto)}</strong> se ha añadido al catálogo.</p>
+                           <p style="font-size:13px;color:#64748b;margin-top:8px;">¿Quieres añadirlo también a las faltas?</p>`,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    confirmButtonText: '➕ Añadir falta',
+                    cancelButtonText: 'Solo crear producto'
+                });
+                if (conf.isConfirmed) {
+                    try {
+                        await fredware.productos.cargar();
+                        const productoCreado = fredware.state.productos.find(p =>
+                            p.nombre_articulo && p.nombre_articulo.toUpperCase() === String(nombreProducto).toUpperCase()
+                        );
+                        await agregarFalta(nombreProducto, productoCreado || null);
+                        lanzarToast(`⚠️ Falta añadida: ${nombreProducto}`);
+                        await renderFaltasLocales();
+                        sincronizarConOficina('faltas', await obtenerFaltas());
+                    } catch (e) {
+                        console.error('Error añadiendo falta:', e);
+                    }
+                }
+            }
+        }
+
+        // ============================================================
+        // ═══════════════════════════════════════════════════════════
+        // BLOQUE PEDIDOS
+        // ═══════════════════════════════════════════════════════════
+        // ============================================================
+
+        async function cargarProveedoresDesdeSupabase() {
+            const container = document.getElementById('lista-proveedores');
+            container.innerHTML = '<div class="text-xs text-slate-400 p-2">⏳ Sincronizando...</div>';
+
+            try {
+                const { data: proveedores, error: errProv } = await db_nube
+                    .from('proveedores')
+                    .select('id, nombre')
+                    .order('nombre', { ascending: true });
+                if (errProv) throw errProv;
+                proveedoresCache = proveedores || [];
+
+                const { data: articulos } = await db_nube
+                    .from('articulos_habituales')
+                    .select('proveedor_id');
+
+                const { data: faltas } = await db_nube
+                    .from('faltas_cocina')
+                    .select('proveedor_id, urgente');
+
+                const contadores = {};
+                (articulos || []).forEach(a => {
+                    contadores[a.proveedor_id] = (contadores[a.proveedor_id] || 0) + 1;
+                });
+
+                const contadoresFaltas = {};
+                const contadoresUrgentes = {};
+                (faltas || []).forEach(f => {
+                    if (f.proveedor_id && f.proveedor_id !== 'S/P') {
+                        contadoresFaltas[f.proveedor_id] = (contadoresFaltas[f.proveedor_id] || 0) + 1;
+                        if (f.urgente === true) {
+                            contadoresUrgentes[f.proveedor_id] = (contadoresUrgentes[f.proveedor_id] || 0) + 1;
+                        }
+                    }
+                });
+
+                container.innerHTML = '';
+                if (!proveedores || proveedores.length === 0) {
+                    container.innerHTML = '<div class="text-xs text-slate-400 p-2">Sin proveedores.</div>';
+                    return;
+                }
+
+                proveedores.forEach(p => {
+                    const numArt = contadores[p.id] || 0;
+                    const numFaltas = contadoresFaltas[p.id] || 0;
+                    const numUrgentes = contadoresUrgentes[p.id] || 0;
+                    const safeId = `btn-prov-${p.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+                    let badgeFaltas = '';
+                    if (numUrgentes > 0) {
+                        badgeFaltas = `<span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black ml-1 animate-pulse">🚨 ${numUrgentes}</span>`;
+                    } else if (numFaltas > 0) {
+                        badgeFaltas = `<span class="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-black ml-1">🔔 ${numFaltas}</span>`;
+                    }
+
+                    container.innerHTML += `
+                        <button onclick="cargarHojaInteractiva('${escapeHtml(p.id)}', '${escapeHtml(p.nombre)}')" id="${safeId}" class="prov-btn">
+                            <span>🏢 ${escapeHtml(p.nombre)} ${badgeFaltas}</span>
+                            <span class="text-xs ${numArt > 0 ? 'text-blue-600 font-bold' : 'text-slate-400'}">${numArt}</span>
+                        </button>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error cargando proveedores:', error);
+                container.innerHTML = '<div class="text-xs text-red-500 p-2">❌ Error al cargar.</div>';
+            }
+        }
+
+        async function cargarHojaInteractiva(provId, provNombre) {
+            proveedorActivo = provId;
+            proveedorNombre = provNombre;
+            textoBusqueda = '';
+            document.getElementById('buscador').value = '';
+
+            document.querySelectorAll('#lista-proveedores button').forEach(b => b.classList.remove('active'));
+            const safeBtnId = `btn-prov-${provId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            const btn = document.getElementById(safeBtnId);
+            if (btn) btn.classList.add('active');
+
+            document.getElementById('nombre-proveedor-activo').innerText = `🏢 ${provNombre}`;
+            document.getElementById('info-proveedor-activo').innerText = 'Cargando plantilla y faltas...';
+
+            const contenedor = document.getElementById('contenedor-ingredientes');
+            contenedor.innerHTML = '<div class="text-center italic text-slate-400 text-sm py-12">⏳ Descargando artículos y faltas...</div>';
+
+            try {
+                const [resArt, resFaltas] = await Promise.all([
+                    db_nube.from('articulos_habituales').select('*').eq('proveedor_id', provId).order('nombre_articulo', { ascending: true }),
+                    db_nube.from('faltas_cocina').select('*').eq('proveedor_id', provId).order('fecha_anotado', { ascending: false })
+                ]);
+
+                if (resArt.error) throw resArt.error;
+
+                articulosCargados = resArt.data || [];
+                faltasCargadas = resFaltas.data || [];
+
+                const numFaltas = faltasCargadas.length;
+                const numFaltasReincidentes = faltasCargadas.filter(f => (f.intentos || 0) > 0).length;
+                const numUrgentes = faltasCargadas.filter(f => f.urgente === true).length;
+
+                let infoTexto = `${articulosCargados.length} artículos en la plantilla`;
+                if (numFaltas > 0) {
+                    infoTexto += ` · 🔔 ${numFaltas} faltas de cocina`;
+                    if (numFaltasReincidentes > 0) infoTexto += ` (${numFaltasReincidentes} reincidentes)`;
+                }
+                if (numUrgentes > 0) infoTexto += ` · 🚨 ${numUrgentes} URGENTES`;
+                document.getElementById('info-proveedor-activo').innerText = infoTexto;
+
+                document.getElementById('btn-add-articulo').classList.remove('hidden');
+                document.getElementById('contenedor-buscador').classList.remove('hidden');
+
+                Object.keys(seleccion).forEach(k => {
+                    if (k.startsWith('habitual_')) {
+                        const id = k.replace('habitual_', '');
+                        if (!articulosCargados.find(a => a.id.toString() === id)) delete seleccion[k];
+                    } else if (k.startsWith('falta_')) {
+                        const id = k.replace('falta_', '');
+                        if (!faltasCargadas.find(f => f.id.toString() === id)) delete seleccion[k];
+                    }
+                });
+
+                faltasCargadas.forEach(f => {
+                    const key = `falta_${f.id}`;
+                    if (seleccion[key] === undefined) seleccion[key] = 1;
+                });
+
+                renderIngredientes();
+                actualizarFooter();
+            } catch (error) {
+                console.error('Error cargando hoja:', error);
+                contenedor.innerHTML = '<div class="text-center text-red-500 py-12 text-sm">❌ Error al leer la plantilla.</div>';
+            }
+        }
+
+        function renderIngredientes() {
+            const container = document.getElementById('contenedor-ingredientes');
+            container.innerHTML = '';
+
+            const itemsUnificados = [];
+
+            faltasCargadas.forEach(f => {
+                const insumoLimpio = limpiarSufijosInsumo(f.insumo);
+                if (textoBusqueda && !insumoLimpio.toLowerCase().includes(textoBusqueda)) return;
+                itemsUnificados.push({
+                    tipo: 'falta',
+                    id: f.id,
+                    key: `falta_${f.id}`,
+                    nombre: insumoLimpio,
+                    unidadOriginal: f.unidad_defecto || 'UNIDADES',
+                    veces_pedido: 0,
+                    cantidad_habitual: 1,
+                    intentos: f.intentos || 0,
+                    urgente: f.urgente === true
+                });
+            });
+
+            articulosCargados.forEach(a => {
+                if (textoBusqueda && !a.nombre_articulo.toLowerCase().includes(textoBusqueda)) return;
+                itemsUnificados.push({
+                    tipo: 'habitual',
+                    id: a.id,
+                    key: `habitual_${a.id}`,
+                    nombre: a.nombre_articulo,
+                    unidadOriginal: a.unidad_defecto,
+                    veces_pedido: a.veces_pedido || 0,
+                    cantidad_habitual: a.cantidad_habitual || 1,
+                    intentos: 0,
+                    urgente: false
+                });
+            });
+
+            if (itemsUnificados.length === 0) {
+                if (textoBusqueda) {
+                    container.innerHTML = `<div class="text-center italic text-slate-400 text-sm py-12 px-4">No hay artículos que coincidan con "<strong>${escapeHtml(textoBusqueda)}</strong>"</div>`;
+                } else {
+                    container.innerHTML = '<div class="text-center italic text-slate-400 text-xs py-12 px-4">Esta plantilla está vacía.</div>';
+                }
+                return;
+            }
+
+            itemsUnificados.sort((a, b) => {
+                if (a.urgente && !b.urgente) return -1;
+                if (!a.urgente && b.urgente) return 1;
+                if (a.tipo !== b.tipo) return a.tipo === 'falta' ? -1 : 1;
+                if (a.tipo === 'falta') {
+                    if (a.intentos !== b.intentos) return b.intentos - a.intentos;
+                    return a.nombre.localeCompare(b.nombre);
+                }
+                return a.nombre.localeCompare(b.nombre);
+            });
+
+            itemsUnificados.forEach((item) => {
+                const key = item.key;
+                const seleccionado = seleccion[key] !== undefined;
+                const cantidadActual = seleccion[key] !== undefined ? seleccion[key] : '';
+                const esFalta = item.tipo === 'falta';
+                const esUrgente = esFalta && item.urgente === true;
+                const esReincidente = esFalta && item.intentos > 0;
+                const tieneHistorico = !esFalta && item.veces_pedido > 0;
+
+                let infoBadge = '';
+                if (esFalta) {
+                    if (esUrgente) infoBadge = `<span class="falta-badge urgente">🚨 URGENTE</span>`;
+                    else if (esReincidente) infoBadge = `<span class="falta-badge reincidente">🔔 FALTA REINCIDENTE x${item.intentos}</span>`;
+                    else infoBadge = `<span class="falta-badge">🔔 FALTA COCINA</span>`;
+                } else if (tieneHistorico) {
+                    infoBadge = `<span class="hist-badge">📊 ${item.veces_pedido}x · Últ: ${item.cantidad_habitual} ${escapeHtml(item.unidadOriginal.substring(0,4).toLowerCase())}</span>`;
+                } else {
+                    infoBadge = `<span class="hist-badge nuevo">🆕 Sin histórico</span>`;
+                }
+
+                let rowClass = 'art-row';
+                if (seleccionado) rowClass += ' seleccionado';
+                if (esFalta) {
+                    rowClass += ' es-falta';
+                    if (esReincidente) rowClass += ' reincidente';
+                    if (esUrgente) rowClass += ' es-urgente';
+                } else if (tieneHistorico) {
+                    rowClass += ' tiene-historico';
+                }
+
+                let colorNombre = '#1e293b';
+                if (esUrgente) colorNombre = '#dc2626';
+                else if (esReincidente) colorNombre = '#dc2626';
+                else if (esFalta) colorNombre = '#92400e';
+
+                const btnUrgente = `<button class="btn-urgente" onclick="abrirModalUrgente('${key}')" title="Pedir a otro proveedor urgente">⚡ URGENTE</button>`;
+
+                container.innerHTML += `
+                    <div class="${rowClass}" data-key="${key}" data-nombre="${escapeHtml(item.nombre).toLowerCase()}">
+                        <input type="checkbox" class="art-check" ${seleccionado ? 'checked' : ''} onchange="toggleSeleccion('${key}')">
+                        <div class="flex-1 min-w-[150px]">
+                            <div class="text-sm font-bold tracking-tight uppercase" style="color:${colorNombre};">
+                                ${esUrgente ? '🚨 ' : ''}${escapeHtml(item.nombre)}
+                            </div>
+                            <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${escapeHtml(item.unidadOriginal)}</span>
+                                ${infoBadge}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <input type="number" class="art-cant" min="0" step="1"
+                                value="${cantidadActual}"
+                                placeholder="0"
+                                onchange="cambiarCantidad('${key}', this.value)"
+                                oninput="cambiarCantidad('${key}', this.value)">
+                            <div class="flex gap-1">
+                                <button class="btn-q" onclick="cantidadRapida('${key}', 1)">+1</button>
+                                <button class="btn-q" onclick="cantidadRapida('${key}', 5)">+5</button>
+                                <button class="btn-q" onclick="cantidadRapida('${key}', 10)">+10</button>
+                            </div>
+                            ${btnUrgente}
+                            ${item.tipo === 'habitual' ? `<button class="btn-eliminar" onclick="eliminarIngrediente(${item.id}, '${escapeHtml(item.nombre).replace(/'/g, "\\'")}')" title="Eliminar artículo">🗑️</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function abrirModalUrgente(key) {
+            let item = null;
+            if (key.startsWith('falta_')) {
+                const id = key.replace('falta_', '');
+                const falta = faltasCargadas.find(f => f.id.toString() === id);
+                if (falta) item = { nombre: limpiarSufijosInsumo(falta.insumo), unidad: 'UNIDADES', tipo: 'falta', faltaId: falta.id };
+            } else if (key.startsWith('habitual_')) {
+                const id = key.replace('habitual_', '');
+                const art = articulosCargados.find(a => a.id.toString() === id);
+                if (art) item = { nombre: art.nombre_articulo, unidad: art.unidad_defecto, tipo: 'habitual', habitualId: art.id };
+            }
+
+            if (!item) { lanzarToast('No se encontró el artículo', 'error'); return; }
+
+            let proveedorSugerido = null;
+            try {
+                const { data: otrosProvs } = await db_nube.from('articulos_habituales').select('proveedor_id').eq('nombre_articulo', item.nombre);
+                if (otrosProvs && otrosProvs.length > 0) {
+                    const candidatos = otrosProvs.map(o => o.proveedor_id).filter(p => p && p !== proveedorActivo);
+                    if (candidatos.length > 0) proveedorSugerido = candidatos[0];
+                }
+            } catch (e) {}
+
+            const provsDisponibles = proveedoresCache.filter(p => p.id !== proveedorActivo);
+            let opcionesHTML = '<option value="">— Selecciona proveedor —</option>';
+            provsDisponibles.forEach(p => {
+                const selected = (proveedorSugerido === p.id) ? 'selected' : '';
+                opcionesHTML += `<option value="${escapeHtml(p.id)}" ${selected}>${escapeHtml(p.nombre)}${proveedorSugerido === p.id ? ' ⭐ (sugerido)' : ''}</option>`;
+            });
+
+            const { value: formValues } = await Swal.fire({
+                title: '⚡ Pedido URGENTE',
+                background: '#ffffff',
+                color: '#0f172a',
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                showCancelButton: true,
+                confirmButtonText: '⚡ Pedir urgente',
+                cancelButtonText: 'Cancelar',
+                html: `
+                    <div style="text-align:left; font-size:14px; padding:4px;">
+                        <div style="background:#fef2f2; border-left:4px solid #dc2626; padding:10px 14px; border-radius:8px; margin-bottom:14px;">
+                            <div style="font-size:11px; color:#991b1b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Producto</div>
+                            <div style="font-size:16px; font-weight:900; color:#1e293b; margin-top:2px;">${escapeHtml(item.nombre)}</div>
+                            <div style="font-size:11px; color:#64748b; margin-top:4px;">Proveedor habitual: <strong>${escapeHtml(proveedorNombre)}</strong></div>
+                        </div>
+                        <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Proveedor alternativo *</label>
+                        <select id="urg-proveedor" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; background:#f8fafc; font-weight:600;">${opcionesHTML}</select>
+                        <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-top:12px; margin-bottom:4px;">Cantidad *</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input id="urg-cantidad" type="number" min="1" value="1" style="width:100px; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; text-align:center; font-weight:700;">
+                            <span style="font-size:13px; color:#64748b;">${escapeHtml(item.unidad)}</span>
+                        </div>
+                        <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-top:12px; margin-bottom:4px;">Motivo (opcional)</label>
+                        <input id="urg-motivo" type="text" placeholder="Ej: MAKRO no reparte hasta viernes" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; background:#f8fafc;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-top:14px; padding:10px; background:#fef2f2; border-radius:8px;">
+                            <input type="checkbox" id="urg-etiqueta" checked style="width:18px; height:18px; accent-color:#dc2626; cursor:pointer;">
+                            <label for="urg-etiqueta" style="font-size:13px; font-weight:600; color:#991b1b; cursor:pointer;">Marcar como <strong>[URGENTE]</strong> en el WhatsApp</label>
+                        </div>
+                    </div>
+                `,
+                didOpen: () => { document.getElementById('urg-cantidad')?.focus(); },
+                preConfirm: () => {
+                    const provAlt = document.getElementById('urg-proveedor').value;
+                    const cant = parseInt(document.getElementById('urg-cantidad').value) || 0;
+                    const motivo = document.getElementById('urg-motivo').value.trim();
+                    const etiqueta = document.getElementById('urg-etiqueta').checked;
+                    if (!provAlt) { Swal.showValidationMessage('⚠️ Selecciona un proveedor alternativo'); return false; }
+                    if (cant <= 0) { Swal.showValidationMessage('⚠️ La cantidad debe ser mayor que 0'); return false; }
+                    return { proveedorAlt: provAlt, cantidad: cant, motivo, etiqueta };
+                }
+            });
+
+            if (!formValues) return;
+
+            try {
+                const prefijo = formValues.etiqueta ? '[URGENTE] ' : '';
+                const detalle = `${prefijo}[${formValues.cantidad} ${item.unidad}] ${item.nombre}`;
+                const nuevoItem = {
+                    id: generarIdUnico(),
+                    detalle: detalle,
+                    proveedor_id: formValues.proveedorAlt,
+                    estado: "PENDIENTE",
+                    fecha_registro: new Date().toISOString(),
+                    fecha_entrega_esperada: calcularFechaHoy()
+                };
+                const { error: errInsert } = await db_nube.from('cesta_pedidos').insert([nuevoItem]);
+                if (errInsert) throw errInsert;
+
+                if (item.tipo === 'falta' && item.faltaId) {
+                    await db_nube.from('faltas_cocina').delete().eq('id', item.faltaId);
+                    delete seleccion[key];
+                }
+                lanzarToast(`⚡ "${item.nombre}" movida a ${formValues.proveedorAlt} (URGENTE)`, 'success');
+                await cargarProveedoresDesdeSupabase();
+                await renderFaltasLocales();
+                if (proveedorActivo) await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+            } catch (error) {
+                console.error('Error en pedido urgente:', error);
+                lanzarToast('❌ Error al crear pedido urgente: ' + error.message, 'error');
+            }
+        }
+
+        function toggleSeleccion(key) {
+            if (seleccion[key] !== undefined) {
+                delete seleccion[key];
+            } else {
+                if (key.startsWith('habitual_')) {
+                    const id = key.replace('habitual_', '');
+                    const art = articulosCargados.find(a => a.id.toString() === id);
+                    const cant = (art && art.cantidad_habitual && art.cantidad_habitual > 0) ? art.cantidad_habitual : 1;
+                    seleccion[key] = cant;
+                } else {
+                    seleccion[key] = 1;
+                }
+            }
+            renderIngredientes();
+            actualizarFooter();
+        }
+
+        function cambiarCantidad(key, valor) {
+            const cant = parseFloat(valor) || 0;
+            if (cant > 0) seleccion[key] = cant;
+            else delete seleccion[key];
+
+            const row = document.querySelector(`.art-row[data-key="${key}"]`);
+            if (row) {
+                const checkbox = row.querySelector('.art-check');
+                if (cant > 0 && checkbox && !checkbox.checked) { checkbox.checked = true; row.classList.add('seleccionado'); }
+                else if (cant <= 0 && checkbox && checkbox.checked) { checkbox.checked = false; row.classList.remove('seleccionado'); }
+            }
+            actualizarFooter();
+        }
+
+        function cantidadRapida(key, cantidad) {
+            const actual = parseFloat(seleccion[key]) || 0;
+            const nueva = actual + cantidad;
+            seleccion[key] = nueva;
+
+            const row = document.querySelector(`.art-row[data-key="${key}"]`);
+            if (row) {
+                const input = row.querySelector('.art-cant');
+                if (input) input.value = nueva;
+                const checkbox = row.querySelector('.art-check');
+                if (checkbox && !checkbox.checked) { checkbox.checked = true; row.classList.add('seleccionado'); }
+            }
+            actualizarFooter();
+        }
+
+        function limpiarSeleccion() {
+            seleccion = {};
+            renderIngredientes();
+            actualizarFooter();
+            lanzarToast('🧹 Selección limpiada');
+        }
+
+        function actualizarFooter() {
+            const keys = Object.keys(seleccion);
+            const numSeleccionados = keys.length;
+            const totalUnidades = keys.reduce((sum, k) => sum + (parseFloat(seleccion[k]) || 0), 0);
+
+            document.getElementById('contador-seleccionados').textContent = numSeleccionados;
+            document.getElementById('total-unidades').textContent = totalUnidades;
+
+            const footer = document.getElementById('footer-sticky');
+            if (numSeleccionados > 0 && tabActual === 'pedidos') footer.classList.add('visible');
+            else footer.classList.remove('visible');
+        }
+
+        function filtrarArticulos() {
+            const input = document.getElementById('buscador');
+            textoBusqueda = input.value.trim().toLowerCase();
+            renderIngredientes();
+        }
+
+        function toggleFormNuevoArticulo() {
+            const form = document.getElementById('form-nuevo-articulo');
+            form.classList.toggle('hidden');
+            if (!form.classList.contains('hidden')) {
+                document.getElementById('nuevo-nombre-articulo').focus();
+            }
+        }
+
+        async function agregarIngredienteASupabase() {
+            const input = document.getElementById('nuevo-nombre-articulo');
+            const select = document.getElementById('nueva-unidad-articulo');
+            const nombre = input.value.trim().toUpperCase();
+            const unidad = select.value;
+
+            if (!nombre) { lanzarToast("Escribe un nombre para el artículo.", "warning"); return; }
+            if (articulosCargados.some(i => i.nombre_articulo.toUpperCase() === nombre)) {
+                lanzarToast("El artículo ya existe en esta plantilla.", "warning");
+                input.value = '';
+                return;
+            }
+
+            try {
+                const { error } = await db_nube
+                    .from('articulos_habituales')
+                    .insert([{ proveedor_id: proveedorActivo, nombre_articulo: nombre, unidad_defecto: unidad }]);
+                if (error) throw error;
+                input.value = '';
+                lanzarToast(`✅ "${nombre}" añadido a la plantilla`, 'success');
+                await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+                document.getElementById('form-nuevo-articulo').classList.add('hidden');
+            } catch (error) {
+                lanzarToast("❌ No se pudo guardar: " + error.message, 'error');
+            }
+        }
+
+        async function eliminarIngrediente(id, nombre) {
+            if (!confirm(`¿Eliminar "${nombre}" de la plantilla de ${proveedorNombre}?`)) return;
+            try {
+                const { error } = await db_nube.from('articulos_habituales').delete().eq('id', id);
+                if (error) throw error;
+                delete seleccion[`habitual_${id}`];
+                lanzarToast(`🗑️ "${nombre}" eliminado`, 'success');
+                await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+            } catch (error) {
+                lanzarToast("❌ Error al eliminar: " + error.message, 'error');
+            }
+        }
+
+        async function enviarPedidoCentral() {
+            const keys = Object.keys(seleccion);
+            if (keys.length === 0) { lanzarToast("Selecciona al menos 1 artículo.", "warning"); return; }
+
+            const lineasInyectar = [];
+            const faltasAEnviar = [];
+
+            keys.forEach(key => {
+                const cant = parseFloat(seleccion[key]) || 0;
+                if (cant <= 0) return;
+                if (key.startsWith('habitual_')) {
+                    const id = key.replace('habitual_', '');
+                    const art = articulosCargados.find(a => a.id.toString() === id);
+                    if (!art) return;
+                    lineasInyectar.push({
+                        id: generarIdUnico(),
+                        detalle: `[${cant} ${art.unidad_defecto}] ${art.nombre_articulo}`,
+                        proveedor_id: proveedorActivo,
+                        estado: "PENDIENTE",
+                        fecha_registro: new Date().toISOString(),
+                        fecha_entrega_esperada: calcularFechaManana()
+                    });
+                } else if (key.startsWith('falta_')) {
+                    const id = key.replace('falta_', '');
+                    const falta = faltasCargadas.find(f => f.id.toString() === id);
+                    if (!falta) return;
+                    const insumoLimpio = limpiarSufijosInsumo(falta.insumo);
+                    const prefijo = (falta.urgente === true) ? '[URGENTE] ' : '';
+                    lineasInyectar.push({
+                        id: generarIdUnico(),
+                        detalle: `${prefijo}[${cant} UNIDADES] ${insumoLimpio}`,
+                        proveedor_id: proveedorActivo,
+                        estado: "PENDIENTE",
+                        fecha_registro: new Date().toISOString(),
+                        fecha_entrega_esperada: (falta.urgente === true) ? calcularFechaHoy() : calcularFechaManana()
+                    });
+                    faltasAEnviar.push(falta.id);
+                }
+            });
+
+            if (lineasInyectar.length === 0) { lanzarToast("Introduce cantidad al menos en 1 artículo.", "warning"); return; }
+
+            const btn = document.getElementById('btn-enviar-pedido');
+            const btnText = document.getElementById('btn-text');
+            if (btn && btnText) { btn.disabled = true; btnText.innerHTML = `<span class="spinner"></span> Verificando...`; }
+
+            try {
+                const { data: cestaActual, error: errCesta } = await db_nube.from('cesta_pedidos').select('detalle').neq('estado', 'RECIBIDO');
+                if (errCesta) throw errCesta;
+                const detallesExistentes = new Set((cestaActual || []).map(c => c.detalle.toUpperCase()));
+                const noDuplicados = lineasInyectar.filter(l => !detallesExistentes.has(l.detalle.toUpperCase()));
+                const duplicados = lineasInyectar.length - noDuplicados.length;
+
+                if (noDuplicados.length === 0) {
+                    lanzarToast(`⚠️ Los ${duplicados} artículos ya están en la cesta`, 'warning');
+                    if (btn && btnText) { btn.disabled = false; btnText.innerText = "⚡ Enviar a Compras"; }
+                    return;
+                }
+
+                const { error: errInsert } = await db_nube.from('cesta_pedidos').insert(noDuplicados);
+                if (errInsert) throw errInsert;
+
+                if (faltasAEnviar.length > 0) {
+                    await db_nube.from('faltas_cocina').delete().in('id', faltasAEnviar);
+                }
+
+                const urg = noDuplicados.filter(l => l.detalle.toUpperCase().includes('[URGENTE]')).length;
+                lanzarToast(
+                    `✅ ${noDuplicados.length} enviados${duplicados > 0 ? ` · ⚠️ ${duplicados} duplicados` : ''}${urg > 0 ? ` · ⚡ ${urg} urgentes` : ''}`,
+                    'success'
+                );
+
+                seleccion = {};
+                renderIngredientes();
+                actualizarFooter();
+                await cargarProveedoresDesdeSupabase();
+                await renderFaltasLocales();
+                if (proveedorActivo) await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+            } catch (error) {
+                console.error('Error enviando pedido:', error);
+                lanzarToast("❌ Error al guardar: " + error.message, 'error');
+            } finally {
+                if (btn && btnText) { btn.disabled = false; btnText.innerText = "⚡ Enviar a Compras"; }
+            }
+        }
+
+        // ============================================================
+        // ═══════════════════════════════════════════════════════════
+        // BLOQUE ETIQUETAS
+        // ═══════════════════════════════════════════════════════════
+        // ============================================================
+
+        function obtenerEtiquetasLocales() {
+            try { return JSON.parse(localStorage.getItem('fredware_etiquetas_locales')) || []; }
+            catch { return []; }
+        }
+
+        function obtenerEtiquetasHoyLocal() {
+            const todas = obtenerEtiquetasLocales();
+            const hoy = new Date().toISOString().split('T')[0];
+            return todas.filter(e => {
+                const fecha = e.fecha_registro || e.fecha || '';
+                return fecha.includes(hoy);
+            });
+        }
+
+        async function actualizarContadorEtiquetas() {
+            try {
+                const localesHoy = obtenerEtiquetasHoyLocal();
+                document.getElementById('total-etiquetas-dia').textContent = localesHoy.length;
+                await cargarListaEtiquetas();
+            } catch (error) {
+                console.error('Error actualizando contador:', error);
+                document.getElementById('total-etiquetas-dia').textContent = '?';
+            }
+        }
+
+        async function cargarListaEtiquetas() {
+            const container = document.getElementById('lista-etiquetas-dia');
+            try {
+                const etiquetasHoy = obtenerEtiquetasHoyLocal();
+                if (etiquetasHoy.length === 0) {
+                    container.innerHTML = `<div class="text-center text-slate-400 py-4 text-sm">No hay etiquetas registradas hoy</div>`;
+                    return;
+                }
+                let html = '';
+                etiquetasHoy.slice(0, 20).forEach((e, index) => {
+                    const sincronizado = e.sync_supabase ? '☁️' : '📡';
+                    html += `
+                        <div class="etiqueta-card">
+                            <div class="flex flex-col">
+                                <span class="etiqueta-producto">${escapeHtml(e.producto || 'S/P')}</span>
+                                <span class="etiqueta-fecha">${escapeHtml(e.unidad || '1')} - ${escapeHtml(e.fecha || '')}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs">${sincronizado}</span>
+                                <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">#${index + 1}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                if (etiquetasHoy.length > 20) {
+                    html += `<div class="text-center text-slate-400 text-xs py-2">... y ${etiquetasHoy.length - 20} más</div>`;
+                }
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error cargando lista:', error);
+                container.innerHTML = `<div class="text-center text-red-500 py-4 text-sm">Error al cargar etiquetas</div>`;
+            }
+        }
+
+        function limpiarEtiquetasLocalesHoy() {
+            try {
+                const todas = obtenerEtiquetasLocales();
+                const hoy = new Date().toISOString().split('T')[0];
+                const filtradas = todas.filter(e => {
+                    const fecha = e.fecha_registro || e.fecha || '';
+                    return !fecha.includes(hoy);
+                });
+                localStorage.setItem('fredware_etiquetas_locales', JSON.stringify(filtradas));
+                return true;
+            } catch (error) { return false; }
+        }
+
+        async function guardarEtiquetaSupabase(etiqueta) {
+            try {
+                if (!etiqueta.id_local) etiqueta.id_local = Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+                const { error } = await db_nube.from('etiquetas_diarias').insert({
+                    producto: etiqueta.producto || 'S/P',
+                    unidad: etiqueta.unidad || '1',
+                    fecha: etiqueta.fecha || new Date().toISOString().split('T')[0],
+                    texto_qr: etiqueta.texto_qr || '',
+                    fecha_registro: etiqueta.fecha_registro || new Date().toISOString(),
+                    proveedor: etiqueta.proveedor || 'S/P',
+                    cantidad: etiqueta.cantidad || 1,
+                    sync_supabase: true,
+                    sync_local: true
+                });
+                if (error) return false;
+                let locales = obtenerEtiquetasLocales();
+                const idx = locales.findIndex(e => e.id_local === etiqueta.id_local);
+                if (idx !== -1) { locales[idx].sync_supabase = true; localStorage.setItem('fredware_etiquetas_locales', JSON.stringify(locales)); }
+                return true;
+            } catch { return false; }
+        }
+
+        async function guardarEtiquetasSupabase() {
+            const btn = document.querySelector(".btn-guardar-supabase");
+            const textoOriginal = btn ? btn.innerHTML : '☁️ Guardar en Supabase';
+            try {
+                if (btn) { btn.innerHTML = '<span class="spinner"></span> Guardando...'; btn.disabled = true; }
+                const etiquetasLocales = obtenerEtiquetasLocales();
+                const noSincronizadas = etiquetasLocales.filter(e => !e.sync_supabase);
+                if (noSincronizadas.length === 0) {
+                    lanzarToast('✅ Todas las etiquetas ya están en Supabase', 'success');
+                    if (btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
+                    return;
+                }
+                let sincronizadas = 0;
+                for (let etiqueta of noSincronizadas) {
+                    const exito = await guardarEtiquetaSupabase(etiqueta);
+                    if (exito) sincronizadas++;
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                lanzarToast(`✅ ${sincronizadas} etiquetas guardadas en Supabase`, 'success');
+            } catch (error) {
+                lanzarToast('Error al guardar en Supabase', 'error');
+            } finally {
+                if (btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
+            }
+        }
+
+        async function sincronizarEtiquetasConSupabase() {
+            const etiquetasLocales = obtenerEtiquetasLocales();
+            const noSincronizadas = etiquetasLocales.filter(e => !e.sync_supabase);
+            if (noSincronizadas.length === 0) {
+                lanzarToast('✅ Todas las etiquetas ya están sincronizadas', 'success');
+                return;
+            }
+            Swal.fire({
+                title: '☁️ Sincronizando etiquetas',
+                text: `Hay ${noSincronizadas.length} etiquetas sin sincronizar.`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'Sincronizar ahora',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    let sincronizadas = 0, fallidas = 0;
+                    for (let etiqueta of noSincronizadas) {
+                        const exito = await guardarEtiquetaSupabase(etiqueta);
+                        if (exito) sincronizadas++; else fallidas++;
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                    Swal.fire({
+                        title: '✅ Sincronización completada',
+                        html: `<div class="text-left"><p>✅ Sincronizadas: ${sincronizadas}</p>${fallidas > 0 ? `<p>❌ Fallidas: ${fallidas}</p>` : ''}</div>`,
+                        icon: 'success'
+                    });
+                    await actualizarContadorEtiquetas();
+                }
+            });
+        }
+
+        async function verificarSincronizacionEtiquetas() {
+            const locales = obtenerEtiquetasLocales();
+            const noSync = locales.filter(e => !e.sync_supabase);
+            const total = locales.length;
+            const hoy = obtenerEtiquetasHoyLocal().length;
+            let html = `
+                <div class="text-left">
+                    <p>📦 Total en local: ${total}</p>
+                    <p>📅 De hoy: ${hoy}</p>
+                    <p>☁️ Sincronizadas: ${total - noSync.length}</p>
+                    ${noSync.length > 0 ? `<p class="text-amber-600">⚠️ Pendientes: ${noSync.length}</p>` : '<p class="text-emerald-600">✅ Todo sincronizado</p>'}
+                </div>
+            `;
+            Swal.fire({
+                title: '📊 Estado de sincronización',
+                html: html,
+                icon: noSync.length > 0 ? 'warning' : 'success',
+                showCancelButton: noSync.length > 0,
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: noSync.length > 0 ? '☁️ Sincronizar ahora' : 'Aceptar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed && noSync.length > 0) sincronizarEtiquetasConSupabase();
+            });
+        }
+
+        async function imprimirResumenDia() {
+            const btn = document.querySelector(".btn-resumen");
+            const textoOriginal = btn ? btn.innerHTML : '🖨️ Imprimir Resumen del Día';
+            try {
+                if (btn) { btn.innerHTML = '<span class="spinner"></span> Generando...'; btn.disabled = true; }
+                const response = await fetch(`${API_URL}/api/etiquetas/imprimir_resumen`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    lanzarToast(`✅ ${data.message || 'Resumen del día impreso'}`);
+                    await actualizarContadorEtiquetas();
+                } else {
+                    lanzarToast(data.message || 'No hay etiquetas para hoy', 'warning');
+                }
+            } catch (error) {
+                lanzarToast('Error al imprimir resumen', 'error');
+            } finally {
+                if (btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
+            }
+        }
+
+        function limpiarEtiquetasDia() {
+            const etiquetasHoy = obtenerEtiquetasHoyLocal();
+            if (etiquetasHoy.length === 0) { lanzarToast('No hay etiquetas para limpiar', 'warning'); return; }
+            Swal.fire({
+                title: '¿Limpiar todas las etiquetas del día?',
+                text: `Hay ${etiquetasHoy.length} etiquetas de hoy.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, limpiar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        limpiarEtiquetasLocalesHoy();
+                        lanzarToast(`🧹 ${etiquetasHoy.length} etiquetas limpiadas`, 'warning');
+                        await actualizarContadorEtiquetas();
+                    } catch (error) {
+                        lanzarToast('Error al limpiar etiquetas', 'error');
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // SINCRONIZACIÓN CON NGROK
+        // ============================================================
+        async function sincronizarConOficina(endpoint, datos) {
+            try {
+                const response = await fetch(`${API_URL}/api/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify(datos)
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            } catch (error) {
+                console.error("Error pasivo en red local:", error);
+            }
+        }
+
+        // ============================================================
+        // PESTAÑAS (listener)
+        // ============================================================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tab = this.dataset.tab;
+                if (tab === 'tab-faltas') setTab('faltas');
+                else if (tab === 'tab-pedidos') setTab('pedidos');
+                else if (tab === 'tab-etiquetas') setTab('etiquetas');
+            });
+        });
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        async function init() {
+            console.log('🚀 [Pedidos v1.0] Init — esperando al núcleo...');
+
+            // Restaurar pestaña activa
+            const tabGuardada = localStorage.getItem('fredware_pedidos_tab') || 'faltas';
+            setTab(tabGuardada);
+
+            // Esperar al núcleo
+            await esperarAlNucleo();
+
+            // Cargar faltas iniciales
+            await renderFaltasLocales();
+
+            // Cargar proveedores (necesario para Pedidos)
+            await cargarProveedoresDesdeSupabase();
+
+            // Montar combobox estricto
+            try {
+                await fredware.productos.cargar();
+                fredware.productos.comboboxEstricto('insumo-falta', {
+                    zonas: null,
+                    placeholder: 'Escribe para buscar producto...',
+                    onSelect: (producto) => {
+                        if (!producto) return;
+                        console.log('📦 [Pedidos] Producto seleccionado:', producto?.nombre_articulo);
+                    }
+                });
+                console.log('✅ [Pedidos] Combobox montado');
+            } catch (error) {
+                console.error('❌ [Pedidos] Error al montar el combobox:', error);
+            }
+
+            // Suscripciones en tiempo real
+            db_nube
+                .channel('faltas-changes-pedidos')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'faltas_cocina' }, () => {
+                    renderFaltasLocales();
+                })
+                .subscribe();
+
+            // Contador de etiquetas
+            setInterval(actualizarContadorEtiquetas, 30000);
+        }
+
+        // Exponer funciones globales
+        window.setTab = setTab;
+        window.registrarFaltaCocina = registrarFaltaCocina;
+        window.borrarFaltaLocal = borrarFaltaLocal;
+        window.toggleUrgente = toggleUrgente;
+        window.cargarProveedoresDesdeSupabase = cargarProveedoresDesdeSupabase;
+        window.cargarHojaInteractiva = cargarHojaInteractiva;
+        window.toggleSeleccion = toggleSeleccion;
+        window.cambiarCantidad = cambiarCantidad;
+        window.cantidadRapida = cantidadRapida;
+        window.limpiarSeleccion = limpiarSeleccion;
+        window.filtrarArticulos = filtrarArticulos;
+        window.toggleFormNuevoArticulo = toggleFormNuevoArticulo;
+        window.agregarIngredienteASupabase = agregarIngredienteASupabase;
+        window.eliminarIngrediente = eliminarIngrediente;
+        window.enviarPedidoCentral = enviarPedidoCentral;
+        window.abrirModalUrgente = abrirModalUrgente;
+        window.actualizarContadorEtiquetas = actualizarContadorEtiquetas;
+        window.guardarEtiquetasSupabase = guardarEtiquetasSupabase;
+        window.sincronizarEtiquetasConSupabase = sincronizarEtiquetasConSupabase;
+        window.verificarSincronizacionEtiquetas = verificarSincronizacionEtiquetas;
+        window.imprimirResumenDia = imprimirResumenDia;
+        window.limpiarEtiquetasDia = limpiarEtiquetasDia;
+
+        init();
+    </script>
+</body>
+</html>
