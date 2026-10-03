@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -31,6 +30,8 @@
         .art-row.tiene-historico { border-left: 3px solid #10b981; }
         .art-row.es-falta { border-left: 3px solid #f59e0b; background: #fffbeb; }
         .art-row.es-falta.reincidente { border-left: 3px solid #dc2626; background: #fef2f2; }
+        /* 🆕 Urgente (prioridad máxima visual) */
+        .art-row.es-falta.es-urgente { border-left: 4px solid #dc2626; background: #ffedd5; box-shadow: inset 0 0 0 1px #f59e0b; }
         .art-row:last-child { border-bottom: none; }
 
         .art-check { width: 22px; height: 22px; cursor: pointer; accent-color: #10b981; flex-shrink: 0; }
@@ -55,6 +56,9 @@
         .hist-badge.nuevo { background: #f1f5f9; color: #64748b; }
         .falta-badge { font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 10px; font-weight: 700; display: inline-block; }
         .falta-badge.reincidente { background: #dc2626; color: white; }
+        /* 🆕 Badge urgente */
+        .falta-badge.urgente { background: #dc2626; color: white; animation: pulse-urgente-badge 1.5s ease-in-out infinite; }
+        @keyframes pulse-urgente-badge { 0%, 100% { transform: scale(1); background: #dc2626; } 50% { transform: scale(1.08); background: #b91c1c; } }
 
         .buscador { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; }
         .buscador:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
@@ -265,7 +269,7 @@
 
                 const { data: faltas } = await db_nube
                     .from('faltas_cocina')
-                    .select('proveedor_id');
+                    .select('proveedor_id, urgente');
 
                 const contadores = {};
                 (articulos || []).forEach(a => {
@@ -273,9 +277,13 @@
                 });
 
                 const contadoresFaltas = {};
+                const contadoresUrgentes = {};
                 (faltas || []).forEach(f => {
                     if (f.proveedor_id && f.proveedor_id !== 'S/P') {
                         contadoresFaltas[f.proveedor_id] = (contadoresFaltas[f.proveedor_id] || 0) + 1;
+                        if (f.urgente === true) {
+                            contadoresUrgentes[f.proveedor_id] = (contadoresUrgentes[f.proveedor_id] || 0) + 1;
+                        }
                     }
                 });
 
@@ -288,11 +296,16 @@
                 proveedores.forEach(p => {
                     const numArt = contadores[p.id] || 0;
                     const numFaltas = contadoresFaltas[p.id] || 0;
+                    const numUrgentes = contadoresUrgentes[p.id] || 0;
                     const safeId = `btn-prov-${p.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-                    const badgeFaltas = numFaltas > 0
-                        ? `<span class="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-black ml-1">🔔 ${numFaltas}</span>`
-                        : '';
+                    // 🆕 Badge urgente tiene prioridad sobre badge falta
+                    let badgeFaltas = '';
+                    if (numUrgentes > 0) {
+                        badgeFaltas = `<span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black ml-1 animate-pulse">🚨 ${numUrgentes}</span>`;
+                    } else if (numFaltas > 0) {
+                        badgeFaltas = `<span class="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-black ml-1">🔔 ${numFaltas}</span>`;
+                    }
 
                     container.innerHTML += `
                         <button onclick="cargarHojaInteractiva('${escapeHtml(p.id)}', '${escapeHtml(p.nombre)}')" id="${safeId}" class="prov-btn">
@@ -348,11 +361,15 @@
 
                 const numFaltas = faltasCargadas.length;
                 const numFaltasReincidentes = faltasCargadas.filter(f => (f.intentos || 0) > 0).length;
+                const numUrgentes = faltasCargadas.filter(f => f.urgente === true).length;
 
                 let infoTexto = `${articulosCargados.length} artículos en la plantilla`;
                 if (numFaltas > 0) {
                     infoTexto += ` · 🔔 ${numFaltas} faltas de cocina`;
                     if (numFaltasReincidentes > 0) infoTexto += ` (${numFaltasReincidentes} reincidentes)`;
+                }
+                if (numUrgentes > 0) {
+                    infoTexto += ` · 🚨 ${numUrgentes} URGENTES`;
                 }
                 document.getElementById('info-proveedor-activo').innerText = infoTexto;
 
@@ -390,15 +407,16 @@
             }
         }
 
-        // ============================================================
-        // RENDERIZAR ARTÍCULOS + FALTAS
-        // ============================================================
+        // ═══════════════════════════════════════════════════════════
+        // 🔥 v3.1: renderIngredientes con soporte urgente
+        // ═══════════════════════════════════════════════════════════
         function renderIngredientes() {
             const container = document.getElementById('contenedor-ingredientes');
             container.innerHTML = '';
 
             const itemsUnificados = [];
 
+            // Faltas
             faltasCargadas.forEach(f => {
                 const insumoLimpio = limpiarSufijosInsumo(f.insumo);
                 if (textoBusqueda && !insumoLimpio.toLowerCase().includes(textoBusqueda)) return;
@@ -411,10 +429,12 @@
                     unidadOriginal: f.unidad_defecto || 'UNIDADES',
                     veces_pedido: 0,
                     cantidad_habitual: 1,
-                    intentos: f.intentos || 0
+                    intentos: f.intentos || 0,
+                    urgente: f.urgente === true
                 });
             });
 
+            // Artículos habituales
             articulosCargados.forEach(a => {
                 if (textoBusqueda && !a.nombre_articulo.toLowerCase().includes(textoBusqueda)) return;
 
@@ -426,7 +446,8 @@
                     unidadOriginal: a.unidad_defecto,
                     veces_pedido: a.veces_pedido || 0,
                     cantidad_habitual: a.cantidad_habitual || 1,
-                    intentos: 0
+                    intentos: 0,
+                    urgente: false
                 });
             });
 
@@ -439,8 +460,16 @@
                 return;
             }
 
+            // 🆕 Orden: urgentes > reincidentes > faltas normales > habituales
             itemsUnificados.sort((a, b) => {
+                // Urgentes siempre primero
+                if (a.urgente && !b.urgente) return -1;
+                if (!a.urgente && b.urgente) return 1;
+
+                // Dentro de cada grupo, faltas antes que habituales
                 if (a.tipo !== b.tipo) return a.tipo === 'falta' ? -1 : 1;
+
+                // Faltas: reincidentes primero
                 if (a.tipo === 'falta') {
                     if (a.intentos !== b.intentos) return b.intentos - a.intentos;
                     return a.nombre.localeCompare(b.nombre);
@@ -453,12 +482,15 @@
                 const seleccionado = seleccion[key] !== undefined;
                 const cantidadActual = seleccion[key] !== undefined ? seleccion[key] : '';
                 const esFalta = item.tipo === 'falta';
+                const esUrgente = esFalta && item.urgente === true;
                 const esReincidente = esFalta && item.intentos > 0;
                 const tieneHistorico = !esFalta && item.veces_pedido > 0;
 
                 let infoBadge = '';
                 if (esFalta) {
-                    if (esReincidente) {
+                    if (esUrgente) {
+                        infoBadge = `<span class="falta-badge urgente">🚨 URGENTE</span>`;
+                    } else if (esReincidente) {
                         infoBadge = `<span class="falta-badge reincidente">🔔 FALTA REINCIDENTE x${item.intentos}</span>`;
                     } else {
                         infoBadge = `<span class="falta-badge">🔔 FALTA COCINA</span>`;
@@ -474,20 +506,26 @@
                 if (esFalta) {
                     rowClass += ' es-falta';
                     if (esReincidente) rowClass += ' reincidente';
+                    if (esUrgente) rowClass += ' es-urgente';
                 } else if (tieneHistorico) {
                     rowClass += ' tiene-historico';
                 }
 
-                const colorNombre = esFalta ? (esReincidente ? '#dc2626' : '#92400e') : '#1e293b';
+                let colorNombre = '#1e293b';
+                if (esUrgente) colorNombre = '#dc2626';
+                else if (esReincidente) colorNombre = '#dc2626';
+                else if (esFalta) colorNombre = '#92400e';
 
-                // 🆕 Botón URGENTE en todas las líneas
+                // Botón URGENTE para faltas y habituales
                 const btnUrgente = `<button class="btn-urgente" onclick="abrirModalUrgente('${key}')" title="Pedir a otro proveedor urgente">⚡ URGENTE</button>`;
 
                 container.innerHTML += `
                     <div class="${rowClass}" data-key="${key}" data-nombre="${escapeHtml(item.nombre).toLowerCase()}">
                         <input type="checkbox" class="art-check" ${seleccionado ? 'checked' : ''} onchange="toggleSeleccion('${key}')">
                         <div class="flex-1 min-w-[150px]">
-                            <div class="text-sm font-bold tracking-tight uppercase" style="color:${colorNombre};">${escapeHtml(item.nombre)}</div>
+                            <div class="text-sm font-bold tracking-tight uppercase" style="color:${colorNombre};">
+                                ${esUrgente ? '🚨 ' : ''}${escapeHtml(item.nombre)}
+                            </div>
                             <div class="flex items-center gap-2 mt-1 flex-wrap">
                                 <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${escapeHtml(item.unidadOriginal)}</span>
                                 ${infoBadge}
@@ -513,10 +551,9 @@
         }
 
         // ============================================================
-        // ⚡ BLOQUE C — MODAL URGENTE
+        // MODAL URGENTE (Bloque C)
         // ============================================================
         async function abrirModalUrgente(key) {
-            // Encontrar el item
             let item = null;
             let tipoOriginal = null;
 
@@ -571,7 +608,6 @@
                 console.warn('No se pudo buscar proveedor sugerido:', e);
             }
 
-            // Construir opciones del dropdown
             const provsDisponibles = proveedoresCache.filter(p => p.id !== proveedorActivo);
             let opcionesHTML = '<option value="">— Selecciona proveedor —</option>';
             provsDisponibles.forEach(p => {
@@ -645,7 +681,6 @@
 
             if (!formValues) return;
 
-            // Confirmar
             const confirm = await Swal.fire({
                 title: '⚡ Confirmar pedido urgente',
                 html: `
@@ -667,19 +702,17 @@
 
             if (!confirm.isConfirmed) return;
 
-            // Ejecutar pedido urgente
             try {
                 const prefijo = formValues.etiqueta ? '[URGENTE] ' : '';
                 const detalle = `${prefijo}[${formValues.cantidad} ${item.unidad}] ${item.nombre}`;
 
-                // 1) Insertar en cesta_pedidos con proveedor alternativo
                 const nuevoItem = {
                     id: generarIdUnico(),
                     detalle: detalle,
                     proveedor_id: formValues.proveedorAlt,
                     estado: "PENDIENTE",
                     fecha_registro: new Date().toISOString(),
-                    fecha_entrega_esperada: calcularFechaHoy() // HOY, no mañana
+                    fecha_entrega_esperada: calcularFechaHoy()
                 };
 
                 const { error: errInsert } = await db_nube
@@ -688,7 +721,6 @@
 
                 if (errInsert) throw errInsert;
 
-                // 2) Si era falta → borrar la falta
                 if (item.tipo === 'falta' && item.faltaId) {
                     const { error: errDelete } = await db_nube
                         .from('faltas_cocina')
@@ -698,21 +730,15 @@
                     if (errDelete) {
                         console.warn('No se pudo borrar la falta:', errDelete);
                     } else {
-                        // Quitar de la selección local
                         delete seleccion[key];
                     }
                 }
 
-                // 3) Si era habitual → nada extra (la línea original se queda como está)
-
-                // 4) Mensaje final
                 lanzarToast(`⚡ "${item.nombre}" movida a ${formValues.proveedorAlt} (URGENTE)`, 'success');
 
-                // 5) Recargar todo
                 await cargarProveedoresDesdeSupabase();
                 await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
 
-                // 6) Broadcast al núcleo
                 try {
                     await window.fredware.broadcastEvent('nuevo_pedido_urgente', {
                         producto: item.nombre,
@@ -929,14 +955,17 @@
                     if (!falta) return;
 
                     const insumoLimpio = limpiarSufijosInsumo(falta.insumo);
+                    
+                    // 🆕 Si la falta es urgente → prefijo [URGENTE]
+                    const prefijo = (falta.urgente === true) ? '[URGENTE] ' : '';
 
                     lineasInyectar.push({
                         id: generarIdUnico(),
-                        detalle: `[${cant} UNIDADES] ${insumoLimpio}`,
+                        detalle: `${prefijo}[${cant} UNIDADES] ${insumoLimpio}`,
                         proveedor_id: proveedorActivo,
                         estado: "PENDIENTE",
                         fecha_registro: new Date().toISOString(),
-                        fecha_entrega_esperada: calcularFechaManana()
+                        fecha_entrega_esperada: (falta.urgente === true) ? calcularFechaHoy() : calcularFechaManana()
                     });
 
                     faltasAEnviar.push(falta.id);
@@ -996,12 +1025,13 @@
 
                 const mensajeDuplicados = duplicados > 0 ? ` · ⚠️ ${duplicados} ya estaban en cesta` : '';
                 const mensajeFaltas = faltasAEnviar.length > 0 ? ` · 🔔 ${faltasAEnviar.length} faltas gestionadas` : '';
+                const urgentesEnviados = noDuplicados.filter(l => l.detalle.toUpperCase().includes('[URGENTE]')).length;
+                const mensajeUrgentes = urgentesEnviados > 0 ? ` · ⚡ ${urgentesEnviados} urgentes` : '';
 
-                if (duplicados > 0 || faltasAEnviar.length > 0) {
-                    lanzarToast(`✅ ${noDuplicados.length} enviados${mensajeDuplicados}${mensajeFaltas}`, 'success');
-                } else {
-                    lanzarToast(`🛒 ¡Enviados ${noDuplicados.length} artículos a compras!`, 'success');
-                }
+                lanzarToast(
+                    `✅ ${noDuplicados.length} enviados${mensajeDuplicados}${mensajeFaltas}${mensajeUrgentes}`,
+                    'success'
+                );
 
                 seleccion = {};
                 renderIngredientes();
@@ -1014,6 +1044,8 @@
                     await window.fredware.broadcastEvent('nuevo_pedido', {
                         proveedor: proveedorActivo,
                         num_articulos: noDuplicados.length,
+                        num_faltas: faltasAEnviar.length,
+                        num_urgentes: urgentesEnviados,
                         origen: 'LISTAS'
                     });
                 } catch (e) {}
@@ -1033,7 +1065,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function initApp() {
-            console.log('🚀 [Listas v3 — Bloque C] Init — esperando al núcleo...');
+            console.log('🚀 [Listas v3.1] Init — esperando al núcleo...');
 
             await cargarProveedoresDesdeSupabase();
 
