@@ -80,7 +80,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.4</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.5</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -320,7 +320,25 @@
             return data || [];
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // 🔥 v17.5: agregarFalta con validaciones defensivas
+        // ═══════════════════════════════════════════════════════════
         async function agregarFalta(insumo, productoInfo = null) {
+            // 🔥 Validación defensiva 1: insumo obligatorio
+            if (!insumo || !String(insumo).trim()) {
+                console.error('❌ [agregarFalta] insumo vacío, abortando');
+                lanzarToast('Error: el nombre del producto está vacío', 'error');
+                return { error: 'insumo vacío' };
+            }
+
+            const insumoLimpio = String(insumo).trim();
+
+            // 🔥 Validación defensiva 2: filtrar productoInfo sin nombre_articulo
+            if (productoInfo && !productoInfo.nombre_articulo) {
+                console.warn('⚠️ [agregarFalta] productoInfo sin nombre_articulo, ignorando');
+                productoInfo = null;
+            }
+
             let proveedorId = 'S/P';
             let catalogoId = null;
 
@@ -328,13 +346,13 @@
                 let producto = productoInfo;
                 
                 if (!producto) {
-                    const matchId = await fredware.productos.buscar(insumo);
+                    const matchId = await fredware.productos.buscar(insumoLimpio);
                     if (matchId) {
                         producto = fredware.state.productos.find(p => p.id === matchId);
                     }
                 }
 
-                if (producto) {
+                if (producto && producto.nombre_articulo) {
                     proveedorId = producto.proveedor_principal || 'S/P';
                     const idNum = parseInt(producto.id);
                     catalogoId = isNaN(idNum) ? null : idNum;
@@ -346,7 +364,7 @@
             const { error } = await db_nube
                 .from('faltas_cocina')
                 .insert({ 
-                    insumo: insumo,
+                    insumo: insumoLimpio,
                     proveedor_id: proveedorId,
                     catalogo_id: catalogoId,
                     intentos: 0
@@ -580,7 +598,16 @@
                 return;
             }
 
-            const nombreExacto = seleccionado.nombre_articulo;
+            // ═══════════════════════════════════════════════════════════
+            // 🔥 v17.5: Validación defensiva del seleccionado
+            // ═══════════════════════════════════════════════════════════
+            const nombreExacto = seleccionado?.nombre_articulo || seleccionado?.nombre;
+
+            if (!nombreExacto) {
+                console.error('❌ [Faltas] Seleccionado sin nombre:', seleccionado);
+                lanzarToast('⚠️ El producto seleccionado no tiene nombre. Inténtalo de nuevo.', 'warning');
+                return;
+            }
 
             try {
                 const faltas = await obtenerFaltas();
@@ -602,18 +629,28 @@
             }
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // 🔥 v17.5: abrirModalCrearProductoDesdeFalta con detección
+        //    robusta del nombre del producto creado
+        // ═══════════════════════════════════════════════════════════
         async function abrirModalCrearProductoDesdeFalta(nombrePropuesto) {
             const nuevo = await fredware.productos.mostrarModalCrearProducto(nombrePropuesto);
+            
+            console.log('🔍 [DEBUG] Resultado del modal:', nuevo);
+            
             if (nuevo) {
                 const input = document.getElementById('insumo-falta');
                 if (input) {
                     input.value = '';
                     if (input.fredwareReset) input.fredwareReset();
                 }
-                
+
+                // 🔥 Detectar el nombre real (puede venir como .nombre o .nombre_articulo)
+                const nombreProducto = nuevo?.nombre || nuevo?.nombre_articulo || nombrePropuesto;
+
                 const conf = await Swal.fire({
                     title: '✅ Producto creado',
-                    html: `<p style="font-size:15px;"><strong>${escapeHtml(nuevo.nombre)}</strong> se ha añadido al catálogo.</p>
+                    html: `<p style="font-size:15px;"><strong>${escapeHtml(nombreProducto)}</strong> se ha añadido al catálogo.</p>
                            <p style="font-size:13px;color:#64748b;margin-top:8px;">¿Quieres añadirlo también a las faltas?</p>`,
                     icon: 'success',
                     showCancelButton: true,
@@ -623,26 +660,34 @@
                 });
                 
                 if (conf.isConfirmed) {
+                    // 🔥 Validación: nombreProducto debe existir
+                    if (!nombreProducto || !String(nombreProducto).trim()) {
+                        console.error('❌ No se pudo obtener el nombre del producto:', nuevo);
+                        lanzarToast('Error: no se pudo añadir la falta (nombre vacío)', 'error');
+                        return;
+                    }
+
                     try {
                         await fredware.productos.cargar();
                         const productoCreado = fredware.state.productos.find(p => 
-                            p.nombre_articulo && p.nombre_articulo.toUpperCase() === nuevo.nombre.toUpperCase()
+                            p.nombre_articulo && p.nombre_articulo.toUpperCase() === String(nombreProducto).toUpperCase()
                         );
                         
-                        await agregarFalta(nuevo.nombre, productoCreado || null);
-                        lanzarToast(`⚠️ Falta añadida: ${nuevo.nombre}`);
+                        await agregarFalta(nombreProducto, productoCreado || null);
+                        lanzarToast(`⚠️ Falta añadida: ${nombreProducto}`);
                         await renderFaltasLocales();
                         sincronizarConOficina('faltas', await obtenerFaltas());
                     } catch (e) {
                         console.error('Error añadiendo falta:', e);
+                        lanzarToast('Error al añadir la falta', 'error');
                     }
                 }
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // 🔥 v17.4: renderFaltasLocales SOLO color rojo, sin badges
-        // ═══════════════════════════════════════════════════════════
+        // ============================================================
+        // RENDER FALTAS LOCALES
+        // ============================================================
         async function renderFaltasLocales() {
             try {
                 const faltas = await obtenerFaltas();
@@ -654,9 +699,7 @@
                     return;
                 }
                 faltas.forEach((item) => {
-                    // Limpiar sufijos antiguos por si quedan en BD
                     const insumoLimpio = limpiarSufijosInsumo(item.insumo);
-                    // 🔥 Solo color rojo si tiene intentos > 0
                     const esReincidente = (item.intentos || 0) > 0;
                     const colorTexto = esReincidente ? 'text-red-600' : 'text-amber-600';
                     const estiloFondo = esReincidente ? 'bg-red-50 border-red-300' : 'bg-slate-50 border-slate-200';
@@ -1045,7 +1088,6 @@
             }
 
             if(huboRotura) {
-                // 🔥 v17.4: añadir falta limpia con intentos=1
                 const faltaExistente = (await obtenerFaltas()).find(f => 
                     limpiarSufijosInsumo(f.insumo).toUpperCase() === productoLimpio.toUpperCase()
                 );
@@ -1345,9 +1387,9 @@
             renderCheckMercancia(cestaGlobal);
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // 🔥 v17.4: marcarProductoNoLlego SIN badges, solo incrementa intentos
-        // ═══════════════════════════════════════════════════════════
+        // ============================================================
+        // MARCAR PRODUCTO NO LLEGÓ
+        // ============================================================
         async function marcarProductoNoLlego(uIdUnique) {
             let idxGlobal = cestaGlobal.findIndex(c => c.id === uIdUnique);
             if(idxGlobal === -1) return;
@@ -1369,14 +1411,12 @@
             if (!confirmacion.isConfirmed) return;
 
             try {
-                // Buscar si YA existe una falta con ese nombre limpio
                 const faltas = await obtenerFaltas();
                 const faltaExistente = faltas.find(f => 
                     limpiarSufijosInsumo(f.insumo).toUpperCase() === productoLimpio.toUpperCase()
                 );
 
                 if (faltaExistente) {
-                    // Incrementar contador de intentos
                     await db_nube
                         .from('faltas_cocina')
                         .update({
@@ -1386,7 +1426,6 @@
                         })
                         .eq('id', faltaExistente.id);
                 } else {
-                    // Crear falta nueva con intentos=1
                     const matchId = await fredware.productos.buscar(productoLimpio);
                     let producto = null;
                     if (matchId) {
@@ -1408,7 +1447,6 @@
                         });
                 }
 
-                // Eliminar de la cesta
                 await eliminarItemCesta(item.id);
                 cestaGlobal.splice(idxGlobal, 1);
 
@@ -1569,7 +1607,7 @@
         }
 
         // ============================================================
-        // ENTRADA DIRECTA — Con matcheo inteligente de productos
+        // ENTRADA DIRECTA
         // ============================================================
         async function abrirEntradaDirecta() {
             const proveedores = JSON.parse(localStorage.getItem('fredware_proveedores')) || [];
@@ -2263,7 +2301,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Faltas v17.4] Init — esperando al núcleo...');
+            console.log('🚀 [Faltas v17.5] Init — esperando al núcleo...');
 
             suscribirseCambios();
             await esperarAlNucleo();
@@ -2275,11 +2313,16 @@
                 await fredware.productos.cargar();
                 console.log('✅ [Faltas] Productos cargados para el combobox');
 
+                // ═══════════════════════════════════════════════════════════
+                // 🔥 v17.5: onSelect con validación defensiva
+                // ═══════════════════════════════════════════════════════════
                 fredware.productos.comboboxEstricto('insumo-falta', {
                     zonas: null,
                     placeholder: 'Escribe para buscar producto...',
                     onSelect: (producto) => {
-                        console.log('📦 [Faltas] Producto seleccionado:', producto.nombre_articulo);
+                        // 🔥 Ignorar llamadas con producto vacío (al limpiar, escape, etc.)
+                        if (!producto) return;
+                        console.log('📦 [Faltas] Producto seleccionado:', producto?.nombre_articulo);
                     }
                 });
 
