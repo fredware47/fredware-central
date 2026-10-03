@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fredware - Panel de Control</title>
-    
-    <!-- ========================================================== -->
-    <!-- 🔥 FAVICON PARA PC Y MÓVIL (ICONO FREDWARE) -->
-    <!-- ========================================================== -->
+
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E👨‍🍳%3C/text%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E👨‍🍳%3C/text%3E%3C/svg%3E">
     <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231e293b'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23fbbf24'%3E🍳%3C/text%3E%3C/svg%3E">
     <meta name="theme-color" content="#1e293b">
-    
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f1f5f9; color: #1e293b; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -40,9 +37,11 @@
         .card-recepcion:hover { background: #dcfce7 !important; }
         .card-horas { border-color: #22c55e !important; background: #f0fdf4 !important; }
         .card-horas:hover { background: #dcfce7 !important; }
-        .card-faltas { border-color: #8b5cf6 !important; background: #f5f3ff !important; }
-        .card-faltas:hover { background: #ede9fe !important; }
-        
+        .card-pedidos { border-color: #0ea5e9 !important; background: #f0f9ff !important; }
+        .card-pedidos:hover { background: #e0f2fe !important; }
+        .card-etiquetas { border-color: #f59e0b !important; background: #fffbeb !important; }
+        .card-etiquetas:hover { background: #fef3c7 !important; }
+
         @media (max-width: 640px) {
             .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .panel { padding: 15px; }
@@ -64,70 +63,56 @@
         </h1>
         <p class="sub">Selecciona una herramienta para empezar</p>
         <div class="grid">
-            
-            <!-- ========================================================== -->
-            <!-- 🆕 MISE AND PLACE (COCINA) -->
-            <!-- ========================================================== -->
+
+            <!-- MISE AND PLACE -->
             <a href="miseandplace.html" class="card card-mise">
                 <span class="icono">🍽️</span>
                 <span class="nombre">Mise and Place <span class="badge-nuevo">Nuevo</span></span>
                 <span class="desc">Timbres y revisión de cocina</span>
             </a>
 
-            <!-- ========================================================== -->
-            <!-- 🆕 ETIQUETAS RÁPIDAS -->
-            <!-- ========================================================== -->
+            <!-- ETIQUETAS RÁPIDAS -->
             <a href="etiquetas.html" class="card card-etiquetas">
                 <span class="icono">🏷️</span>
                 <span class="nombre">Etiquetas Rápidas <span class="badge-nuevo">Nuevo</span></span>
                 <span class="desc">Elaboración y descongelación</span>
             </a>
-            
-            <!-- ========================================================== -->
+
             <!-- CADUCIDADES -->
-            <!-- ========================================================== -->
             <a href="caducidades.html" class="card card-caducidades">
                 <span class="icono">📦</span>
                 <span class="nombre">Caducidades</span>
                 <span class="desc">Etiquetado y trazabilidad</span>
             </a>
-            
-            <!-- ========================================================== -->
-            <!-- FALTAS -->
-            <!-- ========================================================== -->
-            <a href="faltas.html" class="card card-faltas">
+
+            <!-- ⭐ RECEPCIÓN (antes Faltas) -->
+            <a href="recepcion.html" class="card card-recepcion">
                 <span class="icono">🚚</span>
-                <span class="nombre">Faltas</span>
-                <span class="desc">Cocina y recepción</span>
+                <span class="nombre">Recepción</span>
+                <span class="desc">Entradas y etiquetas</span>
             </a>
-            
-            <!-- ========================================================== -->
-            <!-- ⭐ FICHAS DE PRODUCCIÓN -->
-            <!-- ========================================================== -->
+
+            <!-- ⭐ PEDIDOS (antes Listas) -->
+            <a href="pedidos.html" class="card card-pedidos">
+                <span class="icono">📋</span>
+                <span class="nombre">Pedidos</span>
+                <span class="desc">Faltas, pedidos y etiquetas</span>
+            </a>
+
+            <!-- FICHAS DE PRODUCCIÓN -->
             <a href="fichas_tecnicas.html" class="card card-destacado">
                 <span class="icono">📄</span>
                 <span class="nombre">Fichas de Producción <span class="badge-activo">Activo</span></span>
                 <span class="desc">Trazabilidad y control</span>
             </a>
-            
-            <!-- ========================================================== -->
-            <!-- RECEPCIONES -->
-            <!-- ========================================================== -->
-            <a href="recepcion.html" class="card card-recepcion">
-                <span class="icono">📦</span>
-                <span class="nombre">Recepciones <span class="badge-activo">Activo</span></span>
-                <span class="desc">Productos recibidos</span>
-            </a>
 
-            <!-- ========================================================== -->
             <!-- HORAS EXTRAS (COCINEROS) -->
-            <!-- ========================================================== -->
             <a href="horas-cocineros.html" class="card card-horas">
                 <span class="icono">🕒</span>
                 <span class="nombre">Horas Extra <span class="badge-nuevo">Nuevo</span></span>
                 <span class="desc">Registro para cocineros</span>
             </a>
-            
+
         </div>
         <div class="footer">
             Fredware v2.0 · Todos los datos están en la nube (Supabase)
