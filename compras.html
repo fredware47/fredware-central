@@ -54,6 +54,8 @@
         .cesta-item-flex { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .whatsapp-provider-card { background: #e8f5e9; border: 1px solid #a5d6a7; padding: 12px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         .whatsapp-provider-card strong { color: #2e7d32; font-size: 13px; }
+        .whatsapp-provider-card.urgente { background: #fef2f2; border: 2px solid #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
+        .whatsapp-provider-card.urgente strong { color: #991b1b; }
         .btn-wa-send { background: #25d366; color: white; border: none; padding: 8px 14px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
         .btn-wa-send:active { background: #128c7e; }
         .btn-wa-del { background: #64748b; color: white; border: none; padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
@@ -96,6 +98,12 @@
         .tab-btn.has-alerta { background: #fef2f2 !important; color: #991b1b !important; border: 2px solid #ef4444 !important; position: relative; }
         .tab-btn.has-alerta.active { background: #ef4444 !important; color: white !important; }
         .btn-ver-faltas { background: #ef4444; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+
+        /* 🆕 Bloque C — Estilos para líneas urgentes en la cesta */
+        .cesta-row-urgente { background: #fef2f2 !important; }
+        .cesta-row-urgente td { border-bottom: 2px solid #fecaca !important; }
+        .badge-urgente { background: #dc2626; color: white; font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 6px; margin-right: 6px; display: inline-block; animation: pulse-urgente 1.5s ease-in-out infinite; }
+        @keyframes pulse-urgente { 0%, 100% { background: #dc2626; } 50% { background: #b91c1c; } }
     </style>
 </head>
 <body>
@@ -137,7 +145,6 @@
                     <option value="UNIDADES">Unidades</option>
                 </select>
                 <div class="input-art" style="position: relative;">
-                    <!-- 🔥 Input limpio: el combobox estricto del núcleo lo gestiona -->
                     <input type="text" id="manual-articulo" placeholder="Escribe para buscar producto..." autocomplete="off">
                 </div>
                 <button class="btn-add-manual" onclick="agregarArticuloManual()">➕ Añadir</button>
@@ -264,7 +271,6 @@ let estadoAcordeon = {};
 let appInicializada = false;
 let cargaInicialCompletada = false;
 
-// Variables para alertas de faltas
 let faltasPendientesCache = [];
 let alertaFaltasActiva = false;
 
@@ -279,9 +285,20 @@ function escapeHtml(text) {
     return window.fredware.util.escapeHtml(text);
 }
 
+// 🆕 Bloque C — Detectar si un detalle es urgente
+function esUrgente(detalle) {
+    if (!detalle) return false;
+    return detalle.toUpperCase().includes('[URGENTE]');
+}
+
+// 🆕 Bloque C — Limpiar prefijo [URGENTE] para mostrar
+function limpiarUrgente(detalle) {
+    if (!detalle) return detalle;
+    return detalle.replace(/\[URGENTE\]\s*/gi, '').trim();
+}
+
 // ============================================================
-// 🔥 NUEVO: Detección flexible del campo proveedor
-// (por si algún día renombras la columna en productos_raciones)
+// Detección flexible del campo proveedor
 // ============================================================
 function extraerProveedorDeProducto(producto) {
     if (!producto) return 'S/P';
@@ -299,19 +316,15 @@ function extraerProveedorDeProducto(producto) {
 }
 
 // ============================================================
-// SUSCRIPCIÓN AL NÚCLEO (para badge)
+// SUSCRIPCIÓN AL NÚCLEO
 // ============================================================
 window.fredware.subscribe((state) => {
     console.log('📡 [Compras] Estado del núcleo:', {
         recepciones: state.recepciones?.length,
-        compras: state.comprasMes?.length,
         inicializado: state.inicializado
     });
 });
 
-// ============================================================
-// ESPERAR AL NÚCLEO (polling robusto)
-// ============================================================
 async function esperarAlNucleo() {
     const MAX_INTENTOS = 30;
     for (let i = 0; i < MAX_INTENTOS; i++) {
@@ -319,18 +332,11 @@ async function esperarAlNucleo() {
             console.log(`✅ [Compras] Núcleo listo tras ${i + 1}s`);
             return true;
         }
-        if (i > 0 && i % 5 === 0) {
-            console.log(`⏳ [Compras] Esperando al núcleo... (${i}s)`);
-        }
         await new Promise(r => setTimeout(r, 1000));
     }
-    console.warn('⚠️ [Compras] Timeout esperando al núcleo. Continuando...');
     return false;
 }
 
-// ============================================================
-// ACTUALIZAR BADGE
-// ============================================================
 function actualizarBadgeOnline() {
     const badge = document.getElementById('badge-conn');
     if (badge) {
@@ -350,11 +356,13 @@ function calcularFechaManana() {
 }
 
 function descomponerDetalleCesta(detalleString) {
-    const match = detalleString.match(/^\[(\d+)\s+([^\]]+)\]\s*(.*)$/);
+    // 🆕 Quitar [URGENTE] primero
+    const sinUrgente = detalleString.replace(/\[URGENTE\]\s*/gi, '').trim();
+    const match = sinUrgente.match(/^\[(\d+)\s+([^\]]+)\]\s*(.*)$/);
     if (match) {
         return { cantidad: parseInt(match[1]), unidad: match[2], articulo: match[3] };
     }
-    return { cantidad: 1, unidad: 'UNIDADES', articulo: detalleString };
+    return { cantidad: 1, unidad: 'UNIDADES', articulo: sinUrgente };
 }
 
 function generarIdUnico() {
@@ -468,7 +476,7 @@ async function obtenerArticulosHabituales(proveedorId = null) {
 }
 
 // ============================================================
-// 🔥 REGISTRAR COMPRA EN HISTÓRICO
+// REGISTRAR COMPRA EN HISTÓRICO
 // ============================================================
 async function registrarCompraEnHistorico(item, marcarComoRecibido = false) {
     const datos = descomponerDetalleCesta(item.detalle);
@@ -489,10 +497,11 @@ async function registrarCompraEnHistorico(item, marcarComoRecibido = false) {
         estado: marcarComoRecibido ? 'RECIBIDO' : 'PENDIENTE',
         observaciones: marcarComoRecibido 
             ? `Recibido desde compras el ${ahora.toLocaleString()}`
-            : `Registrado desde cesta el ${ahora.toLocaleString()}`,
+            : `Registrado desde cesta el ${ahora.toLocaleString()}${esUrgente(item.detalle) ? ' [URGENTE]' : ''}`,
         metadata: {
             detalle_original: item.detalle,
-            fecha_entrega_esperada: item.fecha_entrega_esperada
+            fecha_entrega_esperada: item.fecha_entrega_esperada,
+            urgente: esUrgente(item.detalle)
         }
     };
 
@@ -931,7 +940,9 @@ async function actualizarLineaCesta(idxReal, nuevaCantidad, nuevaUnidad, nombreA
     const item = cestaLocal[idxReal];
     if (!item) return;
     
-    const nuevoDetalle = `[${nuevaCantidad} ${nuevaUnidad}] ${nombreArticulo}`;
+    const urgente = esUrgente(item.detalle);
+    const prefijo = urgente ? '[URGENTE] ' : '';
+    const nuevoDetalle = `${prefijo}[${nuevaCantidad} ${nuevaUnidad}] ${nombreArticulo}`;
     try {
         await actualizarItemCesta(item.id, { detalle: nuevoDetalle });
         item.detalle = nuevoDetalle;
@@ -958,7 +969,7 @@ async function cambiarProveedorItem(idx, provNombre) {
 async function quitarItemCesta(idx) {
     const item = cestaLocal[idx];
     if (!item) return;
-    if (!confirm(`¿Eliminar "${item.detalle}" de la cesta?`)) return;
+    if (!confirm(`¿Eliminar "${limpiarUrgente(item.detalle)}" de la cesta?`)) return;
     try {
         await eliminarItemCesta(item.id);
         cestaLocal.splice(idx, 1);
@@ -991,10 +1002,11 @@ async function marcarComoRecibido(idx) {
                 cantidad: datosRecepcion.cantidad || 1,
                 unidad: datosRecepcion.unidad || 'UN',
                 origen: 'COMPRAS',
-                observaciones: `Recibido desde compras el ${new Date().toLocaleString()}`,
+                observaciones: `Recibido desde compras el ${new Date().toLocaleString()}${esUrgente(item.detalle) ? ' [URGENTE]' : ''}`,
                 metadata: {
                     flujo: 'compras_recibido',
-                    detalle_original: item.detalle
+                    detalle_original: item.detalle,
+                    urgente: esUrgente(item.detalle)
                 }
             });
             console.log('✅ Recepción registrada en núcleo');
@@ -1020,13 +1032,14 @@ async function marcarComoRecibido(idx) {
                 proveedor: item.proveedor_id,
                 cantidad: datosRecepcion.cantidad,
                 origen: 'COMPRAS',
+                urgente: esUrgente(item.detalle),
                 timestamp: ahora
             });
         } catch (err) {
             console.warn('⚠️ Error enviando broadcast:', err);
         }
 
-        mostrarQR(`RECIBIDO: ${item.detalle} - ${new Date().toLocaleString()}`);
+        mostrarQR(`RECIBIDO: ${limpiarUrgente(item.detalle)} - ${new Date().toLocaleString()}`);
 
         lanzarToast(`✅ ${producto} marcado como recibido en histórico`);
         renderCesta();
@@ -1048,11 +1061,10 @@ function mostrarQR(data) {
     modal.innerHTML = `<h3 style="margin-bottom:10px;">✅ Recepción confirmada</h3><div id="qr-code-container"></div><p style="margin-top:10px;font-size:12px;color:#475569;word-break:break-all;">${escapeHtml(data)}</p><button onclick="this.parentElement.remove()" style="margin-top:10px;padding:6px 12px;background:#2563eb;color:white;border:none;border-radius:6px;">Cerrar</button>`;
     document.body.appendChild(modal);
 
-    // 🔥 QR corto para evitar overflow
     const ahora = new Date();
     const pad = (n) => n.toString().padStart(2, '0');
     const tsCorto = `${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}`;
-    const productoMatch = data.match(/RECIBIDO:\s*\[.*?\]\s*(.+?)\s*-/);
+    const productoMatch = data.match(/RECIBIDO:\s*(?:\[URGENTE\]\s*)?\[.*?\]\s*(.+?)\s*-/);
     const producto = productoMatch ? productoMatch[1].substring(0, 30) : 'PRODUCTO';
     const qrTexto = `REC|${producto}|${tsCorto}`;
 
@@ -1071,6 +1083,9 @@ function mostrarQR(data) {
     }
 }
 
+// ============================================================
+// 🆕 Bloque C — Renderizar cesta con líneas urgentes resaltadas
+// ============================================================
 function renderCesta() {
     const contenedorAcordeon = document.getElementById('contenedor-acordeon-cesta');
     if (!contenedorAcordeon) return;
@@ -1096,22 +1111,36 @@ function renderCesta() {
         let esColapsado = estadoAcordeon[pId] === true;
         const safeId = pId.replace(/[^a-zA-Z0-9]/g, '_');
 
+        // Contar urgentes en este bloque
+        const numUrgentes = listaItems.filter(p => esUrgente(p.item.detalle)).length;
+        const badgeUrgentesBloque = numUrgentes > 0
+            ? `<span style="margin-left:8px; background:#dc2626; color:white; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:900;">⚡ ${numUrgentes} URGENTE${numUrgentes > 1 ? 'S' : ''}</span>`
+            : '';
+
+        // Ordenar: urgentes primero
+        const itemsOrdenados = [...listaItems].sort((a, b) => {
+            const aUrg = esUrgente(a.item.detalle) ? 1 : 0;
+            const bUrg = esUrgente(b.item.detalle) ? 1 : 0;
+            return bUrg - aUrg;
+        });
+
         let bloqueHtml = document.createElement('div');
         bloqueHtml.className = "mb-2";
         bloqueHtml.innerHTML = `
-            <div class="accordion-header ${esColapsado ? '' : 'active'}" onclick="conmutarAcordeon('${pId.replace(/'/g, "\\'")}')">
-                <span>🏢 DISTRIBUIDOR: ${escapeHtml(pId)} <span class="text-xs text-slate-500 font-normal">(${listaItems.length} líneas)</span></span>
+            <div class="accordion-header ${esColapsado ? '' : 'active'} ${numUrgentes > 0 ? 'header-urgente' : ''}" onclick="conmutarAcordeon('${pId.replace(/'/g, "\\'")}')">
+                <span>🏢 DISTRIBUIDOR: ${escapeHtml(pId)} <span class="text-xs text-slate-500 font-normal">(${listaItems.length} líneas)</span>${badgeUrgentesBloque}</span>
                 <span class="accordion-icon">▼</span>
             </div>
             <div id="acord-content-${safeId}" class="accordion-content ${esColapsado ? 'collapsed' : ''}">
                 <table class="item-list">
                     <thead><tr><th>Artículo / Cantidad</th><th>Distribuidor</th><th>Acción</th></tr></thead>
                     <tbody>
-                        ${listaItems.map(pack => {
+                        ${itemsOrdenados.map(pack => {
                             let selectOptions = `<option value="S/P">Asignar...</option>`;
                             proveedoresCache.forEach(p => { selectOptions += `<option value="${escapeHtml(p.nombre)}" ${pack.item.proveedor_id.trim().toUpperCase() === p.nombre.trim().toUpperCase() ? 'selected' : ''}>${escapeHtml(p.nombre)}</option>`; });
                             
                             const datosLinea = descomponerDetalleCesta(pack.item.detalle);
+                            const urgente = esUrgente(pack.item.detalle);
                             const unidadesDisponibles = ['KG', 'L', 'CAJAS', 'BOTES', 'UNIDADES'];
                             
                             let selectUnidadesCesta = `<select class="select-uni cesta-uni" onchange="actualizarLineaCesta(${pack.idxReal}, document.getElementById('cesta-cant-${pack.item.id}').value, this.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')">`;
@@ -1120,9 +1149,12 @@ function renderCesta() {
                             });
                             selectUnidadesCesta += `</select>`;
 
-                            return `<tr>
+                            const badgeUrgente = urgente ? `<span class="badge-urgente">⚡ URGENTE</span>` : '';
+
+                            return `<tr class="${urgente ? 'cesta-row-urgente' : ''}">
                                 <td>
                                     <div class="cesta-item-flex">
+                                        ${badgeUrgente}
                                         <input type="number" id="cesta-cant-${pack.item.id}" class="input-cant cesta-cant" value="${datosLinea.cantidad}" min="1" onchange="actualizarLineaCesta(${pack.idxReal}, this.value, this.nextElementSibling.value, '${datosLinea.articulo.replace(/'/g, "\\'")}')" style="width:55px;">
                                         ${selectUnidadesCesta}
                                         <span style="margin-left: 5px;"><strong>${escapeHtml(datosLinea.articulo)}</strong></span>
@@ -1152,7 +1184,7 @@ function conmutarAcordeon(pId) {
 }
 
 // ============================================================
-// BLOQUES WHATSAPP
+// 🆕 Bloque C — Bloques WhatsApp con urgentes primero
 // ============================================================
 function renderBloquesWhatsApp(cesta) {
     const contenedor = document.getElementById('contenedor-bloques-whatsapp');
@@ -1162,14 +1194,26 @@ function renderBloquesWhatsApp(cesta) {
     let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado === "PENDIENTE").map(i => i.proveedor_id))];
     const hoy = new Date().getDay();
 
+    // 🆕 Ordenar: proveedores con urgentes primero
+    proveedoresConPedidos.sort((a, b) => {
+        const aUrg = cesta.some(i => i.proveedor_id === a && esUrgente(i.detalle) && i.estado === "PENDIENTE");
+        const bUrg = cesta.some(i => i.proveedor_id === b && esUrgente(i.detalle) && i.estado === "PENDIENTE");
+        if (aUrg && !bUrg) return -1;
+        if (!aUrg && bUrg) return 1;
+        return a.localeCompare(b);
+    });
+
     proveedoresConPedidos.forEach(provNombre => {
         const datosProv = proveedoresCache.find(p => p.nombre === provNombre) || {};
         if (!datosProv.telefono || datosProv.telefono.trim() === "") return; 
         const articulos = cesta.filter(i => i.proveedor_id === provNombre && i.estado === "PENDIENTE");
         if (articulos.length === 0) return;
 
+        const numUrgentes = articulos.filter(a => esUrgente(a.detalle)).length;
+        const esBloqueUrgente = numUrgentes > 0;
+
         let mensajeAlertaDia = "";
-        if (datosProv.dias_reparto && Array.isArray(datosProv.dias_reparto)) {
+        if (!esBloqueUrgente && datosProv.dias_reparto && Array.isArray(datosProv.dias_reparto)) {
             if (!datosProv.dias_reparto.includes(hoy)) {
                 let proximosDias = datosProv.dias_reparto.filter(d => d > hoy);
                 if (proximosDias.length === 0) proximosDias = datosProv.dias_reparto;
@@ -1178,10 +1222,17 @@ function renderBloquesWhatsApp(cesta) {
             }
         }
 
+        const badgeUrgente = esBloqueUrgente
+            ? `<br><span style="background:#dc2626;color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:900;">⚡ ${numUrgentes} URGENTE${numUrgentes > 1 ? 'S' : ''}</span>`
+            : '';
+
         const card = document.createElement('div');
-        card.className = 'whatsapp-provider-card';
+        card.className = 'whatsapp-provider-card' + (esBloqueUrgente ? ' urgente' : '');
         card.innerHTML = `
-            <div><strong>🏢 ${escapeHtml(provNombre)}</strong><div style="font-size:11px; color:#475569;">Líneas: ${articulos.length}${mensajeAlertaDia}</div></div>
+            <div>
+                <strong>${esBloqueUrgente ? '⚡ ' : '🏢 '}${escapeHtml(provNombre)}</strong>
+                <div style="font-size:11px; color:#475569;">Líneas: ${articulos.length}${badgeUrgente}</div>
+            </div>
             <div style="display:flex; gap: 8px; flex-wrap:wrap;">
                 <button class="btn-wa-send" onclick="dispararWhatsAppProveedor('${provNombre.replace(/'/g, "\\'")}', '${datosProv.telefono}')">💬 Enviar</button>
                 <button class="btn-wa-del" onclick="limpiarBloqueProveedor('${provNombre.replace(/'/g, "\\'")}')">❌ Ocultar</button>
@@ -1210,13 +1261,33 @@ async function limpiarBloqueProveedor(provNombre) {
     }
 }
 
+// 🆕 Bloque C — WhatsApp con prefijo URGENTE destacado
 function dispararWhatsAppProveedor(provNombre, telefono) {
     const telefonoLimpio = telefono.replace(/\D/g, '');
     if (telefonoLimpio.length < 9) { lanzarToast("Teléfono inválido.", "error"); return; }
     const articulos = cestaLocal.filter(i => (i.proveedor_id || "S/P").trim().toUpperCase() === provNombre.trim().toUpperCase() && i.estado !== "RECIBIDO");
     
+    const urgentes = articulos.filter(i => esUrgente(i.detalle));
+    const normales = articulos.filter(i => !esUrgente(i.detalle));
+
     let textoMensaje = `Buenos dias este es el pedido de hoy para Attica As Galeras y:\n\n`;
-    articulos.forEach(item => { textoMensaje += `• ${item.detalle}\n`; });
+
+    if (urgentes.length > 0) {
+        textoMensaje += `⚡ URGENTE:\n`;
+        urgentes.forEach(item => {
+            const limpio = limpiarUrgente(item.detalle);
+            textoMensaje += `• ${limpio}\n`;
+        });
+        if (normales.length > 0) textoMensaje += `\n`;
+    }
+
+    if (normales.length > 0) {
+        if (urgentes.length > 0) textoMensaje += `📦 PEDIDO NORMAL:\n`;
+        normales.forEach(item => {
+            textoMensaje += `• ${item.detalle}\n`;
+        });
+    }
+
     window.open('https://wa.me/' + telefonoLimpio + '?text=' + encodeURIComponent(textoMensaje), '_blank');
 }
 
@@ -1273,17 +1344,12 @@ async function cargarProveedoresDesdeSupabase() {
     div.innerHTML = '<div class="loading-box">⏳ Sincronizando con Supabase...</div>';
     
     try {
-        console.log('🔍 [Proveedores] Iniciando carga...');
-        
         const { data, error } = await db_nube
             .from('proveedores')
             .select('*')
             .order('nombre', { ascending: true });
         
-        if (error) {
-            console.error('❌ [Proveedores] Error Supabase:', error);
-            throw new Error(error.message || JSON.stringify(error));
-        }
+        if (error) throw new Error(error.message);
         
         const listaProveedores = data || [];
         if (listaProveedores.length > 0) proveedoresCache = listaProveedores;
@@ -1324,7 +1390,6 @@ async function cargarProveedoresDesdeSupabase() {
             }
         });
         
-        console.log('✅ [Proveedores] Renderizados', listaProveedores.length);
         actualizarStatusBar(`✅ ${listaProveedores.length} proveedores cargados`);
         
     } catch (error) {
@@ -1518,9 +1583,6 @@ function renderRepartosHoy() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-// 🔥 v17.4: renderFaltasCocina con nombre en rojo si intentos > 0
-// ═══════════════════════════════════════════════════════════
 async function renderFaltasCocina() {
     const cuerpo = document.getElementById('tabla-faltas-cocina');
     if (!cuerpo) return;
@@ -1535,13 +1597,11 @@ async function renderFaltasCocina() {
         }
 
         faltas.forEach((item) => {
-            // Limpiar sufijos antiguos por si acaso
             const insumoLimpio = (item.insumo || '')
                 .replace(/\s*\(PROVEEDOR NO ENTREGÓ EN REPARTO\)/gi, '')
                 .replace(/\s*\(FALTARON.*?\)/gi, '')
                 .trim();
             
-            // 🔥 Solo color rojo si tiene intentos > 0
             const esReincidente = (item.intentos || 0) > 0;
             const colorTexto = esReincidente ? '#dc2626' : '#1e293b';
             const pesoTexto = esReincidente ? '900' : 'bold';
@@ -1584,7 +1644,6 @@ async function pasarFaltaACesta(id) {
         const falta = faltas.find(f => f.id === id);
         if (!falta) return;
 
-        // 🔥 Limpiar sufijos del insumo antes de pedir cantidad
         const insumoLimpio = (falta.insumo || '')
             .replace(/\s*\(PROVEEDOR NO ENTREGÓ EN REPARTO\)/gi, '')
             .replace(/\s*\(FALTARON.*?\)/gi, '')
@@ -1593,7 +1652,6 @@ async function pasarFaltaACesta(id) {
         let cantidadIngresada = prompt(`Falta de cocina: ${insumoLimpio}\n\nIntroduce cantidad y formato:`, "1 UNIDADES");
         if (cantidadIngresada === null) return;
 
-        // 🔥 Detectar proveedor: primero la falta, luego el producto del catálogo
         let provAsignado = 'S/P';
         if (falta.proveedor_id && falta.proveedor_id !== 'S/P') {
             provAsignado = falta.proveedor_id;
@@ -1730,7 +1788,7 @@ async function initApp() {
     if (appInicializada) return;
     appInicializada = true;
     
-    console.log('🚀 [Compras v17.4] Init — esperando al núcleo...');
+    console.log('🚀 [Compras v4 — Bloque C] Init — esperando al núcleo...');
 
     initDaysGrids();
     
@@ -1743,13 +1801,11 @@ async function initApp() {
                 console.log('📦 [Compras] Producto seleccionado:', producto.nombre_articulo);
             }
         });
-        console.log('✅ [Compras] Combobox estricto montado');
     } catch (err) {
         console.warn('⚠️ [Compras] No se pudo montar combobox:', err);
     }
     
     suscribirseCambios();
-    
     await cargarDatosIniciales();
     cargaInicialCompletada = true;
     
