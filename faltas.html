@@ -56,6 +56,12 @@
         .btn-guardar-supabase { background: #3b82f6; color: white; font-weight: bold; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 13px; }
         .btn-guardar-supabase:hover { background: #2563eb; }
 
+        /* 🆕 Botón urgente en faltas */
+        .btn-urgente-falta { background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; margin-right: 6px; }
+        .btn-urgente-falta:hover { background: #d97706; transform: scale(1.03); }
+        .btn-urgente-falta.activo { background: #dc2626; animation: pulse-urgente 1.5s ease-in-out infinite; }
+        @keyframes pulse-urgente { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.7); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
+
         @media (max-width: 640px) {
             .tabs-container { flex-direction: column; gap: 4px; }
             .tab-btn { padding: 10px; font-size: 13px; }
@@ -80,7 +86,7 @@
                     <button onclick="abrirEntradaDirecta()" class="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-3 py-2 rounded-xl border border-amber-600 shadow-sm transition-all active:scale-95">
                         ➕ ENTRADA DIRECTA
                     </button>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.5</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v17.6</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -113,7 +119,7 @@
                         ➕ Añadir
                     </button>
                 </div>
-                <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-40 overflow-y-auto">
+                <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-96 overflow-y-auto">
                     <div class="text-center italic text-slate-400 text-xs py-2">⏳ Cargando faltas...</div>
                 </div>
             </div>
@@ -212,9 +218,6 @@
             return window.fredware.util.escapeHtml(text);
         }
 
-        // ============================================================
-        // LIMPIAR SUFIJOS ANTIGUOS
-        // ============================================================
         function limpiarSufijosInsumo(texto) {
             if (!texto) return '';
             return texto
@@ -320,11 +323,7 @@
             return data || [];
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // 🔥 v17.5: agregarFalta con validaciones defensivas
-        // ═══════════════════════════════════════════════════════════
         async function agregarFalta(insumo, productoInfo = null) {
-            // 🔥 Validación defensiva 1: insumo obligatorio
             if (!insumo || !String(insumo).trim()) {
                 console.error('❌ [agregarFalta] insumo vacío, abortando');
                 lanzarToast('Error: el nombre del producto está vacío', 'error');
@@ -333,7 +332,6 @@
 
             const insumoLimpio = String(insumo).trim();
 
-            // 🔥 Validación defensiva 2: filtrar productoInfo sin nombre_articulo
             if (productoInfo && !productoInfo.nombre_articulo) {
                 console.warn('⚠️ [agregarFalta] productoInfo sin nombre_articulo, ignorando');
                 productoInfo = null;
@@ -367,7 +365,8 @@
                     insumo: insumoLimpio,
                     proveedor_id: proveedorId,
                     catalogo_id: catalogoId,
-                    intentos: 0
+                    intentos: 0,
+                    urgente: false
                 });
             if (error) throw error;
 
@@ -380,6 +379,28 @@
                 .delete()
                 .eq('id', id);
             if (error) throw error;
+        }
+
+        // 🆕 Toggle urgente
+        async function toggleUrgente(id, urgenteActual) {
+            try {
+                const nuevoEstado = !urgenteActual;
+                const { error } = await db_nube
+                    .from('faltas_cocina')
+                    .update({ urgente: nuevoEstado })
+                    .eq('id', id);
+                if (error) throw error;
+
+                lanzarToast(
+                    nuevoEstado ? '🚨 Marcada como URGENTE' : '✅ Urgencia quitada',
+                    nuevoEstado ? 'warning' : 'success'
+                );
+                await renderFaltasLocales();
+                sincronizarConOficina('faltas', await obtenerFaltas());
+            } catch (error) {
+                console.error('Error toggle urgente:', error);
+                lanzarToast('Error al cambiar urgencia', 'error');
+            }
         }
 
         async function obtenerCesta() {
@@ -598,9 +619,6 @@
                 return;
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // 🔥 v17.5: Validación defensiva del seleccionado
-            // ═══════════════════════════════════════════════════════════
             const nombreExacto = seleccionado?.nombre_articulo || seleccionado?.nombre;
 
             if (!nombreExacto) {
@@ -629,10 +647,6 @@
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // 🔥 v17.5: abrirModalCrearProductoDesdeFalta con detección
-        //    robusta del nombre del producto creado
-        // ═══════════════════════════════════════════════════════════
         async function abrirModalCrearProductoDesdeFalta(nombrePropuesto) {
             const nuevo = await fredware.productos.mostrarModalCrearProducto(nombrePropuesto);
             
@@ -645,7 +659,6 @@
                     if (input.fredwareReset) input.fredwareReset();
                 }
 
-                // 🔥 Detectar el nombre real (puede venir como .nombre o .nombre_articulo)
                 const nombreProducto = nuevo?.nombre || nuevo?.nombre_articulo || nombrePropuesto;
 
                 const conf = await Swal.fire({
@@ -660,7 +673,6 @@
                 });
                 
                 if (conf.isConfirmed) {
-                    // 🔥 Validación: nombreProducto debe existir
                     if (!nombreProducto || !String(nombreProducto).trim()) {
                         console.error('❌ No se pudo obtener el nombre del producto:', nuevo);
                         lanzarToast('Error: no se pudo añadir la falta (nombre vacío)', 'error');
@@ -685,9 +697,9 @@
             }
         }
 
-        // ============================================================
-        // RENDER FALTAS LOCALES
-        // ============================================================
+        // ═══════════════════════════════════════════════════════════
+        // 🔥 v17.6: renderFaltasLocales con botón URGENTE
+        // ═══════════════════════════════════════════════════════════
         async function renderFaltasLocales() {
             try {
                 const faltas = await obtenerFaltas();
@@ -701,13 +713,34 @@
                 faltas.forEach((item) => {
                     const insumoLimpio = limpiarSufijosInsumo(item.insumo);
                     const esReincidente = (item.intentos || 0) > 0;
-                    const colorTexto = esReincidente ? 'text-red-600' : 'text-amber-600';
-                    const estiloFondo = esReincidente ? 'bg-red-50 border-red-300' : 'bg-slate-50 border-slate-200';
+                    const esUrgente = item.urgente === true;
+
+                    // Colores según estado
+                    let colorTexto = 'text-amber-600';
+                    let estiloFondo = 'bg-slate-50 border-slate-200';
+                    let icono = '⚠️';
+
+                    if (esUrgente) {
+                        colorTexto = 'text-orange-600';
+                        estiloFondo = 'bg-orange-50 border-orange-400';
+                        icono = '🚨';
+                    } else if (esReincidente) {
+                        colorTexto = 'text-red-600';
+                        estiloFondo = 'bg-red-50 border-red-300';
+                    }
+
+                    // Botón URGENTE
+                    const btnUrgente = `<button class="btn-urgente-falta ${esUrgente ? 'activo' : ''}" onclick="toggleUrgente(${item.id}, ${esUrgente})" title="${esUrgente ? 'Quitar urgencia' : 'Marcar como urgente'}">
+                        ${esUrgente ? '🚨 URGENTE' : '⚡ URGENTE'}
+                    </button>`;
 
                     container.innerHTML += `
                         <div class="flex justify-between items-center ${estiloFondo} border px-4 py-2.5 rounded-xl shadow-sm">
-                            <span class="text-sm font-bold ${colorTexto}">⚠️ ${escapeHtml(insumoLimpio)}</span>
-                            <button onclick="borrarFaltaLocal(${item.id})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
+                            <span class="text-sm font-bold ${colorTexto} flex-1">${icono} ${escapeHtml(insumoLimpio)}</span>
+                            <div class="flex items-center gap-2">
+                                ${btnUrgente}
+                                <button onclick="borrarFaltaLocal(${item.id})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
+                            </div>
                         </div>
                     `;
                 });
@@ -1443,7 +1476,8 @@
                             catalogo_id: isNaN(catalogoId) ? null : catalogoId,
                             intentos: 1,
                             ultimo_intento: new Date().toISOString(),
-                            motivo_reintento: 'PROVEEDOR NO ENTREGÓ'
+                            motivo_reintento: 'PROVEEDOR NO ENTREGÓ',
+                            urgente: false
                         });
                 }
 
@@ -2301,7 +2335,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Faltas v17.5] Init — esperando al núcleo...');
+            console.log('🚀 [Faltas v17.6] Init — esperando al núcleo...');
 
             suscribirseCambios();
             await esperarAlNucleo();
@@ -2313,14 +2347,10 @@
                 await fredware.productos.cargar();
                 console.log('✅ [Faltas] Productos cargados para el combobox');
 
-                // ═══════════════════════════════════════════════════════════
-                // 🔥 v17.5: onSelect con validación defensiva
-                // ═══════════════════════════════════════════════════════════
                 fredware.productos.comboboxEstricto('insumo-falta', {
                     zonas: null,
                     placeholder: 'Escribe para buscar producto...',
                     onSelect: (producto) => {
-                        // 🔥 Ignorar llamadas con producto vacío (al limpiar, escape, etc.)
                         if (!producto) return;
                         console.log('📦 [Faltas] Producto seleccionado:', producto?.nombre_articulo);
                     }
@@ -2356,6 +2386,7 @@
         window.obtenerEtiquetasHoyLocal = obtenerEtiquetasHoyLocal;
         window.cambiarTipoConservacion = cambiarTipoConservacion;
         window.evaluarAlertaTemperatura = evaluarAlertaTemperatura;
+        window.toggleUrgente = toggleUrgente;
 
         init();
     </script>
