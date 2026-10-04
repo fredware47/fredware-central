@@ -42,10 +42,17 @@
         .btn-guardar-supabase { background: #3b82f6; color: white; font-weight: bold; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 13px; }
         .btn-guardar-supabase:hover { background: #2563eb; }
 
-        .btn-urgente-falta { background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; margin-right: 6px; }
+        /* Botón urgente en faltas */
+        .btn-urgente-falta { background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
         .btn-urgente-falta:hover { background: #d97706; transform: scale(1.03); }
         .btn-urgente-falta.activo { background: #dc2626; animation: pulse-urgente 1.5s ease-in-out infinite; }
         @keyframes pulse-urgente { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.7); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
+
+        /* 🆕 Botón proveedor en faltas */
+        .btn-prov-falta { background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+        .btn-prov-falta:hover { background: #0369a1; transform: scale(1.03); }
+        .btn-prov-falta.sin-prov { background: #dc2626; animation: pulse-sinprov 1.5s ease-in-out infinite; }
+        @keyframes pulse-sinprov { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.6); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
 
         .badge-conn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
         .badge-conn.loading { background: #fef3c7; color: #92400e; animation: pulse-badge 1.5s ease-in-out infinite; }
@@ -88,13 +95,14 @@
         .falta-badge { font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 10px; font-weight: 700; display: inline-block; }
         .falta-badge.reincidente { background: #dc2626; color: white; }
         .falta-badge.urgente { background: #dc2626; color: white; animation: pulse-urgente-badge 1.5s ease-in-out infinite; }
+        .falta-badge.sinprov { background: #dc2626; color: white; animation: pulse-sinprov 1.5s ease-in-out infinite; }
         @keyframes pulse-urgente-badge { 0%, 100% { transform: scale(1); background: #dc2626; } 50% { transform: scale(1.08); background: #b91c1c; } }
 
         .buscador { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; }
         .buscador:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
 
         /* ============================================================
-           SISTEMA DE ACORDEÓN MÓVIL — v2 (display en lugar de max-height)
+           ACORDEÓN MÓVIL v2
            ============================================================ */
         .acordeon-header {
             width: 100%;
@@ -131,19 +139,12 @@
         }
         .acordeon-header.abierto .flecha { transform: rotate(180deg); }
 
-        .acordeon-contenido {
-            display: none;
-        }
-        .acordeon-contenido.abierto {
-            display: block;
-        }
+        .acordeon-contenido { display: none; }
+        .acordeon-contenido.abierto { display: block; }
 
-        /* En desktop (>= 768px): sin acordeón, todo visible siempre */
         @media (min-width: 768px) {
             .acordeon-header { display: none !important; }
-            .acordeon-contenido {
-                display: block !important;
-            }
+            .acordeon-contenido { display: block !important; }
         }
 
         @media (max-width: 640px) {
@@ -170,7 +171,7 @@
             <div class="flex flex-col items-end space-y-1">
                 <div class="flex items-center space-x-2">
                     <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.4</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.6</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -202,25 +203,34 @@
                         ➕ Añadir
                     </button>
                 </div>
+
+                <!-- Aviso faltas huérfanas -->
+                <div id="aviso-huerfanas" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap">
+                    <div class="flex items-center gap-2 text-amber-800 text-xs font-bold">
+                        <span>⚠️</span>
+                        <span><span id="contador-huerfanas">0</span> faltas sin proveedor asignado</span>
+                    </div>
+                    <button onclick="revisarHuerfanasDeUnaEnUna()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95">
+                        🏢 Revisar una a una
+                    </button>
+                </div>
+
                 <div id="contenedor-faltas-local" class="space-y-2 pt-2 max-h-[60vh] overflow-y-auto">
                     <div class="text-center italic text-slate-400 text-xs py-2">⏳ Cargando faltas...</div>
                 </div>
             </div>
         </div>
 
-        <!-- TAB 2: PEDIDOS (con acordeón móvil v2) -->
+        <!-- TAB 2: PEDIDOS -->
         <div id="tab-pedidos" class="tab-content">
             
-            <!-- Botón acordeón (solo móvil) -->
             <button type="button" class="acordeon-header" id="acordeon-prov-header" onclick="toggleAcordeon('prov')">
                 <span>🏢 Distribuidores <span class="badge-contador" id="badge-num-prov">0</span></span>
                 <span class="flecha">▼</span>
             </button>
 
-            <!-- Contenido del acordeón -->
             <div class="acordeon-contenido" id="acordeon-prov-contenido">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- COLUMNA IZQUIERDA: PROVEEDORES -->
                     <div class="md:col-span-1 space-y-4">
                         <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                             <div class="flex justify-between items-center mb-3">
@@ -234,7 +244,6 @@
                         </div>
                     </div>
 
-                    <!-- COLUMNA DERECHA: PLANTILLA -->
                     <div class="md:col-span-2 space-y-4">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                             <div class="p-5 border-b border-slate-100">
@@ -347,7 +356,7 @@
 
     <script>
         // ============================================================
-        // 🛡️ CAPTURADOR DE ERRORES VISIBLE EN PANTALLA
+        // CAPTURADOR DE ERRORES VISIBLE
         // ============================================================
         window.addEventListener('error', function(e) {
             const div = document.createElement('div');
@@ -364,12 +373,12 @@
         });
 
         // ============================================================
-        // 🔌 CLIENTE SUPABASE PROPIO (proyecto bhyprsjokwgazzzlfnbf)
+        // CLIENTE SUPABASE PROPIO
         // ============================================================
         const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
         const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
         const db_nube = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ [Pedidos v1.4] Cliente Supabase listo:', SUPABASE_URL);
+        console.log('✅ [Pedidos v1.6] Cliente Supabase listo:', SUPABASE_URL);
 
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
         const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -392,15 +401,12 @@
         let acordeonAbierto = 'ninguno';
 
         // ============================================================
-        // SISTEMA DE ACORDEÓN MÓVIL v2
+        // ACORDEÓN
         // ============================================================
         function toggleAcordeon(cual) {
             const header = document.getElementById(`acordeon-${cual}-header`);
             const contenido = document.getElementById(`acordeon-${cual}-contenido`);
-            if (!header || !contenido) {
-                console.warn('❌ [Acordeón] No encontrado:', cual);
-                return;
-            }
+            if (!header || !contenido) return;
 
             const estaAbierto = contenido.classList.contains('abierto');
 
@@ -408,27 +414,12 @@
                 contenido.classList.remove('abierto');
                 header.classList.remove('abierto');
                 acordeonAbierto = 'ninguno';
-                console.log('📕 Acordeón cerrado:', cual);
             } else {
-                // Cerrar todos primero
                 document.querySelectorAll('.acordeon-contenido').forEach(c => c.classList.remove('abierto'));
                 document.querySelectorAll('.acordeon-header').forEach(h => h.classList.remove('abierto'));
-                // Abrir el nuevo
                 contenido.classList.add('abierto');
                 header.classList.add('abierto');
                 acordeonAbierto = cual;
-                console.log('📖 Acordeón abierto:', cual);
-
-                // Debug: comprobar que el contenido tiene hijos
-                setTimeout(() => {
-                    const lista = document.getElementById('lista-proveedores');
-                    if (lista) {
-                        console.log('📦 Proveedores en DOM:', lista.children.length);
-                        if (lista.children.length === 0) {
-                            console.warn('⚠️ Contenedor de proveedores vacío');
-                        }
-                    }
-                }, 100);
             }
         }
 
@@ -436,7 +427,6 @@
             const header = document.getElementById(`acordeon-${cual}-header`);
             const contenido = document.getElementById(`acordeon-${cual}-contenido`);
             if (!header || !contenido) return;
-
             document.querySelectorAll('.acordeon-contenido').forEach(c => c.classList.remove('abierto'));
             document.querySelectorAll('.acordeon-header').forEach(h => h.classList.remove('abierto'));
             contenido.classList.add('abierto');
@@ -527,7 +517,6 @@
                 if (proveedoresCache.length === 0) {
                     cargarProveedoresDesdeSupabase();
                 }
-                // En móvil, abrir el acordeón de proveedores por defecto
                 if (window.innerWidth < 768) {
                     setTimeout(() => abrirAcordeon('prov'), 150);
                 }
@@ -613,13 +602,18 @@
                     const { data: habituales, error: errHab } = await db_nube
                         .from('articulos_habituales')
                         .select('proveedor_id')
-                        .ilike('nombre_articulo', insumoLimpio)
-                        .limit(1);
+                        .ilike('nombre_articulo', insumoLimpio);
 
-                    if (!errHab && habituales && habituales.length > 0 && habituales[0].proveedor_id) {
-                        proveedorId = habituales[0].proveedor_id;
+                    if (!errHab && habituales && habituales.length > 0) {
+                        const encontrado = habituales.find(h => h.proveedor_id && h.proveedor_id !== 'S/P');
+                        if (encontrado) {
+                            proveedorId = encontrado.proveedor_id;
+                            console.log(`✅ [agregarFalta] Proveedor desde articulos_habituales: "${insumoLimpio}" → ${proveedorId}`);
+                        }
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('Error buscando en articulos_habituales:', e);
+                }
             }
 
             const { error } = await db_nube
@@ -665,26 +659,223 @@
             }
         }
 
+        // 🆕 Cambiar proveedor de una falta existente
+        async function abrirModalAsignarProveedor(faltaId) {
+            try {
+                const { data: falta, error: errFalta } = await db_nube
+                    .from('faltas_cocina')
+                    .select('*')
+                    .eq('id', faltaId)
+                    .single();
+
+                if (errFalta || !falta) {
+                    lanzarToast('No se encontró la falta', 'error');
+                    return;
+                }
+
+                const { data: provs } = await db_nube
+                    .from('proveedores')
+                    .select('id, nombre')
+                    .order('nombre', { ascending: true });
+
+                if (!provs || provs.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Sin proveedores',
+                        text: 'No hay proveedores en la base de datos.',
+                        confirmButtonColor: '#0284c7'
+                    });
+                    return;
+                }
+
+                const opciones = { 'S/P': '⚠️ Sin proveedor (no aparecerá en pedidos)' };
+                provs.forEach(p => { opciones[p.id] = p.nombre; });
+
+                const nombreLimpio = limpiarSufijosInsumo(falta.insumo);
+                const provActual = falta.proveedor_id || 'S/P';
+                const provActualNombre = provActual === 'S/P' 
+                    ? 'Sin proveedor' 
+                    : (provs.find(p => p.id === provActual)?.nombre || provActual);
+
+                const { value: elegido } = await Swal.fire({
+                    title: '🏢 Asignar proveedor',
+                    html: `
+                        <div style="text-align:left;font-size:14px;padding:4px;">
+                            <div style="background:#f1f5f9;padding:10px 14px;border-radius:8px;margin-bottom:14px;">
+                                <div style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;letter-spacing:0.5px;">Producto</div>
+                                <div style="font-size:16px;font-weight:900;color:#1e293b;margin-top:2px;">${escapeHtml(nombreLimpio)}</div>
+                                <div style="font-size:11px;color:#64748b;margin-top:4px;">Actual: <strong>${escapeHtml(provActualNombre)}</strong></div>
+                            </div>
+                        </div>
+                    `,
+                    input: 'select',
+                    inputOptions: opciones,
+                    inputValue: provActual,
+                    inputPlaceholder: 'Selecciona proveedor',
+                    showCancelButton: true,
+                    confirmButtonText: '💾 Guardar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#0284c7'
+                });
+
+                if (elegido === undefined || elegido === null) return;
+                if (elegido === provActual) {
+                    lanzarToast('Sin cambios', 'info');
+                    return;
+                }
+
+                const { error: errUpdate } = await db_nube
+                    .from('faltas_cocina')
+                    .update({ proveedor_id: elegido })
+                    .eq('id', faltaId);
+
+                if (errUpdate) throw errUpdate;
+
+                const nombreFinal = elegido === 'S/P' 
+                    ? 'Sin proveedor' 
+                    : (provs.find(p => p.id === elegido)?.nombre || elegido);
+
+                lanzarToast(`✅ "${nombreLimpio}" asignada a ${nombreFinal}`, 'success');
+
+                await renderFaltasLocales();
+                await cargarProveedoresDesdeSupabase();
+                if (proveedorActivo) await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+
+            } catch (error) {
+                console.error('Error asignando proveedor:', error);
+                lanzarToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // 🆕 Revisar huérfanas de una en una
+        async function revisarHuerfanasDeUnaEnUna() {
+            try {
+                const { data: huerfanas, error } = await db_nube
+                    .from('faltas_cocina')
+                    .select('id, insumo')
+                    .or('proveedor_id.is.null,proveedor_id.eq.S/P')
+                    .order('fecha_anotado', { ascending: false });
+
+                if (error) throw error;
+
+                if (!huerfanas || huerfanas.length === 0) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ Todo en orden',
+                        text: 'No hay faltas sin proveedor.',
+                        confirmButtonColor: '#10b981'
+                    });
+                    return;
+                }
+
+                const { data: provs } = await db_nube
+                    .from('proveedores')
+                    .select('id, nombre')
+                    .order('nombre', { ascending: true });
+
+                if (!provs || provs.length === 0) {
+                    Swal.fire({ icon: 'warning', title: 'Sin proveedores', text: 'No hay proveedores.', confirmButtonColor: '#0284c7' });
+                    return;
+                }
+
+                const opciones = { 'S/P': '⚠️ Sin proveedor (saltar)' };
+                provs.forEach(p => { opciones[p.id] = p.nombre; });
+
+                let asignadas = 0;
+                let saltadas = 0;
+
+                for (let i = 0; i < huerfanas.length; i++) {
+                    const falta = huerfanas[i];
+                    const nombreLimpio = limpiarSufijosInsumo(falta.insumo);
+
+                    const { value: elegido, isDismissed } = await Swal.fire({
+                        title: `🏢 ${i + 1} de ${huerfanas.length}`,
+                        html: `
+                            <div style="text-align:left;font-size:14px;padding:4px;">
+                                <div style="background:#fef3c7;padding:10px 14px;border-radius:8px;margin-bottom:14px;">
+                                    <div style="font-size:11px;color:#92400e;text-transform:uppercase;font-weight:600;">Producto sin proveedor</div>
+                                    <div style="font-size:16px;font-weight:900;color:#1e293b;margin-top:2px;">${escapeHtml(nombreLimpio)}</div>
+                                </div>
+                            </div>
+                        `,
+                        input: 'select',
+                        inputOptions: opciones,
+                        inputPlaceholder: 'Selecciona proveedor',
+                        showCancelButton: true,
+                        confirmButtonText: '💾 Guardar y siguiente',
+                        cancelButtonText: 'Saltar',
+                        confirmButtonColor: '#0284c7',
+                        cancelButtonColor: '#94a3b8'
+                    });
+
+                    if (isDismissed || elegido === undefined || elegido === null || elegido === 'S/P') {
+                        saltadas++;
+                        continue;
+                    }
+
+                    try {
+                        await db_nube
+                            .from('faltas_cocina')
+                            .update({ proveedor_id: elegido })
+                            .eq('id', falta.id);
+                        asignadas++;
+                    } catch (e) {
+                        console.error('Error asignando:', e);
+                    }
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Revisión completada',
+                    html: `<div style="text-align:left;font-size:14px;">
+                            <p>✅ Asignadas: <strong>${asignadas}</strong></p>
+                            ${saltadas > 0 ? `<p>⏭️ Saltadas: <strong>${saltadas}</strong></p>` : ''}
+                           </div>`,
+                    confirmButtonColor: '#10b981'
+                });
+
+                await renderFaltasLocales();
+                await cargarProveedoresDesdeSupabase();
+                if (proveedorActivo) await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
+
+            } catch (error) {
+                console.error('Error revisando huérfanas:', error);
+                lanzarToast('Error: ' + error.message, 'error');
+            }
+        }
+
         async function renderFaltasLocales() {
             try {
                 const faltas = await obtenerFaltas();
                 const container = document.getElementById('contenedor-faltas-local');
                 if (!container) return;
                 container.innerHTML = '';
+                
                 if (faltas.length === 0) {
                     container.innerHTML = `<div class="text-center italic text-slate-400 text-xs py-2">No hay faltas apuntadas hoy.</div>`;
+                    actualizarAvisoHuerfanas(0);
                     return;
                 }
+
+                let numHuerfanas = 0;
+
                 faltas.forEach((item) => {
                     const insumoLimpio = limpiarSufijosInsumo(item.insumo);
                     const esReincidente = (item.intentos || 0) > 0;
                     const esUrgente = item.urgente === true;
+                    const sinProv = !item.proveedor_id || item.proveedor_id === 'S/P';
+
+                    if (sinProv) numHuerfanas++;
 
                     let colorTexto = 'text-amber-600';
                     let estiloFondo = 'bg-slate-50 border-slate-200';
                     let icono = '⚠️';
 
-                    if (esUrgente) {
+                    if (sinProv) {
+                        colorTexto = 'text-red-700';
+                        estiloFondo = 'bg-red-50 border-red-400';
+                        icono = '🚫';
+                    } else if (esUrgente) {
                         colorTexto = 'text-orange-600';
                         estiloFondo = 'bg-orange-50 border-orange-400';
                         icono = '🚨';
@@ -693,22 +884,52 @@
                         estiloFondo = 'bg-red-50 border-red-300';
                     }
 
-                    const btnUrgente = `<button class="btn-urgente-falta ${esUrgente ? 'activo' : ''}" onclick="toggleUrgente(${item.id}, ${esUrgente})" title="${esUrgente ? 'Quitar urgencia' : 'Marcar como urgente'}">
+                    // Botón urgente
+                    const btnUrgente = `<button class="btn-urgente-falta ${esUrgente ? 'activo' : ''}" 
+                        onclick="toggleUrgente(${item.id}, ${esUrgente})" 
+                        title="${esUrgente ? 'Quitar urgencia' : 'Marcar como urgente'}">
                         ${esUrgente ? '🚨 URGENTE' : '⚡ URGENTE'}
                     </button>`;
 
+                    // 🆕 Botón proveedor
+                    const btnProv = `<button class="btn-prov-falta ${sinProv ? 'sin-prov' : ''}" 
+                        onclick="abrirModalAsignarProveedor(${item.id})" 
+                        title="${sinProv ? '⚠️ Asignar proveedor urgente' : 'Cambiar proveedor'}">
+                        ${sinProv ? '🏢 ASIGNAR' : '🏢 PROVEEDOR'}
+                    </button>`;
+
                     container.innerHTML += `
-                        <div class="flex justify-between items-center ${estiloFondo} border px-4 py-2.5 rounded-xl shadow-sm">
-                            <span class="text-sm font-bold ${colorTexto} flex-1">${icono} ${escapeHtml(insumoLimpio)}</span>
-                            <div class="flex items-center gap-2">
+                        <div class="flex justify-between items-center ${estiloFondo} border px-4 py-2.5 rounded-xl shadow-sm flex-wrap gap-2">
+                            <span class="text-sm font-bold ${colorTexto} flex-1 min-w-[120px]">${icono} ${escapeHtml(insumoLimpio)}</span>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                ${btnProv}
                                 ${btnUrgente}
-                                <button onclick="borrarFaltaLocal(${item.id})" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">Eliminar</button>
+                                <button onclick="borrarFaltaLocal(${item.id})" 
+                                    class="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors">
+                                    Eliminar
+                                </button>
                             </div>
                         </div>
                     `;
                 });
+
+                actualizarAvisoHuerfanas(numHuerfanas);
+
             } catch (error) {
                 console.error("Error renderizando faltas:", error);
+            }
+        }
+
+        function actualizarAvisoHuerfanas(num) {
+            const aviso = document.getElementById('aviso-huerfanas');
+            const contador = document.getElementById('contador-huerfanas');
+            if (!aviso || !contador) return;
+
+            if (num > 0) {
+                contador.textContent = num;
+                aviso.classList.remove('hidden');
+            } else {
+                aviso.classList.add('hidden');
             }
         }
 
@@ -748,9 +969,15 @@
                     return;
                 }
 
-                await agregarFalta(valor, null);
+                const resultado = await agregarFalta(valor, null);
                 input.value = '';
-                lanzarToast(`⚠️ Falta añadida: ${valor}`);
+                
+                if (resultado && resultado.proveedor_id === 'S/P') {
+                    lanzarToast(`⚠️ Falta añadida SIN proveedor. Pulsa 🏢 ASIGNAR para asignarlo.`, 'warning');
+                } else {
+                    lanzarToast(`⚠️ Falta añadida: ${valor}`);
+                }
+                
                 await renderFaltasLocales();
                 sincronizarConOficina('faltas', await obtenerFaltas());
             } catch (error) {
@@ -837,7 +1064,6 @@
 
         async function seleccionarProveedorYCambiar(provId, provNombre) {
             await cargarHojaInteractiva(provId, provNombre);
-            // En móvil, cerrar acordeón proveedores y hacer scroll a la plantilla
             if (window.innerWidth < 768) {
                 cerrarAcordeon('prov');
                 setTimeout(() => {
@@ -1580,7 +1806,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Pedidos v1.4] Init');
+            console.log('🚀 [Pedidos v1.6] Init');
 
             const tabGuardada = localStorage.getItem('fredware_pedidos_tab') || 'faltas';
             setTab(tabGuardada);
@@ -1636,6 +1862,8 @@
         window.registrarFaltaCocina = registrarFaltaCocina;
         window.borrarFaltaLocal = borrarFaltaLocal;
         window.toggleUrgente = toggleUrgente;
+        window.abrirModalAsignarProveedor = abrirModalAsignarProveedor;
+        window.revisarHuerfanasDeUnaEnUna = revisarHuerfanasDeUnaEnUna;
         window.cargarProveedoresDesdeSupabase = cargarProveedoresDesdeSupabase;
         window.cargarHojaInteractiva = cargarHojaInteractiva;
         window.toggleSeleccion = toggleSeleccion;
