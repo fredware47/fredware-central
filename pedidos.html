@@ -93,6 +93,64 @@
         .buscador { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; }
         .buscador:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
 
+        /* ============================================================
+           🆕 SISTEMA DE ACORDEÓN MÓVIL
+           ============================================================ */
+        .acordeon-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+        }
+        .acordeon-header:active { transform: scale(0.99); }
+        .acordeon-header.proveedores {
+            background: linear-gradient(135deg, #065f46 0%, #10b981 100%);
+            box-shadow: 0 2px 8px rgba(16,185,129,0.3);
+        }
+        .acordeon-header .badge-contador {
+            background: rgba(255,255,255,0.25);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .acordeon-header .flecha {
+            font-size: 12px;
+            transition: transform 0.3s;
+            margin-left: 8px;
+        }
+        .acordeon-header.abierto .flecha { transform: rotate(180deg); }
+
+        .acordeon-contenido {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease-out, margin 0.35s ease-out;
+            margin-top: 0;
+        }
+        .acordeon-contenido.abierto {
+            max-height: 2500px;
+            margin-top: 10px;
+        }
+
+        /* En desktop, todo visible siempre */
+        @media (min-width: 768px) {
+            .acordeon-header { display: none !important; }
+            .acordeon-contenido {
+                max-height: none !important;
+                margin-top: 0 !important;
+                overflow: visible !important;
+            }
+        }
+
         @media (max-width: 640px) {
             .tabs-container { flex-direction: column; gap: 4px; }
             .tab-btn { padding: 10px; font-size: 13px; }
@@ -117,7 +175,7 @@
             <div class="flex flex-col items-end space-y-1">
                 <div class="flex items-center space-x-2">
                     <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.2</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.3</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -155,57 +213,72 @@
             </div>
         </div>
 
-        <!-- TAB 2: PEDIDOS -->
+        <!-- TAB 2: PEDIDOS (con acordeón móvil) -->
         <div id="tab-pedidos" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- ============================================
+                 ACORDEÓN 1: PROVEEDORES (solo visible en móvil)
+                 ============================================ -->
+            <div class="md:hidden mb-3">
+                <div class="acordeon-header proveedores" id="acordeon-prov-header" onclick="toggleAcordeon('prov')">
+                    <span>🏢 Distribuidores <span class="badge-contador" id="badge-num-prov">0</span></span>
+                    <span class="flecha">▼</span>
+                </div>
+            </div>
 
-                <div class="md:col-span-1 space-y-4">
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">🏢 Distribuidores</h2>
-                            <button onclick="cargarProveedoresDesdeSupabase()" class="text-blue-600 text-xs font-bold hover:underline">🔄 Refrescar</button>
-                        </div>
-                        <div id="lista-proveedores" class="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
-                            <div class="text-xs text-slate-400 p-2">⏳ Leyendo agenda...</div>
+            <div class="acordeon-contenido" id="acordeon-prov-contenido">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- COLUMNA IZQUIERDA: PROVEEDORES -->
+                    <div class="md:col-span-1 space-y-4">
+                        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                            <div class="flex justify-between items-center mb-3">
+                                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:block">🏢 Distribuidores</h2>
+                                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider md:hidden">📋 Selecciona uno</h2>
+                                <button onclick="cargarProveedoresDesdeSupabase()" class="text-blue-600 text-xs font-bold hover:underline">🔄 Refrescar</button>
+                            </div>
+                            <div id="lista-proveedores" class="space-y-1.5 max-h-[70vh] md:max-h-[70vh] max-h-[50vh] overflow-y-auto pr-1">
+                                <div class="text-xs text-slate-400 p-2">⏳ Leyendo agenda...</div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="md:col-span-2 space-y-4">
-                    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                        <div class="p-5 border-b border-slate-100">
-                            <div class="flex justify-between items-start flex-wrap gap-3">
-                                <div>
-                                    <h2 id="nombre-proveedor-activo" class="text-lg font-black text-slate-900">Selecciona un proveedor</h2>
-                                    <p id="info-proveedor-activo" class="text-xs text-slate-400 font-medium mt-1">Elige un distribuidor de la izquierda</p>
+                    <!-- COLUMNA DERECHA: PLANTILLA -->
+                    <div class="md:col-span-2 space-y-4">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                            <div class="p-5 border-b border-slate-100">
+                                <div class="flex justify-between items-start flex-wrap gap-3">
+                                    <div>
+                                        <h2 id="nombre-proveedor-activo" class="text-lg font-black text-slate-900">Selecciona un proveedor</h2>
+                                        <p id="info-proveedor-activo" class="text-xs text-slate-400 font-medium mt-1">Elige un distribuidor</p>
+                                    </div>
+                                    <button id="btn-add-articulo" onclick="toggleFormNuevoArticulo()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95 hidden">
+                                        ➕ Añadir Artículo
+                                    </button>
                                 </div>
-                                <button id="btn-add-articulo" onclick="toggleFormNuevoArticulo()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95 hidden">
-                                    ➕ Añadir Artículo
-                                </button>
+
+                                <div id="form-nuevo-articulo" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+                                    <input type="text" id="nuevo-nombre-articulo" placeholder="Nombre del artículo..." class="flex-1 min-w-[180px] bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 uppercase">
+                                    <select id="nueva-unidad-articulo" class="bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm font-semibold focus:outline-none text-slate-600">
+                                        <option value="UNIDADES">Ud</option>
+                                        <option value="KG">Kg</option>
+                                        <option value="L">Litros</option>
+                                        <option value="CAJAS">Cajas</option>
+                                        <option value="BOTES">Botes</option>
+                                    </select>
+                                    <button onclick="agregarIngredienteASupabase()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm active:scale-95 transition-all">
+                                        💾 Guardar
+                                    </button>
+                                </div>
+
+                                <div id="contenedor-buscador" class="mt-4 hidden">
+                                    <input type="text" id="buscador" class="buscador" placeholder="🔍 Buscar artículo en esta plantilla..." oninput="filtrarArticulos()">
+                                </div>
                             </div>
 
-                            <div id="form-nuevo-articulo" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2 items-center">
-                                <input type="text" id="nuevo-nombre-articulo" placeholder="Nombre del artículo..." class="flex-1 min-w-[180px] bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 uppercase">
-                                <select id="nueva-unidad-articulo" class="bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm font-semibold focus:outline-none text-slate-600">
-                                    <option value="UNIDADES">Ud</option>
-                                    <option value="KG">Kg</option>
-                                    <option value="L">Litros</option>
-                                    <option value="CAJAS">Cajas</option>
-                                    <option value="BOTES">Botes</option>
-                                </select>
-                                <button onclick="agregarIngredienteASupabase()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm active:scale-95 transition-all">
-                                    💾 Guardar
-                                </button>
-                            </div>
-
-                            <div id="contenedor-buscador" class="mt-4 hidden">
-                                <input type="text" id="buscador" class="buscador" placeholder="🔍 Buscar artículo en esta plantilla..." oninput="filtrarArticulos()">
-                            </div>
-                        </div>
-
-                        <div id="contenedor-ingredientes" class="max-h-[60vh] overflow-y-auto">
-                            <div class="text-center italic text-slate-400 text-sm py-12 px-4">
-                                👈 Haz clic en un distribuidor de la izquierda para ver su plantilla de pedido
+                            <div id="contenedor-ingredientes" class="max-h-[60vh] overflow-y-auto">
+                                <div class="text-center italic text-slate-400 text-sm py-12 px-4">
+                                    👈 Selecciona un distribuidor para ver su plantilla
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -299,14 +372,12 @@
         });
 
         // ============================================================
-        // 🔌 CLIENTE SUPABASE PROPIO (sin depender de window.fredware)
-        // Proyecto correcto: bhyprsjokwgazzzlfnbf
+        // 🔌 CLIENTE SUPABASE PROPIO (proyecto bhyprsjokwgazzzlfnbf)
         // ============================================================
         const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
         const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
         const db_nube = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ [Pedidos] Cliente Supabase propio inicializado');
-        console.log('   URL:', SUPABASE_URL);
+        console.log('✅ [Pedidos v1.3] Cliente Supabase listo:', SUPABASE_URL);
 
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
         const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -327,13 +398,60 @@
         let proveedoresCache = [];
 
         // ============================================================
-        // UTILIDADES DEL NÚCLEO (si está disponible)
+        // 🆕 SISTEMA DE ACORDEÓN MÓVIL
+        // ============================================================
+        let acordeonAbierto = 'prov'; // 'prov' | 'plantilla' | 'ninguno'
+
+        function toggleAcordeon(cual) {
+            const header = document.getElementById(`acordeon-${cual}-header`);
+            const contenido = document.getElementById(`acordeon-${cual}-contenido`);
+            if (!header || !contenido) return;
+
+            const estaAbierto = contenido.classList.contains('abierto');
+
+            if (estaAbierto) {
+                contenido.classList.remove('abierto');
+                header.classList.remove('abierto');
+                acordeonAbierto = 'ninguno';
+            } else {
+                // Cerrar todos primero
+                document.querySelectorAll('.acordeon-contenido').forEach(c => c.classList.remove('abierto'));
+                document.querySelectorAll('.acordeon-header').forEach(h => h.classList.remove('abierto'));
+                // Abrir el nuevo
+                contenido.classList.add('abierto');
+                header.classList.add('abierto');
+                acordeonAbierto = cual;
+            }
+        }
+
+        function abrirAcordeon(cual) {
+            const header = document.getElementById(`acordeon-${cual}-header`);
+            const contenido = document.getElementById(`acordeon-${cual}-contenido`);
+            if (!header || !contenido) return;
+
+            document.querySelectorAll('.acordeon-contenido').forEach(c => c.classList.remove('abierto'));
+            document.querySelectorAll('.acordeon-header').forEach(h => h.classList.remove('abierto'));
+            contenido.classList.add('abierto');
+            header.classList.add('abierto');
+            acordeonAbierto = cual;
+        }
+
+        function cerrarAcordeon(cual) {
+            const header = document.getElementById(`acordeon-${cual}-header`);
+            const contenido = document.getElementById(`acordeon-${cual}-contenido`);
+            if (!header || !contenido) return;
+            contenido.classList.remove('abierto');
+            header.classList.remove('abierto');
+            if (acordeonAbierto === cual) acordeonAbierto = 'ninguno';
+        }
+
+        // ============================================================
+        // UTILIDADES
         // ============================================================
         function lanzarToast(mensaje, tipo = 'success') {
             if (window.fredware && window.fredware.ui && window.fredware.ui.toast) {
                 window.fredware.ui.toast(mensaje, tipo);
             } else {
-                // Fallback básico
                 console.log(`[${tipo}] ${mensaje}`);
             }
         }
@@ -401,6 +519,10 @@
                 if (proveedoresCache.length === 0) {
                     cargarProveedoresDesdeSupabase();
                 }
+                // En móvil, abrir el acordeón de proveedores por defecto
+                if (window.innerWidth < 768) {
+                    setTimeout(() => abrirAcordeon('prov'), 100);
+                }
             }
             if (nombre === 'etiquetas') {
                 actualizarContadorEtiquetas();
@@ -408,12 +530,11 @@
         }
 
         // ============================================================
-        // SUSCRIPCIÓN AL NÚCLEO (solo si existe)
+        // SUSCRIPCIÓN AL NÚCLEO
         // ============================================================
         function suscribirAlNucleo() {
             if (!window.fredware || !window.fredware.subscribe) {
-                console.log('ℹ️ [Pedidos] Núcleo no disponible, sigo en modo independiente');
-                // Marcar como online igualmente
+                console.log('ℹ️ [Pedidos] Núcleo no disponible');
                 const badgeRed = document.getElementById('badge-red');
                 if (badgeRed) {
                     badgeRed.className = 'badge-conn online';
@@ -423,12 +544,6 @@
             }
 
             window.fredware.subscribe((state) => {
-                console.log('📡 [Pedidos] Estado del núcleo:', {
-                    recepciones: state.recepciones?.length,
-                    productos: state.productos?.length,
-                    inicializado: state.inicializado
-                });
-
                 const badgeRed = document.getElementById('badge-red');
                 if (badgeRed && !badgeRed.dataset.online) {
                     if (state.inicializado) {
@@ -460,17 +575,11 @@
 
         async function agregarFalta(insumo, productoInfo = null) {
             if (!insumo || !String(insumo).trim()) {
-                console.error('❌ [agregarFalta] insumo vacío');
                 lanzarToast('Error: el nombre del producto está vacío', 'error');
                 return { error: 'insumo vacío' };
             }
 
             const insumoLimpio = String(insumo).trim();
-
-            if (productoInfo && !productoInfo.nombre_articulo) {
-                productoInfo = null;
-            }
-
             let proveedorId = 'S/P';
             let catalogoId = null;
 
@@ -488,10 +597,9 @@
                     catalogoId = isNaN(idNum) ? null : idNum;
                 }
             } catch (e) {
-                console.warn('No se pudo asignar proveedor desde productoInfo:', e);
+                console.warn('No se pudo asignar proveedor:', e);
             }
 
-            // Fallback: buscar en articulos_habituales
             if (proveedorId === 'S/P') {
                 try {
                     const { data: habituales, error: errHab } = await db_nube
@@ -502,11 +610,8 @@
 
                     if (!errHab && habituales && habituales.length > 0 && habituales[0].proveedor_id) {
                         proveedorId = habituales[0].proveedor_id;
-                        console.log(`✅ [agregarFalta] Proveedor recuperado: "${insumoLimpio}" → ${proveedorId}`);
                     }
-                } catch (e) {
-                    console.warn('No se pudo buscar en articulos_habituales:', e);
-                }
+                } catch (e) {}
             }
 
             const { error } = await db_nube
@@ -655,19 +760,12 @@
             container.innerHTML = '<div class="text-xs text-slate-400 p-2">⏳ Sincronizando...</div>';
 
             try {
-                console.log('🔄 [Pedidos] Cargando proveedores...');
-                
                 const { data: proveedores, error: errProv } = await db_nube
                     .from('proveedores')
                     .select('id, nombre')
                     .order('nombre', { ascending: true });
                 
-                if (errProv) {
-                    console.error('❌ Error cargando proveedores:', errProv);
-                    throw errProv;
-                }
-                
-                console.log(`✅ [Pedidos] ${proveedores?.length || 0} proveedores recibidos`);
+                if (errProv) throw errProv;
                 proveedoresCache = proveedores || [];
 
                 const { data: articulos } = await db_nube
@@ -694,6 +792,10 @@
                     }
                 });
 
+                // Actualizar contador en el header del acordeón
+                const badgeCont = document.getElementById('badge-num-prov');
+                if (badgeCont) badgeCont.textContent = proveedores?.length || 0;
+
                 container.innerHTML = '';
                 if (!proveedores || proveedores.length === 0) {
                     container.innerHTML = '<div class="text-xs text-slate-400 p-2">Sin proveedores.</div>';
@@ -714,7 +816,7 @@
                     }
 
                     container.innerHTML += `
-                        <button onclick="cargarHojaInteractiva('${escapeHtml(p.id)}', '${escapeHtml(p.nombre)}')" id="${safeId}" class="prov-btn">
+                        <button onclick="seleccionarProveedorYCambiar('${escapeHtml(p.id)}', '${escapeHtml(p.nombre)}')" id="${safeId}" class="prov-btn">
                             <span>🏢 ${escapeHtml(p.nombre)} ${badgeFaltas}</span>
                             <span class="text-xs ${numArt > 0 ? 'text-blue-600 font-bold' : 'text-slate-400'}">${numArt}</span>
                         </button>
@@ -723,6 +825,19 @@
             } catch (error) {
                 console.error('Error cargando proveedores:', error);
                 container.innerHTML = `<div class="text-xs text-red-500 p-2">❌ Error: ${escapeHtml(error.message || 'desconocido')}</div>`;
+            }
+        }
+
+        // 🆕 Envuelve cargarHojaInteractiva para que en móvil cambie de acordeón
+        async function seleccionarProveedorYCambiar(provId, provNombre) {
+            await cargarHojaInteractiva(provId, provNombre);
+            // En móvil, cerrar acordeón proveedores y abrir plantilla
+            if (window.innerWidth < 768) {
+                cerrarAcordeon('prov');
+                // Scroll suave arriba para ver la plantilla
+                setTimeout(() => {
+                    document.getElementById('nombre-proveedor-activo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
             }
         }
 
@@ -759,9 +874,9 @@
                 const numFaltasReincidentes = faltasCargadas.filter(f => (f.intentos || 0) > 0).length;
                 const numUrgentes = faltasCargadas.filter(f => f.urgente === true).length;
 
-                let infoTexto = `${articulosCargados.length} artículos en la plantilla`;
+                let infoTexto = `${articulosCargados.length} artículos`;
                 if (numFaltas > 0) {
-                    infoTexto += ` · 🔔 ${numFaltas} faltas de cocina`;
+                    infoTexto += ` · 🔔 ${numFaltas} faltas`;
                     if (numFaltasReincidentes > 0) infoTexto += ` (${numFaltasReincidentes} reincidentes)`;
                 }
                 if (numUrgentes > 0) infoTexto += ` · 🚨 ${numUrgentes} URGENTES`;
@@ -862,12 +977,12 @@
                 let infoBadge = '';
                 if (esFalta) {
                     if (esUrgente) infoBadge = `<span class="falta-badge urgente">🚨 URGENTE</span>`;
-                    else if (esReincidente) infoBadge = `<span class="falta-badge reincidente">🔔 FALTA REINCIDENTE x${item.intentos}</span>`;
-                    else infoBadge = `<span class="falta-badge">🔔 FALTA COCINA</span>`;
+                    else if (esReincidente) infoBadge = `<span class="falta-badge reincidente">🔔 x${item.intentos}</span>`;
+                    else infoBadge = `<span class="falta-badge">🔔 FALTA</span>`;
                 } else if (tieneHistorico) {
-                    infoBadge = `<span class="hist-badge">📊 ${item.veces_pedido}x · Últ: ${item.cantidad_habitual} ${escapeHtml(item.unidadOriginal.substring(0,4).toLowerCase())}</span>`;
+                    infoBadge = `<span class="hist-badge">📊 ${item.veces_pedido}x</span>`;
                 } else {
-                    infoBadge = `<span class="hist-badge nuevo">🆕 Sin histórico</span>`;
+                    infoBadge = `<span class="hist-badge nuevo">🆕</span>`;
                 }
 
                 let rowClass = 'art-row';
@@ -885,12 +1000,12 @@
                 else if (esReincidente) colorNombre = '#dc2626';
                 else if (esFalta) colorNombre = '#92400e';
 
-                const btnUrgente = `<button class="btn-urgente" onclick="abrirModalUrgente('${key}')" title="Pedir a otro proveedor urgente">⚡ URGENTE</button>`;
+                const btnUrgente = `<button class="btn-urgente" onclick="abrirModalUrgente('${key}')" title="Pedir a otro proveedor">⚡ URG</button>`;
 
                 container.innerHTML += `
                     <div class="${rowClass}" data-key="${key}" data-nombre="${escapeHtml(item.nombre).toLowerCase()}">
                         <input type="checkbox" class="art-check" ${seleccionado ? 'checked' : ''} onchange="toggleSeleccion('${key}')">
-                        <div class="flex-1 min-w-[150px]">
+                        <div class="flex-1 min-w-[120px]">
                             <div class="text-sm font-bold tracking-tight uppercase" style="color:${colorNombre};">
                                 ${esUrgente ? '🚨 ' : ''}${escapeHtml(item.nombre)}
                             </div>
@@ -911,7 +1026,7 @@
                                 <button class="btn-q" onclick="cantidadRapida('${key}', 10)">+10</button>
                             </div>
                             ${btnUrgente}
-                            ${item.tipo === 'habitual' ? `<button class="btn-eliminar" onclick="eliminarIngrediente(${item.id}, '${escapeHtml(item.nombre).replace(/'/g, "\\'")}')" title="Eliminar artículo">🗑️</button>` : ''}
+                            ${item.tipo === 'habitual' ? `<button class="btn-eliminar" onclick="eliminarIngrediente(${item.id}, '${escapeHtml(item.nombre).replace(/'/g, "\\'")}')" title="Eliminar">🗑️</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -945,13 +1060,11 @@
             let opcionesHTML = '<option value="">— Selecciona proveedor —</option>';
             provsDisponibles.forEach(p => {
                 const selected = (proveedorSugerido === p.id) ? 'selected' : '';
-                opcionesHTML += `<option value="${escapeHtml(p.id)}" ${selected}>${escapeHtml(p.nombre)}${proveedorSugerido === p.id ? ' ⭐ (sugerido)' : ''}</option>`;
+                opcionesHTML += `<option value="${escapeHtml(p.id)}" ${selected}>${escapeHtml(p.nombre)}${proveedorSugerido === p.id ? ' ⭐' : ''}</option>`;
             });
 
             const { value: formValues } = await Swal.fire({
                 title: '⚡ Pedido URGENTE',
-                background: '#ffffff',
-                color: '#0f172a',
                 confirmButtonColor: '#dc2626',
                 cancelButtonColor: '#64748b',
                 showCancelButton: true,
@@ -960,22 +1073,20 @@
                 html: `
                     <div style="text-align:left; font-size:14px; padding:4px;">
                         <div style="background:#fef2f2; border-left:4px solid #dc2626; padding:10px 14px; border-radius:8px; margin-bottom:14px;">
-                            <div style="font-size:11px; color:#991b1b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Producto</div>
+                            <div style="font-size:11px; color:#991b1b; font-weight:600; text-transform:uppercase;">Producto</div>
                             <div style="font-size:16px; font-weight:900; color:#1e293b; margin-top:2px;">${escapeHtml(item.nombre)}</div>
-                            <div style="font-size:11px; color:#64748b; margin-top:4px;">Proveedor habitual: <strong>${escapeHtml(proveedorNombre)}</strong></div>
+                            <div style="font-size:11px; color:#64748b; margin-top:4px;">Habitual: <strong>${escapeHtml(proveedorNombre)}</strong></div>
                         </div>
-                        <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Proveedor alternativo *</label>
+                        <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Proveedor alt *</label>
                         <select id="urg-proveedor" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; background:#f8fafc; font-weight:600;">${opcionesHTML}</select>
                         <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-top:12px; margin-bottom:4px;">Cantidad *</label>
                         <div style="display:flex; gap:8px; align-items:center;">
                             <input id="urg-cantidad" type="number" min="1" value="1" style="width:100px; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; text-align:center; font-weight:700;">
                             <span style="font-size:13px; color:#64748b;">${escapeHtml(item.unidad)}</span>
                         </div>
-                        <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-top:12px; margin-bottom:4px;">Motivo (opcional)</label>
-                        <input id="urg-motivo" type="text" placeholder="Ej: MAKRO no reparte hasta viernes" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; background:#f8fafc;">
                         <div style="display:flex; align-items:center; gap:8px; margin-top:14px; padding:10px; background:#fef2f2; border-radius:8px;">
                             <input type="checkbox" id="urg-etiqueta" checked style="width:18px; height:18px; accent-color:#dc2626; cursor:pointer;">
-                            <label for="urg-etiqueta" style="font-size:13px; font-weight:600; color:#991b1b; cursor:pointer;">Marcar como <strong>[URGENTE]</strong> en el WhatsApp</label>
+                            <label for="urg-etiqueta" style="font-size:13px; font-weight:600; color:#991b1b; cursor:pointer;">Marcar como <strong>[URGENTE]</strong></label>
                         </div>
                     </div>
                 `,
@@ -983,11 +1094,10 @@
                 preConfirm: () => {
                     const provAlt = document.getElementById('urg-proveedor').value;
                     const cant = parseInt(document.getElementById('urg-cantidad').value) || 0;
-                    const motivo = document.getElementById('urg-motivo').value.trim();
                     const etiqueta = document.getElementById('urg-etiqueta').checked;
-                    if (!provAlt) { Swal.showValidationMessage('⚠️ Selecciona un proveedor alternativo'); return false; }
-                    if (cant <= 0) { Swal.showValidationMessage('⚠️ La cantidad debe ser mayor que 0'); return false; }
-                    return { proveedorAlt: provAlt, cantidad: cant, motivo, etiqueta };
+                    if (!provAlt) { Swal.showValidationMessage('⚠️ Selecciona proveedor'); return false; }
+                    if (cant <= 0) { Swal.showValidationMessage('⚠️ Cantidad > 0'); return false; }
+                    return { proveedorAlt: provAlt, cantidad: cant, etiqueta };
                 }
             });
 
@@ -1011,13 +1121,13 @@
                     await db_nube.from('faltas_cocina').delete().eq('id', item.faltaId);
                     delete seleccion[key];
                 }
-                lanzarToast(`⚡ "${item.nombre}" movida a ${formValues.proveedorAlt} (URGENTE)`, 'success');
+                lanzarToast(`⚡ "${item.nombre}" movida a ${formValues.proveedorAlt}`, 'success');
                 await cargarProveedoresDesdeSupabase();
                 await renderFaltasLocales();
                 if (proveedorActivo) await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
             } catch (error) {
-                console.error('Error en pedido urgente:', error);
-                lanzarToast('❌ Error al crear pedido urgente: ' + error.message, 'error');
+                console.error('Error urgente:', error);
+                lanzarToast('❌ Error: ' + error.message, 'error');
             }
         }
 
@@ -1107,9 +1217,9 @@
             const nombre = input.value.trim().toUpperCase();
             const unidad = select.value;
 
-            if (!nombre) { lanzarToast("Escribe un nombre para el artículo.", "warning"); return; }
+            if (!nombre) { lanzarToast("Escribe un nombre", "warning"); return; }
             if (articulosCargados.some(i => i.nombre_articulo.toUpperCase() === nombre)) {
-                lanzarToast("El artículo ya existe en esta plantilla.", "warning");
+                lanzarToast("Ya existe en esta plantilla.", "warning");
                 input.value = '';
                 return;
             }
@@ -1120,16 +1230,16 @@
                     .insert([{ proveedor_id: proveedorActivo, nombre_articulo: nombre, unidad_defecto: unidad }]);
                 if (error) throw error;
                 input.value = '';
-                lanzarToast(`✅ "${nombre}" añadido a la plantilla`, 'success');
+                lanzarToast(`✅ "${nombre}" añadido`, 'success');
                 await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
                 document.getElementById('form-nuevo-articulo').classList.add('hidden');
             } catch (error) {
-                lanzarToast("❌ No se pudo guardar: " + error.message, 'error');
+                lanzarToast("❌ " + error.message, 'error');
             }
         }
 
         async function eliminarIngrediente(id, nombre) {
-            if (!confirm(`¿Eliminar "${nombre}" de la plantilla de ${proveedorNombre}?`)) return;
+            if (!confirm(`¿Eliminar "${nombre}"?`)) return;
             try {
                 const { error } = await db_nube.from('articulos_habituales').delete().eq('id', id);
                 if (error) throw error;
@@ -1137,13 +1247,13 @@
                 lanzarToast(`🗑️ "${nombre}" eliminado`, 'success');
                 await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
             } catch (error) {
-                lanzarToast("❌ Error al eliminar: " + error.message, 'error');
+                lanzarToast("❌ " + error.message, 'error');
             }
         }
 
         async function enviarPedidoCentral() {
             const keys = Object.keys(seleccion);
-            if (keys.length === 0) { lanzarToast("Selecciona al menos 1 artículo.", "warning"); return; }
+            if (keys.length === 0) { lanzarToast("Selecciona al menos 1", "warning"); return; }
 
             const lineasInyectar = [];
             const faltasAEnviar = [];
@@ -1181,7 +1291,7 @@
                 }
             });
 
-            if (lineasInyectar.length === 0) { lanzarToast("Introduce cantidad al menos en 1 artículo.", "warning"); return; }
+            if (lineasInyectar.length === 0) { lanzarToast("Introduce cantidad", "warning"); return; }
 
             const btn = document.getElementById('btn-enviar-pedido');
             const btnText = document.getElementById('btn-text');
@@ -1195,7 +1305,7 @@
                 const duplicados = lineasInyectar.length - noDuplicados.length;
 
                 if (noDuplicados.length === 0) {
-                    lanzarToast(`⚠️ Los ${duplicados} artículos ya están en la cesta`, 'warning');
+                    lanzarToast(`⚠️ Los ${duplicados} ya están en cesta`, 'warning');
                     if (btn && btnText) { btn.disabled = false; btnText.innerText = "⚡ Enviar a Compras"; }
                     return;
                 }
@@ -1209,7 +1319,7 @@
 
                 const urg = noDuplicados.filter(l => l.detalle.toUpperCase().includes('[URGENTE]')).length;
                 lanzarToast(
-                    `✅ ${noDuplicados.length} enviados${duplicados > 0 ? ` · ⚠️ ${duplicados} duplicados` : ''}${urg > 0 ? ` · ⚡ ${urg} urgentes` : ''}`,
+                    `✅ ${noDuplicados.length} enviados${duplicados > 0 ? ` · ⚠️ ${duplicados} dup` : ''}${urg > 0 ? ` · ⚡ ${urg} urg` : ''}`,
                     'success'
                 );
 
@@ -1220,8 +1330,8 @@
                 await renderFaltasLocales();
                 if (proveedorActivo) await cargarHojaInteractiva(proveedorActivo, proveedorNombre);
             } catch (error) {
-                console.error('Error enviando pedido:', error);
-                lanzarToast("❌ Error al guardar: " + error.message, 'error');
+                console.error('Error enviando:', error);
+                lanzarToast("❌ " + error.message, 'error');
             } finally {
                 if (btn && btnText) { btn.disabled = false; btnText.innerText = "⚡ Enviar a Compras"; }
             }
@@ -1250,7 +1360,6 @@
                 document.getElementById('total-etiquetas-dia').textContent = localesHoy.length;
                 await cargarListaEtiquetas();
             } catch (error) {
-                console.error('Error actualizando contador:', error);
                 document.getElementById('total-etiquetas-dia').textContent = '?';
             }
         }
@@ -1260,7 +1369,7 @@
             try {
                 const etiquetasHoy = obtenerEtiquetasHoyLocal();
                 if (etiquetasHoy.length === 0) {
-                    container.innerHTML = `<div class="text-center text-slate-400 py-4 text-sm">No hay etiquetas registradas hoy</div>`;
+                    container.innerHTML = `<div class="text-center text-slate-400 py-4 text-sm">No hay etiquetas hoy</div>`;
                     return;
                 }
                 let html = '';
@@ -1284,8 +1393,7 @@
                 }
                 container.innerHTML = html;
             } catch (error) {
-                console.error('Error cargando lista:', error);
-                container.innerHTML = `<div class="text-center text-red-500 py-4 text-sm">Error al cargar etiquetas</div>`;
+                container.innerHTML = `<div class="text-center text-red-500 py-4 text-sm">Error</div>`;
             }
         }
 
@@ -1332,7 +1440,7 @@
                 const etiquetasLocales = obtenerEtiquetasLocales();
                 const noSincronizadas = etiquetasLocales.filter(e => !e.sync_supabase);
                 if (noSincronizadas.length === 0) {
-                    lanzarToast('✅ Todas las etiquetas ya están en Supabase', 'success');
+                    lanzarToast('✅ Todas sincronizadas', 'success');
                     if (btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
                     return;
                 }
@@ -1342,9 +1450,9 @@
                     if (exito) sincronizadas++;
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
-                lanzarToast(`✅ ${sincronizadas} etiquetas guardadas en Supabase`, 'success');
+                lanzarToast(`✅ ${sincronizadas} guardadas`, 'success');
             } catch (error) {
-                lanzarToast('Error al guardar en Supabase', 'error');
+                lanzarToast('Error', 'error');
             } finally {
                 if (btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
             }
@@ -1354,16 +1462,16 @@
             const etiquetasLocales = obtenerEtiquetasLocales();
             const noSincronizadas = etiquetasLocales.filter(e => !e.sync_supabase);
             if (noSincronizadas.length === 0) {
-                lanzarToast('✅ Todas las etiquetas ya están sincronizadas', 'success');
+                lanzarToast('✅ Todas sincronizadas', 'success');
                 return;
             }
             Swal.fire({
-                title: '☁️ Sincronizando etiquetas',
-                text: `Hay ${noSincronizadas.length} etiquetas sin sincronizar.`,
+                title: '☁️ Sincronizar',
+                text: `${noSincronizadas.length} pendientes`,
                 icon: 'info',
                 showCancelButton: true,
                 confirmButtonColor: '#3b82f6',
-                confirmButtonText: 'Sincronizar ahora',
+                confirmButtonText: 'Sincronizar',
                 cancelButtonText: 'Cancelar'
             }).then(async (result) => {
                 if (result.isConfirmed) {
@@ -1373,11 +1481,7 @@
                         if (exito) sincronizadas++; else fallidas++;
                         await new Promise(resolve => setTimeout(resolve, 100));
                     }
-                    Swal.fire({
-                        title: '✅ Sincronización completada',
-                        html: `<div class="text-left"><p>✅ Sincronizadas: ${sincronizadas}</p>${fallidas > 0 ? `<p>❌ Fallidas: ${fallidas}</p>` : ''}</div>`,
-                        icon: 'success'
-                    });
+                    Swal.fire({ title: '✅ Completado', html: `OK: ${sincronizadas} / Fallos: ${fallidas}`, icon: 'success' });
                     await actualizarContadorEtiquetas();
                 }
             });
@@ -1390,19 +1494,19 @@
             const hoy = obtenerEtiquetasHoyLocal().length;
             let html = `
                 <div class="text-left">
-                    <p>📦 Total en local: ${total}</p>
-                    <p>📅 De hoy: ${hoy}</p>
-                    <p>☁️ Sincronizadas: ${total - noSync.length}</p>
-                    ${noSync.length > 0 ? `<p class="text-amber-600">⚠️ Pendientes: ${noSync.length}</p>` : '<p class="text-emerald-600">✅ Todo sincronizado</p>'}
+                    <p>📦 Total local: ${total}</p>
+                    <p>📅 Hoy: ${hoy}</p>
+                    <p>☁️ Sync: ${total - noSync.length}</p>
+                    ${noSync.length > 0 ? `<p class="text-amber-600">⚠️ Pendientes: ${noSync.length}</p>` : '<p class="text-emerald-600">✅ Todo OK</p>'}
                 </div>
             `;
             Swal.fire({
-                title: '📊 Estado de sincronización',
+                title: '📊 Estado',
                 html: html,
                 icon: noSync.length > 0 ? 'warning' : 'success',
                 showCancelButton: noSync.length > 0,
                 confirmButtonColor: '#3b82f6',
-                confirmButtonText: noSync.length > 0 ? '☁️ Sincronizar ahora' : 'Aceptar',
+                confirmButtonText: noSync.length > 0 ? 'Sincronizar' : 'Aceptar',
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed && noSync.length > 0) sincronizarEtiquetasConSupabase();
@@ -1411,22 +1515,22 @@
 
         async function imprimirResumenDia() {
             const btn = document.querySelector(".btn-resumen");
-            const textoOriginal = btn ? btn.innerHTML : '🖨️ Imprimir Resumen del Día';
+            const textoOriginal = btn ? btn.innerHTML : '🖨️ Imprimir';
             try {
-                if (btn) { btn.innerHTML = '<span class="spinner"></span> Generando...'; btn.disabled = true; }
+                if (btn) { btn.innerHTML = '<span class="spinner"></span> ...'; btn.disabled = true; }
                 const response = await fetch(`${API_URL}/api/etiquetas/imprimir_resumen`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    lanzarToast(`✅ ${data.message || 'Resumen del día impreso'}`);
+                    lanzarToast(`✅ ${data.message || 'Impreso'}`);
                     await actualizarContadorEtiquetas();
                 } else {
-                    lanzarToast(data.message || 'No hay etiquetas para hoy', 'warning');
+                    lanzarToast(data.message || 'Sin etiquetas', 'warning');
                 }
             } catch (error) {
-                lanzarToast('Error al imprimir resumen', 'error');
+                lanzarToast('Error al imprimir', 'error');
             } finally {
                 if (btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
             }
@@ -1434,42 +1538,36 @@
 
         function limpiarEtiquetasDia() {
             const etiquetasHoy = obtenerEtiquetasHoyLocal();
-            if (etiquetasHoy.length === 0) { lanzarToast('No hay etiquetas para limpiar', 'warning'); return; }
+            if (etiquetasHoy.length === 0) { lanzarToast('Nada que limpiar', 'warning'); return; }
             Swal.fire({
-                title: '¿Limpiar todas las etiquetas del día?',
-                text: `Hay ${etiquetasHoy.length} etiquetas de hoy.`,
+                title: '¿Limpiar etiquetas?',
+                text: `${etiquetasHoy.length} de hoy`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Sí, limpiar',
-                cancelButtonText: 'Cancelar'
+                confirmButtonText: 'Sí',
+                cancelButtonText: 'No'
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    try {
-                        limpiarEtiquetasLocalesHoy();
-                        lanzarToast(`🧹 ${etiquetasHoy.length} etiquetas limpiadas`, 'warning');
-                        await actualizarContadorEtiquetas();
-                    } catch (error) {
-                        lanzarToast('Error al limpiar etiquetas', 'error');
-                    }
+                    limpiarEtiquetasLocalesHoy();
+                    lanzarToast(`🧹 ${etiquetasHoy.length} limpiadas`, 'warning');
+                    await actualizarContadorEtiquetas();
                 }
             });
         }
 
         // ============================================================
-        // SINCRONIZACIÓN CON NGROK
+        // SINCRONIZACIÓN NGROK
         // ============================================================
         async function sincronizarConOficina(endpoint, datos) {
             try {
-                const response = await fetch(`${API_URL}/api/${endpoint}`, {
+                await fetch(`${API_URL}/api/${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                     body: JSON.stringify(datos)
                 });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
             } catch (error) {
-                console.error("Error pasivo en red local:", error);
+                console.error("Error pasivo:", error);
             }
         }
 
@@ -1477,26 +1575,21 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Pedidos v1.2] Init');
+            console.log('🚀 [Pedidos v1.3] Init');
 
             const tabGuardada = localStorage.getItem('fredware_pedidos_tab') || 'faltas';
             setTab(tabGuardada);
 
-            // Marcar como online (ya que tenemos cliente propio)
             const badgeRed = document.getElementById('badge-red');
             if (badgeRed) {
                 badgeRed.className = 'badge-conn online';
                 badgeRed.textContent = '🟢 ONLINE';
             }
 
-            // Suscribirse al núcleo si existe (para timestamp y estado)
             suscribirAlNucleo();
-
-            // Cargar datos
             await renderFaltasLocales();
             await cargarProveedoresDesdeSupabase();
 
-            // Combobox si el núcleo está disponible
             if (window.fredware && window.fredware.productos) {
                 try {
                     await window.fredware.productos.cargar();
@@ -1505,16 +1598,14 @@
                         placeholder: 'Escribe para buscar producto...',
                         onSelect: (producto) => {
                             if (!producto) return;
-                            console.log('📦 [Pedidos] Producto seleccionado:', producto?.nombre_articulo);
+                            console.log('📦 Producto:', producto?.nombre_articulo);
                         }
                     });
-                    console.log('✅ [Pedidos] Combobox montado');
                 } catch (error) {
-                    console.error('❌ [Pedidos] Error al montar el combobox:', error);
+                    console.error('❌ Combobox:', error);
                 }
             }
 
-            // Suscripción realtime a faltas
             try {
                 db_nube
                     .channel('faltas-changes-pedidos')
@@ -1523,14 +1614,20 @@
                     })
                     .subscribe();
             } catch (e) {
-                console.warn('Realtime no disponible:', e);
+                console.warn('Realtime:', e);
             }
 
             setInterval(actualizarContadorEtiquetas, 30000);
         }
 
-        // Exponer funciones globales
+        // ============================================================
+        // EXPONER GLOBALES
+        // ============================================================
         window.setTab = setTab;
+        window.toggleAcordeon = toggleAcordeon;
+        window.abrirAcordeon = abrirAcordeon;
+        window.cerrarAcordeon = cerrarAcordeon;
+        window.seleccionarProveedorYCambiar = seleccionarProveedorYCambiar;
         window.registrarFaltaCocina = registrarFaltaCocina;
         window.borrarFaltaLocal = borrarFaltaLocal;
         window.toggleUrgente = toggleUrgente;
@@ -1553,7 +1650,6 @@
         window.imprimirResumenDia = imprimirResumenDia;
         window.limpiarEtiquetasDia = limpiarEtiquetasDia;
 
-        // Arrancar cuando el DOM esté listo
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
