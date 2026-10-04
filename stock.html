@@ -148,7 +148,7 @@
             <div class="flex flex-col items-end space-y-1">
                 <div class="flex items-center space-x-2">
                     <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.0</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.1</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -188,8 +188,8 @@
                         <div class="text-xs text-orange-700 font-bold uppercase">Bajo mín.</div>
                         <div id="stat-bajo" class="text-2xl font-black text-orange-600">0</div>
                     </div>
-                    <div class="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200">
-                        <div class="text-xs text-yellow-700 font-bold uppercase">Cerca mín.</div>
+                    <div id="stat-cerca-box" class="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200">
+                        <div id="stat-cerca-label" class="text-xs text-yellow-700 font-bold uppercase">Cerca mín.</div>
                         <div id="stat-cerca" class="text-2xl font-black text-yellow-600">0</div>
                     </div>
                 </div>
@@ -212,6 +212,7 @@
                         <option value="BAJO_MINIMO">🟠 Bajo mínimo</option>
                         <option value="CERCA_MINIMO">🟡 Cerca del mínimo</option>
                         <option value="OK">🟢 OK</option>
+                        <option value="SIN_CONFIG">⚪ Sin mínimo config.</option>
                     </select>
                 </div>
 
@@ -246,18 +247,14 @@
                     ℹ️ Aquí registras <strong>salidas</strong>, <strong>mermas</strong> y <strong>ajustes manuales</strong>. Las entradas se hacen desde <strong>recepcion.html</strong> o <strong>compras.html</strong>.
                 </div>
 
-                <!-- Producto -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Producto *</label>
                     <div class="relative">
                         <input type="text" id="mov-producto" placeholder="Escribe para buscar producto..." class="uppercase">
                     </div>
-                    <div id="mov-info-producto" class="hidden mt-2 bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600">
-                        <!-- Se rellena con el producto seleccionado -->
-                    </div>
+                    <div id="mov-info-producto" class="hidden mt-2 bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600"></div>
                 </div>
 
-                <!-- Tipo + cantidad -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de movimiento *</label>
@@ -275,7 +272,6 @@
                     </div>
                 </div>
 
-                <!-- Motivo merma (solo si MERMA) -->
                 <div id="bloque-motivo-merma" class="hidden">
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Motivo de la merma *</label>
                     <select id="mov-motivo-merma">
@@ -287,16 +283,12 @@
                     </select>
                 </div>
 
-                <!-- Notas -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notas (opcional)</label>
                     <textarea id="mov-notas" rows="2" placeholder="Ej: Se cayó la bandeja al suelo..."></textarea>
                 </div>
 
-                <!-- Preview del resultado -->
-                <div id="mov-preview" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                    <!-- Se rellena dinámicamente -->
-                </div>
+                <div id="mov-preview" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800"></div>
 
                 <button onclick="registrarMovimiento()" id="btn-registrar-mov" class="btn-primary w-full">
                     ✅ Registrar movimiento
@@ -369,7 +361,6 @@
                     ℹ️ Aquí el jefe cuadra el stock cuando hace inventario físico. El sistema calcula la <strong>diferencia</strong> y la registra como <strong>AJUSTE</strong>.
                 </div>
 
-                <!-- Producto -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Producto *</label>
                     <div class="relative">
@@ -377,7 +368,6 @@
                     </div>
                 </div>
 
-                <!-- Datos del ajuste -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stock teórico actual</label>
@@ -393,16 +383,12 @@
                     </div>
                 </div>
 
-                <!-- Notas -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notas (opcional)</label>
                     <input type="text" id="ajuste-notas" placeholder="Ej: Inventario mensual, cuadre de cierre...">
                 </div>
 
-                <!-- Preview -->
-                <div id="ajuste-preview" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                    <!-- Se rellena dinámicamente -->
-                </div>
+                <div id="ajuste-preview" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800"></div>
 
                 <button onclick="aplicarAjuste()" id="btn-aplicar-ajuste" class="btn-primary w-full" style="background:#d97706;">
                     ✅ Aplicar ajuste
@@ -414,7 +400,7 @@
 
     <script>
         // ============================================================
-        // CAPTURADOR DE ERRORES VISIBLE (como pedidos.html)
+        // CAPTURADOR DE ERRORES VISIBLE
         // ============================================================
         window.addEventListener('error', function(e) {
             const div = document.createElement('div');
@@ -436,14 +422,14 @@
         const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
         const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
         const db_nube = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ [Stock v1.0] Cliente Supabase listo:', SUPABASE_URL);
+        console.log('✅ [Stock v1.1] Cliente Supabase listo');
 
         // ============================================================
         // ESTADO GLOBAL
         // ============================================================
         let tabActual = 'stock';
         let productosGlobal = [];
-        let productosMapId = {};      // id → producto (para historial)
+        let productosMapId = {};
         let historialGlobal = [];
         let productoMovSeleccionado = null;
         let productoAjusteSeleccionado = null;
@@ -501,7 +487,7 @@
         }
 
         // ============================================================
-        // SUSCRIPCIÓN AL NÚCLEO (opcional, si existe)
+        // SUSCRIPCIÓN AL NÚCLEO
         // ============================================================
         function suscribirAlNucleo() {
             if (!window.fredware || !window.fredware.subscribe) {
@@ -512,9 +498,7 @@
             window.fredware.subscribe((state) => {
                 const badge = document.getElementById('badge-red');
                 if (badge && !badge.dataset.online) {
-                    if (state.inicializado) {
-                        actualizarBadgeOnline();
-                    }
+                    if (state.inicializado) actualizarBadgeOnline();
                 }
                 const ts = document.getElementById('timestamp-sincro');
                 if (ts && state.ultimaActualizacion) {
@@ -546,9 +530,7 @@
         }
 
         // ============================================================
-        // ============================================================
         // TAB 1: STOCK EN VIVO
-        // ============================================================
         // ============================================================
         async function cargarStockVivo() {
             const cuerpo = document.getElementById('cuerpo-stock-vivo');
@@ -566,7 +548,7 @@
                 productosMapId = {};
                 productosGlobal.forEach(p => { productosMapId[p.id] = p; });
 
-                // Rellenar select de zonas (conservando valor actual)
+                // Rellenar select de zonas
                 const zonas = [...new Set(productosGlobal.map(p => p.zona).filter(Boolean))].sort();
                 const selectZona = document.getElementById('filtro-stock-zona');
                 const valorActual = selectZona.value;
@@ -582,16 +564,34 @@
             }
         }
 
+        // ============================================================
+        // LÓGICA DE ESTADOS MEJORADA v1.1
+        // ============================================================
         function calcularEstadoStock(p) {
-            if (p.stock_actual == null) {
-                return { codigo: 'NODATA', orden: 5, label: 'Sin datos', emoji: '⚪', clase: 'badge-nodata' };
-            }
-            const s = Number(p.stock_actual);
+            const s = Number(p.stock_actual || 0);
             const min = Number(p.stock_minimo || 0);
 
-            if (s <= 0) return { codigo: 'SIN_STOCK', orden: 1, label: 'Sin stock', emoji: '🔴', clase: 'badge-sin' };
-            if (min > 0 && s < min) return { codigo: 'BAJO_MINIMO', orden: 2, label: 'Bajo mínimo', emoji: '🟠', clase: 'badge-bajo' };
-            if (min > 0 && s < min * 1.5) return { codigo: 'CERCA_MINIMO', orden: 3, label: 'Cerca mínimo', emoji: '🟡', clase: 'badge-cerca' };
+            // 1. Sin stock mínimo configurado → no es alarma
+            if (min <= 0) {
+                return {
+                    codigo: 'SIN_CONFIG',
+                    orden: 5,
+                    label: 'Sin mínimo config.',
+                    emoji: '⚪',
+                    clase: 'badge-nodata'
+                };
+            }
+
+            // 2. Con mínimo configurado → evaluación real
+            if (s <= 0) {
+                return { codigo: 'SIN_STOCK', orden: 1, label: 'Sin stock', emoji: '🔴', clase: 'badge-sin' };
+            }
+            if (s < min) {
+                return { codigo: 'BAJO_MINIMO', orden: 2, label: 'Bajo mínimo', emoji: '🟠', clase: 'badge-bajo' };
+            }
+            if (s < min * 1.5) {
+                return { codigo: 'CERCA_MINIMO', orden: 3, label: 'Cerca mínimo', emoji: '🟡', clase: 'badge-cerca' };
+            }
             return { codigo: 'OK', orden: 4, label: 'OK', emoji: '🟢', clase: 'badge-ok' };
         }
 
@@ -602,17 +602,40 @@
             const estadoFiltro = document.getElementById('filtro-stock-estado').value;
 
             // Stats globales (sin filtros)
-            let stats = { total: productosGlobal.length, sin: 0, bajo: 0, cerca: 0 };
+            let stats = { total: productosGlobal.length, sin: 0, bajo: 0, cerca: 0, sinConfig: 0, ok: 0 };
             productosGlobal.forEach(p => {
                 const est = calcularEstadoStock(p);
                 if (est.codigo === 'SIN_STOCK') stats.sin++;
                 if (est.codigo === 'BAJO_MINIMO') stats.bajo++;
                 if (est.codigo === 'CERCA_MINIMO') stats.cerca++;
+                if (est.codigo === 'SIN_CONFIG') stats.sinConfig++;
+                if (est.codigo === 'OK') stats.ok++;
             });
+
             document.getElementById('stat-total').textContent = stats.total;
             document.getElementById('stat-sin').textContent = stats.sin;
             document.getElementById('stat-bajo').textContent = stats.bajo;
-            document.getElementById('stat-cerca').textContent = stats.cerca;
+
+            // La 4ª tarjeta se adapta:
+            //   - Si hay productos cerca del mínimo Y sin configurar → mostramos "Sin configurar" (más útil)
+            //   - Si no hay sin configurar → mostramos "Cerca mín."
+            const box4 = document.getElementById('stat-cerca-box');
+            const label4 = document.getElementById('stat-cerca-label');
+            const num4 = document.getElementById('stat-cerca');
+
+            if (stats.sinConfig > 0) {
+                label4.textContent = 'Sin configurar';
+                label4.className = 'text-xs text-slate-600 font-bold uppercase';
+                box4.className = 'bg-slate-50 rounded-xl p-3 text-center border border-slate-200';
+                num4.className = 'text-2xl font-black text-slate-500';
+                num4.textContent = stats.sinConfig;
+            } else {
+                label4.textContent = 'Cerca mín.';
+                label4.className = 'text-xs text-yellow-700 font-bold uppercase';
+                box4.className = 'bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200';
+                num4.className = 'text-2xl font-black text-yellow-600';
+                num4.textContent = stats.cerca;
+            }
 
             // Filtros
             let filtrados = productosGlobal.filter(p => {
@@ -638,7 +661,7 @@
             cuerpo.innerHTML = filtrados.map(p => {
                 const est = calcularEstadoStock(p);
                 const stock = p.stock_actual == null ? '—' : Number(p.stock_actual).toFixed(2);
-                const min = p.stock_minimo == null ? '—' : Number(p.stock_minimo).toFixed(2);
+                const min = (p.stock_minimo == null || p.stock_minimo == 0) ? '—' : Number(p.stock_minimo).toFixed(2);
                 const raciones = (p.peso_por_racion > 0 && p.stock_actual != null)
                     ? Math.round(Number(p.stock_actual) / Number(p.peso_por_racion))
                     : '—';
@@ -657,9 +680,7 @@
         }
 
         // ============================================================
-        // ============================================================
         // TAB 2: REGISTRAR MOVIMIENTO
-        // ============================================================
         // ============================================================
         function onCambiarTipoMovimiento() {
             const tipo = document.getElementById('mov-tipo').value;
@@ -723,7 +744,6 @@
                 return;
             }
 
-            // SALIDA y MERMA restan stock → signo negativo
             if (tipo === 'SALIDA' || tipo === 'MERMA') {
                 cantidad = -Math.abs(cantidad);
             }
@@ -731,7 +751,6 @@
             const notas = document.getElementById('mov-notas').value.trim();
             const motivoMerma = tipo === 'MERMA' ? document.getElementById('mov-motivo-merma').value : null;
 
-            // Confirmación si stock queda negativo
             const stockActual = Number(productoMovSeleccionado.stock_actual || 0);
             const stockNuevo = stockActual + cantidad;
             if (stockNuevo < 0) {
@@ -768,10 +787,7 @@
 
                 lanzarToast(`✅ Movimiento registrado. Nuevo stock: ${Number(data).toFixed(2)} ${productoMovSeleccionado.unidad_compra || ''}`, 'success');
 
-                // Limpiar formulario
                 resetFormMovimiento();
-
-                // Recargar stock en background
                 await cargarStockVivo();
 
             } catch (e) {
@@ -798,9 +814,7 @@
         }
 
         // ============================================================
-        // ============================================================
         // TAB 3: HISTORIAL
-        // ============================================================
         // ============================================================
         async function cargarHistorial() {
             const cuerpo = document.getElementById('cuerpo-historial');
@@ -822,7 +836,6 @@
 
                 historialGlobal = data || [];
 
-                // Si no tenemos los productos cargados, cargarlos (para el nombre)
                 if (Object.keys(productosMapId).length === 0) {
                     const { data: prods } = await db_nube
                         .from('productos_raciones')
@@ -887,9 +900,7 @@
         }
 
         // ============================================================
-        // ============================================================
         // TAB 4: AJUSTES / CUADRE
-        // ============================================================
         // ============================================================
         function calcularDiferenciaAjuste() {
             const teorico = parseFloat(document.getElementById('ajuste-stock-teorico').value) || 0;
@@ -915,7 +926,6 @@
                 diferenciaInput.className = 'bg-red-100 font-bold text-red-700';
             }
 
-            // Preview
             if (productoAjusteSeleccionado && dif !== 0) {
                 const unidad = productoAjusteSeleccionado.unidad_compra || '';
                 preview.classList.remove('hidden');
@@ -1018,30 +1028,22 @@
         }
 
         // ============================================================
-        // ============================================================
         // INICIALIZACIÓN
-        // ============================================================
         // ============================================================
         async function init() {
             if (appInicializada) return;
             appInicializada = true;
 
-            console.log('🚀 [Stock v1.0] Init');
+            console.log('🚀 [Stock v1.1] Init');
 
-            // Restaurar tab
             const tabGuardada = localStorage.getItem('fredware_stock_tab') || 'stock';
             setTab(tabGuardada);
 
-            // Badge online
             actualizarBadgeOnline();
-
-            // Suscribir al núcleo (si existe)
             suscribirAlNucleo();
 
-            // Esperar al núcleo (para tener productos cargados en su caché)
             await esperarAlNucleo();
 
-            // Pre-cargar productos en el caché del núcleo para los comboboxes
             try {
                 if (window.fredware && window.fredware.productos) {
                     await window.fredware.productos.cargar();
@@ -1050,11 +1052,9 @@
                 console.warn('No se pudo pre-cargar productos en el núcleo:', e);
             }
 
-            // Configurar comboboxes estrictos
             try {
                 if (window.fredware && window.fredware.productos) {
 
-                    // Combobox TAB 2: Registrar movimiento
                     window.fredware.productos.comboboxEstricto('mov-producto', {
                         placeholder: 'Escribe para buscar producto...',
                         onSelect: (p) => {
@@ -1078,7 +1078,6 @@
                         }
                     });
 
-                    // Combobox TAB 4: Ajustes
                     window.fredware.productos.comboboxEstricto('ajuste-producto', {
                         placeholder: 'Escribe para buscar producto...',
                         onSelect: (p) => {
@@ -1104,13 +1103,11 @@
                 console.error('Error configurando comboboxes:', e);
             }
 
-            // Enganchar listeners para preview de movimiento
             document.getElementById('mov-cantidad').addEventListener('input', actualizarPreviewMovimiento);
 
-            // Cargar datos iniciales
             await cargarStockVivo();
 
-            console.log('✅ [Stock v1.0] Inicializado');
+            console.log('✅ [Stock v1.1] Inicializado');
         }
 
         // ============================================================
