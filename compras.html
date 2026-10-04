@@ -6,7 +6,6 @@
     <title>👨‍🍳 Fredware - Panel de Compras Avanzado</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <!-- 🔥 NÚCLEO UNIFICADO v3 -->
     <script src="shared-core.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -99,11 +98,126 @@
         .tab-btn.has-alerta.active { background: #ef4444 !important; color: white !important; }
         .btn-ver-faltas { background: #ef4444; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
 
-        /* 🆕 Bloque C — Estilos para líneas urgentes en la cesta */
+        /* Bloque C — líneas urgentes en la cesta */
         .cesta-row-urgente { background: #fef2f2 !important; }
         .cesta-row-urgente td { border-bottom: 2px solid #fecaca !important; }
         .badge-urgente { background: #dc2626; color: white; font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 6px; margin-right: 6px; display: inline-block; animation: pulse-urgente 1.5s ease-in-out infinite; }
         @keyframes pulse-urgente { 0%, 100% { background: #dc2626; } 50% { background: #b91c1c; } }
+
+        /* ============================================================
+           🆕 D2 — Productos a reponer (colapsable, colores suaves)
+           ============================================================ */
+        #reponer-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px 18px;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #fbbf24;
+            margin-bottom: 15px;
+            display: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        #reponer-header {
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px; cursor: pointer; user-select: none;
+        }
+        #reponer-header h3 {
+            font-size: 13px; text-transform: uppercase; color: #64748b;
+            font-weight: 700; letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 8px;
+            border-bottom: none; margin: 0; padding: 0;
+        }
+        #reponer-header:hover h3 { color: #f59e0b; }
+        #reponer-badge {
+            background: #fef3c7; color: #92400e;
+            font-size: 11px; font-weight: 700;
+            padding: 2px 10px; border-radius: 20px;
+        }
+        #reponer-flecha {
+            display: inline-block;
+            transition: transform 0.25s;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        #reponer-contenido {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .reponer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .reponer-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #fafafa;
+            border-left: 3px solid #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .reponer-item.estado-sin {
+            background: #fef2f2;
+            border-left-color: #fca5a5;
+        }
+        .reponer-item.estado-bajo {
+            background: #fff7ed;
+            border-left-color: #fdba74;
+        }
+        .reponer-item.estado-cerca {
+            background: #fffbeb;
+            border-left-color: #fcd34d;
+        }
+        .reponer-item .nombre {
+            font-weight: 700;
+            font-size: 12.5px;
+            color: #334155;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .reponer-item.estado-sin .nombre { color: #991b1b; }
+        .reponer-item.estado-bajo .nombre { color: #9a3412; }
+        .reponer-item.estado-cerca .nombre { color: #92400e; }
+        .reponer-item .detalle {
+            font-size: 11px;
+            color: #64748b;
+        }
+        .reponer-item .detalle strong { color: #334155; }
+        .reponer-item .acciones {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .btn-reponer-add {
+            flex: 1;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .btn-reponer-add:hover { background: #059669; }
+        .btn-reponer-add:active { transform: scale(0.97); }
+        .btn-reponer-add:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-reponer-prov {
+            background: #e2e8f0;
+            color: #475569;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-reponer-prov:hover { background: #cbd5e1; }
     </style>
 </head>
 <body>
@@ -132,6 +246,28 @@
     </div>
 
     <div id="sec1" class="app-section active">
+
+        <!-- ============================================================ -->
+        <!-- 🆕 D2 — PRODUCTOS A REPONER (colapsable) -->
+        <!-- ============================================================ -->
+        <div id="reponer-card">
+            <div id="reponer-header">
+                <h3>
+                    <span id="reponer-flecha">▶</span>
+                    🟠 Productos a reponer
+                    <span id="reponer-badge">0</span>
+                </h3>
+                <div style="font-size:11px;color:#94a3b8;">
+                    Click para abrir/cerrar
+                </div>
+            </div>
+            <div id="reponer-contenido">
+                <div class="reponer-grid" id="reponer-grid">
+                    <!-- Rellenado desde JS -->
+                </div>
+            </div>
+        </div>
+
         <div class="box" style="border-left: 4px solid #2563eb;">
             <h3>➕ Introducción Manual de Artículo con Medida</h3>
             <p class="text-xs text-slate-400 mb-2">Añade productos a la cesta de compras para hacer pedidos</p>
@@ -274,6 +410,12 @@ let cargaInicialCompletada = false;
 let faltasPendientesCache = [];
 let alertaFaltasActiva = false;
 
+// 🆕 D2 — Cache de productos a reponer
+let productosAReponer = [];
+
+// Clave localStorage para el colapsable
+const CLAVE_REPONER_COLAPSADO = 'fredware_compras_reponer_colapsado';
+
 // ============================================================
 // ALIAS A UTILIDADES DEL NÚCLEO
 // ============================================================
@@ -356,7 +498,6 @@ function calcularFechaManana() {
 }
 
 function descomponerDetalleCesta(detalleString) {
-    // 🆕 Quitar [URGENTE] primero
     const sinUrgente = detalleString.replace(/\[URGENTE\]\s*/gi, '').trim();
     const match = sinUrgente.match(/^\[(\d+)\s+([^\]]+)\]\s*(.*)$/);
     if (match) {
@@ -404,7 +545,10 @@ function switchTab(num) {
     document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
     document.getElementById(`btn-t${num}`).classList.add('active');
     document.getElementById(`sec${num}`).classList.add('active');
-    if (num === 1) renderCesta();
+    if (num === 1) {
+        renderCesta();
+        cargarProductosAReponer();
+    }
     if (num === 2) renderVisorPasivo();
     if (num === 3) {
         cargarProveedoresDesdeSupabase();
@@ -476,6 +620,219 @@ async function obtenerArticulosHabituales(proveedorId = null) {
 }
 
 // ============================================================
+// 🆕 D2 — PRODUCTOS A REPONER
+// ============================================================
+async function cargarProductosAReponer() {
+    const card = document.getElementById('reponer-card');
+    const grid = document.getElementById('reponer-grid');
+    const badge = document.getElementById('reponer-badge');
+
+    if (!card || !grid) return;
+
+    try {
+        const { data, error } = await db_nube
+            .from('v_productos_a_reponer')
+            .select('*')
+            .limit(30);
+
+        if (error) throw error;
+
+        productosAReponer = data || [];
+
+        if (productosAReponer.length === 0) {
+            card.style.display = 'none';
+            return;
+        }
+
+        card.style.display = 'block';
+        badge.textContent = productosAReponer.length;
+
+        renderProductosAReponer();
+        aplicarEstadoReponer();
+    } catch (e) {
+        console.error('❌ Error cargando productos a reponer:', e);
+        card.style.display = 'none';
+    }
+}
+
+function renderProductosAReponer() {
+    const grid = document.getElementById('reponer-grid');
+    if (!grid) return;
+
+    const claseEstado = (estado) => {
+        switch (estado) {
+            case 'SIN_STOCK':    return 'estado-sin';
+            case 'BAJO_MINIMO':  return 'estado-bajo';
+            case 'CERCA_MINIMO': return 'estado-cerca';
+            default:             return '';
+        }
+    };
+
+    const emojiEstado = (estado) => {
+        switch (estado) {
+            case 'SIN_STOCK':    return '🔴';
+            case 'BAJO_MINIMO':  return '🟠';
+            case 'CERCA_MINIMO': return '🟡';
+            default:             return '⚪';
+        }
+    };
+
+    grid.innerHTML = productosAReponer.map(p => {
+        const clase = claseEstado(p.estado);
+        const emoji = emojiEstado(p.estado);
+        const stock = Number(p.stock_actual || 0).toFixed(1);
+        const min = Number(p.stock_minimo || 0).toFixed(1);
+        const sug = Math.max(0, Number(p.cantidad_sugerida || 0)).toFixed(1);
+        const unidad = p.unidad_compra || '';
+        const nombreSeguro = escapeHtml(p.nombre_articulo);
+        const provSeguro = escapeHtml(p.proveedor_principal || 'S/P');
+
+        return `
+            <div class="reponer-item ${clase}">
+                <div class="nombre" title="${nombreSeguro}">
+                    ${emoji} ${nombreSeguro}
+                </div>
+                <div class="detalle">
+                    Stock: <strong>${stock} ${escapeHtml(unidad)}</strong> · Mín: ${min}
+                </div>
+                <div class="detalle">
+                    🏢 ${provSeguro}
+                </div>
+                <div class="acciones">
+                    <button class="btn-reponer-add" onclick="agregarReponerACesta('${escapeHtml(p.id)}')">
+                        🛒 +${sug} ${escapeHtml(unidad)}
+                    </button>
+                    <button class="btn-reponer-prov" onclick="cambiarProvReponer('${escapeHtml(p.id)}')" title="Ver/editar proveedor">
+                        🏢
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function agregarReponerACesta(productoId) {
+    const p = productosAReponer.find(x => x.id === productoId);
+    if (!p) {
+        lanzarToast('Producto no encontrado', 'error');
+        return;
+    }
+
+    const cantidad = Math.max(0.1, Number(p.cantidad_sugerida || 1));
+    const unidad = p.unidad_compra || 'UNIDADES';
+    const provAsignado = p.proveedor_principal || 'S/P';
+
+    const detalleFormateado = `[${cantidad} ${unidad}] ${p.nombre_articulo}`;
+
+    // Comprobar si ya está en la cesta
+    const existe = cestaLocal.some(i => i.detalle === detalleFormateado && i.estado !== "RECIBIDO");
+    if (existe) {
+        lanzarToast(`⚠️ "${p.nombre_articulo}" ya está en la cesta`, 'warning');
+        return;
+    }
+
+    const nuevoItem = {
+        id: generarIdUnico(),
+        detalle: detalleFormateado,
+        proveedor_id: provAsignado,
+        estado: "PENDIENTE",
+        fecha_registro: new Date().toISOString(),
+        fecha_entrega_esperada: calcularFechaManana()
+    };
+
+    try {
+        await agregarItemCesta(nuevoItem);
+        cestaLocal.push(nuevoItem);
+
+        lanzarToast(`✅ +${cantidad} ${unidad} de "${p.nombre_articulo}" → ${provAsignado}`, 'success');
+        renderCesta();
+        evaluarRelojesDeCierre();
+    } catch (error) {
+        console.error('Error añadiendo a cesta:', error);
+        lanzarToast('❌ Error al añadir a la cesta', 'error');
+    }
+}
+
+async function cambiarProvReponer(productoId) {
+    const p = productosAReoner ? productosAReponer.find(x => x.id === productoId) : null;
+    if (!p) return;
+
+    // Modal simple para elegir proveedor
+    const provs = proveedoresCache.map(pr => pr.nombre).sort();
+    const opciones = ['S/P', ...provs];
+
+    const opcionesTexto = opciones.map((o, i) => `${i + 1}. ${o}`).join('\n');
+    const respuesta = prompt(
+        `🏢 Asignar proveedor para "${p.nombre_articulo}"\n\n` +
+        `Actual: ${p.proveedor_principal || 'S/P'}\n\n` +
+        `Escribe el número del nuevo proveedor:\n\n${opcionesTexto}`,
+        '1'
+    );
+
+    if (!respuesta) return;
+    const idx = parseInt(respuesta) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= opciones.length) {
+        lanzarToast('Opción no válida', 'warning');
+        return;
+    }
+
+    const nuevoProv = opciones[idx];
+
+    try {
+        const { error } = await db_nube
+            .from('productos_raciones')
+            .update({ proveedor_principal: nuevoProv })
+            .eq('id', p.id);
+
+        if (error) throw error;
+
+        lanzarToast(`✅ Proveedor actualizado: ${nuevoProv}`, 'success');
+        await cargarProductosAReponer();
+    } catch (e) {
+        console.error('Error actualizando proveedor:', e);
+        lanzarToast('❌ Error al actualizar', 'error');
+    }
+}
+
+function alternarReponer() {
+    const contenido = document.getElementById('reponer-contenido');
+    const flecha = document.getElementById('reponer-flecha');
+    if (!contenido || !flecha) return;
+
+    const estaAbierto = contenido.style.maxHeight && contenido.style.maxHeight !== '0px' && contenido.style.maxHeight !== '0';
+
+    if (estaAbierto) {
+        contenido.style.maxHeight = '0px';
+        flecha.style.transform = 'rotate(0deg)';
+        try { localStorage.setItem(CLAVE_REPONER_COLAPSADO, '1'); } catch(e) {}
+    } else {
+        contenido.style.maxHeight = (contenido.scrollHeight + 200) + 'px';
+        flecha.style.transform = 'rotate(90deg)';
+        try { localStorage.setItem(CLAVE_REPONER_COLAPSADO, '0'); } catch(e) {}
+    }
+}
+
+function aplicarEstadoReponer() {
+    const contenido = document.getElementById('reponer-contenido');
+    const flecha = document.getElementById('reponer-flecha');
+    if (!contenido || !flecha) return;
+
+    let colapsado = '1'; // por defecto colapsado
+    try {
+        const guardado = localStorage.getItem(CLAVE_REPONER_COLAPSADO);
+        if (guardado !== null) colapsado = guardado;
+    } catch(e) {}
+
+    if (colapsado === '1') {
+        contenido.style.maxHeight = '0px';
+        flecha.style.transform = 'rotate(0deg)';
+    } else {
+        contenido.style.maxHeight = (contenido.scrollHeight + 200) + 'px';
+        flecha.style.transform = 'rotate(90deg)';
+    }
+}
+
+// ============================================================
 // REGISTRAR COMPRA EN HISTÓRICO
 // ============================================================
 async function registrarCompraEnHistorico(item, marcarComoRecibido = false) {
@@ -543,6 +900,7 @@ async function cargarDatosIniciales() {
         renderVisorPasivo();
         evaluarRelojesDeCierre();
         await cargarProveedoresDesdeSupabase();
+        await cargarProductosAReponer();
         
     } catch (error) {
         console.error("Error cargando datos iniciales:", error);
@@ -1044,6 +1402,7 @@ async function marcarComoRecibido(idx) {
         lanzarToast(`✅ ${producto} marcado como recibido en histórico`);
         renderCesta();
         evaluarRelojesDeCierre();
+        cargarProductosAReponer();
 
     } catch (error) {
         console.error('Error:', error);
@@ -1084,7 +1443,7 @@ function mostrarQR(data) {
 }
 
 // ============================================================
-// 🆕 Bloque C — Renderizar cesta con líneas urgentes resaltadas
+// Renderizar cesta con líneas urgentes resaltadas
 // ============================================================
 function renderCesta() {
     const contenedorAcordeon = document.getElementById('contenedor-acordeon-cesta');
@@ -1111,13 +1470,11 @@ function renderCesta() {
         let esColapsado = estadoAcordeon[pId] === true;
         const safeId = pId.replace(/[^a-zA-Z0-9]/g, '_');
 
-        // Contar urgentes en este bloque
         const numUrgentes = listaItems.filter(p => esUrgente(p.item.detalle)).length;
         const badgeUrgentesBloque = numUrgentes > 0
             ? `<span style="margin-left:8px; background:#dc2626; color:white; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:900;">⚡ ${numUrgentes} URGENTE${numUrgentes > 1 ? 'S' : ''}</span>`
             : '';
 
-        // Ordenar: urgentes primero
         const itemsOrdenados = [...listaItems].sort((a, b) => {
             const aUrg = esUrgente(a.item.detalle) ? 1 : 0;
             const bUrg = esUrgente(b.item.detalle) ? 1 : 0;
@@ -1184,7 +1541,7 @@ function conmutarAcordeon(pId) {
 }
 
 // ============================================================
-// 🆕 Bloque C — Bloques WhatsApp con urgentes primero
+// Bloques WhatsApp con urgentes primero
 // ============================================================
 function renderBloquesWhatsApp(cesta) {
     const contenedor = document.getElementById('contenedor-bloques-whatsapp');
@@ -1194,7 +1551,6 @@ function renderBloquesWhatsApp(cesta) {
     let proveedoresConPedidos = [...new Set(cesta.filter(i => i.proveedor_id !== "S/P" && i.estado === "PENDIENTE").map(i => i.proveedor_id))];
     const hoy = new Date().getDay();
 
-    // 🆕 Ordenar: proveedores con urgentes primero
     proveedoresConPedidos.sort((a, b) => {
         const aUrg = cesta.some(i => i.proveedor_id === a && esUrgente(i.detalle) && i.estado === "PENDIENTE");
         const bUrg = cesta.some(i => i.proveedor_id === b && esUrgente(i.detalle) && i.estado === "PENDIENTE");
@@ -1261,7 +1617,6 @@ async function limpiarBloqueProveedor(provNombre) {
     }
 }
 
-// 🆕 Bloque C — WhatsApp con prefijo URGENTE destacado
 function dispararWhatsAppProveedor(provNombre, telefono) {
     const telefonoLimpio = telefono.replace(/\D/g, '');
     if (telefonoLimpio.length < 9) { lanzarToast("Teléfono inválido.", "error"); return; }
@@ -1771,6 +2126,9 @@ window.cerrarAlertaFaltas = cerrarAlertaFaltas;
 window.subirCestaAlServidor = subirCestaAlServidor;
 window.exportarPedidosJson = exportarPedidosJson;
 window.switchTab = switchTab;
+window.agregarReponerACesta = agregarReponerACesta;
+window.cambiarProvReponer = cambiarProvReponer;
+window.alternarReponer = alternarReponer;
 
 async function recargarCestaManual() {
     cestaLocal = await obtenerCesta();
@@ -1778,6 +2136,7 @@ async function recargarCestaManual() {
     renderCesta();
     renderVisorPasivo();
     actualizarBadgeFaltas(faltasPendientesCache.length);
+    await cargarProductosAReponer();
     lanzarToast('✅ Cesta recargada manualmente');
 }
 
@@ -1788,9 +2147,13 @@ async function initApp() {
     if (appInicializada) return;
     appInicializada = true;
     
-    console.log('🚀 [Compras v4 — Bloque C] Init — esperando al núcleo...');
+    console.log('🚀 [Compras v4.1 — D2] Init — esperando al núcleo...');
 
     initDaysGrids();
+
+    // Conectar el click del header del widget colapsable
+    const reponerHeader = document.getElementById('reponer-header');
+    if (reponerHeader) reponerHeader.addEventListener('click', alternarReponer);
     
     try {
         await fredware.productos.cargar();
