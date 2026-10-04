@@ -63,6 +63,22 @@
         }
         .week-label small { display: block; font-weight: 400; font-size: 10px; opacity: 0.7; }
 
+        /* ============ AVISOS ============ */
+        .avisos-container {
+            display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;
+        }
+        .aviso {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 10px; font-size: 13px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .aviso.vuelta { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+        .aviso.proxima { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+        .aviso.urgente { background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
+        .aviso .emoji { font-size: 20px; }
+        .aviso .texto { flex: 1; }
+        .aviso .texto strong { font-weight: 800; }
+
         /* ============ TOOLBAR PICA ============ */
         .toolbar-pica {
             display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -124,7 +140,7 @@
         .tabla td.horas-col.over { color: #dc2626; background: #fee2e2; }
         .tabla td.horas-col.ok { color: #059669; }
         .tabla tr:hover td.emp-col { background: #eff6ff; }
-        .tabla tr.inactivo { opacity: 0.5; }
+        .tabla tr.inactivo { opacity: 0.55; }
 
         /* Fila separadora PICA */
         .tabla tr.separador-pica td {
@@ -140,15 +156,33 @@
 
         .emp-nombre { font-weight: 700; font-size: 13px; color: #1e293b; }
         .emp-puesto { font-size: 10px; color: #64748b; margin-top: 1px; }
+
+        /* Badge estado clicable */
+        .emp-estado-wrap { display: flex; align-items: center; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
         .emp-estado {
-            display: inline-block; padding: 1px 6px; border-radius: 10px;
-            font-size: 9px; font-weight: 700; margin-top: 3px;
+            display: inline-flex; align-items: center; gap: 3px;
+            padding: 2px 8px; border-radius: 10px;
+            font-size: 9px; font-weight: 800;
             text-transform: uppercase; letter-spacing: 0.3px;
+            cursor: pointer; transition: all 0.15s;
+            border: 1px solid transparent;
         }
-        .estado-ACTIVO { background: #d1fae5; color: #065f46; }
-        .estado-BAJA { background: #fee2e2; color: #991b1b; }
-        .estado-VACACIONES { background: #dbeafe; color: #1e40af; }
-        .estado-FijoDiscontinuo { background: #fef3c7; color: #92400e; }
+        .emp-estado:hover { transform: scale(1.05); }
+        .estado-ACTIVO { background: #d1fae5; color: #065f46; border-color: #86efac; }
+        .estado-ACTIVO:hover { background: #a7f3d0; }
+        .estado-BAJA { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        .estado-BAJA:hover { background: #fecaca; }
+        .estado-VACACIONES { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+        .estado-VACACIONES:hover { background: #bfdbfe; }
+        .estado-FijoDiscontinuo { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+        .estado-FijoDiscontinuo:hover { background: #fde68a; }
+
+        /* Fecha ausencia */
+        .emp-fecha-ausencia {
+            font-size: 9px; color: #64748b; font-style: italic;
+            margin-top: 2px; display: flex; align-items: center; gap: 3px;
+        }
+        .emp-fecha-ausencia.alerta { color: #dc2626; font-weight: 700; font-style: normal; }
 
         select.celda-turno {
             width: 100%; min-width: 60px; padding: 5px 2px;
@@ -168,11 +202,9 @@
         select.celda-turno.tipo-B { background: #cbd5e1; color: #334155; }
         select.celda-turno.tipo-vacio { background: white; color: #94a3b8; }
 
-        /* Filas PICA con ligero tinte */
         .tabla tr.fila-pica td.emp-col { background: #f0fdf4; }
         .tabla tr.fila-pica:hover td.emp-col { background: #dcfce7; }
 
-        /* Eventos row */
         .eventos-row td { background: #fffbeb !important; }
         .eventos-row td.emp-col { background: #fef3c7 !important; font-weight: 700; }
         .eventos-input {
@@ -263,13 +295,39 @@
             margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;
         }
 
+        /* Modal estado — opciones grandes */
+        .estado-opciones {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            margin-top: 16px;
+        }
+        .estado-opcion {
+            padding: 14px 12px; border-radius: 10px; border: 2px solid #e2e8f0;
+            background: white; cursor: pointer; transition: all 0.15s;
+            text-align: center; font-weight: 700; font-size: 13px;
+        }
+        .estado-opcion:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .estado-opcion .icono { font-size: 24px; display: block; margin-bottom: 4px; }
+        .estado-opcion.actual { border-color: #2563eb; background: #eff6ff; }
+        .estado-opcion.op-activo { border-color: #86efac; background: #f0fdf4; }
+        .estado-opcion.op-baja { border-color: #fca5a5; background: #fef2f2; }
+        .estado-opcion.op-vac { border-color: #93c5fd; background: #eff6ff; }
+        .estado-opcion.op-fd { border-color: #fcd34d; background: #fffbeb; }
+
+        .fechas-ausencia {
+            background: #f8fafc; border: 1px dashed #cbd5e1;
+            border-radius: 10px; padding: 12px; margin-top: 16px;
+            display: none;
+        }
+        .fechas-ausencia.visible { display: block; }
+        .fechas-ausencia label { margin-top: 0; }
+
         /* ============ PRINT ============ */
         @media print {
             body { background: white; padding: 0; }
             .header { background: white; color: black; padding: 8px 0; box-shadow: none; border-bottom: 2px solid #000; border-radius: 0; }
             .header h1 { color: black; }
             .header .sub { color: #666; }
-            .header-actions, .week-nav, .banco-alerta, .info-grid, .toast, .modal-overlay, .no-print, .toolbar-pica { display: none !important; }
+            .header-actions, .week-nav, .banco-alerta, .info-grid, .toast, .modal-overlay, .no-print, .toolbar-pica, .avisos-container { display: none !important; }
             .week-label { background: transparent; color: black; border: 1px solid black; }
             .tabla-container { box-shadow: none; padding: 0; border-radius: 0; }
             .tabla { font-size: 10px; min-width: auto; }
@@ -347,8 +405,11 @@
     </div>
 </div>
 
+<!-- ============ AVISOS ============ -->
+<div class="avisos-container" id="avisosContainer"></div>
+
 <!-- ============ TOOLBAR PICA ============ -->
-<div class="toolbar-pica">
+<div class="toolbar-pica no-print">
     <div class="label">
         🍴 Rotación Pica
     </div>
@@ -385,9 +446,7 @@
                 <th class="horas-col">Horas</th>
             </tr>
         </thead>
-        <tbody id="tablaBody">
-            <!-- Se rellena con JS -->
-        </tbody>
+        <tbody id="tablaBody"></tbody>
     </table>
 </div>
 
@@ -437,16 +496,52 @@
             <input type="checkbox" id="inputSoloManana" style="width:auto;">
             <span style="font-weight:600; font-size:12px; text-transform:none;">Solo puede trabajar en turnos de mañana</span>
         </label>
-        <label>Estado</label>
-        <select id="inputEstado">
-            <option value="ACTIVO">✅ Activo</option>
-            <option value="BAJA">🚫 Baja</option>
-            <option value="VACACIONES">🏖️ Vacaciones</option>
-            <option value="FijoDiscontinuo">🔄 Fijo discontinuo</option>
-        </select>
         <div class="modal-actions">
             <button class="btn btn-dark" onclick="cerrarModalEmpleado()">Cancelar</button>
             <button class="btn btn-green" onclick="guardarEmpleado()">💾 Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ MODAL ESTADO ============ -->
+<div class="modal-overlay" id="modalEstado">
+    <div class="modal">
+        <h2 id="modalEstadoTitle">Cambiar estado</h2>
+        <div id="modalEstadoEmpleado" style="font-size:13px; color:#64748b; margin-bottom:8px;"></div>
+
+        <div class="estado-opciones" id="estadoOpciones">
+            <div class="estado-opcion op-activo" data-estado="ACTIVO" onclick="seleccionarEstado('ACTIVO')">
+                <span class="icono">✅</span>
+                Activo
+            </div>
+            <div class="estado-opcion op-baja" data-estado="BAJA" onclick="seleccionarEstado('BAJA')">
+                <span class="icono">🚫</span>
+                Baja
+            </div>
+            <div class="estado-opcion op-vac" data-estado="VACACIONES" onclick="seleccionarEstado('VACACIONES')">
+                <span class="icono">🏖️</span>
+                Vacaciones
+            </div>
+            <div class="estado-opcion op-fd" data-estado="FijoDiscontinuo" onclick="seleccionarEstado('FijoDiscontinuo')">
+                <span class="icono">🔄</span>
+                Fijo discontinuo
+            </div>
+        </div>
+
+        <!-- Fechas (solo si BAJA o VACACIONES) -->
+        <div class="fechas-ausencia" id="fechasAusencia">
+            <label>📅 Fecha inicio</label>
+            <input type="date" id="inputFechaInicio">
+            <label>📅 Fecha fin (opcional)</label>
+            <input type="date" id="inputFechaFin">
+            <div style="font-size:11px;color:#64748b;margin-top:8px;font-style:italic;">
+                💡 Si no sabes la fecha fin, déjala vacía. Podrás actualizarla después.
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="cerrarModalEstado()">Cancelar</button>
+            <button class="btn btn-green" onclick="guardarEstado()">💾 Guardar</button>
         </div>
     </div>
 </div>
@@ -476,7 +571,6 @@
     </div>
 </div>
 
-<!-- ============ TOAST ============ -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -490,9 +584,6 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 const DIAS_LABEL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-// Ciclo Pica
-// Semana A (impar):  Daniel [L,L,P2,P2,M3,M3,M3] · Matias [P2,P2,L,L,T1,T1,T1]
-// Semana B (par):    Daniel [P2,P2,L,L,T1,T1,T1] · Matias [L,L,P2,P2,M3,M3,M3]
 const CICLO_PICA_A = {
     'Daniel': { lunes: 'L', martes: 'L', miercoles: 'P2', jueves: 'P2', viernes: 'M3', sabado: 'M3', domingo: 'M3' },
     'Matias': { lunes: 'P2', martes: 'P2', miercoles: 'L', jueves: 'L', viernes: 'T1', sabado: 'T1', domingo: 'T1' }
@@ -505,17 +596,18 @@ const CICLO_PICA_B = {
 const state = {
     empleados: [],
     turnos: {},
+    ausencias: [],   // 🆕
     semana: {
-        año: 0,
-        numero_semana: 0,
-        fecha_inicio: '',
-        fecha_fin: '',
-        asignaciones: {},
-        eventos: {}
+        año: 0, numero_semana: 0,
+        fecha_inicio: '', fecha_fin: '',
+        asignaciones: {}, eventos: {}
     },
     banco: [],
     mostrarInactivos: false,
-    empleadoEditando: null
+    empleadoEditando: null,
+    // 🆕 Estado del modal de cambio de estado
+    estadoEditando: null,
+    estadoSeleccionado: null
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -554,11 +646,8 @@ function getFechaInicioSemanaISO(año, semana) {
     const simple = new Date(Date.UTC(año, 0, 1 + (semana - 1) * 7));
     const dow = simple.getUTCDay() || 7;
     const lunes = new Date(simple);
-    if (dow <= 4) {
-        lunes.setUTCDate(simple.getUTCDate() - dow + 1);
-    } else {
-        lunes.setUTCDate(simple.getUTCDate() + 8 - dow);
-    }
+    if (dow <= 4) lunes.setUTCDate(simple.getUTCDate() - dow + 1);
+    else lunes.setUTCDate(simple.getUTCDate() + 8 - dow);
     return lunes;
 }
 
@@ -577,15 +666,29 @@ function getFechasSemana() {
     return fechas;
 }
 
-function cssId(str) {
-    return String(str).replace(/[^a-zA-Z0-9]/g, '_');
-}
+function cssId(str) { return String(str).replace(/[^a-zA-Z0-9]/g, '_'); }
 
 function escapeHtml(str) {
     if (str == null) return '';
     const div = document.createElement('div');
     div.textContent = String(str);
     return div.innerHTML;
+}
+
+function fechaISO(date) {
+    return date.toISOString().split('T')[0];
+}
+
+function diffDias(fechaISO1, fechaISO2) {
+    const d1 = new Date(fechaISO1 + 'T00:00:00');
+    const d2 = new Date(fechaISO2 + 'T00:00:00');
+    return Math.round((d2 - d1) / 86400000);
+}
+
+function formatFechaLarga(fechaISOStr) {
+    if (!fechaISOStr) return '';
+    const d = new Date(fechaISOStr + 'T00:00:00');
+    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -595,16 +698,12 @@ function escapeHtml(str) {
 async function cargarDatos() {
     try {
         const { data: emps, error: errE } = await db
-            .from('horarios_empleados')
-            .select('*')
-            .order('orden', { ascending: true });
+            .from('horarios_empleados').select('*').order('orden', { ascending: true });
         if (errE) throw errE;
         state.empleados = emps || [];
 
         const { data: trn, error: errT } = await db
-            .from('horarios_turnos')
-            .select('*')
-            .order('orden', { ascending: true });
+            .from('horarios_turnos').select('*').order('orden', { ascending: true });
         if (errT) throw errT;
         state.turnos = {};
         (trn || []).forEach(t => { state.turnos[t.codigo] = t; });
@@ -617,7 +716,19 @@ async function cargarDatos() {
         if (errB) throw errB;
         state.banco = banc || [];
 
-        console.log('✅ Datos cargados:', state.empleados.length, 'empleados,', Object.keys(state.turnos).length, 'turnos');
+        // 🆕 Cargar ausencias (bajas y vacaciones actuales)
+        const { data: ausencias, error: errA } = await db
+            .from('horarios_ausencias')
+            .select('*')
+            .order('fecha_inicio', { ascending: false });
+        if (errA) {
+            console.warn('Tabla horarios_ausencias vacía o sin acceso:', errA.message);
+            state.ausencias = [];
+        } else {
+            state.ausencias = ausencias || [];
+        }
+
+        console.log('✅ Datos cargados:', state.empleados.length, 'empleados,', state.ausencias.length, 'ausencias');
         irSemanaActual(true);
     } catch (e) {
         console.error('Error cargando datos:', e);
@@ -630,8 +741,7 @@ async function cargarDatos() {
 async function cargarSemana() {
     try {
         const { data, error } = await db
-            .from('horarios_semanas')
-            .select('*')
+            .from('horarios_semanas').select('*')
             .eq('año', state.semana.año)
             .eq('numero_semana', state.semana.numero_semana)
             .maybeSingle();
@@ -647,7 +757,7 @@ async function cargarSemana() {
             state.semana.asignaciones = {};
             state.semana.eventos = {};
             state.semana.notas = '';
-            toast('📄 Semana nueva (sin datos previos)', 'info');
+            toast('📄 Semana nueva', 'info');
         }
         render();
     } catch (e) {
@@ -662,19 +772,16 @@ async function guardarSemana() {
         const payload = {
             año: state.semana.año,
             numero_semana: state.semana.numero_semana,
-            fecha_inicio: fechas[0].toISOString().split('T')[0],
-            fecha_fin: fechas[6].toISOString().split('T')[0],
+            fecha_inicio: fechaISO(fechas[0]),
+            fecha_fin: fechaISO(fechas[6]),
             asignaciones: state.semana.asignaciones,
             eventos: state.semana.eventos,
             notas: state.semana.notas || '',
             estado: 'BORRADOR',
             updated_at: new Date().toISOString()
         };
-
-        const { error } = await db
-            .from('horarios_semanas')
+        const { error } = await db.from('horarios_semanas')
             .upsert([payload], { onConflict: 'año,numero_semana' });
-
         if (error) throw error;
         toast('💾 Semana guardada', 'success');
         setStatus('✅ Guardado correctamente', 'ok');
@@ -686,26 +793,238 @@ async function guardarSemana() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// GESTIÓN DE ESTADOS (NUEVO)
+// ═══════════════════════════════════════════════════════════
+
+function abrirModalEstado(nombreEmpleado) {
+    const emp = state.empleados.find(e => e.nombre === nombreEmpleado);
+    if (!emp) return;
+
+    state.estadoEditando = emp;
+    state.estadoSeleccionado = null;
+
+    document.getElementById('modalEstadoTitle').textContent = '🔄 Cambiar estado';
+    document.getElementById('modalEstadoEmpleado').innerHTML = `
+        <strong style="color:#0f172a;font-size:15px;">${escapeHtml(emp.nombre)}</strong>
+        ${emp.puesto ? ` · ${escapeHtml(emp.puesto)}` : ''}
+        <br><span style="font-size:11px;">Estado actual: <strong>${emp.estado}</strong></span>
+    `;
+
+    // Marcar opción actual
+    document.querySelectorAll('.estado-opcion').forEach(el => {
+        el.classList.remove('actual');
+        if (el.dataset.estado === emp.estado) el.classList.add('actual');
+    });
+
+    // Ocultar bloque de fechas por defecto
+    document.getElementById('fechasAusencia').classList.remove('visible');
+    document.getElementById('inputFechaInicio').value = fechaISO(new Date());
+    document.getElementById('inputFechaFin').value = '';
+
+    // Si hay una ausencia activa, precargar fechas
+    const ausActiva = getAusenciaActiva(emp.id);
+    if (ausActiva) {
+        document.getElementById('inputFechaInicio').value = ausActiva.fecha_inicio || '';
+        document.getElementById('inputFechaFin').value = ausActiva.fecha_fin || '';
+    }
+
+    document.getElementById('modalEstado').classList.add('visible');
+}
+
+function cerrarModalEstado() {
+    document.getElementById('modalEstado').classList.remove('visible');
+    state.estadoEditando = null;
+    state.estadoSeleccionado = null;
+}
+
+function seleccionarEstado(nuevoEstado) {
+    state.estadoSeleccionado = nuevoEstado;
+
+    document.querySelectorAll('.estado-opcion').forEach(el => {
+        el.classList.remove('actual');
+        if (el.dataset.estado === nuevoEstado) el.classList.add('actual');
+    });
+
+    const fechas = document.getElementById('fechasAusencia');
+    if (nuevoEstado === 'BAJA' || nuevoEstado === 'VACACIONES') {
+        fechas.classList.add('visible');
+    } else {
+        fechas.classList.remove('visible');
+    }
+}
+
+function getAusenciaActiva(empleadoId) {
+    // Devuelve la ausencia más reciente sin fecha_fin o con fecha_fin futura
+    const hoy = fechaISO(new Date());
+    const candidatas = state.ausencias
+        .filter(a => a.empleado_id === empleadoId)
+        .filter(a => !a.fecha_fin || a.fecha_fin >= hoy)
+        .sort((a, b) => new Date(b.fecha_inicio) - new Date(a.fecha_inicio));
+    return candidatas[0] || null;
+}
+
+async function guardarEstado() {
+    if (!state.estadoEditando) return;
+    if (!state.estadoSeleccionado) {
+        toast('Selecciona un estado', 'warning');
+        return;
+    }
+
+    const emp = state.estadoEditando;
+    const nuevoEstado = state.estadoSeleccionado;
+
+    if (nuevoEstado === emp.estado) {
+        toast('Sin cambios', 'info');
+        cerrarModalEstado();
+        return;
+    }
+
+    try {
+        // 1. Actualizar estado en horarios_empleados
+        const { error: errUpd } = await db
+            .from('horarios_empleados')
+            .update({ estado: nuevoEstado, updated_at: new Date().toISOString() })
+            .eq('id', emp.id);
+        if (errUpd) throw errUpd;
+
+        // 2. Gestionar ausencias
+        const ausActiva = getAusenciaActiva(emp.id);
+
+        if (nuevoEstado === 'BAJA' || nuevoEstado === 'VACACIONES') {
+            // Registrar nueva ausencia (o actualizar la activa)
+            const tipoAus = nuevoEstado === 'BAJA' ? 'BAJA' : 'VACACIONES';
+            const fechaInicio = document.getElementById('inputFechaInicio').value || fechaISO(new Date());
+            const fechaFin = document.getElementById('inputFechaFin').value || null;
+
+            if (ausActiva && ausActiva.tipo === tipoAus) {
+                // Actualizar fechas
+                const { error } = await db.from('horarios_ausencias')
+                    .update({ fecha_inicio: fechaInicio, fecha_fin: fechaFin })
+                    .eq('id', ausActiva.id);
+                if (error) throw error;
+            } else {
+                // Cerrar ausencia anterior si existía
+                if (ausActiva) {
+                    await db.from('horarios_ausencias')
+                        .update({ fecha_fin: fechaISO(new Date()) })
+                        .eq('id', ausActiva.id);
+                }
+                // Crear nueva
+                const { error } = await db.from('horarios_ausencias').insert([{
+                    empleado_id: emp.id,
+                    tipo: tipoAus,
+                    fecha_inicio: fechaInicio,
+                    fecha_fin: fechaFin,
+                    notas: null
+                }]);
+                if (error) throw error;
+            }
+        } else if (nuevoEstado === 'ACTIVO' || nuevoEstado === 'FijoDiscontinuo') {
+            // Cerrar ausencia activa si existe
+            if (ausActiva) {
+                const { error } = await db.from('horarios_ausencias')
+                    .update({ fecha_fin: fechaISO(new Date()) })
+                    .eq('id', ausActiva.id);
+                if (error) throw error;
+            }
+        }
+
+        // Actualizar local
+        emp.estado = nuevoEstado;
+        emp.updated_at = new Date().toISOString();
+
+        // Recargar ausencias
+        const { data: nuevasAus } = await db.from('horarios_ausencias').select('*');
+        state.ausencias = nuevasAus || [];
+
+        toast(`✅ ${emp.nombre} → ${nuevoEstado}`, 'success');
+        cerrarModalEstado();
+        render();
+    } catch (e) {
+        console.error('Error guardando estado:', e);
+        toast('Error: ' + e.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// AVISOS DE VUELTA
+// ═══════════════════════════════════════════════════════════
+
+function renderAvisos() {
+    const cont = document.getElementById('avisosContainer');
+    cont.innerHTML = '';
+
+    const hoy = new Date();
+    const hoyISO = fechaISO(hoy);
+    const avisos = [];
+
+    // Revisar ausencias con fecha_fin cercana
+    state.ausencias.forEach(aus => {
+        if (!aus.fecha_fin) return;
+        const emp = state.empleados.find(e => e.id === aus.empleado_id);
+        if (!emp) return;
+
+        const diasHasta = diffDias(hoyISO, aus.fecha_fin);
+
+        if (diasHasta < 0) {
+            // Ya pasó la fecha → avisar que actualice el estado
+            avisos.push({
+                tipo: 'urgente',
+                emoji: '⚠️',
+                texto: `<strong>${escapeHtml(emp.nombre)}</strong> tenía previsto volver el ${formatFechaLarga(aus.fecha_fin)} (hace ${Math.abs(diasHasta)} día${Math.abs(diasHasta) !== 1 ? 's' : ''}). Actualiza su estado.`
+            });
+        } else if (diasHasta === 0) {
+            avisos.push({
+                tipo: 'vuelta',
+                emoji: '🎉',
+                texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve <strong>HOY</strong>.`
+            });
+        } else if (diasHasta === 1) {
+            avisos.push({
+                tipo: 'proxima',
+                emoji: '⏰',
+                texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve <strong>mañana</strong>.`
+            });
+        } else if (diasHasta <= 7) {
+            avisos.push({
+                tipo: 'proxima',
+                emoji: '📅',
+                texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve en <strong>${diasHasta} día${diasHasta !== 1 ? 's' : ''}</strong> (${formatFechaLarga(aus.fecha_fin)}).`
+            });
+        }
+    });
+
+    // Ordenar: urgentes primero, luego por días
+    avisos.sort((a, b) => {
+        const orden = { urgente: 0, vuelta: 1, proxima: 2 };
+        return orden[a.tipo] - orden[b.tipo];
+    });
+
+    if (avisos.length === 0) return;
+
+    avisos.forEach(av => {
+        const div = document.createElement('div');
+        div.className = 'aviso ' + av.tipo;
+        div.innerHTML = `
+            <span class="emoji">${av.emoji}</span>
+            <span class="texto">${av.texto}</span>
+        `;
+        cont.appendChild(div);
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
 // ROTACIÓN PICA
 // ═══════════════════════════════════════════════════════════
 
-// Semana A se aplica cuando la semana ISO es IMPAR
-// Semana B se aplica cuando es PAR
-function esSemanaA() {
-    return state.semana.numero_semana % 2 === 1;
-}
+function esSemanaA() { return state.semana.numero_semana % 2 === 1; }
 
 function aplicarRotacionPica() {
     const esA = esSemanaA();
     const ciclo = esA ? CICLO_PICA_A : CICLO_PICA_B;
 
-    // Aplicar solo a empleados con tipo_personal = PICA
     const picas = state.empleados.filter(e => e.tipo_personal === 'PICA');
-
-    if (picas.length === 0) {
-        toast('No hay empleados tipo Pica', 'warning');
-        return;
-    }
+    if (picas.length === 0) { toast('No hay empleados tipo Pica', 'warning'); return; }
 
     let aplicados = 0;
     picas.forEach(emp => {
@@ -722,20 +1041,13 @@ function aplicarRotacionPica() {
 
 function alternarRotacionPica() {
     const picas = state.empleados.filter(e => e.tipo_personal === 'PICA');
-    if (picas.length === 0) {
-        toast('No hay empleados tipo Pica', 'warning');
-        return;
-    }
+    if (picas.length === 0) { toast('No hay empleados tipo Pica', 'warning'); return; }
 
-    // Invertir la asignación actual de los pica
     picas.forEach(emp => {
         const actual = state.semana.asignaciones[emp.nombre] || {};
-        // Buscar en el otro ciclo la asignación basada en un día de referencia (lunes)
         const diaRef = actual.lunes;
-        // Si el lunes es L en ciclo A, aplicar ciclo B, si no aplicar A
         let nuevoCiclo;
         if (emp.nombre === 'Daniel' || emp.nombre === 'Matias') {
-            // Si el lunes actual es 'L', pasamos al que tiene P2 (que es el otro)
             if (diaRef === 'L') {
                 nuevoCiclo = (CICLO_PICA_A[emp.nombre].lunes === 'L') ? CICLO_PICA_B : CICLO_PICA_A;
             } else {
@@ -751,7 +1063,7 @@ function alternarRotacionPica() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// NAVEGACIÓN SEMANAS
+// NAVEGACIÓN
 // ═══════════════════════════════════════════════════════════
 
 function cambiarSemana(delta) {
@@ -819,6 +1131,7 @@ function calcularHorasEmpleado(nombre) {
 // ═══════════════════════════════════════════════════════════
 
 function render() {
+    renderAvisos();
     renderTabla();
     renderConflictos();
     renderBanco();
@@ -838,30 +1151,25 @@ function renderTabla() {
         return;
     }
 
-    // Separar cocineros (incluye JEFE) de picas
     const cocineros = visibles.filter(e => e.tipo_personal !== 'PICA');
     const picas = visibles.filter(e => e.tipo_personal === 'PICA');
 
-    // Render cocineros
     cocineros.forEach(emp => {
         const tr = renderFilaEmpleado(emp);
         tbody.appendChild(tr);
     });
 
-    // Fila separadora PICA
     if (picas.length > 0) {
         const trSep = document.createElement('tr');
         trSep.className = 'separador-pica';
         trSep.innerHTML = `<td colspan="9">🍴 PICA · Rotación automática (A/B)</td>`;
         tbody.appendChild(trSep);
-
         picas.forEach(emp => {
             const tr = renderFilaEmpleado(emp, true);
             tbody.appendChild(tr);
         });
     }
 
-    // Fila de eventos
     renderFilaEventos(tbody);
 }
 
@@ -870,19 +1178,37 @@ function renderFilaEmpleado(emp, esPica = false) {
     if (emp.estado !== 'ACTIVO') tr.classList.add('inactivo');
     if (esPica) tr.classList.add('fila-pica');
 
-    // Columna empleado
     const tdEmp = document.createElement('td');
     tdEmp.className = 'emp-col';
+
+    // 🆕 Estado clicable + fecha ausencia
+    const ausActiva = getAusenciaActiva(emp.id);
+    let fechaHTML = '';
+    if (ausActiva && ausActiva.fecha_fin) {
+        const dias = diffDias(fechaISO(new Date()), ausActiva.fecha_fin);
+        const alerta = dias <= 7 && dias >= 0;
+        const txt = dias < 0 ? `⏰ Vuelta pasada (${formatFechaLarga(ausActiva.fecha_fin)})` :
+                    dias === 0 ? `🎉 Vuelve HOY` :
+                    `📅 Vuelve en ${dias}d (${formatFechaLarga(ausActiva.fecha_fin)})`;
+        fechaHTML = `<div class="emp-fecha-ausencia ${alerta ? 'alerta' : ''}">${txt}</div>`;
+    } else if (ausActiva) {
+        fechaHTML = `<div class="emp-fecha-ausencia">📅 Desde ${formatFechaLarga(ausActiva.fecha_inicio)}</div>`;
+    }
+
     tdEmp.innerHTML = `
         <div class="emp-nombre" ondblclick="abrirModalEmpleado('${escapeHtml(emp.nombre)}')" style="cursor:pointer;" title="Doble click para editar">
             ${escapeHtml(emp.nombre)}
         </div>
         ${emp.puesto ? `<div class="emp-puesto">${escapeHtml(emp.puesto)}</div>` : ''}
-        <span class="emp-estado estado-${emp.estado}">${emp.estado}</span>
+        <div class="emp-estado-wrap">
+            <span class="emp-estado estado-${emp.estado}" onclick="abrirModalEstado('${escapeHtml(emp.nombre)}')" title="Click para cambiar estado">
+                ${emp.estado}
+            </span>
+        </div>
+        ${fechaHTML}
     `;
     tr.appendChild(tdEmp);
 
-    // Celdas días
     DIAS.forEach(dia => {
         const td = document.createElement('td');
         const select = document.createElement('select');
@@ -900,8 +1226,7 @@ function renderFilaEmpleado(emp, esPica = false) {
         };
 
         const optInicio = document.createElement('option');
-        optInicio.value = '';
-        optInicio.textContent = '—';
+        optInicio.value = ''; optInicio.textContent = '—';
         select.appendChild(optInicio);
 
         Object.entries(grupos).forEach(([nombreGrupo, codigos]) => {
@@ -911,9 +1236,7 @@ function renderFilaEmpleado(emp, esPica = false) {
                 const t = state.turnos[cod];
                 if (!t) return;
                 const opt = document.createElement('option');
-                opt.value = cod;
-                opt.textContent = cod;
-                opt.title = t.nombre;
+                opt.value = cod; opt.textContent = cod; opt.title = t.nombre;
                 group.appendChild(opt);
             });
             if (group.children.length > 0) select.appendChild(group);
@@ -931,14 +1254,12 @@ function renderFilaEmpleado(emp, esPica = false) {
         tr.appendChild(td);
     });
 
-    // Columna horas
     const tdHoras = document.createElement('td');
     tdHoras.className = 'horas-col';
     tdHoras.id = `horas-${cssId(emp.nombre)}`;
     tr.appendChild(tdHoras);
 
     setTimeout(() => renderHorasEmpleado(emp.nombre), 0);
-
     return tr;
 }
 
@@ -954,18 +1275,14 @@ function renderFilaEventos(tbody) {
     DIAS.forEach(dia => {
         const td = document.createElement('td');
         const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.className = 'eventos-input';
-        inp.placeholder = 'Evento...';
+        inp.type = 'text'; inp.className = 'eventos-input'; inp.placeholder = 'Evento...';
         inp.value = state.semana.eventos[dia] || '';
         inp.onchange = (e) => { state.semana.eventos[dia] = e.target.value; };
-        td.appendChild(inp);
-        trEventos.appendChild(td);
+        td.appendChild(inp); trEventos.appendChild(td);
     });
 
     const tdVacio = document.createElement('td');
-    tdVacio.className = 'horas-col';
-    tdVacio.style.background = '#fef3c7';
+    tdVacio.className = 'horas-col'; tdVacio.style.background = '#fef3c7';
     trEventos.appendChild(tdVacio);
     tbody.appendChild(trEventos);
 }
@@ -1001,29 +1318,20 @@ function renderConflictos() {
         const asig = state.semana.asignaciones[emp.nombre] || {};
 
         if (horas > 40) {
-            conflictos.push({
-                tipo: 'warn',
-                msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (${(horas - 40).toFixed(1)}h extras)`
-            });
+            conflictos.push({ tipo: 'warn',
+                msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (${(horas - 40).toFixed(1)}h extras)` });
         }
-
         if (horas < 40 && horas > 0 && emp.estado === 'ACTIVO') {
-            conflictos.push({
-                tipo: 'info',
-                msg: `ℹ️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (le faltan ${(40 - horas).toFixed(1)}h)`
-            });
+            conflictos.push({ tipo: 'info',
+                msg: `ℹ️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (le faltan ${(40 - horas).toFixed(1)}h)` });
         }
-
         const libres = DIAS.map(d => !asig[d] || ['L', 'V', 'LR', 'FR', 'B'].includes(asig[d]));
-        const tieneDosConsecutivos = (libres[0] && libres[1]) || (libres[1] && libres[2]) ||
-                                      (libres[2] && libres[3]) || (libres[3] && libres[4]) ||
-                                      (libres[4] && libres[5]) || (libres[5] && libres[6]);
-
-        if (emp.estado === 'ACTIVO' && horas > 0 && !tieneDosConsecutivos) {
-            conflictos.push({
-                tipo: 'warn',
-                msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: no tiene 2 días libres consecutivos`
-            });
+        const dosConsec = (libres[0] && libres[1]) || (libres[1] && libres[2]) ||
+                          (libres[2] && libres[3]) || (libres[3] && libres[4]) ||
+                          (libres[4] && libres[5]) || (libres[5] && libres[6]);
+        if (emp.estado === 'ACTIVO' && horas > 0 && !dosConsec) {
+            conflictos.push({ tipo: 'warn',
+                msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: no tiene 2 días libres consecutivos` });
         }
     });
 
@@ -1032,12 +1340,10 @@ function renderConflictos() {
 
     if (conflictos.length === 0) {
         list.innerHTML = `<div class="info-empty">✅ Sin conflictos detectados</div>`;
-        badge.textContent = '0';
-        badge.className = 'badge ok';
+        badge.textContent = '0'; badge.className = 'badge ok';
     } else {
         list.innerHTML = conflictos.map(c => `<div class="conflicto-item ${c.tipo}">${c.msg}</div>`).join('');
-        badge.textContent = conflictos.length;
-        badge.className = 'badge alerta';
+        badge.textContent = conflictos.length; badge.className = 'badge alerta';
     }
 }
 
@@ -1051,13 +1357,11 @@ function renderBanco() {
 
     if (state.banco.length === 0) {
         list.innerHTML = `<div class="info-empty">✅ Sin pendientes</div>`;
-        badge.textContent = '0';
-        badge.className = 'badge ok';
+        badge.textContent = '0'; badge.className = 'badge ok';
         return;
     }
 
-    badge.textContent = state.banco.length;
-    badge.className = 'badge alerta';
+    badge.textContent = state.banco.length; badge.className = 'badge alerta';
 
     list.innerHTML = state.banco.map(b => {
         const nombre = b.horarios_empleados?.nombre || '?';
@@ -1068,9 +1372,7 @@ function renderBanco() {
                 <div class="fila">
                     <div>
                         <strong>${icono} ${escapeHtml(nombre)}</strong>
-                        <div style="font-size:10px;margin-top:2px;">
-                            ${label} · ${b.horas}h · ${b.fecha_original}
-                        </div>
+                        <div style="font-size:10px;margin-top:2px;">${label} · ${b.horas}h · ${b.fecha_original}</div>
                         ${b.motivo ? `<div style="font-size:10px;opacity:0.7;margin-top:2px;">📝 ${escapeHtml(b.motivo)}</div>` : ''}
                     </div>
                     <div class="acciones">
@@ -1085,10 +1387,7 @@ function renderBanco() {
 
 function renderBancoAlerta() {
     const alerta = document.getElementById('bancoAlerta');
-    if (state.banco.length === 0) {
-        alerta.classList.remove('visible');
-        return;
-    }
+    if (state.banco.length === 0) { alerta.classList.remove('visible'); return; }
     const lr = state.banco.filter(b => b.tipo === 'LR').length;
     const fr = state.banco.filter(b => b.tipo === 'FR').length;
     const ex = state.banco.filter(b => b.tipo === 'EXTRA').length;
@@ -1103,18 +1402,14 @@ function renderBancoAlerta() {
 async function compensarBanco(id) {
     if (!confirm('¿Marcar como compensado?')) return;
     try {
-        const { error } = await db
-            .from('horarios_banco_horas')
-            .update({ estado: 'COMPENSADO', fecha_compensada: new Date().toISOString().split('T')[0] })
+        const { error } = await db.from('horarios_banco_horas')
+            .update({ estado: 'COMPENSADO', fecha_compensada: fechaISO(new Date()) })
             .eq('id', id);
         if (error) throw error;
         state.banco = state.banco.filter(b => b.id !== id);
-        renderBanco();
-        renderBancoAlerta();
+        renderBanco(); renderBancoAlerta();
         toast('✅ Compensado', 'success');
-    } catch (e) {
-        toast('Error: ' + e.message, 'error');
-    }
+    } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function eliminarBanco(id) {
@@ -1123,16 +1418,13 @@ async function eliminarBanco(id) {
         const { error } = await db.from('horarios_banco_horas').delete().eq('id', id);
         if (error) throw error;
         state.banco = state.banco.filter(b => b.id !== id);
-        renderBanco();
-        renderBancoAlerta();
+        renderBanco(); renderBancoAlerta();
         toast('🗑️ Eliminado', 'info');
-    } catch (e) {
-        toast('Error: ' + e.message, 'error');
-    }
+    } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 // ═══════════════════════════════════════════════════════════
-// MODALES
+// MODAL EMPLEADO
 // ═══════════════════════════════════════════════════════════
 
 function abrirModalEmpleado(nombreEditando = null) {
@@ -1149,7 +1441,6 @@ function abrirModalEmpleado(nombreEditando = null) {
             document.getElementById('inputTipo').value = emp.tipo_personal || 'COCINERO';
             document.getElementById('inputTurnoPref').value = emp.turno_preferido || '';
             document.getElementById('inputSoloManana').checked = emp.solo_manana || false;
-            document.getElementById('inputEstado').value = emp.estado || 'ACTIVO';
         }
     } else {
         title.textContent = '➕ Nuevo empleado';
@@ -1158,7 +1449,6 @@ function abrirModalEmpleado(nombreEditando = null) {
         document.getElementById('inputTipo').value = 'COCINERO';
         document.getElementById('inputTurnoPref').value = '';
         document.getElementById('inputSoloManana').checked = false;
-        document.getElementById('inputEstado').value = 'ACTIVO';
     }
 
     modal.classList.add('visible');
@@ -1179,8 +1469,7 @@ async function guardarEmpleado() {
         puesto: document.getElementById('inputPuesto').value.trim() || null,
         tipo_personal: document.getElementById('inputTipo').value,
         turno_preferido: document.getElementById('inputTurnoPref').value.trim() || null,
-        solo_manana: document.getElementById('inputSoloManana').checked,
-        estado: document.getElementById('inputEstado').value
+        solo_manana: document.getElementById('inputSoloManana').checked
     };
 
     try {
@@ -1191,6 +1480,7 @@ async function guardarEmpleado() {
         } else {
             const maxOrden = Math.max(...state.empleados.map(e => e.orden || 0), 0);
             payload.orden = maxOrden + 1;
+            payload.estado = 'ACTIVO';
             const res = await db.from('horarios_empleados').insert([payload]);
             error = res.error;
         }
@@ -1199,15 +1489,17 @@ async function guardarEmpleado() {
         cerrarModalEmpleado();
         await recargarEmpleados();
         render();
-    } catch (e) {
-        toast('Error: ' + e.message, 'error');
-    }
+    } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function recargarEmpleados() {
     const { data } = await db.from('horarios_empleados').select('*').order('orden');
     state.empleados = data || [];
 }
+
+// ═══════════════════════════════════════════════════════════
+// MODAL BANCO
+// ═══════════════════════════════════════════════════════════
 
 function abrirModalBanco() {
     const modal = document.getElementById('modalBanco');
@@ -1216,15 +1508,13 @@ function abrirModalBanco() {
         .filter(e => e.estado === 'ACTIVO')
         .map(e => `<option value="${e.id}">${escapeHtml(e.nombre)}</option>`)
         .join('');
-    document.getElementById('bancoFecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('bancoFecha').value = fechaISO(new Date());
     document.getElementById('bancoHoras').value = '8';
     document.getElementById('bancoMotivo').value = '';
     modal.classList.add('visible');
 }
 
-function cerrarModalBanco() {
-    document.getElementById('modalBanco').classList.remove('visible');
-}
+function cerrarModalBanco() { document.getElementById('modalBanco').classList.remove('visible'); }
 
 async function guardarBanco() {
     const empleado_id = document.getElementById('bancoEmpleado').value;
@@ -1233,10 +1523,7 @@ async function guardarBanco() {
     const horas = parseFloat(document.getElementById('bancoHoras').value) || 8;
     const motivo = document.getElementById('bancoMotivo').value.trim() || null;
 
-    if (!empleado_id || !fecha_original) {
-        toast('Faltan datos obligatorios', 'error');
-        return;
-    }
+    if (!empleado_id || !fecha_original) { toast('Faltan datos', 'error'); return; }
 
     try {
         const { error } = await db.from('horarios_banco_horas').insert([{
@@ -1244,24 +1531,19 @@ async function guardarBanco() {
         }]);
         if (error) throw error;
 
-        const { data } = await db
-            .from('horarios_banco_horas')
+        const { data } = await db.from('horarios_banco_horas')
             .select('*, horarios_empleados(nombre)')
             .eq('estado', 'PENDIENTE')
             .order('fecha_original', { ascending: false });
         state.banco = data || [];
 
-        renderBanco();
-        renderBancoAlerta();
-        cerrarModalBanco();
+        renderBanco(); renderBancoAlerta(); cerrarModalBanco();
         toast('✅ Añadido al banco', 'success');
-    } catch (e) {
-        toast('Error: ' + e.message, 'error');
-    }
+    } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 // ═══════════════════════════════════════════════════════════
-// UTILIDADES UI
+// UI UTILS
 // ═══════════════════════════════════════════════════════════
 
 function toggleInactivos() {
@@ -1271,9 +1553,7 @@ function toggleInactivos() {
     render();
 }
 
-function imprimir() {
-    window.print();
-}
+function imprimir() { window.print(); }
 
 // ═══════════════════════════════════════════════════════════
 // INICIALIZACIÓN
@@ -1283,15 +1563,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             cerrarModalEmpleado();
+            cerrarModalEstado();
             cerrarModalBanco();
         }
     });
-
     document.querySelectorAll('.modal-overlay').forEach(m => {
         m.addEventListener('click', (e) => {
             if (e.target === m) {
-                cerrarModalEmpleado();
-                cerrarModalBanco();
+                cerrarModalEmpleado(); cerrarModalEstado(); cerrarModalBanco();
             }
         });
     });
