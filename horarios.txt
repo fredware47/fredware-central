@@ -1,0 +1,548 @@
+════════════════════════════════════════════════════════════
+📌 FREDWARE — PROMPT DE PROYECTO: HORARIOS
+📅 Última actualización: 04/10/2026
+════════════════════════════════════════════════════════════
+
+Este documento contiene TODO lo relativo al proyecto de
+gestión de horarios del equipo de cocina de Attica As Galeras.
+Es un proyecto independiente dentro del ecosistema Fredware.
+
+════════════════════════════════════════════════════════════
+🎯 VISIÓN DEL PROYECTO
+════════════════════════════════════════════════════════════
+
+Crear una aplicación web que permita al jefe de cocina:
+  · Elaborar los horarios semanales de forma visual
+  · Detectar conflictos automáticamente (horas extras,
+    libranzas sin 2 días consecutivos, restricciones)
+  · Gestionar el banco de horas (L.r / F.r / extras)
+  · Gestionar vacaciones, bajas y festivos
+  · Clasificar eventos/grupos/cócteles con personas
+  · Imprimir los horarios en A4 horizontal
+  · Que los cocineros vean su horario desde el móvil
+
+Estructura de datos:
+  · Supabase como backend (online, compartido)
+  · Turnos ya catalogados (M0-M7, T1-T5, P1-P7 + especiales)
+  · Empleados con estados (activo/baja/vacación/fijo disc.)
+  · Semanas guardadas en JSONB (asignaciones + eventos)
+  · Banco de horas separado para L.r / F.r
+  · Ausencias registradas con fechas de inicio/fin
+
+════════════════════════════════════════════════════════════
+📊 ESTADO ACTUAL DEL PROYECTO (04/10/2026)
+════════════════════════════════════════════════════════════
+
+✅ HECHO:
+
+  1. SQL Supabase completo (6 bloques):
+     · horarios_turnos (24 turnos: M0-M7, T1-T5, P1-P7,
+       L, V, LR, FR, B, '')
+     · horarios_empleados (12 empleados cargados)
+     · horarios_ausencias (bajas, vacaciones) — EN USO
+     · horarios_semanas (asignaciones JSONB + eventos JSONB)
+     · horarios_banco_horas (L.r / F.r / extras)
+     · Índices en todas las tablas
+
+  2. App horarios-jefe.html v1.1 (funcionando):
+
+     HEADER:
+     · Título "🍳 Horarios · Panel de Jefe"
+     · Botones: Mostrar inactivos / Nuevo empleado /
+       Cargar / Guardar / Imprimir
+     · Navegación de semanas (◀ Anterior / 🏠 Hoy /
+       Siguiente ▶) con etiqueta de semana A/B y fechas
+
+     GESTIÓN DE ESTADOS (NUEVO):
+     · Badge de estado clicable en cada empleado
+     · Modal con 4 opciones grandes:
+       - ✅ Activo
+       - 🚫 Baja
+       - 🏖️ Vacaciones
+       - 🔄 Fijo discontinuo
+     · Al elegir Baja/Vacaciones → aparecen 2 campos:
+       - Fecha inicio (obligatoria)
+       - Fecha fin (opcional)
+     · Se registra en horarios_ausencias automáticamente
+     · Al volver a ACTIVO → cierra la ausencia automáticamente
+
+     PANEL DE AVISOS (NUEVO):
+     · Aviso urgente si alguien tenía que volver y no
+       se ha actualizado
+     · Aviso 🎉 si alguien vuelve HOY
+     · Aviso ⏰ si alguien vuelve mañana
+     · Aviso 📅 si alguien vuelve en <7 días
+     · Se muestran encima de la sección Pica
+
+     FECHA DE VUELTA EN LA FILA:
+     · Debajo del badge de estado aparece:
+       - "📅 Vuelve en 3d (09/10/2026)" si hay ausencia
+       - En rojo si quedan ≤ 7 días
+
+     TABLA PRINCIPAL:
+     · Editor empleados × días (7 columnas)
+     · Dropdown de turnos agrupado:
+       - Libres (L, LR, FR, V, B)
+       - Mañana (M0-M7)
+       - Tarde (T1-T5)
+       - Partido (P1-P7)
+     · Colores por tipo de turno
+     · Contador de horas en vivo por empleado
+     · Rojo si > 40h, verde si = 40h
+     · Filas inactivas con opacidad reducida
+     · Doble click en nombre → editar
+
+     SECCIÓN PICA (dentro de la tabla):
+     · Separador verde "🍴 PICA · Rotación automática (A/B)"
+     · Filas Daniel y Matias con tinte verde
+     · Botón "🔄 Aplicar rotación" (aplica ciclo A o B
+       según semana ISO par/impar)
+     · Botón "🔀 Invertir rotación"
+
+     SECCIÓN EVENTOS (NUEVO - clasificada):
+     · Título dorado "📅 SERVICIOS ESPECIALES"
+     · 3 subsecciones:
+
+       🍽️ GRUPOS (punto amarillo):
+         · Grupo desayuno
+         · Grupo almuerzo
+         · Grupo cena
+
+       🎉 EVENTOS (punto rosa):
+         · Evento almuerzo
+         · Evento cena
+
+       🍸 CÓCTELES (punto morado):
+         · Cóctel mañana
+         · Cóctel tarde
+         · Cóctel noche
+
+     · Cada fila: input numérico por día (0 - 999)
+     · Fila TOTAL dorada al final con suma por día
+       - Gris si 0
+       - Rojo si ≥ 50 (destacado)
+
+     PANEL DE CONFLICTOS:
+     · Horas > 40h → aviso amarillo
+     · Horas < 40h → aviso azul (le faltan X h)
+     · Sin 2 días libres consecutivos → aviso amarillo
+     · Todo OK → mensaje verde
+
+     PANEL BANCO DE HORAS:
+     · Lista de pendientes (L.r / F.r / extras)
+     · Botón ✅ compensar
+     · Botón 🗑️ eliminar
+     · Modal ➕ Añadir con: empleado, tipo, fecha, horas,
+       motivo
+
+     FUNCIONES:
+     · 💾 Guardar semana en Supabase (upsert)
+     · 📥 Cargar semana de Supabase
+     · 🖨️ Imprimir A4 horizontal (oculta controles)
+     · 👁️ Toggle mostrar/ocultar inactivos
+     · ➕ Nuevo empleado
+     · ✏️ Editar empleado (doble click en nombre)
+
+  3. Ciclo Pica confirmado:
+     · Semana A (ISO impar):
+       Daniel: L · L · P2 · P2 · M3 · M3 · M3
+       Matias: P2 · P2 · L · L · T1 · T1 · T1
+     · Semana B (ISO par): invertido
+     · El botón rellena automáticamente. Después se
+       pueden ajustar celdas a mano (ej: si libran finde).
+
+  4. Equipo actual (12 personas en horarios_empleados):
+
+     | orden | nombre    | puesto              | tipo     | estado          |
+     |-------|-----------|---------------------|----------|-----------------|
+     | 1     | Fredles   | Jefe de Cocina      | JEFE     | ACTIVO          |
+     | 2     | Antonio   | Segundo de Cocina   | COCINERO | BAJA            |
+     | 3     | Remedios  | Cocinera            | COCINERO | BAJA            |
+     | 4     | Andrea    | Cocinera            | COCINERO | ACTIVO          |
+     | 5     | Rafael    | Cocinero            | COCINERO | VACACIONES ⚠️   |
+     | 6     | Ines      | Cocinera            | COCINERO | BAJA            |
+     | 7     | Leticia   | Cocinera            | COCINERO | ACTIVO          |
+     | 8     | Cristian  | Cocinero            | COCINERO | ACTIVO ⚠️       |
+     | 9     | Diego     | Cocinero            | COCINERO | ACTIVO          |
+     | 10    | Liliana   | Cocinera            | COCINERO | ACTIVO          |
+     | 20    | Daniel    | Pica                | PICA     | ACTIVO          |
+     | 21    | Matias    | Pica                | PICA     | ACTIVO          |
+
+     ⚠️ ESTADO ACTUAL 04/10/2026:
+     · Rafael está de VACACIONES pero vuelve la semana que
+       viene. Cuando se reincorpore → pulsar el badge
+       VACACIONES y cambiar a ACTIVO. Añadir fecha fin
+       para que la app avise.
+     · Cristian AÚN NO se ha ido (fijo discontinuo hasta
+       noviembre). NO tocarlo. Dejar como ACTIVO hasta
+       que llegue el momento.
+
+  5. Reglas del equipo:
+     · Leticia y Andrea → solo desayuno (solo_manana=true)
+     · Fredles → solo mañana 9-17 (solo_manana=true)
+     · Antonio → preferencia tardes (cuando vuelva)
+     · Resto → flexibles
+
+  6. Turnos catalogados con horas:
+
+     MAÑANA:
+       M0: 06:30-14:30 (8h)
+       M1: 07:00-15:00 (8h)
+       M2: 08:00-16:00 (8h)
+       M3: 07:30-15:30 (8h)
+       M4: 08:30-16:30 (8h)
+       M5: 09:00-17:00 (8h)
+       M6: 10:00-18:00 (8h)
+       M7: 12:00-20:00 (8h)
+     TARDE:
+       T1: 15:00-23:00 (8h)
+       T2: 16:00-00:00 (8h)
+       T3: 15:30-23:30 (8h)
+       T4: 16:30-00:30 (8h)
+       T5: 14:30-22:30 (8h)
+     PARTIDO:
+       P1: 12:00-16:00 + 20:00-00:00 (8h)
+       P2: 12:00-17:00 + 20:00-23:00 (7h)
+       P3: 09:00-14:00 + 20:30-23:30 (8h)
+       P4: 13:30-17:30 + 20:00-00:00 (8h)
+       P5: 11:30-16:00 + 20:00-23:30 (8h)
+       P6: 11:15-16:15 + 19:45-23:15 (8h)
+       P7: 11:30-16:30 + 20:30-23:30 (8h)
+     ESPECIALES:
+       L   → Libre
+       V   → Vacaciones
+       LR  → Libre Recuperado (trabajó día libre)
+       FR  → Festivo Recuperado (trabajó festivo)
+       B   → Baja
+       ''  → Sin asignar
+
+  7. Códigos especiales:
+     · L.r / LR → trabajó en su día libre → se compensa
+                  luego. Se registra en horarios_banco_horas
+                  tipo LR con estado PENDIENTE hasta que se
+                  compensa.
+     · F.r / FR → trabajó un festivo → se compensa luego.
+                  Se registra en horarios_banco_horas tipo FR.
+     · +1       → hora extra (ej: M0+1 = turno + 1h extra).
+                  NO catalogado aún → el jefe lo apunta en
+                  el banco de horas como EXTRA.
+     · B        → Baja (sin motivo, Ley Protección Datos)
+
+  8. Reglas de negocio confirmadas:
+     · Jornada: 40h/semana para todos
+     · Descanso: 2 días consecutivos obligatorios
+     · Vacaciones: siempre 1 persona mínimo por semana
+     · Festivos: 15 al año (no acumular, repartir)
+     · Bajas: no se pregunta motivo (ilegal en España)
+     · Desayuno: 1 persona cubre
+     · Almuerzo: 2 personas (sin grupo)
+     · Cena: 2 personas (sin grupo)
+     · Grupos/Eventos: +1 persona extra por servicio
+     · Coffee breaks: los cubre la persona de desayuno
+     · Desayuno servicio: 7:30-10:30
+     · Almuerzo servicio: 13:30-16:00
+     · Cena servicio: 20:30-23:00
+     · Fin de semana libre: pegar con lunes/martes siguiente
+
+⏳ PENDIENTE DE HACER (orden de prioridad):
+
+  1. FUNCIÓN "REINCORPORAR RÁPIDO" (URGENTE - pequeña)
+     · Botón directo junto al badge de estado
+     · Un click → pasa a ACTIVO y cierra la ausencia
+
+  2. AUTO-GENERACIÓN INTELIGENTE DE HORARIOS
+     · Botón "🤖 Generar horario" que rellene la semana
+       respetando:
+       - 40h/semana por persona
+       - 2 libres consecutivos
+       - Restricciones (solo_manana, solo_tarde)
+       - Solo activos (no bajas/vacaciones)
+       - Necesidades de cobertura (1 desayuno, 2 almuerzo,
+         2 cena)
+       - Reparto equitativo de horas
+
+  3. NECESIDADES EDITABLES
+     · Pestaña para configurar cuántos empleados hacen
+       falta en cada franja cada día
+     · Por defecto: 1/2/2
+     · Días con grupo/evento: +1 extra
+     · Guardar en horarios_semanas.necesidades
+
+  4. GESTIÓN DE VACACIONES ANUAL
+     · Calendario anual con quién está de vacaciones
+     · Regla: siempre 1 persona mínimo por semana
+     · Pegar finde con lunes/martes siguiente
+     · Registrar en horarios_ausencias tipo VACACIONES
+
+  5. GESTIÓN DE FESTIVOS
+     · Contador por persona (15/año)
+     · Reparto equitativo
+     · Aviso si alguien tiene muchos acumulados
+     · Registrar en horarios_banco_horas tipo FR
+
+  6. APP DEL COCINERO (móvil)
+     · Login simple (nombre)
+     · Ver mi horario esta semana
+     · Ver mi mes completo
+     · Ver mi banco de horas pendiente
+     · Ver el horario de todo el equipo
+
+  7. VISTA MENSUAL
+     · Además de la semanal, ver un mes entero
+     · Cuadrícula 4-5 semanas
+     · Impresión A4 landscape
+
+  8. EXPORTAR A EXCEL/PDF
+     · Botón "Descargar Excel" con formato similar al
+       original
+     · PDF de calidad para imprimir
+
+════════════════════════════════════════════════════════════
+🏗️ ARQUITECTURA ACTUAL
+════════════════════════════════════════════════════════════
+
+TABLAS SUPABASE:
+────────────────────────────────────────────────────────────
+
+· horarios_turnos
+  codigo (PK), nombre, hora_inicio, hora_fin,
+  hora_inicio_2, hora_fin_2, horas_totales, tipo, orden, activo
+
+· horarios_empleados
+  id (PK), nombre (UNIQUE), puesto, tipo_personal,
+  turno_preferido, solo_manana, solo_tarde, solo_partido,
+  horas_semanales (default 40), activo, estado, orden, notas,
+  created_at, updated_at
+
+· horarios_ausencias
+  id (PK), empleado_id (FK), tipo, fecha_inicio, fecha_fin,
+  notas, created_at
+  → Tipos: BAJA | VACACIONES | FESTIVO | ASUNTOS_PROPIOS
+
+· horarios_semanas
+  id (PK), año, numero_semana, fecha_inicio, fecha_fin,
+  asignaciones (JSONB), necesidades (JSONB), eventos (JSONB),
+  notas, estado, created_at, updated_at
+  UNIQUE(año, numero_semana)
+
+· horarios_banco_horas
+  id (PK), empleado_id (FK), tipo, fecha_original, horas,
+  motivo, fecha_compensada, compensado_por, estado, notas,
+  created_at
+  → Tipos: LR | FR | EXTRA
+  → Estados: PENDIENTE | COMPENSADO | CANCELADO
+
+ESTRUCTURA DE DATOS JSONB:
+────────────────────────────────────────────────────────────
+
+· asignaciones (en horarios_semanas):
+  {
+    "Fredles": { "lunes": "M5", "martes": "M5", ... },
+    "Daniel":  { "lunes": "L", "martes": "L", ... },
+    ...
+  }
+
+· eventos (en horarios_semanas):
+  {
+    "lunes": {
+      "grupo_desayuno": 0,
+      "grupo_almuerzo": 78,
+      "grupo_cena": 0,
+      "evento_almuerzo": 12,
+      "evento_cena": 0,
+      "coctel_manana": 0,
+      "coctel_tarde": 45,
+      "coctel_noche": 0,
+      "_notas": "Texto libre de migración"
+    },
+    ...
+  }
+
+· necesidades (en horarios_semanas) — sin usar aún:
+  {
+    "lunes": { "desayuno": 1, "almuerzo": 2, "cena": 2 },
+    ...
+  }
+
+MIGRACIÓN AUTOMÁTICA:
+────────────────────────────────────────────────────────────
+Si hay semanas guardadas con formato antiguo (eventos como
+string), la función migrarEventos() los convierte a objeto
+{ _notas: "texto" } sin perder información.
+
+CREDENCIALES:
+────────────────────────────────────────────────────────────
+· Supabase URL: https://bhyprsjokwgazzzlfnbf.supabase.co
+· Supabase Key: sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y
+· Ngrok (impresora): https://untried-january-thinning.ngrok-free.dev
+· Impresora Brother QL-810W: 172.20.101.56
+
+ARCHIVOS DEL PROYECTO:
+────────────────────────────────────────────────────────────
+· horarios-jefe.html v1.1 (funcionando)
+· horarios-cocineros.html (pendiente)
+· PROMPT_HORARIOS.txt (este documento)
+
+════════════════════════════════════════════════════════════
+🎯 CICLO PICA — DETALLE
+════════════════════════════════════════════════════════════
+
+Especial rotación de los 2 pica (Daniel y Matias).
+
+**Semana A (ISO impar):**
+| Día | Daniel | Matias |
+|-----|--------|--------|
+| Lun | L      | P2     |
+| Mar | L      | P2     |
+| Mié | P2     | L      |
+| Jue | P2     | L      |
+| Vie | M3     | T1     |
+| Sáb | M3     | T1     |
+| Dom | M3     | T1     |
+
+**Semana B (ISO par): invertido**
+| Día | Daniel | Matias |
+|-----|--------|--------|
+| Lun | P2     | L      |
+| Mar | P2     | L      |
+| Mié | L      | P2     |
+| Jue | L      | P2     |
+| Vie | T1     | M3     |
+| Sáb | T1     | M3     |
+| Dom | T1     | M3     |
+
+La app detecta la semana (par/impar) y aplica el ciclo
+automáticamente con el botón "🔄 Aplicar rotación".
+
+Después se puede ajustar a mano (ej: si libran un fin de
+semana porque no hay carga).
+
+Si un pica libra un fin de semana, se le pega el lunes y
+martes siguiente. Eso lo hace el jefe manualmente.
+
+════════════════════════════════════════════════════════════
+📅 TIPOS DE EVENTO (CLASIFICACIÓN)
+════════════════════════════════════════════════════════════
+
+3 categorías con 8 tipos:
+
+GRUPOS (🟡 punto amarillo):
+  · grupo_desayuno    → 🥐 Grupo desayuno
+  · grupo_almuerzo    → 🍽️ Grupo almuerzo
+  · grupo_cena        → 🌙 Grupo cena
+
+EVENTOS (🩷 punto rosa):
+  · evento_almuerzo   → 🎉 Evento almuerzo
+  · evento_cena       → 🎉 Evento cena
+
+CÓCTELES (🟣 punto morado):
+  · coctel_manana     → 🍸 Cóctel mañana
+  · coctel_tarde      → 🍸 Cóctel tarde
+  · coctel_noche      → 🍸 Cóctel noche
+
+Cada día puede tener varios tipos a la vez (ej: sábado
+con grupo almuerzo 78 + evento cena 12 + cóctel tarde 45).
+
+La fila TOTAL calcula la suma de personas por día y la
+destaca en rojo si supera 50.
+
+════════════════════════════════════════════════════════════
+⚠️ COSAS A RECORDAR
+════════════════════════════════════════════════════════════
+
+1. Rafael está de VACACIONES → vuelve la semana que viene
+   → cambiar estado a ACTIVO y añadir fecha fin cuando
+     se reincorpore
+
+2. Cristian AÚN NO se ha ido (fijo discontinuo)
+   → NO quitarlo, sigue como ACTIVO hasta noviembre
+
+3. Antonio, Remedios e Ines están de BAJA
+   → sus filas aparecen con opacidad reducida
+
+4. Los Pica van en la misma tabla con separador verde
+
+5. El botón "Aplicar rotación" NO es obligatorio
+   → se puede rellenar a mano si no aplica
+
+6. La sección de eventos tiene 3 subsecciones con colores
+   → GRUPOS (amarillo), EVENTOS (rosa), CÓCTELES (morado)
+
+7. El campo `_notas` en eventos es solo para migración de
+   formato antiguo (no se muestra en UI)
+
+8. Los turnos "+1" (hora extra) NO están catalogados
+   → el jefe los apunta en el banco de horas como EXTRA
+
+════════════════════════════════════════════════════════════
+❓ PREGUNTAS PENDIENTES DE DECIDIR
+════════════════════════════════════════════════════════════
+
+1. ¿Los días libres consecutivos son siempre obligatorios
+   o hay excepciones que puedas autorizar manualmente?
+
+2. ¿Cómo prefieres gestionar los 15 festivos?
+   · Lista anual con fechas concretas
+   · Contador por persona
+   · Los dos
+
+3. ¿Vista mensual en la misma app del jefe o en pestaña
+   separada?
+
+4. ¿La app del cocinero necesita login o es acceso libre
+   con nombre en localStorage?
+
+5. ¿Añadimos más tipos de evento? Por ejemplo:
+   · 🍳 Aforo desayuno
+   · 🍽️ Aforo almuerzo
+   · 🌙 Aforo cena
+   · 🎊 Banquete
+
+6. ¿La fila TOTAL de eventos avisa si supera X personas?
+   (ej: "más de 100 → necesitas +2 cocineros")
+
+════════════════════════════════════════════════════════════
+💬 CÓMO ARRANCAR UN CHAT NUEVO DE HORARIOS
+════════════════════════════════════════════════════════════
+
+1. Pega este prompt completo.
+2. Adjunta:
+   · horarios-jefe.html (versión actual v1.1)
+   · (si aplica) horarios-cocineros.html
+3. Di por dónde quieres empezar:
+   · "Vamos con el botón de reincorporar rápido"
+   · "Vamos con la auto-generación"
+   · "Añade la app del cocinero"
+   · "Revisa X"
+
+════════════════════════════════════════════════════════════
+🎯 RESUMEN EJECUTIVO
+════════════════════════════════════════════════════════════
+
+Proyecto Horarios = sistema completo de gestión de
+planificación semanal para el equipo de cocina (10
+cocineros + 2 pica) de Attica As Galeras.
+
+DIFERENCIALES:
+  · No requiere Excel manual (aunque exporta en formato
+    similar)
+  · Detección automática de conflictos (horas, libranzas)
+  · Ciclo Pica automático (semana A/B)
+  · Banco de horas integrado (L.r / F.r / extras)
+  · Gestión de estados con fechas (bajas, vacaciones)
+  · Panel de avisos de vuelta próximas
+  · Sección de eventos clasificada (8 tipos en 3 categorías)
+  · Fila TOTAL de personas por día con aviso visual
+  · Colores por tipo de turno, contador de horas en vivo
+  · Funciona online (Supabase) — jefe y cocineros ven lo
+    mismo al instante
+  · Imprime en A4 horizontal (formato original)
+  · Restricciones por persona (solo mañana, solo tarde)
+
+ESTADO: v1.1 funcionando. Falta botón reincorporar rápido,
+auto-generación, gestión de vacaciones anual, festivos,
+app del cocinero, vista mensual, exportar Excel/PDF.
+
+════════════════════════════════════════════════════════════
+FIN DEL PROMPT HORARIOS
+════════════════════════════════════════════════════════════
