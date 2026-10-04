@@ -133,9 +133,6 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-8 font-sans">
 
-    <!-- ============================================================ -->
-    <!-- HEADER -->
-    <!-- ============================================================ -->
     <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
         <div class="max-w-5xl mx-auto flex justify-between items-center flex-wrap gap-3">
             <div class="flex items-center space-x-3">
@@ -148,19 +145,15 @@
             <div class="flex flex-col items-end space-y-1">
                 <div class="flex items-center space-x-2">
                     <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.1</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.2</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
         </div>
     </header>
 
-    <!-- ============================================================ -->
-    <!-- MAIN -->
-    <!-- ============================================================ -->
     <main class="max-w-5xl mx-auto w-full px-4 mt-6 space-y-6">
 
-        <!-- TABS -->
         <div class="tabs-container">
             <button class="tab-btn active" data-tab="stock" onclick="setTab('stock')">📊 Stock en vivo</button>
             <button class="tab-btn" data-tab="registrar" onclick="setTab('registrar')">➖ Registrar movimiento</button>
@@ -174,7 +167,6 @@
         <div id="tab-stock" class="tab-content active">
             <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
 
-                <!-- Stats -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-200">
                         <div class="text-xs text-slate-500 font-bold uppercase">Total</div>
@@ -417,12 +409,14 @@
         });
 
         // ============================================================
-        // CLIENTE SUPABASE PROPIO
+        // CLIENTE SUPABASE (reutilizamos el del núcleo compartido)
         // ============================================================
-        const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-        const db_nube = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ [Stock v1.1] Cliente Supabase listo');
+        // ✅ v1.2: usamos window.fredware.supabase para evitar
+        //    "Multiple GoTrueClient instances" en la consola.
+        //    shared-core.js se carga antes que este <script>, así que
+        //    window.fredware ya está instanciado.
+        const db_nube = window.fredware.supabase;
+        console.log('✅ [Stock v1.2] Usando cliente del núcleo compartido');
 
         // ============================================================
         // ESTADO GLOBAL
@@ -491,7 +485,7 @@
         // ============================================================
         function suscribirAlNucleo() {
             if (!window.fredware || !window.fredware.subscribe) {
-                console.log('ℹ️ [Stock] Núcleo no disponible, uso cliente propio');
+                console.log('ℹ️ [Stock] Núcleo no disponible');
                 actualizarBadgeOnline();
                 return;
             }
@@ -548,7 +542,6 @@
                 productosMapId = {};
                 productosGlobal.forEach(p => { productosMapId[p.id] = p; });
 
-                // Rellenar select de zonas
                 const zonas = [...new Set(productosGlobal.map(p => p.zona).filter(Boolean))].sort();
                 const selectZona = document.getElementById('filtro-stock-zona');
                 const valorActual = selectZona.value;
@@ -564,14 +557,10 @@
             }
         }
 
-        // ============================================================
-        // LÓGICA DE ESTADOS MEJORADA v1.1
-        // ============================================================
         function calcularEstadoStock(p) {
             const s = Number(p.stock_actual || 0);
             const min = Number(p.stock_minimo || 0);
 
-            // 1. Sin stock mínimo configurado → no es alarma
             if (min <= 0) {
                 return {
                     codigo: 'SIN_CONFIG',
@@ -582,7 +571,6 @@
                 };
             }
 
-            // 2. Con mínimo configurado → evaluación real
             if (s <= 0) {
                 return { codigo: 'SIN_STOCK', orden: 1, label: 'Sin stock', emoji: '🔴', clase: 'badge-sin' };
             }
@@ -601,7 +589,6 @@
             const zona = document.getElementById('filtro-stock-zona').value;
             const estadoFiltro = document.getElementById('filtro-stock-estado').value;
 
-            // Stats globales (sin filtros)
             let stats = { total: productosGlobal.length, sin: 0, bajo: 0, cerca: 0, sinConfig: 0, ok: 0 };
             productosGlobal.forEach(p => {
                 const est = calcularEstadoStock(p);
@@ -616,9 +603,6 @@
             document.getElementById('stat-sin').textContent = stats.sin;
             document.getElementById('stat-bajo').textContent = stats.bajo;
 
-            // La 4ª tarjeta se adapta:
-            //   - Si hay productos cerca del mínimo Y sin configurar → mostramos "Sin configurar" (más útil)
-            //   - Si no hay sin configurar → mostramos "Cerca mín."
             const box4 = document.getElementById('stat-cerca-box');
             const label4 = document.getElementById('stat-cerca-label');
             const num4 = document.getElementById('stat-cerca');
@@ -637,7 +621,6 @@
                 num4.textContent = stats.cerca;
             }
 
-            // Filtros
             let filtrados = productosGlobal.filter(p => {
                 if (texto && !p.nombre_articulo.toUpperCase().includes(texto)) return false;
                 if (zona && p.zona !== zona) return false;
@@ -650,7 +633,6 @@
                 return;
             }
 
-            // Ordenar por severidad y luego por nombre
             filtrados.sort((a, b) => {
                 const ea = calcularEstadoStock(a).orden;
                 const eb = calcularEstadoStock(b).orden;
@@ -1034,7 +1016,7 @@
             if (appInicializada) return;
             appInicializada = true;
 
-            console.log('🚀 [Stock v1.1] Init');
+            console.log('🚀 [Stock v1.2] Init');
 
             const tabGuardada = localStorage.getItem('fredware_stock_tab') || 'stock';
             setTab(tabGuardada);
@@ -1107,7 +1089,7 @@
 
             await cargarStockVivo();
 
-            console.log('✅ [Stock v1.1] Inicializado');
+            console.log('✅ [Stock v1.2] Inicializado');
         }
 
         // ============================================================
