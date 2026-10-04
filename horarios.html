@@ -3,1550 +3,1303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Horarios - Equipo de Cocina</title>
+    <title>🍳 Horarios · Panel de Jefe</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #f1f5f9; color: #1e293b; padding: 16px; min-height: 100vh; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: #2c3e50;
-            font-size: 2em;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .subtitle {
-            color: #7f8c8d;
-            margin-bottom: 30px;
-            font-size: 1.1em;
-        }
-
-        .controls-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .controls-row label {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .controls-row select, .controls-row input {
-            padding: 8px 12px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            font-size: 1em;
-        }
-
-        .controls-row select:focus, .controls-row input:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-
-        .week-selector {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .week-selector button {
-            padding: 10px 20px;
-            border: none;
-            background: #3498db;
+        /* ============ HEADER ============ */
+        .header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: all 0.3s;
+            padding: 16px 24px;
+            border-radius: 14px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .header-top {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
+        }
+        .header h1 { font-size: 20px; font-weight: 900; }
+        .header .sub { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn {
+            border: none; border-radius: 8px; padding: 8px 14px; font-weight: 700;
+            font-size: 13px; cursor: pointer; transition: all 0.15s; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-dark { background: rgba(255,255,255,0.12); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-dark:hover { background: rgba(255,255,255,0.22); }
+        .btn-green { background: #10b981; color: white; }
+        .btn-green:hover { background: #059669; }
+        .btn-red { background: #ef4444; color: white; }
+        .btn-red:hover { background: #dc2626; }
+        .btn-blue { background: #2563eb; color: white; }
+        .btn-blue:hover { background: #1d4ed8; }
+        .btn-orange { background: #f59e0b; color: white; }
+        .btn-orange:hover { background: #d97706; }
+        .btn-purple { background: #8b5cf6; color: white; }
+        .btn-purple:hover { background: #7c3aed; }
+        .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+        /* ============ WEEK NAV ============ */
+        .week-nav {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            flex-wrap: wrap;
+        }
+        .week-nav button {
+            background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+            font-weight: 700; font-size: 12px;
+        }
+        .week-nav button:hover { background: rgba(255,255,255,0.22); }
+        .week-label {
+            background: white; color: #0f172a;
+            padding: 6px 16px; border-radius: 8px;
+            font-weight: 900; font-size: 13px; text-align: center; min-width: 240px;
+        }
+        .week-label small { display: block; font-weight: 400; font-size: 10px; opacity: 0.7; }
+
+        /* ============ TOOLBAR PICA ============ */
+        .toolbar-pica {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            background: #f0fdf4; border: 1px solid #bbf7d0;
+            padding: 10px 16px; border-radius: 10px; margin-bottom: 12px;
+        }
+        .toolbar-pica .label {
+            font-weight: 700; font-size: 12px; color: #166534;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .toolbar-pica .hint {
+            font-size: 11px; color: #64748b; font-style: italic;
+            margin-left: auto;
         }
 
-        .week-selector button:hover {
-            background: #2980b9;
-            transform: scale(1.05);
+        /* ============ BANCO DE HORAS BANNER ============ */
+        .banco-alerta {
+            background: #fef3c7; border-left: 4px solid #f59e0b;
+            padding: 10px 16px; border-radius: 10px; margin-bottom: 12px;
+            font-size: 13px; display: none;
         }
+        .banco-alerta.visible { display: block; }
+        .banco-alerta strong { color: #92400e; }
 
-        .week-selector span {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #2c3e50;
+        /* ============ TABLA ============ */
+        .tabla-container {
+            background: white; border-radius: 14px; padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow-x: auto;
+            margin-bottom: 16px;
         }
-
-        .schedule-table {
-            overflow-x: auto;
-            margin-bottom: 30px;
+        .tabla {
+            width: 100%; border-collapse: collapse; font-size: 13px;
+            min-width: 1100px;
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85em;
-            min-width: 900px;
+        .tabla th {
+            background: #0f172a; color: white; padding: 10px 6px;
+            text-align: center; font-weight: 700; font-size: 11px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+            position: sticky; top: 0;
         }
-
-        thead {
-            background: #2c3e50;
-            color: white;
+        .tabla th.emp-col {
+            text-align: left; padding-left: 12px; min-width: 180px;
         }
-
-        th {
-            padding: 12px 8px;
-            text-align: center;
-            font-weight: 600;
-            border: 1px solid #34495e;
+        .tabla th.horas-col {
+            background: #334155; min-width: 80px;
         }
-
-        td {
-            padding: 6px 4px;
-            text-align: center;
-            border: 1px solid #ddd;
+        .tabla td {
+            padding: 4px 3px; text-align: center; border-bottom: 1px solid #f1f5f9;
             vertical-align: middle;
-            background: white;
         }
-
-        .day-header {
-            background: #34495e;
-            color: white;
-            font-weight: bold;
+        .tabla td.emp-col {
+            text-align: left; padding: 6px 12px; background: #f8fafc;
+            border-right: 2px solid #e2e8f0; border-left: 4px solid transparent;
         }
-
-        .day-header .date-info {
-            font-size: 0.8em;
-            font-weight: normal;
-            display: block;
-            color: #ecf0f1;
+        .tabla td.horas-col {
+            background: #f1f5f9; font-weight: 900; font-size: 14px;
+            border-left: 2px solid #cbd5e1;
         }
+        .tabla td.horas-col.over { color: #dc2626; background: #fee2e2; }
+        .tabla td.horas-col.ok { color: #059669; }
+        .tabla tr:hover td.emp-col { background: #eff6ff; }
+        .tabla tr.inactivo { opacity: 0.5; }
 
-        .time-slot {
-            background: #ecf0f1;
-            font-weight: 600;
-            color: #2c3e50;
-            min-width: 100px;
-            font-size: 0.8em;
-        }
-
-        .employee-cell {
-            min-width: 140px;
-            position: relative;
-            padding: 4px;
-        }
-
-        .employee-cell select {
-            width: 100%;
-            padding: 4px;
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            font-size: 0.8em;
-            text-align: center;
-            min-height: 32px;
-            background: white;
-        }
-
-        .employee-cell select:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-
-        .employee-cell .delete-btn {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 11px;
-            cursor: pointer;
-            display: none;
-            line-height: 20px;
-            font-weight: bold;
-            z-index: 10;
-        }
-
-        .employee-cell:hover .delete-btn {
-            display: block;
-        }
-
-        .employee-cell .delete-btn:hover {
-            background: #c0392b;
-            transform: scale(1.1);
-        }
-
-        .weekend {
-            background: #fef9e7;
-        }
-
-        .weekend-header {
-            background: #e67e22;
-        }
-
-        .weekend-header .date-info {
-            color: #fdebd0;
-        }
-
-        .employee-controls {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .employee-controls input {
-            padding: 10px 15px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            font-size: 1em;
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .employee-controls input:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-
-        .employee-controls select {
-            padding: 10px 15px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            font-size: 1em;
-            min-width: 150px;
-        }
-
-        .employee-controls button {
-            padding: 10px 25px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .btn-add {
-            background: #27ae60;
-            color: white;
-        }
-
-        .btn-add:hover {
-            background: #229954;
-            transform: scale(1.05);
-        }
-
-        .btn-clear {
-            background: #e74c3c;
-            color: white;
-        }
-
-        .btn-clear:hover {
-            background: #c0392b;
-            transform: scale(1.05);
-        }
-
-        .btn-export {
-            background: #3498db;
-            color: white;
-        }
-
-        .btn-export:hover {
-            background: #2980b9;
-            transform: scale(1.05);
-        }
-
-        .btn-import {
-            background: #9b59b6;
-            color: white;
-        }
-
-        .btn-import:hover {
-            background: #8e44ad;
-            transform: scale(1.05);
-        }
-
-        .btn-print {
-            background: #e67e22;
-            color: white;
-        }
-
-        .btn-print:hover {
-            background: #d35400;
-            transform: scale(1.05);
-        }
-
-        .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            padding: 15px;
-            background: #ecf0f1;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9em;
-        }
-
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            border: 1px solid #bdc3c7;
-        }
-
-        .quick-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 15px 0;
-        }
-
-        .quick-actions button {
-            padding: 8px 15px;
-            border: 2px solid #3498db;
-            background: white;
-            color: #3498db;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s;
-        }
-
-        .quick-actions button:hover {
-            background: #3498db;
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-
-            h1 {
-                font-size: 1.5em;
-            }
-
-            .employee-controls {
-                flex-direction: column;
-            }
-
-            .employee-controls input,
-            .employee-controls select {
-                width: 100%;
-            }
-
-            .week-selector {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .controls-row {
-                flex-direction: column;
-                align-items: stretch;
-            }
-        }
-
-        .turno-mañana { background: #d5f5e3; }
-        .turno-tarde { background: #fadbd8; }
-        .turno-partido { background: #d6eaf8; }
-        .descanso { background: #f5b7b1; }
-        .vacaciones { background: #f9e79f; }
-        .libre { background: #d5dbdb; }
-        .recuperado { background: #a9dfbf; }
-        .feriado { background: #f1948a; }
-
-        .staff-counter {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            padding: 15px;
-            background: #e8f4f8;
-            border-radius: 10px;
-            margin: 15px 0;
-        }
-
-        .staff-counter span {
-            font-weight: 600;
-        }
-
-        .shift-code {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.7em;
-            font-weight: bold;
-            margin-left: 3px;
-        }
-
-        .code-M { background: #27ae60; color: white; }
-        .code-T { background: #e67e22; color: white; }
-        .code-P { background: #2980b9; color: white; }
-        .code-L { background: #e74c3c; color: white; }
-        .code-V { background: #f1c40f; color: #2c3e50; }
-        .code-F { background: #e74c3c; color: white; }
-
-        .name-edit {
-            width: 100%;
-            border: none;
-            background: transparent;
-            font-weight: 600;
-            font-size: 0.9em;
+        /* Fila separadora PICA */
+        .tabla tr.separador-pica td {
+            background: #f0fdf4 !important;
+            padding: 8px 12px;
+            font-size: 11px; font-weight: 900;
+            color: #166534; text-transform: uppercase;
+            letter-spacing: 1px;
+            border-top: 3px solid #10b981;
+            border-bottom: 3px solid #10b981;
             text-align: left;
-            padding: 4px;
-            border-radius: 4px;
-            transition: all 0.3s;
         }
 
-        .name-edit:hover {
-            background: #ebf5fb;
+        .emp-nombre { font-weight: 700; font-size: 13px; color: #1e293b; }
+        .emp-puesto { font-size: 10px; color: #64748b; margin-top: 1px; }
+        .emp-estado {
+            display: inline-block; padding: 1px 6px; border-radius: 10px;
+            font-size: 9px; font-weight: 700; margin-top: 3px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .estado-ACTIVO { background: #d1fae5; color: #065f46; }
+        .estado-BAJA { background: #fee2e2; color: #991b1b; }
+        .estado-VACACIONES { background: #dbeafe; color: #1e40af; }
+        .estado-FijoDiscontinuo { background: #fef3c7; color: #92400e; }
+
+        select.celda-turno {
+            width: 100%; min-width: 60px; padding: 5px 2px;
+            border: 2px solid #cbd5e1; border-radius: 6px;
+            font-weight: 700; font-size: 12px; text-align: center;
+            cursor: pointer; background: white; color: #1e293b;
+            -webkit-appearance: none; appearance: none;
+        }
+        select.celda-turno:focus { outline: none; border-color: #2563eb; }
+        select.celda-turno.tipo-M { background: #d5f5e3; }
+        select.celda-turno.tipo-T { background: #fadbd8; }
+        select.celda-turno.tipo-P { background: #d6eaf8; }
+        select.celda-turno.tipo-L { background: #f5b7b1; color: #7f1d1d; }
+        select.celda-turno.tipo-V { background: #f9e79f; color: #78350f; }
+        select.celda-turno.tipo-LR { background: #a9dfbf; color: #14532d; }
+        select.celda-turno.tipo-FR { background: #f1948a; color: #7f1d1d; }
+        select.celda-turno.tipo-B { background: #cbd5e1; color: #334155; }
+        select.celda-turno.tipo-vacio { background: white; color: #94a3b8; }
+
+        /* Filas PICA con ligero tinte */
+        .tabla tr.fila-pica td.emp-col { background: #f0fdf4; }
+        .tabla tr.fila-pica:hover td.emp-col { background: #dcfce7; }
+
+        /* Eventos row */
+        .eventos-row td { background: #fffbeb !important; }
+        .eventos-row td.emp-col { background: #fef3c7 !important; font-weight: 700; }
+        .eventos-input {
+            width: 100%; border: 1px dashed #fbbf24; border-radius: 6px;
+            padding: 4px 6px; font-size: 11px; background: white;
+            font-family: inherit;
+        }
+        .eventos-input:focus { outline: none; border-color: #f59e0b; border-style: solid; }
+
+        /* ============ SECCIONES INFO ============ */
+        .info-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;
+        }
+        @media (max-width: 900px) { .info-grid { grid-template-columns: 1fr; } }
+
+        .info-card {
+            background: white; border-radius: 14px; padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .info-card h3 {
+            font-size: 13px; font-weight: 900; text-transform: uppercase;
+            color: #64748b; letter-spacing: 0.5px; margin-bottom: 12px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;
+        }
+        .info-card h3 .badge {
+            background: #f1f5f9; color: #475569;
+            padding: 2px 8px; border-radius: 10px;
+            font-size: 10px; font-weight: 700;
+        }
+        .info-card h3 .badge.alerta { background: #fee2e2; color: #991b1b; }
+        .info-card h3 .badge.ok { background: #d1fae5; color: #065f46; }
+
+        .info-list { display: flex; flex-direction: column; gap: 6px; }
+        .info-empty { color: #94a3b8; font-style: italic; font-size: 12px; padding: 4px 0; }
+
+        .conflicto-item, .banco-item {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 8px 10px; border-radius: 8px; font-size: 12px;
+        }
+        .conflicto-item { background: #fef2f2; border-left: 3px solid #ef4444; color: #991b1b; }
+        .conflicto-item.warn { background: #fffbeb; border-left-color: #f59e0b; color: #92400e; }
+        .conflicto-item.info { background: #eff6ff; border-left-color: #3b82f6; color: #1e40af; }
+        .banco-item { background: #fef3c7; border-left: 3px solid #f59e0b; color: #78350f; flex-direction: column; align-items: stretch; }
+        .banco-item .fila { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .banco-item .acciones { display: flex; gap: 4px; flex-wrap: wrap; }
+
+        /* ============ TOAST ============ */
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #0f172a; color: white; padding: 12px 20px; border-radius: 10px;
+            font-size: 13px; font-weight: 700; z-index: 9999;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .toast.visible { opacity: 1; }
+        .toast.success { background: #059669; }
+        .toast.error { background: #dc2626; }
+        .toast.info { background: #2563eb; }
+
+        /* ============ MODAL ============ */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 1000;
+            align-items: center; justify-content: center; padding: 16px;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: white; border-radius: 16px; padding: 24px;
+            max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal h2 { font-size: 18px; font-weight: 900; margin-bottom: 16px; }
+        .modal label {
+            display: block; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; color: #475569; margin-bottom: 4px;
+            margin-top: 12px;
+        }
+        .modal input, .modal select, .modal textarea {
+            width: 100%; padding: 8px 12px; border: 2px solid #cbd5e1;
+            border-radius: 8px; font-size: 13px; font-family: inherit;
+        }
+        .modal input:focus, .modal select:focus, .modal textarea:focus {
+            outline: none; border-color: #2563eb;
+        }
+        .modal-actions {
+            display: flex; gap: 8px; justify-content: flex-end;
+            margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;
         }
 
-        .name-edit:focus {
-            background: white;
-            border: 2px solid #3498db;
-            outline: none;
-        }
-
-        .role-edit {
-            width: 100%;
-            border: none;
-            background: transparent;
-            font-size: 0.75em;
-            color: #7f8c8d;
-            padding: 2px 4px;
-            border-radius: 4px;
-            transition: all 0.3s;
-        }
-
-        .role-edit:hover {
-            background: #ebf5fb;
-        }
-
-        .role-edit:focus {
-            background: white;
-            border: 2px solid #3498db;
-            outline: none;
-        }
-
-        .employee-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 2px;
-            padding: 2px;
-        }
-
-        .employee-type-badge {
-            font-size: 0.6em;
-            padding: 1px 8px;
-            border-radius: 12px;
-            margin-top: 2px;
-        }
-
-        .badge-M { background: #27ae60; color: white; }
-        .badge-T { background: #e67e22; color: white; }
-        .badge-P { background: #2980b9; color: white; }
-
-        .month-year-display {
-            font-size: 1.1em;
-            font-weight: bold;
-            color: #2c3e50;
-            padding: 5px 15px;
-            background: #ecf0f1;
-            border-radius: 8px;
-        }
-
-        /* ===== NUEVOS ESTILOS PARA ADVERTENCIAS DE COBERTURA ===== */
-        .coverage-warning {
-            background: #fff3cd !important;
-            border: 2px solid #ffc107 !important;
-        }
-
-        .coverage-error {
-            background: #f8d7da !important;
-            border: 2px solid #dc3545 !important;
-        }
-
-        .coverage-ok {
-            background: #d4edda !important;
-            border: 2px solid #28a745 !important;
-        }
-
-        .coverage-bar {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin: 5px 0 10px 0;
-            font-size: 0.85em;
-            align-items: center;
-            transition: all 0.3s;
-        }
-
-        .coverage-bar .badge {
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 0.8em;
-        }
-
-        .badge-ok { background: #28a745; color: white; }
-        .badge-warning { background: #ffc107; color: #212529; }
-        .badge-danger { background: #dc3545; color: white; }
-
-        .coverage-detail {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .coverage-detail span {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .staff-required {
-            font-size: 0.75em;
-            color: #6c757d;
-            margin-left: 3px;
-        }
-
-        /* Estilos para impresión */
+        /* ============ PRINT ============ */
         @media print {
-            body {
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-
-            .container {
-                box-shadow: none !important;
-                border-radius: 0 !important;
-                padding: 15px !important;
-                max-width: 100% !important;
-            }
-
-            .no-print {
-                display: none !important;
-            }
-
-            table {
-                font-size: 0.65em !important;
-                min-width: auto !important;
-            }
-
-            th, td {
-                padding: 3px 2px !important;
-            }
-
-            .employee-cell select {
-                border: 1px solid #999 !important;
-                font-size: 0.65em !important;
-                padding: 2px !important;
-                min-height: 20px !important;
-                -webkit-appearance: none !important;
-                appearance: none !important;
-            }
-
-            .employee-cell .delete-btn {
-                display: none !important;
-            }
-
-            .name-edit, .role-edit {
-                border: none !important;
-                background: transparent !important;
-                pointer-events: none !important;
-                font-size: 0.8em !important;
-            }
-
-            .week-selector {
-                margin-bottom: 10px !important;
-            }
-
-            .legend {
-                padding: 8px !important;
-                margin: 8px 0 !important;
-                font-size: 0.7em !important;
-            }
-
-            .staff-counter {
-                padding: 8px !important;
-                margin: 8px 0 !important;
-                font-size: 0.7em !important;
-            }
-
-            h1 {
-                font-size: 1.3em !important;
-            }
-
-            .subtitle {
-                font-size: 0.8em !important;
-                margin-bottom: 10px !important;
-            }
-
-            .employee-controls, .quick-actions, .controls-row {
-                display: none !important;
-            }
-
-            .employee-cell select option {
-                color: black !important;
-                background: white !important;
-            }
-
-            .day-header .date-info {
-                font-size: 0.7em !important;
-            }
-
-            .time-slot {
-                font-size: 0.7em !important;
-                padding: 3px 2px !important;
-            }
-
-            .coverage-bar {
-                display: none !important;
-            }
-
-            /* Asegurar que los colores se impriman */
-            .turno-mañana, .turno-tarde, .turno-partido, 
-            .descanso, .vacaciones, .libre, .recuperado, .feriado,
-            .weekend, .weekend-header, thead, .day-header, .time-slot {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
+            body { background: white; padding: 0; }
+            .header { background: white; color: black; padding: 8px 0; box-shadow: none; border-bottom: 2px solid #000; border-radius: 0; }
+            .header h1 { color: black; }
+            .header .sub { color: #666; }
+            .header-actions, .week-nav, .banco-alerta, .info-grid, .toast, .modal-overlay, .no-print, .toolbar-pica { display: none !important; }
+            .week-label { background: transparent; color: black; border: 1px solid black; }
+            .tabla-container { box-shadow: none; padding: 0; border-radius: 0; }
+            .tabla { font-size: 10px; min-width: auto; }
+            .tabla th { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .tabla td.emp-col { background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            select.celda-turno { border: 1px solid #999; -webkit-appearance: none; appearance: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .eventos-input { border: 1px solid #ccc; }
+            .tabla tr.separador-pica td { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
+        @page { size: A4 landscape; margin: 8mm; }
 
-        @page {
-            size: A4 landscape;
-            margin: 8mm;
+        /* ============ LOADING ============ */
+        .loading-screen {
+            position: fixed; inset: 0; background: white; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 16px;
         }
+        .loading-screen.hidden { display: none; }
+        .spinner {
+            width: 48px; height: 48px; border: 4px solid #e2e8f0;
+            border-top-color: #2563eb; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .status-bar {
+            background: #e0e7ff; color: #1e40af; padding: 8px 14px;
+            border-radius: 8px; font-size: 12px; font-weight: 700;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+        }
+        .status-bar.ok { background: #d1fae5; color: #065f46; }
+        .status-bar.error { background: #fee2e2; color: #991b1b; }
     </style>
 </head>
 <body>
-    <div class="container" id="printArea">
-        <h1>
-            🍳 Gestión de Horarios - Cocina
-            <span style="font-size:0.6em; color:#7f8c8d;">v5.1 - Con control de cobertura</span>
-        </h1>
-        <p class="subtitle">Planificación semanal del equipo de cocina</p>
 
-        <!-- Controles de Mes y Año -->
-        <div class="controls-row no-print">
-            <label for="monthSelect">📅 Mes:</label>
-            <select id="monthSelect" onchange="updateCalendar()">
-                <option value="0">Enero</option>
-                <option value="1">Febrero</option>
-                <option value="2">Marzo</option>
-                <option value="3">Abril</option>
-                <option value="4">Mayo</option>
-                <option value="5">Junio</option>
-                <option value="6">Julio</option>
-                <option value="7">Agosto</option>
-                <option value="8">Septiembre</option>
-                <option value="9">Octubre</option>
-                <option value="10">Noviembre</option>
-                <option value="11">Diciembre</option>
-            </select>
-            
-            <label for="yearInput">Año:</label>
-            <input type="number" id="yearInput" value="2024" min="2020" max="2030" onchange="updateCalendar()" style="width:80px;">
-            
-            <span class="month-year-display" id="monthYearDisplay">Enero 2024</span>
+<div class="loading-screen" id="loadingScreen">
+    <div class="spinner"></div>
+    <div style="font-weight: 700; color: #475569;">Cargando horarios...</div>
+</div>
+
+<!-- ============ HEADER ============ -->
+<div class="header">
+    <div class="header-top">
+        <div>
+            <h1>🍳 Horarios · Panel de Jefe</h1>
+            <div class="sub">Planificación semanal · Attica As Galeras</div>
         </div>
-
-        <div class="week-selector no-print">
-            <button onclick="changeWeek(-1)">← Semana Anterior</button>
-            <span id="weekDisplay">Semana 1</span>
-            <button onclick="changeWeek(1)">Semana Siguiente →</button>
-            <button onclick="resetWeek()" style="background:#95a5a6;">Hoy</button>
-            <button onclick="printSchedule()" class="btn-print" style="margin-left:auto;">🖨️ Imprimir PDF</button>
-        </div>
-
-        <!-- ===== NUEVA BARRA DE COBERTURA POR DÍA ===== -->
-        <div id="coverageContainer" style="margin: 10px 0 15px 0;"></div>
-
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color turno-mañana"></div>
-                <span>Turno Mañana (M)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color turno-tarde"></div>
-                <span>Turno Tarde (T)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color turno-partido"></div>
-                <span>Turno Partido (P)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color descanso"></div>
-                <span>Descanso</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color vacaciones"></div>
-                <span>Vacaciones</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color libre"></div>
-                <span>Libre</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color recuperado"></div>
-                <span>Recuperado</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color feriado"></div>
-                <span>Feriado</span>
-            </div>
-            <div class="legend-item">
-                <span style="background:#e74c3c; color:white; padding:2px 8px; border-radius:4px;">✕</span>
-                <span>Eliminar empleado</span>
-            </div>
-            <div class="legend-item">
-                <span style="background:#3498db; color:white; padding:2px 8px; border-radius:4px;">✏️</span>
-                <span>Editar nombre/puesto</span>
-            </div>
-        </div>
-
-        <div class="staff-counter" id="staffCounter">
-            <span>👥 Total: <strong id="totalStaff">0</strong></span>
-            <span>🌅 Mañana: <strong id="morningStaff">0</strong></span>
-            <span>🌇 Tarde: <strong id="eveningStaff">0</strong></span>
-            <span>🔄 Partido: <strong id="partTimeStaff">0</strong></span>
-            <span>📅 Descansos: <strong id="restDays">0</strong></span>
-        </div>
-
-        <div class="employee-controls no-print">
-            <input type="text" id="employeeName" placeholder="Nombre (ej: Cocinero 1)" />
-            <input type="text" id="employeeRole" placeholder="Puesto (ej: Jefe de Cocina)" />
-            <select id="employeeType">
-                <option value="M">Turno Mañana (M)</option>
-                <option value="T">Turno Tarde (T)</option>
-                <option value="P">Turno Partido (P)</option>
-            </select>
-            <button class="btn-add" onclick="addEmployee()">➕ Añadir Empleado</button>
-            <button class="btn-clear" onclick="clearAll()">🗑️ Limpiar Todo</button>
-            <button class="btn-export" onclick="exportData()">📤 Exportar</button>
-            <button class="btn-import" onclick="document.getElementById('importFile').click()">📥 Importar</button>
-            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
-        </div>
-
-        <div class="quick-actions no-print">
-            <button onclick="fillDefaultEmployees()">📋 Cargar Equipo por Defecto</button>
-            <button onclick="autoAssignShifts()">🤖 Asignar Turnos Automáticamente</button>
-            <button onclick="autoAssignConsecutiveRestDays()">📅 Asignar 2 Días Libres Seguidos</button>
-            <button onclick="validateSchedule()">✅ Validar Horario</button>
-            <button onclick="checkCoverage()">🔍 Verificar Cobertura</button>
-        </div>
-
-        <div class="schedule-table">
-            <table id="scheduleTable">
-                <thead>
-                    <tr>
-                        <th style="min-width:150px;">Personal / Día</th>
-                        <th class="day-header" id="dayHeader0">Lunes <span class="date-info" id="date0"></span></th>
-                        <th class="day-header" id="dayHeader1">Martes <span class="date-info" id="date1"></span></th>
-                        <th class="day-header" id="dayHeader2">Miércoles <span class="date-info" id="date2"></span></th>
-                        <th class="day-header" id="dayHeader3">Jueves <span class="date-info" id="date3"></span></th>
-                        <th class="day-header" id="dayHeader4">Viernes <span class="date-info" id="date4"></span></th>
-                        <th class="day-header weekend-header" id="dayHeader5">Sábado <span class="date-info" id="date5"></span></th>
-                        <th class="day-header weekend-header" id="dayHeader6">Domingo <span class="date-info" id="date6"></span></th>
-                    </tr>
-                    <tr>
-                        <th style="background:#ecf0f1; color:#2c3e50;">Horarios</th>
-                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
-                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
-                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
-                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
-                        <td class="time-slot">07:30-10:30<br>07:30-23:00</td>
-                        <td class="time-slot weekend">08:00-11:00<br>08:00-23:00</td>
-                        <td class="time-slot weekend">08:00-11:00<br>08:00-23:00</td>
-                    </tr>
-                </thead>
-                <tbody id="scheduleBody">
-                </tbody>
-            </table>
-        </div>
-
-        <div style="margin-top:20px; padding:15px; background:#f8f9fa; border-radius:10px;" class="no-print">
-            <h3 style="color:#2c3e50; margin-bottom:10px;">📅 Todos los Turnos Disponibles</h3>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:0.9em;">
-                <div><span class="shift-code code-M">M</span> <strong>M1:</strong> 06:30 - 14:30</div>
-                <div><span class="shift-code code-M">M</span> <strong>M2:</strong> 07:00 - 15:00</div>
-                <div><span class="shift-code code-M">M</span> <strong>M3:</strong> 09:00 - 17:00</div>
-                <div><span class="shift-code code-M">M</span> <strong>M4:</strong> 10:00 - 18:00</div>
-                <div><span class="shift-code code-M">M</span> <strong>M5:</strong> 12:00 - 20:00</div>
-                <div><span class="shift-code code-M">M</span> <strong>M6:</strong> 08:00 - 16:00</div>
-                <div><span class="shift-code code-T">T</span> <strong>T1:</strong> 14:30 - 22:30</div>
-                <div><span class="shift-code code-T">T</span> <strong>T2:</strong> 15:00 - 23:00</div>
-                <div><span class="shift-code code-T">T</span> <strong>T3:</strong> 15:15 - 23:15</div>
-                <div><span class="shift-code code-T">T</span> <strong>T4:</strong> 16:00 - 24:00</div>
-                <div><span class="shift-code code-T">T</span> <strong>T5:</strong> 14:30 - 22:30</div>
-                <div><span class="shift-code code-P">P</span> <strong>P1:</strong> 12:00-16:00 / 20:00-24:00</div>
-                <div><span class="shift-code code-P">P</span> <strong>P2:</strong> 11:30-16:15 / 20:00-23:15</div>
-                <div><span class="shift-code code-P">P</span> <strong>P3:</strong> 11:45-16:14 / 20:00-23:00</div>
-                <div><span class="shift-code code-P">P</span> <strong>P4:</strong> 12:00-16:00 / 20:15-23:15</div>
-                <div><span class="shift-code code-L">L</span> <strong>DESCANSO:</strong> Día libre</div>
-                <div><span class="shift-code code-V">V</span> <strong>VACACIONES:</strong> Día de vacaciones</div>
-                <div><span class="shift-code code-L">L</span> <strong>LIBRE:</strong> Día libre especial</div>
-                <div><span class="shift-code code-L">L</span> <strong>RECUPERADO:</strong> Día recuperado</div>
-                <div><span class="shift-code code-F">F</span> <strong>FERIADO:</strong> Día feriado</div>
-            </div>
+        <div class="header-actions">
+            <button class="btn btn-dark" onclick="toggleInactivos()" id="btnInactivos">
+                👁️ Mostrar inactivos
+            </button>
+            <button class="btn btn-dark" onclick="abrirModalEmpleado()">
+                ➕ Nuevo empleado
+            </button>
+            <button class="btn btn-blue" onclick="cargarSemana()">
+                📥 Cargar
+            </button>
+            <button class="btn btn-green" onclick="guardarSemana()">
+                💾 Guardar
+            </button>
+            <button class="btn btn-purple" onclick="imprimir()">
+                🖨️ Imprimir
+            </button>
         </div>
     </div>
 
-    <script>
-        let state = {
-            employees: [],
-            weekOffset: 0,
-            currentDate: new Date()
+    <div class="week-nav">
+        <button onclick="cambiarSemana(-1)">◀ Anterior</button>
+        <button onclick="irSemanaActual()">🏠 Hoy</button>
+        <div class="week-label" id="weekLabel">
+            Semana 40<small>6 oct - 12 oct 2026</small>
+        </div>
+        <button onclick="cambiarSemana(1)">Siguiente ▶</button>
+    </div>
+</div>
+
+<!-- ============ TOOLBAR PICA ============ -->
+<div class="toolbar-pica">
+    <div class="label">
+        🍴 Rotación Pica
+    </div>
+    <button class="btn btn-green btn-sm" onclick="aplicarRotacionPica()">
+        🔄 Aplicar rotación automática
+    </button>
+    <button class="btn btn-orange btn-sm" onclick="alternarRotacionPica()">
+        🔀 Invertir (Semana A ↔ B)
+    </button>
+    <div class="hint">
+        💡 Se aplica según semana par/impar. Puedes ajustar manualmente después.
+    </div>
+</div>
+
+<!-- ============ BANCO DE HORAS ALERTA ============ -->
+<div class="banco-alerta" id="bancoAlerta"></div>
+
+<!-- ============ STATUS BAR ============ -->
+<div class="status-bar" id="statusBar" style="display: none;"></div>
+
+<!-- ============ TABLA SEMANAL ============ -->
+<div class="tabla-container">
+    <table class="tabla">
+        <thead>
+            <tr>
+                <th class="emp-col">Empleado</th>
+                <th id="thLun">Lun</th>
+                <th id="thMar">Mar</th>
+                <th id="thMie">Mié</th>
+                <th id="thJue">Jue</th>
+                <th id="thVie">Vie</th>
+                <th id="thSab">Sáb</th>
+                <th id="thDom">Dom</th>
+                <th class="horas-col">Horas</th>
+            </tr>
+        </thead>
+        <tbody id="tablaBody">
+            <!-- Se rellena con JS -->
+        </tbody>
+    </table>
+</div>
+
+<!-- ============ INFO: CONFLICTOS Y BANCO ============ -->
+<div class="info-grid">
+    <div class="info-card">
+        <h3>
+            ⚠️ Conflictos
+            <span class="badge" id="conflictosBadge">0</span>
+        </h3>
+        <div class="info-list" id="conflictosList">
+            <div class="info-empty">Cargando...</div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h3>
+            ⏰ Banco de horas
+            <span class="badge" id="bancoBadge">0</span>
+            <button class="btn btn-sm btn-orange" onclick="abrirModalBanco()" style="margin-left:auto;">
+                ➕ Añadir
+            </button>
+        </h3>
+        <div class="info-list" id="bancoList">
+            <div class="info-empty">Sin pendientes</div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ MODAL EMPLEADO ============ -->
+<div class="modal-overlay" id="modalEmpleado">
+    <div class="modal">
+        <h2 id="modalEmpleadoTitle">➕ Nuevo empleado</h2>
+        <label>Nombre *</label>
+        <input type="text" id="inputNombre" placeholder="Ej: Juan Pérez">
+        <label>Puesto</label>
+        <input type="text" id="inputPuesto" placeholder="Ej: Cocinero">
+        <label>Tipo</label>
+        <select id="inputTipo">
+            <option value="COCINERO">Cocinero</option>
+            <option value="PICA">Pica</option>
+            <option value="JEFE">Jefe</option>
+        </select>
+        <label>Turno preferido</label>
+        <input type="text" id="inputTurnoPref" placeholder="Ej: Desayuno / Tarde / Partido">
+        <label style="display:flex; align-items:center; gap:8px; margin-top:14px;">
+            <input type="checkbox" id="inputSoloManana" style="width:auto;">
+            <span style="font-weight:600; font-size:12px; text-transform:none;">Solo puede trabajar en turnos de mañana</span>
+        </label>
+        <label>Estado</label>
+        <select id="inputEstado">
+            <option value="ACTIVO">✅ Activo</option>
+            <option value="BAJA">🚫 Baja</option>
+            <option value="VACACIONES">🏖️ Vacaciones</option>
+            <option value="FijoDiscontinuo">🔄 Fijo discontinuo</option>
+        </select>
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="cerrarModalEmpleado()">Cancelar</button>
+            <button class="btn btn-green" onclick="guardarEmpleado()">💾 Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ MODAL BANCO HORAS ============ -->
+<div class="modal-overlay" id="modalBanco">
+    <div class="modal">
+        <h2>⏰ Añadir al banco de horas</h2>
+        <label>Empleado *</label>
+        <select id="bancoEmpleado"></select>
+        <label>Tipo *</label>
+        <select id="bancoTipo">
+            <option value="LR">🔄 Libre Recuperado (trabajó día libre)</option>
+            <option value="FR">📅 Festivo Recuperado (trabajó festivo)</option>
+            <option value="EXTRA">➕ Hora extra</option>
+        </select>
+        <label>Fecha *</label>
+        <input type="date" id="bancoFecha">
+        <label>Horas</label>
+        <input type="number" id="bancoHoras" value="8" min="0.5" max="24" step="0.5">
+        <label>Motivo (opcional)</label>
+        <input type="text" id="bancoMotivo" placeholder="Ej: Emergencia con evento">
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="cerrarModalBanco()">Cancelar</button>
+            <button class="btn btn-green" onclick="guardarBanco()">💾 Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIGURACIÓN
+// ═══════════════════════════════════════════════════════════
+const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+const DIAS_LABEL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+// Ciclo Pica
+// Semana A (impar):  Daniel [L,L,P2,P2,M3,M3,M3] · Matias [P2,P2,L,L,T1,T1,T1]
+// Semana B (par):    Daniel [P2,P2,L,L,T1,T1,T1] · Matias [L,L,P2,P2,M3,M3,M3]
+const CICLO_PICA_A = {
+    'Daniel': { lunes: 'L', martes: 'L', miercoles: 'P2', jueves: 'P2', viernes: 'M3', sabado: 'M3', domingo: 'M3' },
+    'Matias': { lunes: 'P2', martes: 'P2', miercoles: 'L', jueves: 'L', viernes: 'T1', sabado: 'T1', domingo: 'T1' }
+};
+const CICLO_PICA_B = {
+    'Daniel': { lunes: 'P2', martes: 'P2', miercoles: 'L', jueves: 'L', viernes: 'T1', sabado: 'T1', domingo: 'T1' },
+    'Matias': { lunes: 'L', martes: 'L', miercoles: 'P2', jueves: 'P2', viernes: 'M3', sabado: 'M3', domingo: 'M3' }
+};
+
+const state = {
+    empleados: [],
+    turnos: {},
+    semana: {
+        año: 0,
+        numero_semana: 0,
+        fecha_inicio: '',
+        fecha_fin: '',
+        asignaciones: {},
+        eventos: {}
+    },
+    banco: [],
+    mostrarInactivos: false,
+    empleadoEditando: null
+};
+
+// ═══════════════════════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════════════════════
+
+function toast(msg, tipo = 'info') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + tipo + ' visible';
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('visible'), 2800);
+}
+
+function setStatus(msg, tipo = 'info') {
+    const bar = document.getElementById('statusBar');
+    bar.textContent = msg;
+    bar.className = 'status-bar ' + (tipo === 'ok' ? 'ok' : tipo === 'error' ? 'error' : '');
+    bar.style.display = 'flex';
+    clearTimeout(window._statusTimer);
+    window._statusTimer = setTimeout(() => bar.style.display = 'none', 4000);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function getISOWeek(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return { año: d.getUTCFullYear(), semana: week };
+}
+
+function getFechaInicioSemanaISO(año, semana) {
+    const simple = new Date(Date.UTC(año, 0, 1 + (semana - 1) * 7));
+    const dow = simple.getUTCDay() || 7;
+    const lunes = new Date(simple);
+    if (dow <= 4) {
+        lunes.setUTCDate(simple.getUTCDate() - dow + 1);
+    } else {
+        lunes.setUTCDate(simple.getUTCDate() + 8 - dow);
+    }
+    return lunes;
+}
+
+function formatoFecha(fecha) {
+    return `${pad(fecha.getDate())} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][fecha.getMonth()]}`;
+}
+
+function getFechasSemana() {
+    const inicio = getFechaInicioSemanaISO(state.semana.año, state.semana.numero_semana);
+    const fechas = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(inicio);
+        d.setUTCDate(inicio.getUTCDate() + i);
+        fechas.push(d);
+    }
+    return fechas;
+}
+
+function cssId(str) {
+    return String(str).replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function escapeHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════════════
+// CARGA DE DATOS
+// ═══════════════════════════════════════════════════════════
+
+async function cargarDatos() {
+    try {
+        const { data: emps, error: errE } = await db
+            .from('horarios_empleados')
+            .select('*')
+            .order('orden', { ascending: true });
+        if (errE) throw errE;
+        state.empleados = emps || [];
+
+        const { data: trn, error: errT } = await db
+            .from('horarios_turnos')
+            .select('*')
+            .order('orden', { ascending: true });
+        if (errT) throw errT;
+        state.turnos = {};
+        (trn || []).forEach(t => { state.turnos[t.codigo] = t; });
+
+        const { data: banc, error: errB } = await db
+            .from('horarios_banco_horas')
+            .select('*, horarios_empleados(nombre)')
+            .eq('estado', 'PENDIENTE')
+            .order('fecha_original', { ascending: false });
+        if (errB) throw errB;
+        state.banco = banc || [];
+
+        console.log('✅ Datos cargados:', state.empleados.length, 'empleados,', Object.keys(state.turnos).length, 'turnos');
+        irSemanaActual(true);
+    } catch (e) {
+        console.error('Error cargando datos:', e);
+        toast('Error al cargar: ' + e.message, 'error');
+    } finally {
+        document.getElementById('loadingScreen').classList.add('hidden');
+    }
+}
+
+async function cargarSemana() {
+    try {
+        const { data, error } = await db
+            .from('horarios_semanas')
+            .select('*')
+            .eq('año', state.semana.año)
+            .eq('numero_semana', state.semana.numero_semana)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+            state.semana.asignaciones = data.asignaciones || {};
+            state.semana.eventos = data.eventos || {};
+            state.semana.notas = data.notas || '';
+            toast('📥 Semana cargada', 'success');
+        } else {
+            state.semana.asignaciones = {};
+            state.semana.eventos = {};
+            state.semana.notas = '';
+            toast('📄 Semana nueva (sin datos previos)', 'info');
+        }
+        render();
+    } catch (e) {
+        console.error('Error cargando semana:', e);
+        toast('Error: ' + e.message, 'error');
+    }
+}
+
+async function guardarSemana() {
+    try {
+        const fechas = getFechasSemana();
+        const payload = {
+            año: state.semana.año,
+            numero_semana: state.semana.numero_semana,
+            fecha_inicio: fechas[0].toISOString().split('T')[0],
+            fecha_fin: fechas[6].toISOString().split('T')[0],
+            asignaciones: state.semana.asignaciones,
+            eventos: state.semana.eventos,
+            notas: state.semana.notas || '',
+            estado: 'BORRADOR',
+            updated_at: new Date().toISOString()
         };
 
-        const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
-        const dayLabels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        
-        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const { error } = await db
+            .from('horarios_semanas')
+            .upsert([payload], { onConflict: 'año,numero_semana' });
 
-        // ===== CONFIGURACIÓN DE COBERTURA =====
-        // Para cada día: [mañana (6-14), mediodía (14-20), noche (20-24)]
-        // Por defecto: 2 en mañana, 3 en mediodía, 3 en noche
-        const COVERAGE_NEEDS = {
-            'lunes': { morning: 2, midday: 3, night: 3 },
-            'martes': { morning: 2, midday: 3, night: 3 },
-            'miércoles': { morning: 2, midday: 3, night: 3 },
-            'jueves': { morning: 2, midday: 3, night: 3 },
-            'viernes': { morning: 2, midday: 3, night: 3 },
-            'sábado': { morning: 2, midday: 3, night: 3 },
-            'domingo': { morning: 2, midday: 3, night: 3 }
+        if (error) throw error;
+        toast('💾 Semana guardada', 'success');
+        setStatus('✅ Guardado correctamente', 'ok');
+    } catch (e) {
+        console.error('Error guardando:', e);
+        toast('❌ Error al guardar: ' + e.message, 'error');
+        setStatus('❌ ' + e.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ROTACIÓN PICA
+// ═══════════════════════════════════════════════════════════
+
+// Semana A se aplica cuando la semana ISO es IMPAR
+// Semana B se aplica cuando es PAR
+function esSemanaA() {
+    return state.semana.numero_semana % 2 === 1;
+}
+
+function aplicarRotacionPica() {
+    const esA = esSemanaA();
+    const ciclo = esA ? CICLO_PICA_A : CICLO_PICA_B;
+
+    // Aplicar solo a empleados con tipo_personal = PICA
+    const picas = state.empleados.filter(e => e.tipo_personal === 'PICA');
+
+    if (picas.length === 0) {
+        toast('No hay empleados tipo Pica', 'warning');
+        return;
+    }
+
+    let aplicados = 0;
+    picas.forEach(emp => {
+        const asignacion = ciclo[emp.nombre];
+        if (asignacion) {
+            state.semana.asignaciones[emp.nombre] = { ...asignacion };
+            aplicados++;
+        }
+    });
+
+    render();
+    toast(`🔄 Rotación Pica aplicada (Semana ${esA ? 'A' : 'B'}) · ${aplicados} empleado${aplicados > 1 ? 's' : ''}`, 'success');
+}
+
+function alternarRotacionPica() {
+    const picas = state.empleados.filter(e => e.tipo_personal === 'PICA');
+    if (picas.length === 0) {
+        toast('No hay empleados tipo Pica', 'warning');
+        return;
+    }
+
+    // Invertir la asignación actual de los pica
+    picas.forEach(emp => {
+        const actual = state.semana.asignaciones[emp.nombre] || {};
+        // Buscar en el otro ciclo la asignación basada en un día de referencia (lunes)
+        const diaRef = actual.lunes;
+        // Si el lunes es L en ciclo A, aplicar ciclo B, si no aplicar A
+        let nuevoCiclo;
+        if (emp.nombre === 'Daniel' || emp.nombre === 'Matias') {
+            // Si el lunes actual es 'L', pasamos al que tiene P2 (que es el otro)
+            if (diaRef === 'L') {
+                nuevoCiclo = (CICLO_PICA_A[emp.nombre].lunes === 'L') ? CICLO_PICA_B : CICLO_PICA_A;
+            } else {
+                nuevoCiclo = (CICLO_PICA_A[emp.nombre].lunes === 'L') ? CICLO_PICA_A : CICLO_PICA_B;
+            }
+            const asig = nuevoCiclo[emp.nombre];
+            if (asig) state.semana.asignaciones[emp.nombre] = { ...asig };
+        }
+    });
+
+    render();
+    toast('🔀 Rotación Pica invertida', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVEGACIÓN SEMANAS
+// ═══════════════════════════════════════════════════════════
+
+function cambiarSemana(delta) {
+    let newWeek = state.semana.numero_semana + delta;
+    let newYear = state.semana.año;
+    if (newWeek < 1) { newWeek = 52; newYear--; }
+    if (newWeek > 52) { newWeek = 1; newYear++; }
+    state.semana.año = newYear;
+    state.semana.numero_semana = newWeek;
+    cargarSemana();
+    actualizarCabeceraSemana();
+}
+
+function irSemanaActual(silencioso = false) {
+    const { año, semana } = getISOWeek(new Date());
+    state.semana.año = año;
+    state.semana.numero_semana = semana;
+    if (!silencioso) cargarSemana();
+    actualizarCabeceraSemana();
+}
+
+function actualizarCabeceraSemana() {
+    const fechas = getFechasSemana();
+    const label = document.getElementById('weekLabel');
+    const esA = esSemanaA();
+    label.innerHTML = `
+        Semana ${state.semana.numero_semana} ${esA ? '(A)' : '(B)'}
+        <small>${formatoFecha(fechas[0])} - ${formatoFecha(fechas[6])} ${fechas[0].getUTCFullYear()}</small>
+    `;
+
+    const today = new Date();
+    const heads = ['thLun', 'thMar', 'thMie', 'thJue', 'thVie', 'thSab', 'thDom'];
+    heads.forEach((id, i) => {
+        const el = document.getElementById(id);
+        const f = fechas[i];
+        const esHoy = f.getUTCDate() === today.getDate() &&
+                      f.getUTCMonth() === today.getMonth() &&
+                      f.getUTCFullYear() === today.getFullYear();
+        el.innerHTML = `${DIAS_LABEL[i]}<br><span style="font-size:10px;font-weight:400;opacity:0.7;">${f.getUTCDate()}</span>`;
+        if (esHoy) el.style.background = '#dc2626';
+        else el.style.background = '';
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CÁLCULO HORAS
+// ═══════════════════════════════════════════════════════════
+
+function calcularHorasTurno(codigo) {
+    if (!codigo) return 0;
+    const t = state.turnos[codigo];
+    if (!t) return 0;
+    return parseFloat(t.horas_totales) || 0;
+}
+
+function calcularHorasEmpleado(nombre) {
+    const asig = state.semana.asignaciones[nombre] || {};
+    let total = 0;
+    DIAS.forEach(d => { total += calcularHorasTurno(asig[d]); });
+    return total;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════
+
+function render() {
+    renderTabla();
+    renderConflictos();
+    renderBanco();
+    renderBancoAlerta();
+}
+
+function renderTabla() {
+    const tbody = document.getElementById('tablaBody');
+    tbody.innerHTML = '';
+
+    const visibles = state.empleados.filter(e => state.mostrarInactivos || e.estado === 'ACTIVO');
+
+    if (visibles.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="padding:30px;text-align:center;color:#94a3b8;">
+            No hay empleados que mostrar.
+        </td></tr>`;
+        return;
+    }
+
+    // Separar cocineros (incluye JEFE) de picas
+    const cocineros = visibles.filter(e => e.tipo_personal !== 'PICA');
+    const picas = visibles.filter(e => e.tipo_personal === 'PICA');
+
+    // Render cocineros
+    cocineros.forEach(emp => {
+        const tr = renderFilaEmpleado(emp);
+        tbody.appendChild(tr);
+    });
+
+    // Fila separadora PICA
+    if (picas.length > 0) {
+        const trSep = document.createElement('tr');
+        trSep.className = 'separador-pica';
+        trSep.innerHTML = `<td colspan="9">🍴 PICA · Rotación automática (A/B)</td>`;
+        tbody.appendChild(trSep);
+
+        picas.forEach(emp => {
+            const tr = renderFilaEmpleado(emp, true);
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Fila de eventos
+    renderFilaEventos(tbody);
+}
+
+function renderFilaEmpleado(emp, esPica = false) {
+    const tr = document.createElement('tr');
+    if (emp.estado !== 'ACTIVO') tr.classList.add('inactivo');
+    if (esPica) tr.classList.add('fila-pica');
+
+    // Columna empleado
+    const tdEmp = document.createElement('td');
+    tdEmp.className = 'emp-col';
+    tdEmp.innerHTML = `
+        <div class="emp-nombre" ondblclick="abrirModalEmpleado('${escapeHtml(emp.nombre)}')" style="cursor:pointer;" title="Doble click para editar">
+            ${escapeHtml(emp.nombre)}
+        </div>
+        ${emp.puesto ? `<div class="emp-puesto">${escapeHtml(emp.puesto)}</div>` : ''}
+        <span class="emp-estado estado-${emp.estado}">${emp.estado}</span>
+    `;
+    tr.appendChild(tdEmp);
+
+    // Celdas días
+    DIAS.forEach(dia => {
+        const td = document.createElement('td');
+        const select = document.createElement('select');
+        select.className = 'celda-turno';
+        const asig = state.semana.asignaciones[emp.nombre] || {};
+        const valorActual = asig[dia] || '';
+        select.value = valorActual;
+        actualizarColorSelect(select, valorActual);
+
+        const grupos = {
+            '— Libres —': ['L', 'LR', 'FR', 'V', 'B'],
+            '— Mañana —': ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7'],
+            '— Tarde —': ['T1', 'T2', 'T3', 'T4', 'T5'],
+            '— Partido —': ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7']
         };
 
-        // Mapeo de turnos a franjas horarias
-        function getShiftCoverage(shiftCode) {
-            const shift = allShifts.find(s => s.code === shiftCode);
-            if (!shift || shift.type === 'L' || shift.type === 'V' || shift.type === 'F') {
-                return { morning: false, midday: false, night: false };
-            }
-            // Turnos de mañana cubren mañana y mediodía
-            if (shift.type === 'M') {
-                return { morning: true, midday: true, night: false };
-            }
-            // Turnos de tarde cubren mediodía y noche
-            if (shift.type === 'T') {
-                return { morning: false, midday: true, night: true };
-            }
-            // Turnos partido cubren mediodía y noche (o todo según código)
-            if (shift.type === 'P') {
-                return { morning: false, midday: true, night: true };
-            }
-            return { morning: false, midday: false, night: false };
-        }
+        const optInicio = document.createElement('option');
+        optInicio.value = '';
+        optInicio.textContent = '—';
+        select.appendChild(optInicio);
 
-        const allShifts = [
-            { code: '', hours: 'Descanso', type: 'L' },
-            { code: 'VAC', hours: 'Vacaciones', type: 'V' },
-            { code: 'LIB', hours: 'Libre', type: 'L' },
-            { code: 'REC', hours: 'Recuperado', type: 'L' },
-            { code: 'FER', hours: 'Feriado', type: 'F' },
-            { code: 'M1', hours: '06:30 - 14:30', type: 'M' },
-            { code: 'M2', hours: '07:00 - 15:00', type: 'M' },
-            { code: 'M3', hours: '09:00 - 17:00', type: 'M' },
-            { code: 'M4', hours: '10:00 - 18:00', type: 'M' },
-            { code: 'M5', hours: '12:00 - 20:00', type: 'M' },
-            { code: 'M6', hours: '08:00 - 16:00', type: 'M' },
-            { code: 'T1', hours: '14:30 - 22:30', type: 'T' },
-            { code: 'T2', hours: '15:00 - 23:00', type: 'T' },
-            { code: 'T3', hours: '15:15 - 23:15', type: 'T' },
-            { code: 'T4', hours: '16:00 - 24:00', type: 'T' },
-            { code: 'T5', hours: '14:30 - 22:30', type: 'T' },
-            { code: 'P1', hours: '12:00-16:00 / 20:00-24:00', type: 'P' },
-            { code: 'P2', hours: '11:30-16:15 / 20:00-23:15', type: 'P' },
-            { code: 'P3', hours: '11:45-16:14 / 20:00-23:00', type: 'P' },
-            { code: 'P4', hours: '12:00-16:00 / 20:15-23:15', type: 'P' }
-        ];
+        Object.entries(grupos).forEach(([nombreGrupo, codigos]) => {
+            const group = document.createElement('optgroup');
+            group.label = nombreGrupo;
+            codigos.forEach(cod => {
+                const t = state.turnos[cod];
+                if (!t) return;
+                const opt = document.createElement('option');
+                opt.value = cod;
+                opt.textContent = cod;
+                opt.title = t.nombre;
+                group.appendChild(opt);
+            });
+            if (group.children.length > 0) select.appendChild(group);
+        });
 
-        let nextId = 1;
+        select.onchange = (e) => {
+            if (!state.semana.asignaciones[emp.nombre]) state.semana.asignaciones[emp.nombre] = {};
+            state.semana.asignaciones[emp.nombre][dia] = e.target.value;
+            actualizarColorSelect(select, e.target.value);
+            renderHorasEmpleado(emp.nombre);
+            renderConflictos();
+        };
 
-        // Obtener las fechas de la semana actual
-        function getWeekDates() {
-            const today = new Date(state.currentDate);
-            const currentDay = today.getDay(); // 0=domingo, 1=lunes, ...
-            
-            const diff = (currentDay === 0) ? 6 : currentDay - 1;
-            const monday = new Date(today);
-            monday.setDate(today.getDate() - diff + (state.weekOffset * 7));
-            
-            const weekDates = [];
-            for (let i = 0; i < 7; i++) {
-                const date = new Date(monday);
-                date.setDate(monday.getDate() + i);
-                weekDates.push(date);
-            }
-            return weekDates;
-        }
+        td.appendChild(select);
+        tr.appendChild(td);
+    });
 
-        function updateCalendar() {
-            const month = parseInt(document.getElementById('monthSelect').value);
-            const year = parseInt(document.getElementById('yearInput').value);
-            
-            state.currentDate = new Date(year, month, 1);
-            document.getElementById('monthYearDisplay').textContent = `${monthNames[month]} ${year}`;
-            
-            state.weekOffset = 0;
-            updateWeekDisplay();
-            renderTable();
-        }
+    // Columna horas
+    const tdHoras = document.createElement('td');
+    tdHoras.className = 'horas-col';
+    tdHoras.id = `horas-${cssId(emp.nombre)}`;
+    tr.appendChild(tdHoras);
 
-        function loadDefaultEmployees() {
-            const defaultEmployees = [
-                { name: 'Jefe de Cocina', role: 'Jefe', type: 'M' },
-                { name: 'Segundo de Cocina', role: 'Segundo', type: 'M' },
-                { name: 'Jefa de sector', role: 'Jefa', type: 'M' },
-                { name: 'Cocinero 1', role: 'Cocinero', type: 'M' },
-                { name: 'Cocinero 2', role: 'Cocinero', type: 'M' },
-                { name: 'Cocinero 3', role: 'Cocinero', type: 'T' },
-                { name: 'Cocinero 4', role: 'Cocinero', type: 'T' },
-                { name: 'Cocinero 5', role: 'Cocinero', type: 'T' },
-                { name: 'Cocinero 6', role: 'Cocinero', type: 'P' },
-                { name: 'Cocinero 7', role: 'Cocinero', type: 'P' },
-                { name: 'Pica 1', role: 'Pica', type: 'P' },
-                { name: 'Pica 2', role: 'Pica', type: 'P' }
-            ];
+    setTimeout(() => renderHorasEmpleado(emp.nombre), 0);
 
-            defaultEmployees.forEach(emp => {
-                addEmployee(emp.name, emp.role, emp.type);
+    return tr;
+}
+
+function renderFilaEventos(tbody) {
+    const trEventos = document.createElement('tr');
+    trEventos.className = 'eventos-row';
+    const tdEmpEv = document.createElement('td');
+    tdEmpEv.className = 'emp-col';
+    tdEmpEv.innerHTML = `<div style="font-weight:700;font-size:12px;color:#92400e;">🎉 Eventos/Grupos</div>
+                         <div style="font-size:10px;color:#a16207;">Escribe los eventos del día</div>`;
+    trEventos.appendChild(tdEmpEv);
+
+    DIAS.forEach(dia => {
+        const td = document.createElement('td');
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'eventos-input';
+        inp.placeholder = 'Evento...';
+        inp.value = state.semana.eventos[dia] || '';
+        inp.onchange = (e) => { state.semana.eventos[dia] = e.target.value; };
+        td.appendChild(inp);
+        trEventos.appendChild(td);
+    });
+
+    const tdVacio = document.createElement('td');
+    tdVacio.className = 'horas-col';
+    tdVacio.style.background = '#fef3c7';
+    trEventos.appendChild(tdVacio);
+    tbody.appendChild(trEventos);
+}
+
+function actualizarColorSelect(select, valor) {
+    select.classList.remove('tipo-M', 'tipo-T', 'tipo-P', 'tipo-L', 'tipo-V', 'tipo-LR', 'tipo-FR', 'tipo-B', 'tipo-vacio');
+    if (!valor) { select.classList.add('tipo-vacio'); return; }
+    const t = state.turnos[valor];
+    if (!t) { select.classList.add('tipo-vacio'); return; }
+    select.classList.add('tipo-' + (t.tipo || 'vacio'));
+}
+
+function renderHorasEmpleado(nombre) {
+    const el = document.getElementById(`horas-${cssId(nombre)}`);
+    if (!el) return;
+    const horas = calcularHorasEmpleado(nombre);
+    el.textContent = horas.toFixed(1) + 'h';
+    el.classList.remove('over', 'ok');
+    if (horas > 40) el.classList.add('over');
+    else if (horas === 40) el.classList.add('ok');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONFLICTOS
+// ═══════════════════════════════════════════════════════════
+
+function renderConflictos() {
+    const conflictos = [];
+    const visibles = state.empleados.filter(e => state.mostrarInactivos || e.estado === 'ACTIVO');
+
+    visibles.forEach(emp => {
+        const horas = calcularHorasEmpleado(emp.nombre);
+        const asig = state.semana.asignaciones[emp.nombre] || {};
+
+        if (horas > 40) {
+            conflictos.push({
+                tipo: 'warn',
+                msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (${(horas - 40).toFixed(1)}h extras)`
             });
         }
 
-        function addEmployee(name, role, type) {
-            const nameInput = document.getElementById('employeeName');
-            const roleInput = document.getElementById('employeeRole');
-            const typeSelect = document.getElementById('employeeType');
-
-            let employeeName = name || nameInput.value.trim();
-            let employeeRole = role || roleInput.value.trim();
-            let employeeType = type || typeSelect.value;
-
-            if (!employeeName) {
-                alert('Por favor, introduce un nombre para el empleado.');
-                return;
-            }
-
-            if (!employeeRole) {
-                employeeRole = 'Cocinero';
-            }
-
-            const schedule = {};
-            days.forEach(day => {
-                schedule[day] = '';
+        if (horas < 40 && horas > 0 && emp.estado === 'ACTIVO') {
+            conflictos.push({
+                tipo: 'info',
+                msg: `ℹ️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (le faltan ${(40 - horas).toFixed(1)}h)`
             });
-
-            const newEmployee = {
-                id: nextId++,
-                name: employeeName,
-                role: employeeRole,
-                type: employeeType,
-                schedule: schedule
-            };
-
-            state.employees.push(newEmployee);
-            renderTable();
-
-            nameInput.value = '';
-            roleInput.value = '';
-            updateCounters();
-
-            return newEmployee;
         }
 
-        function deleteEmployee(id) {
-            if (confirm('¿Estás seguro de que quieres eliminar este empleado?')) {
-                state.employees = state.employees.filter(emp => emp.id !== id);
-                renderTable();
-                updateCounters();
-            }
-        }
+        const libres = DIAS.map(d => !asig[d] || ['L', 'V', 'LR', 'FR', 'B'].includes(asig[d]));
+        const tieneDosConsecutivos = (libres[0] && libres[1]) || (libres[1] && libres[2]) ||
+                                      (libres[2] && libres[3]) || (libres[3] && libres[4]) ||
+                                      (libres[4] && libres[5]) || (libres[5] && libres[6]);
 
-        function updateEmployeeName(id, newName) {
-            const employee = state.employees.find(emp => emp.id === id);
-            if (employee) {
-                employee.name = newName;
-                updateCounters();
-            }
-        }
-
-        function updateEmployeeRole(id, newRole) {
-            const employee = state.employees.find(emp => emp.id === id);
-            if (employee) {
-                employee.role = newRole;
-            }
-        }
-
-        function getShiftColor(shiftCode) {
-            const shift = allShifts.find(s => s.code === shiftCode);
-            if (!shift) return 'white';
-            switch(shift.type) {
-                case 'M': return '#d5f5e3';
-                case 'T': return '#fadbd8';
-                case 'P': return '#d6eaf8';
-                case 'L': return '#f5b7b1';
-                case 'V': return '#f9e79f';
-                case 'F': return '#f1948a';
-                default: return 'white';
-            }
-        }
-
-        // ===== NUEVA FUNCIÓN: Calcular cobertura por día =====
-        function calculateDayCoverage(day) {
-            let morningCount = 0;
-            let middayCount = 0;
-            let nightCount = 0;
-
-            state.employees.forEach(emp => {
-                const shiftCode = emp.schedule[day] || '';
-                const coverage = getShiftCoverage(shiftCode);
-                if (coverage.morning) morningCount++;
-                if (coverage.midday) middayCount++;
-                if (coverage.night) nightCount++;
+        if (emp.estado === 'ACTIVO' && horas > 0 && !tieneDosConsecutivos) {
+            conflictos.push({
+                tipo: 'warn',
+                msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: no tiene 2 días libres consecutivos`
             });
-
-            const needs = COVERAGE_NEEDS[day] || { morning: 2, midday: 3, night: 3 };
-            
-            const morningOk = morningCount >= needs.morning;
-            const middayOk = middayCount >= needs.midday;
-            const nightOk = nightCount >= needs.night;
-            const allOk = morningOk && middayOk && nightOk;
-
-            return {
-                morning: morningCount,
-                midday: middayCount,
-                night: nightCount,
-                needs: needs,
-                morningOk: morningOk,
-                middayOk: middayOk,
-                nightOk: nightOk,
-                allOk: allOk
-            };
         }
+    });
 
-        // ===== NUEVA FUNCIÓN: Renderizar barra de cobertura =====
-        function renderCoverageBar() {
-            const container = document.getElementById('coverageContainer');
-            container.innerHTML = '';
+    const list = document.getElementById('conflictosList');
+    const badge = document.getElementById('conflictosBadge');
 
-            const weekDates = getWeekDates();
-            const bar = document.createElement('div');
-            bar.style.cssText = 'display: grid; grid-template-columns: 120px repeat(7, 1fr); gap: 2px; font-size: 0.75em;';
+    if (conflictos.length === 0) {
+        list.innerHTML = `<div class="info-empty">✅ Sin conflictos detectados</div>`;
+        badge.textContent = '0';
+        badge.className = 'badge ok';
+    } else {
+        list.innerHTML = conflictos.map(c => `<div class="conflicto-item ${c.tipo}">${c.msg}</div>`).join('');
+        badge.textContent = conflictos.length;
+        badge.className = 'badge alerta';
+    }
+}
 
-            // Encabezado
-            const header = document.createElement('div');
-            header.style.cssText = 'font-weight: bold; padding: 5px; display: flex; align-items: center; background: #2c3e50; color: white; border-radius: 4px 0 0 4px;';
-            header.textContent = 'Cobertura';
-            bar.appendChild(header);
+// ═══════════════════════════════════════════════════════════
+// BANCO DE HORAS
+// ═══════════════════════════════════════════════════════════
 
-            days.forEach((day, index) => {
-                const coverage = calculateDayCoverage(day);
-                const cell = document.createElement('div');
-                cell.style.cssText = 'padding: 4px 2px; text-align: center; border-radius: 4px; cursor: default;';
-                cell.style.background = coverage.allOk ? '#d4edda' : (coverage.morningOk && coverage.middayOk ? '#fff3cd' : '#f8d7da');
-                cell.style.border = coverage.allOk ? '1px solid #28a745' : (coverage.morningOk && coverage.middayOk ? '1px solid #ffc107' : '1px solid #dc3545');
-                
-                const date = weekDates[index];
-                const dayNum = date ? date.getDate() : '';
-                
-                cell.innerHTML = `
-                    <div style="font-weight: bold;">${dayLabels[index].substring(0,3)} ${dayNum}</div>
-                    <div style="font-size: 0.7em;">
-                        🌅 ${coverage.morning}/${coverage.needs.morning}
-                        ${coverage.morningOk ? '✅' : '❌'}
+function renderBanco() {
+    const list = document.getElementById('bancoList');
+    const badge = document.getElementById('bancoBadge');
+
+    if (state.banco.length === 0) {
+        list.innerHTML = `<div class="info-empty">✅ Sin pendientes</div>`;
+        badge.textContent = '0';
+        badge.className = 'badge ok';
+        return;
+    }
+
+    badge.textContent = state.banco.length;
+    badge.className = 'badge alerta';
+
+    list.innerHTML = state.banco.map(b => {
+        const nombre = b.horarios_empleados?.nombre || '?';
+        const icono = b.tipo === 'LR' ? '🔄' : b.tipo === 'FR' ? '📅' : '➕';
+        const label = b.tipo === 'LR' ? 'Libre Recuperado' : b.tipo === 'FR' ? 'Festivo Recuperado' : 'Hora extra';
+        return `
+            <div class="banco-item">
+                <div class="fila">
+                    <div>
+                        <strong>${icono} ${escapeHtml(nombre)}</strong>
+                        <div style="font-size:10px;margin-top:2px;">
+                            ${label} · ${b.horas}h · ${b.fecha_original}
+                        </div>
+                        ${b.motivo ? `<div style="font-size:10px;opacity:0.7;margin-top:2px;">📝 ${escapeHtml(b.motivo)}</div>` : ''}
                     </div>
-                    <div style="font-size: 0.7em;">
-                        🌇 ${coverage.midday}/${coverage.needs.midday}
-                        ${coverage.middayOk ? '✅' : '❌'}
+                    <div class="acciones">
+                        <button class="btn btn-sm btn-green" onclick="compensarBanco(${b.id})">✅</button>
+                        <button class="btn btn-sm btn-red" onclick="eliminarBanco(${b.id})">🗑️</button>
                     </div>
-                    <div style="font-size: 0.7em;">
-                        🌙 ${coverage.night}/${coverage.needs.night}
-                        ${coverage.nightOk ? '✅' : '❌'}
-                    </div>
-                `;
-                bar.appendChild(cell);
-            });
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
-            container.appendChild(bar);
+function renderBancoAlerta() {
+    const alerta = document.getElementById('bancoAlerta');
+    if (state.banco.length === 0) {
+        alerta.classList.remove('visible');
+        return;
+    }
+    const lr = state.banco.filter(b => b.tipo === 'LR').length;
+    const fr = state.banco.filter(b => b.tipo === 'FR').length;
+    const ex = state.banco.filter(b => b.tipo === 'EXTRA').length;
+    const partes = [];
+    if (lr > 0) partes.push(`${lr} Libre${lr > 1 ? 's' : ''} Recuperado${lr > 1 ? 's' : ''}`);
+    if (fr > 0) partes.push(`${fr} Festivo${fr > 1 ? 's' : ''} Recuperado${fr > 1 ? 's' : ''}`);
+    if (ex > 0) partes.push(`${ex} hora${ex > 1 ? 's' : ''} extra`);
+    alerta.innerHTML = `<strong>⏰ Banco de horas:</strong> Hay ${partes.join(' + ')} pendiente${(lr+fr+ex) > 1 ? 's' : ''} de compensar`;
+    alerta.classList.add('visible');
+}
+
+async function compensarBanco(id) {
+    if (!confirm('¿Marcar como compensado?')) return;
+    try {
+        const { error } = await db
+            .from('horarios_banco_horas')
+            .update({ estado: 'COMPENSADO', fecha_compensada: new Date().toISOString().split('T')[0] })
+            .eq('id', id);
+        if (error) throw error;
+        state.banco = state.banco.filter(b => b.id !== id);
+        renderBanco();
+        renderBancoAlerta();
+        toast('✅ Compensado', 'success');
+    } catch (e) {
+        toast('Error: ' + e.message, 'error');
+    }
+}
+
+async function eliminarBanco(id) {
+    if (!confirm('¿Eliminar este registro del banco?')) return;
+    try {
+        const { error } = await db.from('horarios_banco_horas').delete().eq('id', id);
+        if (error) throw error;
+        state.banco = state.banco.filter(b => b.id !== id);
+        renderBanco();
+        renderBancoAlerta();
+        toast('🗑️ Eliminado', 'info');
+    } catch (e) {
+        toast('Error: ' + e.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODALES
+// ═══════════════════════════════════════════════════════════
+
+function abrirModalEmpleado(nombreEditando = null) {
+    state.empleadoEditando = nombreEditando;
+    const modal = document.getElementById('modalEmpleado');
+    const title = document.getElementById('modalEmpleadoTitle');
+
+    if (nombreEditando) {
+        const emp = state.empleados.find(e => e.nombre === nombreEditando);
+        if (emp) {
+            title.textContent = '✏️ Editar: ' + emp.nombre;
+            document.getElementById('inputNombre').value = emp.nombre;
+            document.getElementById('inputPuesto').value = emp.puesto || '';
+            document.getElementById('inputTipo').value = emp.tipo_personal || 'COCINERO';
+            document.getElementById('inputTurnoPref').value = emp.turno_preferido || '';
+            document.getElementById('inputSoloManana').checked = emp.solo_manana || false;
+            document.getElementById('inputEstado').value = emp.estado || 'ACTIVO';
         }
+    } else {
+        title.textContent = '➕ Nuevo empleado';
+        document.getElementById('inputNombre').value = '';
+        document.getElementById('inputPuesto').value = '';
+        document.getElementById('inputTipo').value = 'COCINERO';
+        document.getElementById('inputTurnoPref').value = '';
+        document.getElementById('inputSoloManana').checked = false;
+        document.getElementById('inputEstado').value = 'ACTIVO';
+    }
 
-        function renderTable() {
-            const tbody = document.getElementById('scheduleBody');
-            tbody.innerHTML = '';
+    modal.classList.add('visible');
+    setTimeout(() => document.getElementById('inputNombre').focus(), 100);
+}
 
-            const weekDates = getWeekDates();
-            const month = state.currentDate.getMonth();
-            const year = state.currentDate.getFullYear();
-            
-            weekDates.forEach((date, index) => {
-                const dayNum = date.getDate();
-                const monthName = monthNames[date.getMonth()];
-                const dateElement = document.getElementById(`date${index}`);
-                if (dateElement) {
-                    dateElement.textContent = `${dayNum} ${monthName}`;
-                }
-                const headerElement = document.getElementById(`dayHeader${index}`);
-                if (headerElement) {
-                    const today = new Date();
-                    if (date.getDate() === today.getDate() && 
-                        date.getMonth() === today.getMonth() && 
-                        date.getFullYear() === today.getFullYear()) {
-                        headerElement.style.border = '3px solid #e74c3c';
-                    } else {
-                        headerElement.style.border = 'none';
-                    }
-                }
-            });
+function cerrarModalEmpleado() {
+    document.getElementById('modalEmpleado').classList.remove('visible');
+    state.empleadoEditando = null;
+}
 
-            state.employees.forEach(emp => {
-                const row = document.createElement('tr');
-                
-                const nameCell = document.createElement('td');
-                nameCell.style.padding = '6px 8px';
-                nameCell.style.minWidth = '150px';
-                
-                const typeColors = {
-                    'M': '#27ae60',
-                    'T': '#e67e22',
-                    'P': '#2980b9'
-                };
-                
-                const typeNames = {
-                    'M': 'Mañana',
-                    'T': 'Tarde',
-                    'P': 'Partido'
-                };
+async function guardarEmpleado() {
+    const nombre = document.getElementById('inputNombre').value.trim();
+    if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
 
-                nameCell.innerHTML = `
-                    <div class="employee-info">
-                        <input type="text" class="name-edit" value="${emp.name}" 
-                               onchange="updateEmployeeName(${emp.id}, this.value)"
-                               placeholder="Nombre" />
-                        <input type="text" class="role-edit" value="${emp.role}" 
-                               onchange="updateEmployeeRole(${emp.id}, this.value)"
-                               placeholder="Puesto" />
-                        <span class="employee-type-badge badge-${emp.type}">${typeNames[emp.type]}</span>
-                    </div>
-                `;
-                nameCell.style.borderLeft = `4px solid ${typeColors[emp.type]}`;
-                row.appendChild(nameCell);
+    const payload = {
+        nombre,
+        puesto: document.getElementById('inputPuesto').value.trim() || null,
+        tipo_personal: document.getElementById('inputTipo').value,
+        turno_preferido: document.getElementById('inputTurnoPref').value.trim() || null,
+        solo_manana: document.getElementById('inputSoloManana').checked,
+        estado: document.getElementById('inputEstado').value
+    };
 
-                days.forEach((day, index) => {
-                    const cell = document.createElement('td');
-                    cell.className = 'employee-cell';
-                    if (day === 'sábado' || day === 'domingo') {
-                        cell.classList.add('weekend');
-                    }
-
-                    const shiftValue = emp.schedule[day] || '';
-                    
-                    const select = document.createElement('select');
-                    select.style.width = '100%';
-                    select.style.padding = '4px';
-                    select.style.border = '1px solid #bdc3c7';
-                    select.style.borderRadius = '4px';
-                    select.style.fontSize = '0.8em';
-                    select.style.minHeight = '32px';
-                    
-                    select.style.background = getShiftColor(shiftValue);
-
-                    const groups = {
-                        'L': '📅 Días de Descanso',
-                        'V': '🏖️ Vacaciones',
-                        'F': '📆 Feriados',
-                        'M': '🌅 Turnos Mañana',
-                        'T': '🌇 Turnos Tarde',
-                        'P': '🔄 Turnos Partido'
-                    };
-
-                    const typeOrder = ['L', 'V', 'F', 'M', 'T', 'P'];
-                    typeOrder.forEach(type => {
-                        const groupLabel = document.createElement('optgroup');
-                        groupLabel.label = groups[type];
-                        
-                        allShifts.filter(s => s.type === type).forEach(shift => {
-                            const option = document.createElement('option');
-                            option.value = shift.code;
-                            if (shift.code === '') {
-                                option.textContent = `🔴 ${shift.hours}`;
-                            } else if (shift.type === 'V') {
-                                option.textContent = `🏖️ ${shift.code}: ${shift.hours}`;
-                            } else if (shift.type === 'F') {
-                                option.textContent = `📆 ${shift.code}: ${shift.hours}`;
-                            } else {
-                                option.textContent = `${shift.code}: ${shift.hours}`;
-                            }
-                            if (shiftValue === shift.code) {
-                                option.selected = true;
-                            }
-                            groupLabel.appendChild(option);
-                        });
-                        
-                        select.appendChild(groupLabel);
-                    });
-
-                    select.addEventListener('change', function(e) {
-                        emp.schedule[day] = this.value;
-                        this.style.background = getShiftColor(this.value);
-                        updateCounters();
-                        renderCoverageBar();
-                    });
-
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.textContent = '✕';
-                    deleteBtn.onclick = function(e) {
-                        e.stopPropagation();
-                        deleteEmployee(emp.id);
-                    };
-
-                    cell.appendChild(select);
-                    cell.appendChild(deleteBtn);
-                    row.appendChild(cell);
-                });
-
-                tbody.appendChild(row);
-            });
-
-            updateCounters();
-            renderCoverageBar();
+    try {
+        let error;
+        if (state.empleadoEditando) {
+            const res = await db.from('horarios_empleados').update(payload).eq('nombre', state.empleadoEditando);
+            error = res.error;
+        } else {
+            const maxOrden = Math.max(...state.empleados.map(e => e.orden || 0), 0);
+            payload.orden = maxOrden + 1;
+            const res = await db.from('horarios_empleados').insert([payload]);
+            error = res.error;
         }
+        if (error) throw error;
+        toast('💾 Empleado guardado', 'success');
+        cerrarModalEmpleado();
+        await recargarEmpleados();
+        render();
+    } catch (e) {
+        toast('Error: ' + e.message, 'error');
+    }
+}
 
-        function updateCounters() {
-            const total = state.employees.length;
-            const morning = state.employees.filter(e => e.type === 'M').length;
-            const evening = state.employees.filter(e => e.type === 'T').length;
-            const partTime = state.employees.filter(e => e.type === 'P').length;
-            
-            let restCount = 0;
-            state.employees.forEach(emp => {
-                days.forEach(day => {
-                    if (emp.schedule[day] === '' || emp.schedule[day] === 'LIB' || 
-                        emp.schedule[day] === 'VAC' || emp.schedule[day] === 'REC' || 
-                        emp.schedule[day] === 'FER') {
-                        restCount++;
-                    }
-                });
-            });
+async function recargarEmpleados() {
+    const { data } = await db.from('horarios_empleados').select('*').order('orden');
+    state.empleados = data || [];
+}
 
-            document.getElementById('totalStaff').textContent = total;
-            document.getElementById('morningStaff').textContent = morning;
-            document.getElementById('eveningStaff').textContent = evening;
-            document.getElementById('partTimeStaff').textContent = partTime;
-            document.getElementById('restDays').textContent = restCount;
+function abrirModalBanco() {
+    const modal = document.getElementById('modalBanco');
+    const sel = document.getElementById('bancoEmpleado');
+    sel.innerHTML = state.empleados
+        .filter(e => e.estado === 'ACTIVO')
+        .map(e => `<option value="${e.id}">${escapeHtml(e.nombre)}</option>`)
+        .join('');
+    document.getElementById('bancoFecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('bancoHoras').value = '8';
+    document.getElementById('bancoMotivo').value = '';
+    modal.classList.add('visible');
+}
+
+function cerrarModalBanco() {
+    document.getElementById('modalBanco').classList.remove('visible');
+}
+
+async function guardarBanco() {
+    const empleado_id = document.getElementById('bancoEmpleado').value;
+    const tipo = document.getElementById('bancoTipo').value;
+    const fecha_original = document.getElementById('bancoFecha').value;
+    const horas = parseFloat(document.getElementById('bancoHoras').value) || 8;
+    const motivo = document.getElementById('bancoMotivo').value.trim() || null;
+
+    if (!empleado_id || !fecha_original) {
+        toast('Faltan datos obligatorios', 'error');
+        return;
+    }
+
+    try {
+        const { error } = await db.from('horarios_banco_horas').insert([{
+            empleado_id, tipo, fecha_original, horas, motivo, estado: 'PENDIENTE'
+        }]);
+        if (error) throw error;
+
+        const { data } = await db
+            .from('horarios_banco_horas')
+            .select('*, horarios_empleados(nombre)')
+            .eq('estado', 'PENDIENTE')
+            .order('fecha_original', { ascending: false });
+        state.banco = data || [];
+
+        renderBanco();
+        renderBancoAlerta();
+        cerrarModalBanco();
+        toast('✅ Añadido al banco', 'success');
+    } catch (e) {
+        toast('Error: ' + e.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILIDADES UI
+// ═══════════════════════════════════════════════════════════
+
+function toggleInactivos() {
+    state.mostrarInactivos = !state.mostrarInactivos;
+    const btn = document.getElementById('btnInactivos');
+    btn.textContent = state.mostrarInactivos ? '👁️ Solo activos' : '👁️ Mostrar inactivos';
+    render();
+}
+
+function imprimir() {
+    window.print();
+}
+
+// ═══════════════════════════════════════════════════════════
+// INICIALIZACIÓN
+// ═══════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            cerrarModalEmpleado();
+            cerrarModalBanco();
         }
+    });
 
-        function changeWeek(delta) {
-            state.weekOffset += delta;
-            updateWeekDisplay();
-            renderTable();
-        }
-
-        function resetWeek() {
-            state.weekOffset = 0;
-            updateWeekDisplay();
-            renderTable();
-        }
-
-        function updateWeekDisplay() {
-            const weekNum = state.weekOffset + 1;
-            document.getElementById('weekDisplay').textContent = `Semana ${weekNum}`;
-            
-            const weekDates = getWeekDates();
-            if (weekDates.length > 0) {
-                const startDate = weekDates[0];
-                const endDate = weekDates[6];
-                const month = monthNames[startDate.getMonth()];
-                const year = startDate.getFullYear();
-                document.getElementById('monthYearDisplay').textContent = 
-                    `${month} ${year} (${startDate.getDate()} - ${endDate.getDate()})`;
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.addEventListener('click', (e) => {
+            if (e.target === m) {
+                cerrarModalEmpleado();
+                cerrarModalBanco();
             }
-        }
+        });
+    });
 
-        function fillDefaultEmployees() {
-            if (state.employees.length > 0) {
-                if (!confirm('Esto reemplazará todos los empleados actuales. ¿Continuar?')) {
-                    return;
-                }
-            }
-            state.employees = [];
-            nextId = 1;
-            loadDefaultEmployees();
-            renderTable();
-        }
-
-        function autoAssignShifts() {
-            const shiftCodes = allShifts.filter(s => s.type === 'M' || s.type === 'T' || s.type === 'P').map(s => s.code);
-            
-            state.employees.forEach((emp, index) => {
-                days.forEach((day, dayIndex) => {
-                    const shiftIndex = (index + dayIndex) % shiftCodes.length;
-                    emp.schedule[day] = shiftCodes[shiftIndex];
-                });
-            });
-
-            renderTable();
-            alert('✅ Turnos asignados automáticamente.');
-        }
-
-        // ===== NUEVA FUNCIÓN: Asignar 2 días libres CONSECUTIVOS =====
-        function autoAssignConsecutiveRestDays() {
-            if (state.employees.length === 0) {
-                alert('❌ No hay empleados para asignar días libres.');
-                return;
-            }
-
-            // Para cada empleado, asignar 2 días consecutivos aleatorios
-            state.employees.forEach(emp => {
-                // Primero, limpiar días libres previos
-                days.forEach(day => {
-                    if (emp.schedule[day] === '' || emp.schedule[day] === 'LIB' || 
-                        emp.schedule[day] === 'VAC' || emp.schedule[day] === 'REC' || 
-                        emp.schedule[day] === 'FER') {
-                        emp.schedule[day] = '';
-                    }
-                });
-
-                // Elegir un día de inicio aleatorio para los 2 días libres (lunes a sábado)
-                // para asegurar que sean consecutivos
-                const startDayIndex = Math.floor(Math.random() * 6); // 0=lunes, 5=sábado
-                const day1 = days[startDayIndex];
-                const day2 = days[startDayIndex + 1];
-                
-                emp.schedule[day1] = '';
-                emp.schedule[day2] = '';
-
-                // Asignar turnos aleatorios a los días restantes
-                const shiftCodes = allShifts.filter(s => s.type === 'M' || s.type === 'T' || s.type === 'P').map(s => s.code);
-                days.forEach(day => {
-                    if (emp.schedule[day] === '') {
-                        const randomShift = shiftCodes[Math.floor(Math.random() * shiftCodes.length)];
-                        emp.schedule[day] = randomShift;
-                    }
-                });
-            });
-
-            renderTable();
-            alert('✅ Asignados 2 días libres CONSECUTIVOS a cada empleado.');
-        }
-
-        function validateSchedule() {
-            let warnings = [];
-            let errors = [];
-
-            days.forEach(day => {
-                const assignedShifts = state.employees.filter(e => e.schedule[day] && e.schedule[day] !== '');
-                const morningShifts = state.employees.filter(e => {
-                    const shift = allShifts.find(s => s.code === e.schedule[day]);
-                    return shift && shift.type === 'M';
-                });
-                const eveningShifts = state.employees.filter(e => {
-                    const shift = allShifts.find(s => s.code === e.schedule[day]);
-                    return shift && shift.type === 'T';
-                });
-
-                if (assignedShifts.length === 0) {
-                    errors.push(`❌ ${dayLabels[days.indexOf(day)]}: Sin personal asignado`);
-                }
-                if (morningShifts.length < 1 && day !== 'sábado' && day !== 'domingo') {
-                    warnings.push(`⚠️ ${dayLabels[days.indexOf(day)]}: Sin turnos de mañana`);
-                }
-                if (eveningShifts.length < 1 && day !== 'sábado' && day !== 'domingo') {
-                    warnings.push(`⚠️ ${dayLabels[days.indexOf(day)]}: Sin turnos de tarde`);
-                }
-            });
-
-            let message = '📋 Validación del Horario:\n\n';
-            if (errors.length === 0 && warnings.length === 0) {
-                message += '✅ ¡El horario está completo y bien distribuido!';
-            } else {
-                if (errors.length > 0) {
-                    message += '🔴 ERRORS:\n' + errors.join('\n') + '\n\n';
-                }
-                if (warnings.length > 0) {
-                    message += '🟡 ADVERTENCIAS:\n' + warnings.join('\n');
-                }
-            }
-
-            alert(message);
-        }
-
-        // ===== NUEVA FUNCIÓN: Verificar cobertura detallada =====
-        function checkCoverage() {
-            let results = [];
-            let allGood = true;
-
-            days.forEach(day => {
-                const coverage = calculateDayCoverage(day);
-                const dayLabel = dayLabels[days.indexOf(day)];
-                let status = '✅';
-                let issues = [];
-
-                if (!coverage.morningOk) {
-                    status = '❌';
-                    allGood = false;
-                    issues.push(`🌅 Mañana: ${coverage.morning}/${coverage.needs.morning}`);
-                }
-                if (!coverage.middayOk) {
-                    status = '❌';
-                    allGood = false;
-                    issues.push(`🌇 Mediodía: ${coverage.midday}/${coverage.needs.midday}`);
-                }
-                if (!coverage.nightOk) {
-                    status = '❌';
-                    allGood = false;
-                    issues.push(`🌙 Noche: ${coverage.night}/${coverage.needs.night}`);
-                }
-
-                if (issues.length === 0) {
-                    results.push(`✅ ${dayLabel}: Completo (M:${coverage.morning}/${coverage.needs.morning}, Md:${coverage.midday}/${coverage.needs.midday}, N:${coverage.night}/${coverage.needs.night})`);
-                } else {
-                    results.push(`❌ ${dayLabel}: FALTAN - ${issues.join(' | ')}`);
-                }
-            });
-
-            let message = '📊 VERIFICACIÓN DE COBERTURA\n';
-            message += '='.repeat(40) + '\n\n';
-            message += results.join('\n') + '\n\n';
-            message += '📌 REQUISITOS POR DÍA: 🌅 2 mañana | 🌇 3 mediodía | 🌙 3 noche\n';
-            
-            if (allGood) {
-                message += '\n✅ ¡TODOS LOS DÍAS ESTÁN CUBIERTOS CORRECTAMENTE!';
-            } else {
-                message += '\n⚠️ Hay días con personal insuficiente. Revisa la barra de cobertura.';
-            }
-
-            alert(message);
-        }
-
-        function printSchedule() {
-            window.print();
-        }
-
-        function exportData() {
-            const data = {
-                employees: state.employees,
-                weekOffset: state.weekOffset,
-                nextId: nextId,
-                currentDate: state.currentDate
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `horario_cocina_${monthNames[state.currentDate.getMonth()]}_${state.currentDate.getFullYear()}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (data.employees && Array.isArray(data.employees)) {
-                        state.employees = data.employees;
-                        state.weekOffset = data.weekOffset || 0;
-                        nextId = data.nextId || 1;
-                        if (data.currentDate) {
-                            state.currentDate = new Date(data.currentDate);
-                            document.getElementById('monthSelect').value = state.currentDate.getMonth();
-                            document.getElementById('yearInput').value = state.currentDate.getFullYear();
-                        }
-                        updateWeekDisplay();
-                        renderTable();
-                        alert('✅ Datos importados correctamente.');
-                    } else {
-                        alert('❌ Formato de archivo inválido.');
-                    }
-                } catch (error) {
-                    alert('❌ Error al leer el archivo: ' + error.message);
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        }
-
-        function clearAll() {
-            if (confirm('¿Estás seguro de que quieres eliminar todos los empleados?')) {
-                state.employees = [];
-                nextId = 1;
-                renderTable();
-                updateCounters();
-            }
-        }
-
-        function init() {
-            const today = new Date();
-            document.getElementById('monthSelect').value = today.getMonth();
-            document.getElementById('yearInput').value = today.getFullYear();
-            state.currentDate = today;
-            
-            loadDefaultEmployees();
-            updateWeekDisplay();
-            renderTable();
-            
-            document.getElementById('employeeName').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    addEmployee();
-                }
-            });
-            document.getElementById('employeeRole').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    addEmployee();
-                }
-            });
-        }
-
-        window.onload = init;
-    </script>
+    await cargarDatos();
+    await cargarSemana();
+    actualizarCabeceraSemana();
+});
+</script>
 </body>
 </html>
