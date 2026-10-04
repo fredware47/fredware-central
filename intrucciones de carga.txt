@@ -1,0 +1,379 @@
+════════════════════════════════════════════════════════════
+📌 FREDWARE — PROMPT DE CARGA INICIAL DEL SISTEMA
+📅 Versión 1.0 · 04/10/2026
+════════════════════════════════════════════════════════════
+
+Este documento explica el ORDEN CORRECTO para cargar datos
+en un sistema Fredware nuevo o vacío. Si sigues este orden,
+el sistema queda operativo en ~30-60 minutos.
+
+════════════════════════════════════════════════════════════
+🎯 ¿QUÉ ES LA "CARGA INICIAL"?
+════════════════════════════════════════════════════════════
+
+Es el conjunto de pasos que hay que dar UNA SOLA VEZ cuando
+el sistema arranca desde cero (o cuando quieres hacer una
+recarga completa). Deja el sistema con:
+  · Los productos que existen en cocina
+  · Los items de mise and place (timbres/baldas)
+  · Los vínculos entre ambos (para que descontar stock)
+  · El stock real actual (foto del momento)
+  · Los mínimos (para alertas)
+  · Las faltas actuales (opcional)
+
+⚠️ IMPORTANTE: Los pasos van EN ORDEN. Si los saltas, hay
+   dependencias que fallan (no puedes vincular si no existe
+   el producto, no puedes descontar si no hay vínculo).
+
+════════════════════════════════════════════════════════════
+✅ PASO 0 — VERIFICAR PREREQUISITOS
+════════════════════════════════════════════════════════════
+
+Antes de empezar, comprueba que las tablas existen:
+
+SELECT 
+  'productos_raciones' AS tabla, COUNT(*) AS filas FROM productos_raciones
+UNION ALL
+SELECT 'timbres_catalogo', COUNT(*) FROM timbres_catalogo
+UNION ALL
+SELECT 'stock_movimientos', COUNT(*) FROM stock_movimientos
+UNION ALL
+SELECT 'faltas_cocina', COUNT(*) FROM faltas_cocina
+UNION ALL
+SELECT 'recepciones', COUNT(*) FROM recepciones
+UNION ALL
+SELECT 'proveedores', COUNT(*) FROM proveedores;
+
+Esperado:
+  · productos_raciones: 50-150
+  · timbres_catalogo: 80-150
+  · stock_movimientos: cualquiera
+  · faltas_cocina: cualquiera
+  · recepciones: cualquiera
+  · proveedores: 20-50
+
+Si falta alguna tabla, NO sigas. Revisa el mega prompt.
+
+════════════════════════════════════════════════════════════
+📦 PASO 1 — CARGAR PRODUCTOS EN `productos_raciones`
+════════════════════════════════════════════════════════════
+
+Aquí van TODOS los productos que la cocina necesita. Cada
+uno tiene: id, nombre, unidades, zona, categoría, proveedor.
+
+┌──────────────────────────────────────────────────────────┐
+│ OPCIÓN A — Manual desde compras.html (fácil, 1 en 1)     │
+├──────────────────────────────────────────────────────────┤
+│ 1. Abrir compras.html                                    │
+│ 2. Pestaña "Cesta y Pedidos"                             │
+│ 3. En el buscador, escribir el nombre del producto       │
+│ 4. Si no existe → "➕ Crear 'NOMBRE'"                    │
+│ 5. Modal → rellenar unidad compra + unidad ración        │
+│ 6. Guardar → queda en productos_raciones                 │
+│                                                          │
+│ ⚠️  Si vas a meter 50+ productos, es MUY lento.          │
+│    Usa OPCIÓN B para volumen.                            │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ OPCIÓN B — SQL en lote (recomendado para >20 productos)  │
+├──────────────────────────────────────────────────────────┤
+│ INSERT INTO productos_raciones                            │
+│   (id, nombre_articulo, unidad_compra, unidad_racion,    │
+│    zona, tipo, categoria, estado,                        │
+│    stock_actual, stock_minimo, proveedor_principal)      │
+│ VALUES                                                    │
+│   ('AGUACATE', 'AGUACATE', 'UNIDADES', 'UNIDAD',         │
+│    'TRANSVERSAL', 'MONTAJE', 'FRUTA',                    │
+│    'CONFIGURADO', 0, 10, 'CHEF MAESTRO'),                │
+│   ('BACON', 'BACON', 'KG', 'RACIÓN',                     │
+│    'CARTA', 'ELABORADO', 'CARNE',                        │
+│    'CONFIGURADO', 0, 3, 'MAKRO'),                        │
+│   -- ... más filas ...                                   │
+│ ON CONFLICT (id) DO NOTHING;                             │
+└──────────────────────────────────────────────────────────┘
+
+✅ Verificar:
+SELECT COUNT(*) FROM productos_raciones;
+
+════════════════════════════════════════════════════════════
+🍽️ PASO 2 — CARGAR CATÁLOGO DE MISE AND PLACE
+════════════════════════════════════════════════════════════
+
+Esto es la lista de items por balda (los que el cocinero
+revisa cada turno). Ya existe en `timbres_catalogo`.
+
+Si está vacío, hay un botón en miseandplacejefe.html:
+"🌱 Cargar catálogo inicial" (en pestaña Catálogo).
+
+Si ya está cargado (106 items típicos), ¡NO toques nada!
+Ya tiene la estructura heredada de la hoja de Excel.
+
+✅ Verificar:
+SELECT balda, COUNT(*) 
+FROM timbres_catalogo 
+WHERE activo = true AND item_bold = false
+GROUP BY balda ORDER BY balda;
+
+════════════════════════════════════════════════════════════
+🔗 PASO 3 — VINCULAR ITEMS ↔ PRODUCTOS
+════════════════════════════════════════════════════════════
+
+⚠️ ESTE ES EL PASO MÁS IMPORTANTE Y EL QUE MÁS SE OLVIDA.
+
+¿Qué hace? Conecta cada item del catálogo de mise con su
+producto en `productos_raciones`. Sin vínculo → no descuenta.
+
+┌──────────────────────────────────────────────────────────┐
+│ 3.A — Auto-vinculación (por nombre exacto)              │
+├──────────────────────────────────────────────────────────┤
+│ UPDATE timbres_catalogo tc                                │
+│ SET producto_racion_id = pr.id                            │
+│ FROM productos_raciones pr                                │
+│ WHERE tc.producto_racion_id IS NULL                       │
+│   AND tc.activo = true                                    │
+│   AND tc.item_bold = false                                │
+│   AND UPPER(TRIM(tc.item_nombre)) =                       │
+│       UPPER(TRIM(pr.nombre_articulo));                    │
+│                                                          │
+│ Normalmente vincula 5-15 items.                         │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ 3.B — Auto-vinculación ampliada (normalizada)           │
+├──────────────────────────────────────────────────────────┤
+│ Requiere tener creada la función normalizar_nombre()     │
+│ (ver histórico de chat o pedirla).                       │
+│                                                          │
+│ UPDATE timbres_catalogo tc                                │
+│ SET producto_racion_id = pr.id                            │
+│ FROM productos_raciones pr                                │
+│ WHERE tc.producto_racion_id IS NULL                       │
+│   AND tc.activo = true                                    │
+│   AND tc.item_bold = false                                │
+│   AND normalizar_nombre(tc.item_nombre) =                 │
+│       normalizar_nombre(pr.nombre_articulo);              │
+│                                                          │
+│ Sube a 20-40 items vinculados.                           │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ 3.C — Manual desde miseandplacejefe.html (el resto)     │
+├──────────────────────────────────────────────────────────┤
+│ 1. Abrir miseandplacejefe.html                           │
+│ 2. Pestaña "📋 Catálogo"                                 │
+│ 3. Buscar items con badge "⚪ Sin vínculo"              │
+│ 4. Click en el badge → abre buscador de productos        │
+│ 5. Escribir nombre → click en el producto correcto       │
+│ 6. Queda vinculado al instante                           │
+│                                                          │
+│ ⏱️  Con 84 items pendientes, son ~15 min.                │
+│                                                          │
+│ TIP: Filtrar primero en pestaña "📝 Fichas técnicas"    │
+│      por "⚪ Solo sin vincular" para ver la lista.      │
+└──────────────────────────────────────────────────────────┘
+
+✅ Verificar:
+SELECT COUNT(*) FILTER (WHERE producto_racion_id IS NOT NULL) AS vinculados,
+       COUNT(*) FILTER (WHERE producto_racion_id IS NULL) AS pendientes
+FROM timbres_catalogo
+WHERE activo = true AND item_bold = false;
+
+Objetivo: >80% vinculados. Los que no tienen sentido
+(platos preparados, cabeceras) NO se vinculan. Es normal.
+
+════════════════════════════════════════════════════════════
+📊 PASO 4 — STOCK INICIAL (la "foto del momento")
+════════════════════════════════════════════════════════════
+
+Aquí le dices al sistema: "hoy, en la cámara, HAY X de Y".
+
+⚠️ Esto NO es una recepción. Es un AJUSTE de punto de partida.
+   Queda registrado en stock_movimientos como AJUSTE.
+
+┌──────────────────────────────────────────────────────────┐
+│ RECOMENDADO — Desde stock.html                           │
+├──────────────────────────────────────────────────────────┤
+│ 1. Abrir stock.html                                      │
+│ 2. Pestaña "⚙️ Ajustes / Cuadre"                         │
+│ 3. Buscar el producto                                    │
+│ 4. Ver stock teórico (0 al principio)                    │
+│ 5. Introducir stock físico real                          │
+│ 6. Pulsar "✅ Aplicar ajuste"                            │
+│ 7. Repetir para cada producto con stock real             │
+│                                                          │
+│ ⏱️  1 min por producto. Recomendado hacer los 20-30      │
+│    más importantes. El resto puede quedar en 0.          │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ RÁPIDO — SQL masivo (sin auditoría bonita)              │
+├──────────────────────────────────────────────────────────┤
+│ UPDATE productos_raciones SET stock_actual = 5           │
+│ WHERE id = 'AGUACATE';                                   │
+│ UPDATE productos_raciones SET stock_actual = 3           │
+│ WHERE id = 'CROCA';                                      │
+│ -- ... más                                                 │
+│                                                          │
+│ ⚠️  NO queda reflejado en stock_movimientos.            │
+│    Solo úsalo si no te importa el histórico.            │
+└──────────────────────────────────────────────────────────┘
+
+✅ Verificar:
+SELECT id, nombre_articulo, stock_actual, unidad_compra
+FROM productos_raciones
+WHERE stock_actual > 0
+ORDER BY stock_actual DESC;
+
+════════════════════════════════════════════════════════════
+⚠️ PASO 5 — STOCK MÍNIMO (para alertas)
+════════════════════════════════════════════════════════════
+
+Define "a partir de cuándo me avisas de que falta X".
+
+Ejemplo: "si Aguacate baja de 5 unidades, avísame"
+→ stock_minimo = 5
+
+┌──────────────────────────────────────────────────────────┐
+│ Desde miseandplacejefe.html                              │
+├──────────────────────────────────────────────────────────┤
+│ ⚠️ De momento NO hay UI específica para esto.            │
+│    Se hace por SQL:                                      │
+│                                                          │
+│ UPDATE productos_raciones SET stock_minimo = 5           │
+│ WHERE id = 'AGUACATE';                                   │
+│                                                          │
+│ Sugerencia: definir mínimos solo de los 30-40            │
+│ productos que realmente importan.                        │
+└──────────────────────────────────────────────────────────┘
+
+✅ Verificar:
+SELECT COUNT(*) FROM productos_raciones WHERE stock_minimo > 0;
+
+Los productos con stock_minimo = 0 se consideran "sin configurar"
+y NO generan alertas en el dashboard.
+
+════════════════════════════════════════════════════════════
+🔔 PASO 6 — FALTAS INICIALES (opcional)
+════════════════════════════════════════════════════════════
+
+Si hoy hay cosas que se han acabado y hay que pedir, se
+marcan como "faltas". El jefe las verá en compras.html.
+
+┌──────────────────────────────────────────────────────────┐
+│ Desde pedidos.html                                       │
+├──────────────────────────────────────────────────────────┤
+│ 1. Abrir pedidos.html                                    │
+│ 2. Pestaña "📝 Faltas"                                   │
+│ 3. Escribir el nombre del producto                       │
+│ 4. Elegir del autocompletado                             │
+│ 5. Pulsar "➕ Añadir"                                    │
+│                                                          │
+│ Se asigna proveedor automáticamente desde                │
+│ productos_raciones.proveedor_principal.                  │
+│                                                          │
+│ Si no encuentra proveedor → marcarla como "⚠️ Asignar"  │
+│ y hacerlo manual desde el mismo panel.                   │
+└──────────────────────────────────────────────────────────┘
+
+Alternativa desde miseandplace.html:
+  · El cocinero hace la ronda de timbres
+  · Marca ❌ en lo que falta
+  · Pestaña "🛒 Pedido" genera la lista
+  · Pulsar "Cerrar ronda" → snapshot + faltas
+
+✅ Verificar:
+SELECT insumo, proveedor_id, urgente 
+FROM faltas_cocina 
+ORDER BY fecha_anotado DESC;
+
+════════════════════════════════════════════════════════════
+🧪 PASO 7 — PROBAR QUE TODO FUNCIONA
+════════════════════════════════════════════════════════════
+
+Test 1 — Mise and Place
+  1. Abrir miseandplace.html
+  2. Poner nombre, elegir turno
+  3. Buscar un item vinculado (ej: "Aguacate")
+  4. Pulsar 🏷️ → IMPRIMIR con cantidad 1
+  5. Verificar toast: "📦 Stock: X"
+  6. Verificar stock.html → Historial → movimiento SALIDA/MISE
+
+Test 2 — Recepción
+  1. Abrir recepcion.html
+  2. Cualquier línea → "Recibir"
+  3. Verificar que aparece en stock.html → Historial con ENTRADA
+
+Test 3 — Dashboard
+  1. Abrir dashboard-unified.html
+  2. Widget "🟠 Productos a reponer" debe mostrar productos
+  3. Los productos con stock_minimo > 0 deben aparecer
+
+════════════════════════════════════════════════════════════
+📋 CHECKLIST FINAL
+════════════════════════════════════════════════════════════
+
+[ ] productos_raciones tiene >50 productos configurados
+[ ] timbres_catalogo tiene >80 items activos
+[ ] >80% de items de timbres vinculados a productos
+[ ] stock_actual tiene valores reales para los 20-30 top
+[ ] stock_minimo definido para los 30-40 importantes
+[ ] (opcional) faltas_cocina tiene las faltas actuales
+[ ] Test 1 OK: elaboración descuenta stock
+[ ] Test 2 OK: recepción suma stock
+[ ] Test 3 OK: dashboard muestra alertas
+
+Cuando los 3 tests pasan → SISTEMA OPERATIVO ✅
+
+════════════════════════════════════════════════════════════
+🎯 ORDEN RECOMENDADO DE EJECUCIÓN
+════════════════════════════════════════════════════════════
+
+DÍA 1 (mañana):
+  · Paso 0: verificar prerequisitos (5 min)
+  · Paso 1: cargar productos que falten (30-60 min)
+  · Paso 3: auto-vincular + manual (30 min)
+
+DÍA 1 (tarde):
+  · Paso 4: stock inicial de los top 20-30 (30 min)
+  · Paso 5: stock mínimo de los top 30-40 (20 min)
+
+DÍA 2:
+  · Paso 6: faltas actuales (10 min)
+  · Paso 7: probar los 3 tests (15 min)
+
+Total: ~3 horas repartidas en 2 días.
+Después: uso normal diario.
+
+════════════════════════════════════════════════════════════
+💡 CONSEJOS PRÁCTICOS
+════════════════════════════════════════════════════════════
+
+1. NO intentes tener TODO perfecto de golpe. Con el 60%
+   funcionando ya se nota la mejora.
+
+2. Empieza por los productos que MÁS se mueven:
+   carne, pescado, frutas frescas, aceites, harinas.
+
+3. Los preparados internos (salsas, vinagretas, mezclum)
+   NO necesitan vínculo de stock → su consumo va por
+   ingredientes en el futuro (opción C).
+
+4. Los dulces (mermeladas, salsas gourmet) tampoco.
+   Son de larga duración → no merece la pena contarlos.
+
+5. Si algo falla, revisa este orden:
+   ¿existe el producto? → ¿está vinculado? → ¿tiene mínimo?
+   → ¿el trigger está activo?
+
+════════════════════════════════════════════════════════════
+🔗 CREDENCIALES Y URLs
+════════════════════════════════════════════════════════════
+
+Supabase: https://bhyprsjokwgazzzlfnbf.supabase.co
+Ngrok:    https://untried-january-thinning.ngrok-free.dev
+Impresora: Brother QL-810W (172.20.101.56)
+
+════════════════════════════════════════════════════════════
+FIN DEL PROMPT DE CARGA INICIAL
+════════════════════════════════════════════════════════════
