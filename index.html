@@ -43,6 +43,9 @@
         .card-pedidos:hover { background: #e0f2fe !important; }
         .card-historial { border-color: #64748b !important; background: #f8fafc !important; }
         .card-historial:hover { background: #f1f5f9 !important; }
+        /* 🆕 Stock — destacado */
+        .card-stock { border-color: #059669 !important; background: #ecfdf5 !important; }
+        .card-stock:hover { background: #d1fae5 !important; }
 
         @media (max-width: 640px) {
             .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -85,6 +88,13 @@
                 <span class="icono">📊</span>
                 <span class="nombre">Dashboard Unificado <span class="badge-nuevo">Nuevo</span></span>
                 <span class="desc">Vista global de recepciones e inventario</span>
+            </a>
+
+            <!-- 🆕 STOCK -->
+            <a href="stock.html" class="card card-stock">
+                <span class="icono">📦</span>
+                <span class="nombre">Stock <span class="badge-activo">Nuevo</span></span>
+                <span class="desc">Movimientos · Ajustes · Historial</span>
             </a>
 
             <!-- MISE AND PLACE JEFE -->
