@@ -1,0 +1,46 @@
+════════════════════════════════════════════════════════════
+FREDWARE — SOFTWARE PROPIETARIO
+════════════════════════════════════════════════════════════
+
+Copyright © 2026 FREDLES GARCIA GUERRA
+Todos los derechos reservados.
+
+Este software, su código fuente, su arquitectura, su diseño,
+su documentación y cualquier obra derivada (en adelante,
+"el Software") son propiedad exclusiva de su autor.
+
+Queda TERMINANTEMENTE PROHIBIDO, sin autorización previa
+y por escrito del titular:
+
+  · Reproducir, copiar o duplicar el Software, total o
+    parcialmente, por cualquier medio.
+  · Distribuir, publicar, sublicenciar, vender, alquilar o
+    ceder el Software a terceros.
+  · Modificar, adaptar, traducir o crear obras derivadas.
+  · Realizar ingeniería inversa, descompilar o desensamblar.
+  · Utilizar el Software con fines comerciales sin licencia.
+  · Eliminar, ocultar o modificar este aviso de copyright
+    ni los avisos incluidos en los archivos fuente.
+
+Cualquier uso no autorizado del Software constituirá una
+infracción de los derechos de propiedad intelectual,
+protegidos por:
+
+  · Real Decreto Legislativo 1/1996, de 12 de abril,
+    por el que se aprueba el Texto Refundido de la Ley
+    de Propiedad Intelectual.
+  · Directiva 2009/24/CE del Parlamento Europeo y del
+    Consejo, sobre la protección jurídica de programas
+    de ordenador.
+
+El titular se reserva el derecho de ejercer las acciones
+legales que correspondan contra cualquier persona física
+o jurídica que infrinja estos derechos.
+
+Contacto para licencias o autorizaciones:
+  📧 [FREDLESG@GMAIL.COM]
+
+Fecha de creación: 2026
+Última actualización: 04/10/2026
+
+════════════════════════════════════════════════════════════
