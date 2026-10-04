@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📦 Fredware - Stock</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E📦%3C/text%3E%3C/svg%3E">
+    <meta name="theme-color" content="#1e293b">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="shared-core.js"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        .tabs-container { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 12px 16px; text-align: center; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 13px; color: #475569; background: transparent; white-space: nowrap; }
+        .tab-btn.active { background: white; color: #1e293b; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .badge-conn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-conn.loading { background: #fef3c7; color: #92400e; animation: pulse-badge 1.5s ease-in-out infinite; }
+        .badge-conn.online { background: #d1fae5; color: #065f46; }
+        .badge-conn.error { background: #fee2e2; color: #991b1b; }
+        @keyframes pulse-badge { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        .badge-estado { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-ok { background: #d1fae5; color: #065f46; }
+        .badge-cerca { background: #fef3c7; color: #92400e; }
+        .badge-bajo { background: #fed7aa; color: #9a3412; }
+        .badge-sin { background: #fee2e2; color: #991b1b; }
+
+        .badge-tipo { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+        .badge-entrada { background: #d1fae5; color: #065f46; }
+        .badge-salida { background: #dbeafe; color: #1e40af; }
+        .badge-merma { background: #fee2e2; color: #991b1b; }
+        .badge-ajuste { background: #fef3c7; color: #92400e; }
+        .badge-traspaso { background: #ede9fe; color: #5b21b6; }
+
+        input, select, textarea {
+            width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px;
+            font-size: 14px; background: #f8fafc; transition: all 0.2s; font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+
+        .btn-primary { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.15s; font-size: 14px; }
+        .btn-primary:hover { background: #059669; }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-danger { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.15s; font-size: 12px; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; }
+
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .tabla th { background: #f1f5f9; padding: 10px 8px; text-align: left; font-size: 11px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #cbd5e1; }
+        .tabla td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .tabla tr:hover { background: #f8fafc; }
+
+        @media (max-width: 640px) {
+            .tab-btn { padding: 10px 8px; font-size: 11px; }
+            .tabla { font-size: 12px; }
+            .tabla th, .tabla td { padding: 8px 4px; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-8 font-sans">
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-5xl mx-auto flex justify-between items-center flex-wrap gap-3">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">📦</span>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-slate-900">FREDWARE STOCK</h1>
+                    <p class="text-xs text-emerald-600 font-bold tracking-widest uppercase">Movimientos · Ajustes · Historial</p>
+                </div>
+            </div>
+            <div class="flex flex-col items-end space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.0</span>
+                </div>
+                <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto w-full px-4 mt-6 space-y-6">
+
+        <!-- TABS -->
+        <div class="tabs-container">
+            <button class="tab-btn active" data-tab="stock" onclick="setTab('stock')">📊 Stock en vivo</button>
+            <button class="tab-btn" data-tab="registrar" onclick="setTab('registrar')">➖ Registrar movimiento</button>
+            <button class="tab-btn" data-tab="historial" onclick="setTab('historial')">📜 Historial</button>
+            <button class="tab-btn" data-tab="ajustes" onclick="setTab('ajustes')">⚙️ Ajustes / Cuadre</button>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 1: STOCK EN VIVO -->
+        <!-- ============================================================ -->
+        <div id="tab-stock" class="tab-content active">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div class="flex justify-between items-center flex-wrap gap-3">
+                    <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">📊 Stock en vivo</h2>
+                    <button onclick="cargarStockVivo()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-sm transition-all">
+                        🔄 Recargar
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input type="text" id="filtro-stock-texto" placeholder="🔍 Buscar producto..." oninput="renderStockVivo()">
+                    <select id="filtro-stock-zona" onchange="renderStockVivo()">
+                        <option value="">Todas las zonas</option>
+                    </select>
+                    <select id="filtro-stock-estado" onchange="renderStockVivo()">
+                        <option value="">Todos los estados</option>
+                        <option value="SIN_STOCK">🔴 Sin stock</option>
+                        <option value="BAJO_MINIMO">🟠 Bajo mínimo</option>
+                        <option value="CERCA_MINIMO">🟡 Cerca del mínimo</option>
+                        <option value="OK">🟢 OK</option>
+                    </select>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="tabla">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Zona</th>
+                                <th class="text-center">Stock</th>
+                                <th class="text-center">Mínimo</th>
+                                <th class="text-center">Raciones</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo-stock-vivo">
+                            <tr><td colspan="6" class="text-center italic text-slate-400 py-4">⏳ Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 2: REGISTRAR MOVIMIENTO -->
+        <!-- ============================================================ -->
+        <div id="tab-registrar" class="tab-content">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider">➖ Registrar movimiento de stock</h2>
+
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800">
+                    ℹ️ Aquí registras <strong>salidas</strong>, <strong>mermas</strong> y <strong>ajustes manuales</strong>. Las entradas se hacen desde <strong>recepcion.html</strong>.
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Producto *</label>
+                    <div class="relative">
+                        <input type="text" id="mov-producto" placeholder="Escribe para buscar producto..." class="uppercase">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de movimiento *</label>
+                        <select id="mov-tipo" onchange="onCambiarTipoMovimiento()">
+                            <option value="SALIDA">📤 SALIDA (consumo normal)</option>
+                            <option value="MERMA">🗑️ MERMA (pérdida)</option>
+                            <option value="AJUSTE">⚙️ AJUSTE (corrección)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cantidad * <span id="mov-cantidad-signo" class="text-slate-400 font-normal normal-case"></span></label>
+                        <input type="number" id="mov-cantidad" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div id="bloque-motivo-merma" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Motivo de la merma *</label>
+                    <select id="mov-motivo-merma">
+                        <option value="CADUCADO">🕐 Caducado</option>
+                        <option value="MAL_ESTADO">🤢 Mal estado</option>
+                        <option value="SOBREPRODUCCION">📈 Sobreproducción</option>
+                        <option value="ERROR_PREP">❌ Error de preparación</option>
+                        <option value="ROTURA">💥 Rotura / accidente</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notas (opcional)</label>
+                    <textarea id="mov-notas" rows="2" placeholder="Ej: Se cayó la bandeja al suelo..."></textarea>
+                </div>
+
+                <button onclick="registrarMovimiento()" id="btn-registrar-mov" class="btn-primary w-full">
+                    ✅ Registrar movimiento
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 3: HISTORIAL -->
+        <!-- ============================================================ -->
+        <div id="tab-historial" class="tab-content">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div class="flex justify-between items-center flex-wrap gap-3">
+                    <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">📜 Historial de movimientos</h2>
+                    <button onclick="cargarHistorial()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-sm transition-all">
+                        🔄 Recargar
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input type="text" id="filtro-hist-texto" placeholder="🔍 Buscar producto..." oninput="renderHistorial()">
+                    <select id="filtro-hist-tipo" onchange="renderHistorial()">
+                        <option value="">Todos los tipos</option>
+                        <option value="ENTRADA">📥 Entrada</option>
+                        <option value="SALIDA">📤 Salida</option>
+                        <option value="MERMA">🗑️ Merma</option>
+                        <option value="AJUSTE">⚙️ Ajuste</option>
+                    </select>
+                    <select id="filtro-hist-dias" onchange="renderHistorial()">
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30" selected>Últimos 30 días</option>
+                        <option value="90">Últimos 90 días</option>
+                        <option value="365">Último año</option>
+                    </select>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="tabla">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th class="text-center">Tipo</th>
+                                <th class="text-center">Cantidad</th>
+                                <th>Origen</th>
+                                <th>Usuario</th>
+                                <th>Notas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo-historial">
+                            <tr><td colspan="7" class="text-center italic text-slate-400 py-4">⏳ Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TAB 4: AJUSTES / CUADRE -->
+        <!-- ============================================================ -->
+        <div id="tab-ajustes" class="tab-content">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 class="text-sm font-bold text-amber-600 uppercase tracking-wider">⚙️ Ajuste / Cuadre de stock</h2>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                    ℹ️ Aquí el jefe cuadra el stock cuando hace inventario físico. El sistema calcula la <strong>diferencia</strong> y la registra como AJUSTE.
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Producto *</label>
+                    <div class="relative">
+                        <input type="text" id="ajuste-producto" placeholder="Escribe para buscar producto..." class="uppercase">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stock teórico actual</label>
+                        <input type="text" id="ajuste-stock-teorico" readonly class="bg-slate-100 font-bold text-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stock físico real *</label>
+                        <input type="number" id="ajuste-stock-fisico" step="0.01" min="0" placeholder="0.00" oninput="calcularDiferenciaAjuste()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Diferencia</label>
+                        <input type="text" id="ajuste-diferencia" readonly class="bg-slate-100 font-bold">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notas (opcional)</label>
+                    <input type="text" id="ajuste-notas" placeholder="Ej: Inventario mensual, cuadre de cierre...">
+                </div>
+
+                <button onclick="aplicarAjuste()" id="btn-aplicar-ajuste" class="btn-primary w-full">
+                    ✅ Aplicar ajuste
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN
+        // ============================================================
+        const db_nube = window.fredware.supabase;
+
+        let tabActual = 'stock';
+        let productosGlobal = [];
+        let historialGlobal = [];
+
+        // ============================================================
+        // ALIAS A UTILIDADES DEL NÚCLEO
+        // ============================================================
+        function lanzarToast(mensaje, tipo = 'success') {
+            window.fredware.ui.toast(mensaje, tipo);
+        }
+        function escapeHtml(text) {
+            return window.fredware.util.escapeHtml(text);
+        }
+        function formatearFecha(fecha) {
+            return window.fredware.util.formatearFecha(fecha);
+        }
+        function formatearFechaCorta(fecha) {
+            return window.fredware.util.formatearFechaCorta(fecha);
+        }
+
+        // ============================================================
+        // GESTIÓN DE TABS
+        // ============================================================
+        function setTab(nombre) {
+            tabActual = nombre;
+            localStorage.setItem('fredware_stock_tab', nombre);
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === nombre);
+            });
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.toggle('active', c.id === 'tab-' + nombre);
+            });
+
+            if (nombre === 'stock') cargarStockVivo();
+            if (nombre === 'historial') cargarHistorial();
+        }
+
+        // ============================================================
+        // SUSCRIPCIÓN AL NÚCLEO
+        // ============================================================
+        function suscribirAlNucleo() {
+            if (!window.fredware || !window.fredware.subscribe) {
+                console.log('ℹ️ [Stock] Núcleo no disponible');
+                return;
+            }
+            window.fredware.subscribe((state) => {
+                const badge = document.getElementById('badge-red');
+                if (badge && !badge.dataset.online) {
+                    if (state.inicializado) {
+                        badge.className = 'badge-conn online';
+                        badge.textContent = '🟢 ONLINE';
+                        badge.dataset.online = 'true';
+                    }
+                }
+                const ts = document.getElementById('timestamp-sincro');
+                if (ts && state.ultimaActualizacion) {
+                    const hora = new Date(state.ultimaActualizacion).toTimeString().split(' ')[0];
+                    ts.textContent = `Última actualización: ${hora}`;
+                }
+            });
+        }
+
+        async function esperarAlNucleo() {
+            for (let i = 0; i < 30; i++) {
+                if (window.fredware && window.fredware.state && window.fredware.state.inicializado) return true;
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            return false;
+        }
+
+        // ============================================================
+        // TAB 1: STOCK EN VIVO
+        // ============================================================
+        async function cargarStockVivo() {
+            const cuerpo = document.getElementById('cuerpo-stock-vivo');
+            cuerpo.innerHTML = '<tr><td colspan="6" class="text-center italic text-slate-400 py-4">⏳ Cargando...</td></tr>';
+
+            try {
+                const { data, error } = await db_nube
+                    .from('productos_raciones')
+                    .select('id, nombre_articulo, zona, tipo, categoria, unidad_compra, unidad_racion, stock_actual, stock_minimo, stock_maximo, peso_por_racion, proveedor_principal')
+                    .order('nombre_articulo', { ascending: true });
+
+                if (error) throw error;
+                productosGlobal = data || [];
+
+                // Rellenar select de zonas
+                const zonas = [...new Set(productosGlobal.map(p => p.zona).filter(Boolean))].sort();
+                const selectZona = document.getElementById('filtro-stock-zona');
+                const valorActual = selectZona.value;
+                selectZona.innerHTML = '<option value="">Todas las zonas</option>';
+                zonas.forEach(z => {
+                    selectZona.innerHTML += `<option value="${escapeHtml(z)}" ${z === valorActual ? 'selected' : ''}>${escapeHtml(z)}</option>`;
+                });
+
+                renderStockVivo();
+            } catch (e) {
+                console.error('Error cargando stock:', e);
+                cuerpo.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 py-4">❌ Error: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function renderStockVivo() {
+            const cuerpo = document.getElementById('cuerpo-stock-vivo');
+            const texto = (document.getElementById('filtro-stock-texto').value || '').toUpperCase().trim();
+            const zona = document.getElementById('filtro-stock-zona').value;
+            const estado = document.getElementById('filtro-stock-estado').value;
+
+            let filtrados = productosGlobal.filter(p => {
+                if (texto && !p.nombre_articulo.toUpperCase().includes(texto)) return false;
+                if (zona && p.zona !== zona) return false;
+                if (estado) {
+                    const est = calcularEstadoStock(p);
+                    if (est.codigo !== estado) return false;
+                }
+                return true;
+            });
+
+            if (filtrados.length === 0) {
+                cuerpo.innerHTML = '<tr><td colspan="6" class="text-center italic text-slate-400 py-4">Sin resultados</td></tr>';
+                return;
+            }
+
+            // Ordenar por severidad
+            filtrados.sort((a, b) => {
+                const ea = calcularEstadoStock(a).orden;
+                const eb = calcularEstadoStock(b).orden;
+                if (ea !== eb) return ea - eb;
+                return a.nombre_articulo.localeCompare(b.nombre_articulo);
+            });
+
+            cuerpo.innerHTML = filtrados.map(p => {
+                const est = calcularEstadoStock(p);
+                const stock = p.stock_actual == null ? '—' : Number(p.stock_actual).toFixed(2);
+                const min = p.stock_minimo == null ? '—' : Number(p.stock_minimo).toFixed(2);
+                const raciones = (p.peso_por_racion > 0 && p.stock_actual != null)
+                    ? Math.round(p.stock_actual / p.peso_por_racion)
+                    : '—';
+
+                return `
+                    <tr>
+                        <td class="font-semibold">${escapeHtml(p.nombre_articulo)}</td>
+                        <td class="text-xs text-slate-500">${escapeHtml(p.zona || '—')}</td>
+                        <td class="text-center font-bold">${stock} <span class="text-xs text-slate-400 font-normal">${escapeHtml(p.unidad_compra || '')}</span></td>
+                        <td class="text-center text-slate-500">${min}</td>
+                        <td class="text-center">${raciones}</td>
+                        <td class="text-center"><span class="badge-estado ${est.clase}">${est.emoji} ${est.label}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function calcularEstadoStock(p) {
+            if (p.stock_actual == null) return { codigo: 'SIN_STOCK', orden: 1, label: 'Sin datos', emoji: '⚪', clase: 'badge-sin' };
+            const s = Number(p.stock_actual);
+            const min = Number(p.stock_minimo || 0);
+            if (s <= 0) return { codigo: 'SIN_STOCK', orden: 1, label: 'Sin stock', emoji: '🔴', clase: 'badge-sin' };
+            if (s < min) return { codigo: 'BAJO_MINIMO', orden: 2, label: 'Bajo mínimo', emoji: '🟠', clase: 'badge-bajo' };
+            if (s < min * 1.5) return { codigo: 'CERCA_MINIMO', orden: 3, label: 'Cerca mínimo', emoji: '🟡', clase: 'badge-cerca' };
+            return { codigo: 'OK', orden: 4, label: 'OK', emoji: '🟢', clase: 'badge-ok' };
+        }
+
+        // ============================================================
+        // TAB 2: REGISTRAR MOVIMIENTO
+        // ============================================================
+        function onCambiarTipoMovimiento() {
+            const tipo = document.getElementById('mov-tipo').value;
+            const bloqueMerma = document.getElementById('bloque-motivo-merma');
+            const signo = document.getElementById('mov-cantidad-signo');
+
+            if (tipo === 'MERMA') {
+                bloqueMerma.classList.remove('hidden');
+                signo.textContent = '(resta stock)';
+            } else if (tipo === 'SALIDA') {
+                bloqueMerma.classList.add('hidden');
+                signo.textContent = '(resta stock)';
+            } else {
+                bloqueMerma.classList.add('hidden');
+                signo.textContent = '(+/- según signo)';
+            }
+        }
+
+        async function registrarMovimiento() {
+            const inputProd = document.getElementById('mov-producto');
+            const seleccionado = inputProd.fredwareGetSeleccionado ? inputProd.fredwareGetSeleccionado() : null;
+
+            if (!seleccionado) {
+                lanzarToast('Selecciona un producto de la lista', 'warning');
+                return;
+            }
+
+            const tipo = document.getElementById('mov-tipo').value;
+            let cantidad = parseFloat(document.getElementById('mov-cantidad').value);
+
+            if (!cantidad || cantidad <= 0) {
+                lanzarToast('Introduce una cantidad válida', 'warning');
+                return;
+            }
+
+            // SALIDA y MERMA restan stock → signo negativo
+            if (tipo === 'SALIDA' || tipo === 'MERMA') {
+                cantidad = -Math.abs(cantidad);
+            }
+            // AJUSTE: el usuario pone +/- manualmente
+
+            const notas = document.getElementById('mov-notas').value.trim();
+            const motivoMerma = tipo === 'MERMA' ? document.getElementById('mov-motivo-merma').value : null;
+
+            const btn = document.getElementById('btn-registrar-mov');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Registrando...';
+
+            try {
+                const { data, error } = await db_nube.rpc('ajustar_stock', {
+                    p_producto_id: seleccionado.id,
+                    p_cantidad: cantidad,
+                    p_tipo: tipo,
+                    p_origen: 'APP_STOCK',
+                    p_origen_id: null,
+                    p_proveedor: null,
+                    p_usuario: 'APP_STOCK',
+                    p_notas: notas || (motivoMerma ? `Merma: ${motivoMerma}` : null),
+                    p_unidad: seleccionado.unidad_compra,
+                    p_coste_unitario: null,
+                    p_metadata: { motivo_merma: motivoMerma }
+                });
+
+                if (error) throw error;
+
+                lanzarToast(`✅ Movimiento registrado. Nuevo stock: ${Number(data).toFixed(2)} ${seleccionado.unidad_compra || ''}`, 'success');
+
+                // Limpiar formulario
+                inputProd.value = '';
+                if (inputProd.fredwareReset) inputProd.fredwareReset();
+                document.getElementById('mov-cantidad').value = '';
+                document.getElementById('mov-notas').value = '';
+
+                // Recargar stock
+                await cargarStockVivo();
+
+            } catch (e) {
+                console.error('Error registrando movimiento:', e);
+                lanzarToast('❌ ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '✅ Registrar movimiento';
+            }
+        }
+
+        // ============================================================
+        // TAB 3: HISTORIAL
+        // ============================================================
+        async function cargarHistorial() {
+            const cuerpo = document.getElementById('cuerpo-historial');
+            cuerpo.innerHTML = '<tr><td colspan="7" class="text-center italic text-slate-400 py-4">⏳ Cargando...</td></tr>';
+
+            try {
+                const dias = parseInt(document.getElementById('filtro-hist-dias').value) || 30;
+                const desde = new Date();
+                desde.setDate(desde.getDate() - dias);
+
+                const { data, error } = await db_nube
+                    .from('stock_movimientos')
+                    .select('id, producto_id, tipo, cantidad, unidad, fecha, usuario, origen, motivo, notas, stock_resultante')
+                    .gte('fecha', desde.toISOString())
+                    .order('fecha', { ascending: false })
+                    .limit(500);
+
+                if (error) throw error;
+                historialGlobal = data || [];
+                renderHistorial();
+            } catch (e) {
+                console.error('Error cargando historial:', e);
+                cuerpo.innerHTML = `<tr><td colspan="7" class="text-center text-red-500 py-4">❌ ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function renderHistorial() {
+            const cuerpo = document.getElementById('cuerpo-historial');
+            const texto = (document.getElementById('filtro-hist-texto').value || '').toUpperCase().trim();
+            const tipoFiltro = document.getElementById('filtro-hist-tipo').value;
+
+            // Mapa producto_id → nombre
+            const mapaNombres = {};
+            productosGlobal.forEach(p => { mapaNombres[p.id] = p.nombre_articulo; });
+
+            let filtrados = historialGlobal.filter(m => {
+                const nombre = mapaNombres[m.producto_id] || m.producto_id;
+                if (texto && !nombre.toUpperCase().includes(texto)) return false;
+                if (tipoFiltro && m.tipo !== tipoFiltro) return false;
+                return true;
+            });
+
+            if (filtrados.length === 0) {
+                cuerpo.innerHTML = '<tr><td colspan="7" class="text-center italic text-slate-400 py-4">Sin movimientos</td></tr>';
+                return;
+            }
+
+            const badgeTipo = (tipo) => {
+                const mapa = {
+                    ENTRADA: 'badge-entrada',
+                    SALIDA: 'badge-salida',
+                    MERMA: 'badge-merma',
+                    AJUSTE: 'badge-ajuste',
+                    TRASPASO: 'badge-traspaso'
+                };
+                const emoji = {
+                    ENTRADA: '📥', SALIDA: '📤', MERMA: '🗑️', AJUSTE: '⚙️', TRASPASO: '🔄'
+                };
+                return `<span class="badge-tipo ${mapa[tipo] || ''}">${emoji[tipo] || ''} ${tipo}</span>`;
+            };
+
+            cuerpo.innerHTML = filtrados.map(m => {
+                const nombre = mapaNombres[m.producto_id] || m.producto_id;
+                const cantidad = Number(m.cantidad);
+                const signo = cantidad >= 0 ? '+' : '';
+                const color = cantidad >= 0 ? 'text-emerald-600' : 'text-red-600';
+                return `
+                    <tr>
+                        <td class="text-xs text-slate-500 whitespace-nowrap">${formatearFechaCorta(m.fecha)}</td>
+                        <td class="font-semibold">${escapeHtml(nombre)}</td>
+                        <td class="text-center">${badgeTipo(m.tipo)}</td>
+                        <td class="text-center font-bold ${color}">${signo}${cantidad.toFixed(2)}</td>
+                        <td class="text-xs text-slate-500">${escapeHtml(m.origen || '—')}</td>
+                        <td class="text-xs">${escapeHtml(m.usuario || '—')}</td>
+                        <td class="text-xs text-slate-500">${escapeHtml(m.notas || '')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ============================================================
+        // TAB 4: AJUSTES
+        // ============================================================
+        function calcularDiferenciaAjuste() {
+            const teorico = parseFloat(document.getElementById('ajuste-stock-teorico').value) || 0;
+            const fisicoInput = document.getElementById('ajuste-stock-fisico').value;
+            const diferenciaInput = document.getElementById('ajuste-diferencia');
+
+            if (fisicoInput === '' || isNaN(parseFloat(fisicoInput))) {
+                diferenciaInput.value = '';
+                return;
+            }
+
+            const fisico = parseFloat(fisicoInput);
+            const dif = fisico - teorico;
+            diferenciaInput.value = (dif >= 0 ? '+' : '') + dif.toFixed(2);
+
+            if (dif === 0) {
+                diferenciaInput.className = 'bg-slate-100 font-bold text-slate-500';
+            } else if (dif > 0) {
+                diferenciaInput.className = 'bg-emerald-100 font-bold text-emerald-700';
+            } else {
+                diferenciaInput.className = 'bg-red-100 font-bold text-red-700';
+            }
+        }
+
+        async function aplicarAjuste() {
+            const inputProd = document.getElementById('ajuste-producto');
+            const seleccionado = inputProd.fredwareGetSeleccionado ? inputProd.fredwareGetSeleccionado() : null;
+
+            if (!seleccionado) {
+                lanzarToast('Selecciona un producto', 'warning');
+                return;
+            }
+
+            const teorico = parseFloat(document.getElementById('ajuste-stock-teorico').value) || 0;
+            const fisicoInput = document.getElementById('ajuste-stock-fisico').value;
+            const notas = document.getElementById('ajuste-notas').value.trim();
+
+            if (fisicoInput === '' || isNaN(parseFloat(fisicoInput))) {
+                lanzarToast('Introduce el stock físico real', 'warning');
+                return;
+            }
+
+            const fisico = parseFloat(fisicoInput);
+            const diferencia = fisico - teorico;
+
+            if (diferencia === 0) {
+                lanzarToast('No hay diferencia que ajustar', 'info');
+                return;
+            }
+
+            const confirm = await Swal.fire({
+                title: '⚙️ Confirmar ajuste',
+                html: `
+                    <div style="text-align:left; font-size:14px;">
+                        <p><strong>Producto:</strong> ${escapeHtml(seleccionado.nombre_articulo)}</p>
+                        <p><strong>Stock teórico:</strong> ${teorico.toFixed(2)}</p>
+                        <p><strong>Stock físico:</strong> ${fisico.toFixed(2)}</p>
+                        <p><strong>Diferencia:</strong> <span style="color:${diferencia >= 0 ? '#10b981' : '#ef4444'};font-weight:700;">${diferencia >= 0 ? '+' : ''}${diferencia.toFixed(2)}</span></p>
+                        ${notas ? `<p><strong>Notas:</strong> ${escapeHtml(notas)}</p>` : ''}
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#d97706',
+                confirmButtonText: '✅ Aplicar ajuste',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!confirm.isConfirmed) return;
+
+            const btn = document.getElementById('btn-aplicar-ajuste');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Aplicando...';
+
+            try {
+                const { data, error } = await db_nube.rpc('ajustar_stock', {
+                    p_producto_id: seleccionado.id,
+                    p_cantidad: diferencia,
+                    p_tipo: 'AJUSTE',
+                    p_origen: 'MANUAL',
+                    p_origen_id: null,
+                    p_proveedor: null,
+                    p_usuario: 'CUADRE_JEFE',
+                    p_notas: notas || 'Ajuste por cuadre manual',
+                    p_unidad: seleccionado.unidad_compra,
+                    p_coste_unitario: null,
+                    p_metadata: { stock_teorico: teorico, stock_fisico: fisico }
+                });
+
+                if (error) throw error;
+
+                lanzarToast(`✅ Stock ajustado a ${Number(data).toFixed(2)}`, 'success');
+
+                // Limpiar formulario
+                inputProd.value = '';
+                if (inputProd.fredwareReset) inputProd.fredwareReset();
+                document.getElementById('ajuste-stock-teorico').value = '';
+                document.getElementById('ajuste-stock-fisico').value = '';
+                document.getElementById('ajuste-diferencia').value = '';
+                document.getElementById('ajuste-notas').value = '';
+
+                await cargarStockVivo();
+
+            } catch (e) {
+                console.error('Error aplicando ajuste:', e);
+                lanzarToast('❌ ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '✅ Aplicar ajuste';
+            }
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        async function init() {
+            console.log('🚀 [Stock v1.0] Init');
+
+            const tabGuardada = localStorage.getItem('fredware_stock_tab') || 'stock';
+            setTab(tabGuardada);
+
+            suscribirAlNucleo();
+
+            await esperarAlNucleo();
+
+            // Cargar productos en el caché del núcleo (para el combobox)
+            try {
+                await window.fredware.productos.cargar();
+            } catch (e) {
+                console.warn('No se pudo pre-cargar productos:', e);
+            }
+
+            // Configurar comboboxes estrictos
+            window.fredware.productos.comboboxEstricto('mov-producto', {
+                placeholder: 'Escribe para buscar producto...',
+                onSelect: (p) => console.log('📦 Mov producto:', p?.nombre_articulo)
+            });
+            window.fredware.productos.comboboxEstricto('ajuste-producto', {
+                placeholder: 'Escribe para buscar producto...',
+                onSelect: (p) => {
+                    console.log('📦 Ajuste producto:', p?.nombre_articulo);
+                    // Rellenar stock teórico automáticamente
+                    document.getElementById('ajuste-stock-teorico').value = Number(p.stock_actual || 0).toFixed(2);
+                    document.getElementById('ajuste-stock-fisico').value = '';
+                    document.getElementById('ajuste-diferencia').value = '';
+                }
+            });
+
+            // Cargar datos iniciales
+            await cargarStockVivo();
+        }
+
+        // Exponer funciones globales
+        window.setTab = setTab;
+        window.cargarStockVivo = cargarStockVivo;
+        window.renderStockVivo = renderStockVivo;
+        window.onCambiarTipoMovimiento = onCambiarTipoMovimiento;
+        window.registrarMovimiento = registrarMovimiento;
+        window.cargarHistorial = cargarHistorial;
+        window.renderHistorial = renderHistorial;
+        window.calcularDiferenciaAjuste = calcularDiferenciaAjuste;
+        window.aplicarAjuste = aplicarAjuste;
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
