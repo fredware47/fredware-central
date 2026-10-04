@@ -4,36 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>📦 Fredware - Stock</title>
+
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E📦%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E📦%3C/text%3E%3C/svg%3E">
     <meta name="theme-color" content="#1e293b">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="shared-core.js"></script>
+
     <style>
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
-        .tabs-container { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
-        .tab-btn { flex: 1; padding: 12px 16px; text-align: center; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 13px; color: #475569; background: transparent; white-space: nowrap; }
-        .tab-btn.active { background: white; color: #1e293b; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .tabs-container {
+            display: flex; background: #e2e8f0; border-radius: 12px;
+            padding: 4px; margin-bottom: 20px; overflow-x: auto;
+        }
+        .tab-btn {
+            flex: 1; padding: 12px 16px; text-align: center; font-weight: bold;
+            border: none; border-radius: 10px; cursor: pointer;
+            transition: all 0.3s; font-size: 13px; color: #475569;
+            background: transparent; white-space: nowrap;
+        }
+        .tab-btn.active {
+            background: white; color: #1e293b;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
         .tab-content { display: none; animation: fadeIn 0.3s ease-in; }
         .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        .badge-conn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-        .badge-conn.loading { background: #fef3c7; color: #92400e; animation: pulse-badge 1.5s ease-in-out infinite; }
+        .badge-conn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 11px; font-weight: 700;
+        }
+        .badge-conn.loading {
+            background: #fef3c7; color: #92400e;
+            animation: pulse-badge 1.5s ease-in-out infinite;
+        }
         .badge-conn.online { background: #d1fae5; color: #065f46; }
         .badge-conn.error { background: #fee2e2; color: #991b1b; }
-        @keyframes pulse-badge { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.7; }
+        }
 
-        .badge-estado { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-estado {
+            display: inline-block; padding: 2px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 700; white-space: nowrap;
+        }
         .badge-ok { background: #d1fae5; color: #065f46; }
         .badge-cerca { background: #fef3c7; color: #92400e; }
         .badge-bajo { background: #fed7aa; color: #9a3412; }
         .badge-sin { background: #fee2e2; color: #991b1b; }
+        .badge-nodata { background: #e2e8f0; color: #64748b; }
 
-        .badge-tipo { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+        .badge-tipo {
+            display: inline-block; padding: 2px 8px; border-radius: 6px;
+            font-size: 10px; font-weight: 700; white-space: nowrap;
+        }
         .badge-entrada { background: #d1fae5; color: #065f46; }
         .badge-salida { background: #dbeafe; color: #1e40af; }
         .badge-merma { background: #fee2e2; color: #991b1b; }
@@ -41,25 +75,53 @@
         .badge-traspaso { background: #ede9fe; color: #5b21b6; }
 
         input, select, textarea {
-            width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px;
-            font-size: 14px; background: #f8fafc; transition: all 0.2s; font-family: inherit;
+            width: 100%; padding: 10px 14px;
+            border: 1px solid #cbd5e1; border-radius: 10px;
+            font-size: 14px; background: #f8fafc;
+            transition: all 0.2s; font-family: inherit;
         }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: #10b981; background: white;
+            box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
+        }
+        input[readonly] { background: #f1f5f9; cursor: not-allowed; }
 
-        .btn-primary { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.15s; font-size: 14px; }
-        .btn-primary:hover { background: #059669; }
-        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary {
+            background: #10b981; color: white; border: none;
+            padding: 12px 24px; border-radius: 10px; font-weight: 700;
+            cursor: pointer; transition: 0.15s; font-size: 14px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary:hover:not(:disabled) { background: #059669; }
+        .btn-primary:active:not(:disabled) { transform: scale(0.98); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-danger { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.15s; font-size: 12px; }
-        .btn-danger:hover { background: #dc2626; }
-        .btn-secondary { background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; }
+        .btn-secondary {
+            background: #64748b; color: white; border: none;
+            padding: 8px 16px; border-radius: 8px; font-weight: 700;
+            cursor: pointer; font-size: 12px;
+        }
+        .btn-secondary:hover { background: #475569; }
 
-        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; display: inline-block; }
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .tabla th { background: #f1f5f9; padding: 10px 8px; text-align: left; font-size: 11px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #cbd5e1; }
-        .tabla td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .tabla th {
+            background: #f1f5f9; padding: 10px 8px; text-align: left;
+            font-size: 11px; color: #475569; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 2px solid #cbd5e1;
+        }
+        .tabla td {
+            padding: 10px 8px; border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
         .tabla tr:hover { background: #f8fafc; }
 
         @media (max-width: 640px) {
@@ -71,7 +133,9 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-8 font-sans">
 
+    <!-- ============================================================ -->
     <!-- HEADER -->
+    <!-- ============================================================ -->
     <header class="bg-white border-b border-slate-300 py-4 px-6 sticky top-0 z-50 shadow-sm">
         <div class="max-w-5xl mx-auto flex justify-between items-center flex-wrap gap-3">
             <div class="flex items-center space-x-3">
@@ -91,6 +155,9 @@
         </div>
     </header>
 
+    <!-- ============================================================ -->
+    <!-- MAIN -->
+    <!-- ============================================================ -->
     <main class="max-w-5xl mx-auto w-full px-4 mt-6 space-y-6">
 
         <!-- TABS -->
@@ -106,9 +173,30 @@
         <!-- ============================================================ -->
         <div id="tab-stock" class="tab-content active">
             <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+
+                <!-- Stats -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-200">
+                        <div class="text-xs text-slate-500 font-bold uppercase">Total</div>
+                        <div id="stat-total" class="text-2xl font-black text-slate-800">0</div>
+                    </div>
+                    <div class="bg-red-50 rounded-xl p-3 text-center border border-red-200">
+                        <div class="text-xs text-red-700 font-bold uppercase">Sin stock</div>
+                        <div id="stat-sin" class="text-2xl font-black text-red-600">0</div>
+                    </div>
+                    <div class="bg-orange-50 rounded-xl p-3 text-center border border-orange-200">
+                        <div class="text-xs text-orange-700 font-bold uppercase">Bajo mín.</div>
+                        <div id="stat-bajo" class="text-2xl font-black text-orange-600">0</div>
+                    </div>
+                    <div class="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200">
+                        <div class="text-xs text-yellow-700 font-bold uppercase">Cerca mín.</div>
+                        <div id="stat-cerca" class="text-2xl font-black text-yellow-600">0</div>
+                    </div>
+                </div>
+
                 <div class="flex justify-between items-center flex-wrap gap-3">
                     <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">📊 Stock en vivo</h2>
-                    <button onclick="cargarStockVivo()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-sm transition-all">
+                    <button onclick="cargarStockVivo()" class="btn-secondary">
                         🔄 Recargar
                     </button>
                 </div>
@@ -155,31 +243,39 @@
                 <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wider">➖ Registrar movimiento de stock</h2>
 
                 <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800">
-                    ℹ️ Aquí registras <strong>salidas</strong>, <strong>mermas</strong> y <strong>ajustes manuales</strong>. Las entradas se hacen desde <strong>recepcion.html</strong>.
+                    ℹ️ Aquí registras <strong>salidas</strong>, <strong>mermas</strong> y <strong>ajustes manuales</strong>. Las entradas se hacen desde <strong>recepcion.html</strong> o <strong>compras.html</strong>.
                 </div>
 
+                <!-- Producto -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Producto *</label>
                     <div class="relative">
                         <input type="text" id="mov-producto" placeholder="Escribe para buscar producto..." class="uppercase">
                     </div>
+                    <div id="mov-info-producto" class="hidden mt-2 bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600">
+                        <!-- Se rellena con el producto seleccionado -->
+                    </div>
                 </div>
 
+                <!-- Tipo + cantidad -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de movimiento *</label>
                         <select id="mov-tipo" onchange="onCambiarTipoMovimiento()">
                             <option value="SALIDA">📤 SALIDA (consumo normal)</option>
                             <option value="MERMA">🗑️ MERMA (pérdida)</option>
-                            <option value="AJUSTE">⚙️ AJUSTE (corrección)</option>
+                            <option value="AJUSTE">⚙️ AJUSTE (corrección +/-)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cantidad * <span id="mov-cantidad-signo" class="text-slate-400 font-normal normal-case"></span></label>
-                        <input type="number" id="mov-cantidad" step="0.01" min="0" placeholder="0.00">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Cantidad * <span id="mov-cantidad-signo" class="text-slate-400 font-normal normal-case"></span>
+                        </label>
+                        <input type="number" id="mov-cantidad" step="0.01" placeholder="0.00">
                     </div>
                 </div>
 
+                <!-- Motivo merma (solo si MERMA) -->
                 <div id="bloque-motivo-merma" class="hidden">
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Motivo de la merma *</label>
                     <select id="mov-motivo-merma">
@@ -191,9 +287,15 @@
                     </select>
                 </div>
 
+                <!-- Notas -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notas (opcional)</label>
                     <textarea id="mov-notas" rows="2" placeholder="Ej: Se cayó la bandeja al suelo..."></textarea>
+                </div>
+
+                <!-- Preview del resultado -->
+                <div id="mov-preview" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                    <!-- Se rellena dinámicamente -->
                 </div>
 
                 <button onclick="registrarMovimiento()" id="btn-registrar-mov" class="btn-primary w-full">
@@ -209,7 +311,7 @@
             <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <div class="flex justify-between items-center flex-wrap gap-3">
                     <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">📜 Historial de movimientos</h2>
-                    <button onclick="cargarHistorial()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-sm transition-all">
+                    <button onclick="cargarHistorial()" class="btn-secondary">
                         🔄 Recargar
                     </button>
                 </div>
@@ -223,7 +325,7 @@
                         <option value="MERMA">🗑️ Merma</option>
                         <option value="AJUSTE">⚙️ Ajuste</option>
                     </select>
-                    <select id="filtro-hist-dias" onchange="renderHistorial()">
+                    <select id="filtro-hist-dias" onchange="cargarHistorial()">
                         <option value="7">Últimos 7 días</option>
                         <option value="30" selected>Últimos 30 días</option>
                         <option value="90">Últimos 90 días</option>
@@ -249,6 +351,10 @@
                         </tbody>
                     </table>
                 </div>
+
+                <div class="text-xs text-slate-400 text-center">
+                    Mostrando hasta 500 movimientos. Usa los filtros para acotar.
+                </div>
             </div>
         </div>
 
@@ -260,9 +366,10 @@
                 <h2 class="text-sm font-bold text-amber-600 uppercase tracking-wider">⚙️ Ajuste / Cuadre de stock</h2>
 
                 <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-                    ℹ️ Aquí el jefe cuadra el stock cuando hace inventario físico. El sistema calcula la <strong>diferencia</strong> y la registra como AJUSTE.
+                    ℹ️ Aquí el jefe cuadra el stock cuando hace inventario físico. El sistema calcula la <strong>diferencia</strong> y la registra como <strong>AJUSTE</strong>.
                 </div>
 
+                <!-- Producto -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Producto *</label>
                     <div class="relative">
@@ -270,10 +377,11 @@
                     </div>
                 </div>
 
+                <!-- Datos del ajuste -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stock teórico actual</label>
-                        <input type="text" id="ajuste-stock-teorico" readonly class="bg-slate-100 font-bold text-slate-700">
+                        <input type="text" id="ajuste-stock-teorico" readonly placeholder="—">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stock físico real *</label>
@@ -281,16 +389,22 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Diferencia</label>
-                        <input type="text" id="ajuste-diferencia" readonly class="bg-slate-100 font-bold">
+                        <input type="text" id="ajuste-diferencia" readonly placeholder="—">
                     </div>
                 </div>
 
+                <!-- Notas -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notas (opcional)</label>
                     <input type="text" id="ajuste-notas" placeholder="Ej: Inventario mensual, cuadre de cierre...">
                 </div>
 
-                <button onclick="aplicarAjuste()" id="btn-aplicar-ajuste" class="btn-primary w-full">
+                <!-- Preview -->
+                <div id="ajuste-preview" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                    <!-- Se rellena dinámicamente -->
+                </div>
+
+                <button onclick="aplicarAjuste()" id="btn-aplicar-ajuste" class="btn-primary w-full" style="background:#d97706;">
                     ✅ Aplicar ajuste
                 </button>
             </div>
@@ -300,32 +414,76 @@
 
     <script>
         // ============================================================
-        // CONFIGURACIÓN
+        // CAPTURADOR DE ERRORES VISIBLE (como pedidos.html)
         // ============================================================
-        const db_nube = window.fredware.supabase;
+        window.addEventListener('error', function(e) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#fee2e2;color:#991b1b;padding:10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:2px solid #dc2626;';
+            div.textContent = '⚠️ ERROR: ' + e.message + ' (línea ' + e.lineno + ')';
+            document.body.appendChild(div);
+        });
 
+        window.addEventListener('unhandledrejection', function(e) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#fef3c7;color:#92400e;padding:10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:2px solid #f59e0b;';
+            div.textContent = '⚠️ PROMESA: ' + (e.reason && (e.reason.message || e.reason.toString ? e.reason.toString() : String(e.reason)) || 'desconocido');
+            document.body.appendChild(div);
+        });
+
+        // ============================================================
+        // CLIENTE SUPABASE PROPIO
+        // ============================================================
+        const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+        const db_nube = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log('✅ [Stock v1.0] Cliente Supabase listo:', SUPABASE_URL);
+
+        // ============================================================
+        // ESTADO GLOBAL
+        // ============================================================
         let tabActual = 'stock';
         let productosGlobal = [];
+        let productosMapId = {};      // id → producto (para historial)
         let historialGlobal = [];
+        let productoMovSeleccionado = null;
+        let productoAjusteSeleccionado = null;
+        let appInicializada = false;
 
         // ============================================================
-        // ALIAS A UTILIDADES DEL NÚCLEO
+        // UTILIDADES
         // ============================================================
         function lanzarToast(mensaje, tipo = 'success') {
-            window.fredware.ui.toast(mensaje, tipo);
+            if (window.fredware && window.fredware.ui && window.fredware.ui.toast) {
+                window.fredware.ui.toast(mensaje, tipo);
+            } else {
+                console.log(`[${tipo}] ${mensaje}`);
+            }
         }
+
         function escapeHtml(text) {
-            return window.fredware.util.escapeHtml(text);
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
-        function formatearFecha(fecha) {
-            return window.fredware.util.formatearFecha(fecha);
-        }
+
         function formatearFechaCorta(fecha) {
-            return window.fredware.util.formatearFechaCorta(fecha);
+            if (!fecha) return '—';
+            try {
+                const d = new Date(fecha);
+                if (isNaN(d)) return String(fecha);
+                return d.toLocaleString('es-ES', {
+                    day: '2-digit', month: '2-digit', year: '2-digit',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            } catch { return String(fecha); }
         }
 
         // ============================================================
-        // GESTIÓN DE TABS
+        // TABS
         // ============================================================
         function setTab(nombre) {
             tabActual = nombre;
@@ -343,20 +501,19 @@
         }
 
         // ============================================================
-        // SUSCRIPCIÓN AL NÚCLEO
+        // SUSCRIPCIÓN AL NÚCLEO (opcional, si existe)
         // ============================================================
         function suscribirAlNucleo() {
             if (!window.fredware || !window.fredware.subscribe) {
-                console.log('ℹ️ [Stock] Núcleo no disponible');
+                console.log('ℹ️ [Stock] Núcleo no disponible, uso cliente propio');
+                actualizarBadgeOnline();
                 return;
             }
             window.fredware.subscribe((state) => {
                 const badge = document.getElementById('badge-red');
                 if (badge && !badge.dataset.online) {
                     if (state.inicializado) {
-                        badge.className = 'badge-conn online';
-                        badge.textContent = '🟢 ONLINE';
-                        badge.dataset.online = 'true';
+                        actualizarBadgeOnline();
                     }
                 }
                 const ts = document.getElementById('timestamp-sincro');
@@ -367,16 +524,31 @@
             });
         }
 
-        async function esperarAlNucleo() {
-            for (let i = 0; i < 30; i++) {
-                if (window.fredware && window.fredware.state && window.fredware.state.inicializado) return true;
-                await new Promise(r => setTimeout(r, 1000));
+        function actualizarBadgeOnline() {
+            const badge = document.getElementById('badge-red');
+            if (badge) {
+                badge.className = 'badge-conn online';
+                badge.textContent = '🟢 ONLINE';
+                badge.dataset.online = 'true';
             }
+        }
+
+        async function esperarAlNucleo() {
+            for (let i = 0; i < 20; i++) {
+                if (window.fredware && window.fredware.state && window.fredware.state.inicializado) {
+                    console.log(`✅ [Stock] Núcleo listo tras ${i + 1}s`);
+                    return true;
+                }
+                await new Promise(r => setTimeout(r, 500));
+            }
+            console.warn('⚠️ [Stock] Timeout esperando al núcleo, continúo igual');
             return false;
         }
 
         // ============================================================
+        // ============================================================
         // TAB 1: STOCK EN VIVO
+        // ============================================================
         // ============================================================
         async function cargarStockVivo() {
             const cuerpo = document.getElementById('cuerpo-stock-vivo');
@@ -385,13 +557,16 @@
             try {
                 const { data, error } = await db_nube
                     .from('productos_raciones')
-                    .select('id, nombre_articulo, zona, tipo, categoria, unidad_compra, unidad_racion, stock_actual, stock_minimo, stock_maximo, peso_por_racion, proveedor_principal')
+                    .select('id, nombre_articulo, zona, tipo, categoria, unidad_compra, unidad_racion, stock_actual, stock_minimo, stock_maximo, peso_por_racion, proveedor_principal, estado')
                     .order('nombre_articulo', { ascending: true });
 
                 if (error) throw error;
-                productosGlobal = data || [];
 
-                // Rellenar select de zonas
+                productosGlobal = data || [];
+                productosMapId = {};
+                productosGlobal.forEach(p => { productosMapId[p.id] = p; });
+
+                // Rellenar select de zonas (conservando valor actual)
                 const zonas = [...new Set(productosGlobal.map(p => p.zona).filter(Boolean))].sort();
                 const selectZona = document.getElementById('filtro-stock-zona');
                 const valorActual = selectZona.value;
@@ -407,19 +582,43 @@
             }
         }
 
+        function calcularEstadoStock(p) {
+            if (p.stock_actual == null) {
+                return { codigo: 'NODATA', orden: 5, label: 'Sin datos', emoji: '⚪', clase: 'badge-nodata' };
+            }
+            const s = Number(p.stock_actual);
+            const min = Number(p.stock_minimo || 0);
+
+            if (s <= 0) return { codigo: 'SIN_STOCK', orden: 1, label: 'Sin stock', emoji: '🔴', clase: 'badge-sin' };
+            if (min > 0 && s < min) return { codigo: 'BAJO_MINIMO', orden: 2, label: 'Bajo mínimo', emoji: '🟠', clase: 'badge-bajo' };
+            if (min > 0 && s < min * 1.5) return { codigo: 'CERCA_MINIMO', orden: 3, label: 'Cerca mínimo', emoji: '🟡', clase: 'badge-cerca' };
+            return { codigo: 'OK', orden: 4, label: 'OK', emoji: '🟢', clase: 'badge-ok' };
+        }
+
         function renderStockVivo() {
             const cuerpo = document.getElementById('cuerpo-stock-vivo');
             const texto = (document.getElementById('filtro-stock-texto').value || '').toUpperCase().trim();
             const zona = document.getElementById('filtro-stock-zona').value;
-            const estado = document.getElementById('filtro-stock-estado').value;
+            const estadoFiltro = document.getElementById('filtro-stock-estado').value;
 
+            // Stats globales (sin filtros)
+            let stats = { total: productosGlobal.length, sin: 0, bajo: 0, cerca: 0 };
+            productosGlobal.forEach(p => {
+                const est = calcularEstadoStock(p);
+                if (est.codigo === 'SIN_STOCK') stats.sin++;
+                if (est.codigo === 'BAJO_MINIMO') stats.bajo++;
+                if (est.codigo === 'CERCA_MINIMO') stats.cerca++;
+            });
+            document.getElementById('stat-total').textContent = stats.total;
+            document.getElementById('stat-sin').textContent = stats.sin;
+            document.getElementById('stat-bajo').textContent = stats.bajo;
+            document.getElementById('stat-cerca').textContent = stats.cerca;
+
+            // Filtros
             let filtrados = productosGlobal.filter(p => {
                 if (texto && !p.nombre_articulo.toUpperCase().includes(texto)) return false;
                 if (zona && p.zona !== zona) return false;
-                if (estado) {
-                    const est = calcularEstadoStock(p);
-                    if (est.codigo !== estado) return false;
-                }
+                if (estadoFiltro && calcularEstadoStock(p).codigo !== estadoFiltro) return false;
                 return true;
             });
 
@@ -428,7 +627,7 @@
                 return;
             }
 
-            // Ordenar por severidad
+            // Ordenar por severidad y luego por nombre
             filtrados.sort((a, b) => {
                 const ea = calcularEstadoStock(a).orden;
                 const eb = calcularEstadoStock(b).orden;
@@ -441,7 +640,7 @@
                 const stock = p.stock_actual == null ? '—' : Number(p.stock_actual).toFixed(2);
                 const min = p.stock_minimo == null ? '—' : Number(p.stock_minimo).toFixed(2);
                 const raciones = (p.peso_por_racion > 0 && p.stock_actual != null)
-                    ? Math.round(p.stock_actual / p.peso_por_racion)
+                    ? Math.round(Number(p.stock_actual) / Number(p.peso_por_racion))
                     : '—';
 
                 return `
@@ -457,18 +656,10 @@
             }).join('');
         }
 
-        function calcularEstadoStock(p) {
-            if (p.stock_actual == null) return { codigo: 'SIN_STOCK', orden: 1, label: 'Sin datos', emoji: '⚪', clase: 'badge-sin' };
-            const s = Number(p.stock_actual);
-            const min = Number(p.stock_minimo || 0);
-            if (s <= 0) return { codigo: 'SIN_STOCK', orden: 1, label: 'Sin stock', emoji: '🔴', clase: 'badge-sin' };
-            if (s < min) return { codigo: 'BAJO_MINIMO', orden: 2, label: 'Bajo mínimo', emoji: '🟠', clase: 'badge-bajo' };
-            if (s < min * 1.5) return { codigo: 'CERCA_MINIMO', orden: 3, label: 'Cerca mínimo', emoji: '🟡', clase: 'badge-cerca' };
-            return { codigo: 'OK', orden: 4, label: 'OK', emoji: '🟢', clase: 'badge-ok' };
-        }
-
+        // ============================================================
         // ============================================================
         // TAB 2: REGISTRAR MOVIMIENTO
+        // ============================================================
         // ============================================================
         function onCambiarTipoMovimiento() {
             const tipo = document.getElementById('mov-tipo').value;
@@ -485,13 +676,41 @@
                 bloqueMerma.classList.add('hidden');
                 signo.textContent = '(+/- según signo)';
             }
+
+            actualizarPreviewMovimiento();
+        }
+
+        function actualizarPreviewMovimiento() {
+            const preview = document.getElementById('mov-preview');
+            if (!productoMovSeleccionado) {
+                preview.classList.add('hidden');
+                return;
+            }
+
+            const tipo = document.getElementById('mov-tipo').value;
+            const cantidadInput = parseFloat(document.getElementById('mov-cantidad').value);
+            if (isNaN(cantidadInput) || cantidadInput === 0) {
+                preview.classList.add('hidden');
+                return;
+            }
+
+            let cantidadFinal = cantidadInput;
+            if (tipo === 'SALIDA' || tipo === 'MERMA') cantidadFinal = -Math.abs(cantidadInput);
+
+            const stockActual = Number(productoMovSeleccionado.stock_actual || 0);
+            const stockNuevo = stockActual + cantidadFinal;
+            const unidad = productoMovSeleccionado.unidad_compra || '';
+
+            preview.classList.remove('hidden');
+            preview.innerHTML = `
+                <strong>📦 ${escapeHtml(productoMovSeleccionado.nombre_articulo)}</strong><br>
+                Stock actual: <strong>${stockActual.toFixed(2)} ${escapeHtml(unidad)}</strong> → Nuevo: <strong style="color:${stockNuevo < 0 ? '#dc2626' : '#059669'};">${stockNuevo.toFixed(2)} ${escapeHtml(unidad)}</strong>
+                ${stockNuevo < 0 ? '<br><span style="color:#dc2626;font-weight:700;">⚠️ El stock quedará negativo</span>' : ''}
+            `;
         }
 
         async function registrarMovimiento() {
-            const inputProd = document.getElementById('mov-producto');
-            const seleccionado = inputProd.fredwareGetSeleccionado ? inputProd.fredwareGetSeleccionado() : null;
-
-            if (!seleccionado) {
+            if (!productoMovSeleccionado) {
                 lanzarToast('Selecciona un producto de la lista', 'warning');
                 return;
             }
@@ -499,7 +718,7 @@
             const tipo = document.getElementById('mov-tipo').value;
             let cantidad = parseFloat(document.getElementById('mov-cantidad').value);
 
-            if (!cantidad || cantidad <= 0) {
+            if (isNaN(cantidad) || cantidad === 0) {
                 lanzarToast('Introduce una cantidad válida', 'warning');
                 return;
             }
@@ -508,10 +727,23 @@
             if (tipo === 'SALIDA' || tipo === 'MERMA') {
                 cantidad = -Math.abs(cantidad);
             }
-            // AJUSTE: el usuario pone +/- manualmente
 
             const notas = document.getElementById('mov-notas').value.trim();
             const motivoMerma = tipo === 'MERMA' ? document.getElementById('mov-motivo-merma').value : null;
+
+            // Confirmación si stock queda negativo
+            const stockActual = Number(productoMovSeleccionado.stock_actual || 0);
+            const stockNuevo = stockActual + cantidad;
+            if (stockNuevo < 0) {
+                const ok = confirm(
+                    `⚠️ El stock quedará NEGATIVO:\n\n` +
+                    `Actual: ${stockActual.toFixed(2)}\n` +
+                    `Movimiento: ${cantidad.toFixed(2)}\n` +
+                    `Resultado: ${stockNuevo.toFixed(2)}\n\n` +
+                    `¿Continuar?`
+                );
+                if (!ok) return;
+            }
 
             const btn = document.getElementById('btn-registrar-mov');
             btn.disabled = true;
@@ -519,7 +751,7 @@
 
             try {
                 const { data, error } = await db_nube.rpc('ajustar_stock', {
-                    p_producto_id: seleccionado.id,
+                    p_producto_id: productoMovSeleccionado.id,
                     p_cantidad: cantidad,
                     p_tipo: tipo,
                     p_origen: 'APP_STOCK',
@@ -527,35 +759,48 @@
                     p_proveedor: null,
                     p_usuario: 'APP_STOCK',
                     p_notas: notas || (motivoMerma ? `Merma: ${motivoMerma}` : null),
-                    p_unidad: seleccionado.unidad_compra,
+                    p_unidad: productoMovSeleccionado.unidad_compra,
                     p_coste_unitario: null,
                     p_metadata: { motivo_merma: motivoMerma }
                 });
 
                 if (error) throw error;
 
-                lanzarToast(`✅ Movimiento registrado. Nuevo stock: ${Number(data).toFixed(2)} ${seleccionado.unidad_compra || ''}`, 'success');
+                lanzarToast(`✅ Movimiento registrado. Nuevo stock: ${Number(data).toFixed(2)} ${productoMovSeleccionado.unidad_compra || ''}`, 'success');
 
                 // Limpiar formulario
-                inputProd.value = '';
-                if (inputProd.fredwareReset) inputProd.fredwareReset();
-                document.getElementById('mov-cantidad').value = '';
-                document.getElementById('mov-notas').value = '';
+                resetFormMovimiento();
 
-                // Recargar stock
+                // Recargar stock en background
                 await cargarStockVivo();
 
             } catch (e) {
                 console.error('Error registrando movimiento:', e);
-                lanzarToast('❌ ' + e.message, 'error');
+                lanzarToast('❌ ' + (e.message || 'Error al registrar'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '✅ Registrar movimiento';
             }
         }
 
+        function resetFormMovimiento() {
+            const inputProd = document.getElementById('mov-producto');
+            inputProd.value = '';
+            if (inputProd.fredwareReset) inputProd.fredwareReset();
+            productoMovSeleccionado = null;
+            document.getElementById('mov-cantidad').value = '';
+            document.getElementById('mov-notas').value = '';
+            document.getElementById('mov-tipo').value = 'SALIDA';
+            document.getElementById('bloque-motivo-merma').classList.add('hidden');
+            document.getElementById('mov-info-producto').classList.add('hidden');
+            document.getElementById('mov-preview').classList.add('hidden');
+            onCambiarTipoMovimiento();
+        }
+
+        // ============================================================
         // ============================================================
         // TAB 3: HISTORIAL
+        // ============================================================
         // ============================================================
         async function cargarHistorial() {
             const cuerpo = document.getElementById('cuerpo-historial');
@@ -574,7 +819,17 @@
                     .limit(500);
 
                 if (error) throw error;
+
                 historialGlobal = data || [];
+
+                // Si no tenemos los productos cargados, cargarlos (para el nombre)
+                if (Object.keys(productosMapId).length === 0) {
+                    const { data: prods } = await db_nube
+                        .from('productos_raciones')
+                        .select('id, nombre_articulo, unidad_compra');
+                    (prods || []).forEach(p => { productosMapId[p.id] = p; });
+                }
+
                 renderHistorial();
             } catch (e) {
                 console.error('Error cargando historial:', e);
@@ -587,13 +842,9 @@
             const texto = (document.getElementById('filtro-hist-texto').value || '').toUpperCase().trim();
             const tipoFiltro = document.getElementById('filtro-hist-tipo').value;
 
-            // Mapa producto_id → nombre
-            const mapaNombres = {};
-            productosGlobal.forEach(p => { mapaNombres[p.id] = p.nombre_articulo; });
-
             let filtrados = historialGlobal.filter(m => {
-                const nombre = mapaNombres[m.producto_id] || m.producto_id;
-                if (texto && !nombre.toUpperCase().includes(texto)) return false;
+                const nombre = (productosMapId[m.producto_id]?.nombre_articulo || m.producto_id || '').toUpperCase();
+                if (texto && !nombre.includes(texto)) return false;
                 if (tipoFiltro && m.tipo !== tipoFiltro) return false;
                 return true;
             });
@@ -605,20 +856,19 @@
 
             const badgeTipo = (tipo) => {
                 const mapa = {
-                    ENTRADA: 'badge-entrada',
-                    SALIDA: 'badge-salida',
-                    MERMA: 'badge-merma',
-                    AJUSTE: 'badge-ajuste',
+                    ENTRADA: 'badge-entrada', SALIDA: 'badge-salida',
+                    MERMA: 'badge-merma', AJUSTE: 'badge-ajuste',
                     TRASPASO: 'badge-traspaso'
                 };
                 const emoji = {
-                    ENTRADA: '📥', SALIDA: '📤', MERMA: '🗑️', AJUSTE: '⚙️', TRASPASO: '🔄'
+                    ENTRADA: '📥', SALIDA: '📤', MERMA: '🗑️',
+                    AJUSTE: '⚙️', TRASPASO: '🔄'
                 };
                 return `<span class="badge-tipo ${mapa[tipo] || ''}">${emoji[tipo] || ''} ${tipo}</span>`;
             };
 
             cuerpo.innerHTML = filtrados.map(m => {
-                const nombre = mapaNombres[m.producto_id] || m.producto_id;
+                const nombre = productosMapId[m.producto_id]?.nombre_articulo || m.producto_id;
                 const cantidad = Number(m.cantidad);
                 const signo = cantidad >= 0 ? '+' : '';
                 const color = cantidad >= 0 ? 'text-emerald-600' : 'text-red-600';
@@ -627,7 +877,7 @@
                         <td class="text-xs text-slate-500 whitespace-nowrap">${formatearFechaCorta(m.fecha)}</td>
                         <td class="font-semibold">${escapeHtml(nombre)}</td>
                         <td class="text-center">${badgeTipo(m.tipo)}</td>
-                        <td class="text-center font-bold ${color}">${signo}${cantidad.toFixed(2)}</td>
+                        <td class="text-center font-bold ${color}">${signo}${cantidad.toFixed(2)} <span class="text-xs text-slate-400 font-normal">${escapeHtml(m.unidad || '')}</span></td>
                         <td class="text-xs text-slate-500">${escapeHtml(m.origen || '—')}</td>
                         <td class="text-xs">${escapeHtml(m.usuario || '—')}</td>
                         <td class="text-xs text-slate-500">${escapeHtml(m.notas || '')}</td>
@@ -637,15 +887,19 @@
         }
 
         // ============================================================
-        // TAB 4: AJUSTES
+        // ============================================================
+        // TAB 4: AJUSTES / CUADRE
+        // ============================================================
         // ============================================================
         function calcularDiferenciaAjuste() {
             const teorico = parseFloat(document.getElementById('ajuste-stock-teorico').value) || 0;
             const fisicoInput = document.getElementById('ajuste-stock-fisico').value;
             const diferenciaInput = document.getElementById('ajuste-diferencia');
+            const preview = document.getElementById('ajuste-preview');
 
             if (fisicoInput === '' || isNaN(parseFloat(fisicoInput))) {
                 diferenciaInput.value = '';
+                preview.classList.add('hidden');
                 return;
             }
 
@@ -660,13 +914,22 @@
             } else {
                 diferenciaInput.className = 'bg-red-100 font-bold text-red-700';
             }
+
+            // Preview
+            if (productoAjusteSeleccionado && dif !== 0) {
+                const unidad = productoAjusteSeleccionado.unidad_compra || '';
+                preview.classList.remove('hidden');
+                preview.innerHTML = `
+                    <strong>📦 ${escapeHtml(productoAjusteSeleccionado.nombre_articulo)}</strong><br>
+                    Se registrará un movimiento <strong>AJUSTE</strong> de <strong style="color:${dif > 0 ? '#059669' : '#dc2626'};">${dif >= 0 ? '+' : ''}${dif.toFixed(2)} ${escapeHtml(unidad)}</strong>
+                `;
+            } else {
+                preview.classList.add('hidden');
+            }
         }
 
         async function aplicarAjuste() {
-            const inputProd = document.getElementById('ajuste-producto');
-            const seleccionado = inputProd.fredwareGetSeleccionado ? inputProd.fredwareGetSeleccionado() : null;
-
-            if (!seleccionado) {
+            if (!productoAjusteSeleccionado) {
                 lanzarToast('Selecciona un producto', 'warning');
                 return;
             }
@@ -692,7 +955,7 @@
                 title: '⚙️ Confirmar ajuste',
                 html: `
                     <div style="text-align:left; font-size:14px;">
-                        <p><strong>Producto:</strong> ${escapeHtml(seleccionado.nombre_articulo)}</p>
+                        <p><strong>Producto:</strong> ${escapeHtml(productoAjusteSeleccionado.nombre_articulo)}</p>
                         <p><strong>Stock teórico:</strong> ${teorico.toFixed(2)}</p>
                         <p><strong>Stock físico:</strong> ${fisico.toFixed(2)}</p>
                         <p><strong>Diferencia:</strong> <span style="color:${diferencia >= 0 ? '#10b981' : '#ef4444'};font-weight:700;">${diferencia >= 0 ? '+' : ''}${diferencia.toFixed(2)}</span></p>
@@ -713,7 +976,7 @@
 
             try {
                 const { data, error } = await db_nube.rpc('ajustar_stock', {
-                    p_producto_id: seleccionado.id,
+                    p_producto_id: productoAjusteSeleccionado.id,
                     p_cantidad: diferencia,
                     p_tipo: 'AJUSTE',
                     p_origen: 'MANUAL',
@@ -721,75 +984,138 @@
                     p_proveedor: null,
                     p_usuario: 'CUADRE_JEFE',
                     p_notas: notas || 'Ajuste por cuadre manual',
-                    p_unidad: seleccionado.unidad_compra,
+                    p_unidad: productoAjusteSeleccionado.unidad_compra,
                     p_coste_unitario: null,
                     p_metadata: { stock_teorico: teorico, stock_fisico: fisico }
                 });
 
                 if (error) throw error;
 
-                lanzarToast(`✅ Stock ajustado a ${Number(data).toFixed(2)}`, 'success');
+                lanzarToast(`✅ Stock ajustado a ${Number(data).toFixed(2)} ${productoAjusteSeleccionado.unidad_compra || ''}`, 'success');
 
-                // Limpiar formulario
-                inputProd.value = '';
-                if (inputProd.fredwareReset) inputProd.fredwareReset();
-                document.getElementById('ajuste-stock-teorico').value = '';
-                document.getElementById('ajuste-stock-fisico').value = '';
-                document.getElementById('ajuste-diferencia').value = '';
-                document.getElementById('ajuste-notas').value = '';
-
+                resetFormAjuste();
                 await cargarStockVivo();
 
             } catch (e) {
                 console.error('Error aplicando ajuste:', e);
-                lanzarToast('❌ ' + e.message, 'error');
+                lanzarToast('❌ ' + (e.message || 'Error al aplicar ajuste'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '✅ Aplicar ajuste';
             }
         }
 
+        function resetFormAjuste() {
+            const inputProd = document.getElementById('ajuste-producto');
+            inputProd.value = '';
+            if (inputProd.fredwareReset) inputProd.fredwareReset();
+            productoAjusteSeleccionado = null;
+            document.getElementById('ajuste-stock-teorico').value = '';
+            document.getElementById('ajuste-stock-fisico').value = '';
+            document.getElementById('ajuste-diferencia').value = '';
+            document.getElementById('ajuste-notas').value = '';
+            document.getElementById('ajuste-preview').classList.add('hidden');
+        }
+
+        // ============================================================
         // ============================================================
         // INICIALIZACIÓN
         // ============================================================
+        // ============================================================
         async function init() {
+            if (appInicializada) return;
+            appInicializada = true;
+
             console.log('🚀 [Stock v1.0] Init');
 
+            // Restaurar tab
             const tabGuardada = localStorage.getItem('fredware_stock_tab') || 'stock';
             setTab(tabGuardada);
 
+            // Badge online
+            actualizarBadgeOnline();
+
+            // Suscribir al núcleo (si existe)
             suscribirAlNucleo();
 
+            // Esperar al núcleo (para tener productos cargados en su caché)
             await esperarAlNucleo();
 
-            // Cargar productos en el caché del núcleo (para el combobox)
+            // Pre-cargar productos en el caché del núcleo para los comboboxes
             try {
-                await window.fredware.productos.cargar();
+                if (window.fredware && window.fredware.productos) {
+                    await window.fredware.productos.cargar();
+                }
             } catch (e) {
-                console.warn('No se pudo pre-cargar productos:', e);
+                console.warn('No se pudo pre-cargar productos en el núcleo:', e);
             }
 
             // Configurar comboboxes estrictos
-            window.fredware.productos.comboboxEstricto('mov-producto', {
-                placeholder: 'Escribe para buscar producto...',
-                onSelect: (p) => console.log('📦 Mov producto:', p?.nombre_articulo)
-            });
-            window.fredware.productos.comboboxEstricto('ajuste-producto', {
-                placeholder: 'Escribe para buscar producto...',
-                onSelect: (p) => {
-                    console.log('📦 Ajuste producto:', p?.nombre_articulo);
-                    // Rellenar stock teórico automáticamente
-                    document.getElementById('ajuste-stock-teorico').value = Number(p.stock_actual || 0).toFixed(2);
-                    document.getElementById('ajuste-stock-fisico').value = '';
-                    document.getElementById('ajuste-diferencia').value = '';
+            try {
+                if (window.fredware && window.fredware.productos) {
+
+                    // Combobox TAB 2: Registrar movimiento
+                    window.fredware.productos.comboboxEstricto('mov-producto', {
+                        placeholder: 'Escribe para buscar producto...',
+                        onSelect: (p) => {
+                            productoMovSeleccionado = p;
+                            if (p) {
+                                const infoDiv = document.getElementById('mov-info-producto');
+                                const unidad = p.unidad_compra || '';
+                                const stock = p.stock_actual == null ? '—' : Number(p.stock_actual).toFixed(2);
+                                infoDiv.innerHTML = `
+                                    <strong>📦 ${escapeHtml(p.nombre_articulo)}</strong><br>
+                                    Stock actual: <strong>${stock} ${escapeHtml(unidad)}</strong>
+                                    ${p.zona ? ' · Zona: ' + escapeHtml(p.zona) : ''}
+                                `;
+                                infoDiv.classList.remove('hidden');
+                                actualizarPreviewMovimiento();
+                            } else {
+                                productoMovSeleccionado = null;
+                                document.getElementById('mov-info-producto').classList.add('hidden');
+                                document.getElementById('mov-preview').classList.add('hidden');
+                            }
+                        }
+                    });
+
+                    // Combobox TAB 4: Ajustes
+                    window.fredware.productos.comboboxEstricto('ajuste-producto', {
+                        placeholder: 'Escribe para buscar producto...',
+                        onSelect: (p) => {
+                            productoAjusteSeleccionado = p;
+                            if (p) {
+                                document.getElementById('ajuste-stock-teorico').value = Number(p.stock_actual || 0).toFixed(2);
+                                document.getElementById('ajuste-stock-fisico').value = '';
+                                document.getElementById('ajuste-diferencia').value = '';
+                                document.getElementById('ajuste-preview').classList.add('hidden');
+                                document.getElementById('ajuste-stock-fisico').focus();
+                            } else {
+                                productoAjusteSeleccionado = null;
+                                document.getElementById('ajuste-stock-teorico').value = '';
+                            }
+                        }
+                    });
+
+                    console.log('✅ [Stock] Comboboxes configurados');
+                } else {
+                    console.warn('⚠️ [Stock] Núcleo no disponible, los comboboxes no funcionarán');
                 }
-            });
+            } catch (e) {
+                console.error('Error configurando comboboxes:', e);
+            }
+
+            // Enganchar listeners para preview de movimiento
+            document.getElementById('mov-cantidad').addEventListener('input', actualizarPreviewMovimiento);
 
             // Cargar datos iniciales
             await cargarStockVivo();
+
+            console.log('✅ [Stock v1.0] Inicializado');
         }
 
-        // Exponer funciones globales
+        // ============================================================
+        // EXPONER FUNCIONES GLOBALES
+        // ============================================================
         window.setTab = setTab;
         window.cargarStockVivo = cargarStockVivo;
         window.renderStockVivo = renderStockVivo;
@@ -800,6 +1126,9 @@
         window.calcularDiferenciaAjuste = calcularDiferenciaAjuste;
         window.aplicarAjuste = aplicarAjuste;
 
+        // ============================================================
+        // ARRANCAR
+        // ============================================================
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
