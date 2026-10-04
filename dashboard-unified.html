@@ -188,15 +188,17 @@
         .diag-panel .diag-ko { color: #fca5a5; }
         .diag-panel .diag-warn { color: #fcd34d; }
 
-        /* 🆕 D2 — Widget de productos a reponer */
+        /* ============================================================
+           🆕 D2 — Widget de productos a reponer (colapsable, colores suaves)
+           ============================================================ */
         #alerta-stock-card {
             background: white;
             border-radius: 16px;
-            padding: 20px;
+            padding: 16px 20px;
             border: 1px solid #e2e8f0;
-            border-left: 5px solid #f59e0b;
+            border-left: 4px solid #fbbf24;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             display: none;
         }
         #alerta-stock-card h3 {
@@ -208,33 +210,57 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin: 0;
+        }
+        #alerta-stock-header:hover h3 span:first-child {
+            color: #f59e0b !important;
         }
         .stock-item {
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 8px;
             display: flex;
             flex-direction: column;
             gap: 2px;
-            transition: transform 0.15s;
+            background: #fafafa;
+            border-left: 3px solid #cbd5e1;
         }
-        .stock-item:hover { transform: translateY(-2px); }
         .stock-item .nombre {
-            font-weight: 700;
-            font-size: 13px;
+            font-weight: 600;
+            font-size: 12.5px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            color: #334155;
         }
         .stock-item .detalle {
             font-size: 11px;
-            color: #64748b;
+            color: #94a3b8;
         }
         .stock-item .sugerido {
             font-size: 11px;
             font-weight: 700;
-            margin-top: 2px;
+            margin-top: 1px;
         }
+        /* Estados suaves */
+        .stock-item.estado-sin {
+            background: #fef2f2;
+            border-left-color: #fca5a5;
+        }
+        .stock-item.estado-sin .nombre { color: #991b1b; }
+        .stock-item.estado-sin .sugerido { color: #b91c1c; }
+
+        .stock-item.estado-bajo {
+            background: #fff7ed;
+            border-left-color: #fdba74;
+        }
+        .stock-item.estado-bajo .nombre { color: #9a3412; }
+        .stock-item.estado-bajo .sugerido { color: #c2410c; }
+
+        .stock-item.estado-cerca {
+            background: #fffbeb;
+            border-left-color: #fcd34d;
+        }
+        .stock-item.estado-cerca .nombre { color: #92400e; }
+        .stock-item.estado-cerca .sugerido { color: #b45309; }
 
         @media (max-width: 768px) {
             .grid-3, .grid-2 { grid-template-columns: 1fr; }
@@ -253,20 +279,28 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- 🆕 D2 — ALERTA STOCK MÍNIMO -->
+    <!-- 🆕 D2 — ALERTA STOCK MÍNIMO (colapsable) -->
     <!-- ============================================================ -->
     <div id="alerta-stock-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-            <h3>
+        <!-- Cabecera clickable -->
+        <div id="alerta-stock-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; cursor: pointer; user-select: none;">
+            <h3 style="margin: 0;">
+                <span id="alerta-stock-flecha" style="display: inline-block; transition: transform 0.25s; font-size: 12px; color: #94a3b8;">▶</span>
                 🟠 Productos a reponer
                 <span id="alerta-stock-badge" class="badge badge-medium">0</span>
             </h3>
-            <a href="compras.html" class="refresh-btn" style="background: #f59e0b;">
-                🛒 Ir a compras
-            </a>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <a href="compras.html" class="refresh-btn" id="alerta-stock-btn-compras" style="background: #f59e0b; font-size: 12px; padding: 6px 12px;" onclick="event.stopPropagation();">
+                    🛒 Ir a compras
+                </a>
+            </div>
         </div>
-        <div id="alerta-stock-lista" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px;">
-            <!-- Se rellena desde JS -->
+
+        <!-- Contenido colapsable -->
+        <div id="alerta-stock-contenido" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
+            <div id="alerta-stock-lista" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 14px;">
+                <!-- Se rellena desde JS -->
+            </div>
         </div>
     </div>
 
@@ -364,13 +398,17 @@
 
 <script>
 // ============================================================
-// DASHBOARD UNIFICADO - v2.4
+// DASHBOARD UNIFICADO - v2.5
 // v2.3: Fix: lee state.escandallos en vez de state.ingredientes
 // v2.4: 🆕 D2 — Widget de alerta de stock mínimo
+// v2.5: 🆕 Widget colapsable + colores suavizados
 // ============================================================
 
 let estadoActual = null;
 let haRenderizado = false;
+
+// Clave de localStorage para recordar el estado del widget
+const CLAVE_COLAPSADO = 'fredware_dashboard_alerta_stock_colapsado';
 
 // ============================================================
 // PANEL DE DIAGNÓSTICO
@@ -520,7 +558,7 @@ function renderizarDashboard(state) {
 }
 
 // ============================================================
-// 🆕 D2 — ALERTA STOCK MÍNIMO
+// 🆕 D2 — ALERTA STOCK MÍNIMO (colapsable)
 // ============================================================
 async function renderizarAlertaStock() {
     const card = document.getElementById('alerta-stock-card');
@@ -547,17 +585,28 @@ async function renderizarAlertaStock() {
         card.style.display = 'block';
         badge.textContent = productos.length;
 
-        const colorEstado = (estado) => {
+        // Clase según estado (colores suaves definidos en CSS)
+        const claseEstado = (estado) => {
             switch (estado) {
-                case 'SIN_STOCK':    return { bg: '#fee2e2', border: '#ef4444', text: '#991b1b', emoji: '🔴' };
-                case 'BAJO_MINIMO':  return { bg: '#fed7aa', border: '#f97316', text: '#9a3412', emoji: '🟠' };
-                case 'CERCA_MINIMO': return { bg: '#fef3c7', border: '#f59e0b', text: '#92400e', emoji: '🟡' };
-                default:             return { bg: '#f1f5f9', border: '#94a3b8', text: '#475569', emoji: '⚪' };
+                case 'SIN_STOCK':    return 'estado-sin';
+                case 'BAJO_MINIMO':  return 'estado-bajo';
+                case 'CERCA_MINIMO': return 'estado-cerca';
+                default:             return '';
+            }
+        };
+
+        const emojiEstado = (estado) => {
+            switch (estado) {
+                case 'SIN_STOCK':    return '🔴';
+                case 'BAJO_MINIMO':  return '🟠';
+                case 'CERCA_MINIMO': return '🟡';
+                default:             return '⚪';
             }
         };
 
         lista.innerHTML = productos.map(p => {
-            const c = colorEstado(p.estado);
+            const clase = claseEstado(p.estado);
+            const emoji = emojiEstado(p.estado);
             const stock = Number(p.stock_actual || 0).toFixed(1);
             const min = Number(p.stock_minimo || 0).toFixed(1);
             const sug = Math.max(0, Number(p.cantidad_sugerida || 0)).toFixed(1);
@@ -565,23 +614,70 @@ async function renderizarAlertaStock() {
             const nombreSeguro = fredware.util.escapeHtml(p.nombre_articulo);
 
             return `
-                <div class="stock-item" style="background: ${c.bg}; border-left: 3px solid ${c.border};">
-                    <div class="nombre" style="color: ${c.text};" title="${nombreSeguro}">
-                        ${c.emoji} ${nombreSeguro}
+                <div class="stock-item ${clase}">
+                    <div class="nombre" title="${nombreSeguro}">
+                        ${emoji} ${nombreSeguro}
                     </div>
                     <div class="detalle">
                         Stock: <strong>${stock} ${fredware.util.escapeHtml(unidad)}</strong> · Mín: ${min}
                     </div>
-                    <div class="sugerido" style="color: ${c.text};">
+                    <div class="sugerido">
                         Sugerido: +${sug} ${fredware.util.escapeHtml(unidad)}
                     </div>
                 </div>
             `;
         }).join('');
 
+        // Reaplicar el estado (por si estaba abierto, que crezca para mostrar contenido)
+        aplicarEstadoInicialAlertaStock();
+
     } catch (e) {
         console.error('❌ Error cargando alerta de stock:', e);
         card.style.display = 'none';
+    }
+}
+
+// ------------------------------------------------------------
+// Colapsable: abrir/cerrar con persistencia en localStorage
+// ------------------------------------------------------------
+function alternarAlertaStock() {
+    const contenido = document.getElementById('alerta-stock-contenido');
+    const flecha = document.getElementById('alerta-stock-flecha');
+    if (!contenido || !flecha) return;
+
+    const estaAbierto = contenido.style.maxHeight && contenido.style.maxHeight !== '0px' && contenido.style.maxHeight !== '0';
+
+    if (estaAbierto) {
+        // Cerrar
+        contenido.style.maxHeight = '0px';
+        flecha.style.transform = 'rotate(0deg)';
+        try { localStorage.setItem(CLAVE_COLAPSADO, '1'); } catch(e) {}
+    } else {
+        // Abrir: usamos scrollHeight para que quepa todo el contenido
+        contenido.style.maxHeight = (contenido.scrollHeight + 200) + 'px';
+        flecha.style.transform = 'rotate(90deg)';
+        try { localStorage.setItem(CLAVE_COLAPSADO, '0'); } catch(e) {}
+    }
+}
+
+// Aplica el estado guardado (por defecto: colapsado)
+function aplicarEstadoInicialAlertaStock() {
+    const contenido = document.getElementById('alerta-stock-contenido');
+    const flecha = document.getElementById('alerta-stock-flecha');
+    if (!contenido || !flecha) return;
+
+    let colapsado = '1'; // por defecto colapsado
+    try {
+        const guardado = localStorage.getItem(CLAVE_COLAPSADO);
+        if (guardado !== null) colapsado = guardado;
+    } catch(e) {}
+
+    if (colapsado === '1') {
+        contenido.style.maxHeight = '0px';
+        flecha.style.transform = 'rotate(0deg)';
+    } else {
+        contenido.style.maxHeight = (contenido.scrollHeight + 200) + 'px';
+        flecha.style.transform = 'rotate(90deg)';
     }
 }
 
@@ -895,9 +991,21 @@ setTimeout(() => {
 }, 6000);
 
 // ============================================================
+// INICIALIZACIÓN DEL WIDGET COLAPSABLE
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const header = document.getElementById('alerta-stock-header');
+    if (header) {
+        header.addEventListener('click', alternarAlertaStock);
+    }
+    aplicarEstadoInicialAlertaStock();
+});
+
+// ============================================================
 // EXPONER FUNCIONES GLOBALES
 // ============================================================
 window.forzarActualizacion = forzarActualizacion;
+window.alternarAlertaStock = alternarAlertaStock;
 </script>
 </body>
 </html>
