@@ -263,6 +263,8 @@
         .icon-btn.danger:hover { background: #f5d6d6; color: #b13e3e; }
         .icon-btn.move:hover { background: #d4e6d9; color: #1d6b3c; }
         .icon-btn.info:hover { background: #dbeafe; color: #2563eb; }
+        /* 🆕 D3 — Botón vincular */
+        .icon-btn.vinc:hover { background: #d1fae5; color: #065f46; }
 
         .catalogo-info {
             background: #f0ebe5;
@@ -372,6 +374,36 @@
         .tipo-badge.ingrediente { background: #d1fae5; color: #065f46; }
         .tipo-badge.simple { background: #f1f5f9; color: #94a3b8; }
 
+        /* 🆕 D3 — Badge de vínculo de stock */
+        .vinc-badge {
+            display: inline-block;
+            padding: 0.15rem 0.6rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            white-space: nowrap;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .vinc-badge.vinc-ok {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .vinc-badge.vinc-ok:hover {
+            background: #a7f3d0;
+        }
+        .vinc-badge.vinc-no {
+            background: #f1f5f9;
+            color: #94a3b8;
+        }
+        .vinc-badge.vinc-no:hover {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
         .edit-input {
             border: 1px solid #d5cdc3;
             border-radius: 6px;
@@ -466,6 +498,7 @@
             display: inline-block;
             margin-top: 0.3rem;
         }
+        .ficha-vinc { margin-top: 0.5rem; }
 
         .modal-overlay {
             position: fixed;
@@ -617,6 +650,25 @@
             flex-wrap: wrap;
             justify-content: flex-end;
         }
+
+        /* 🆕 D3 — Opciones de vínculo en el modal */
+        .vinc-opcion {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid #f0ebe5;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .vinc-opcion:last-child { border-bottom: none; }
+        .vinc-opcion:hover { background: #f8faf8; }
+        .vinc-opcion.vinc-selected {
+            background: #d1fae5;
+            border-left: 3px solid #059669;
+        }
+        .vinc-opcion.vinc-desvincular {
+            background: #fef2f2;
+            border-bottom: 2px solid #fecaca;
+        }
+        .vinc-opcion.vinc-desvincular:hover { background: #fee2e2; }
 
         .toast {
             position: fixed;
@@ -911,7 +963,8 @@
                     📋 Catálogo de la <strong>{{ cartaActual }}</strong> · 
                     <strong>{{ numBaldasCatalogo }}</strong> baldas · 
                     <strong>{{ numItemsCatalogo }}</strong> items activos · 
-                    <strong>{{ numConFicha }}</strong> con ficha
+                    <strong>{{ numConFicha }}</strong> con ficha ·
+                    <strong style="color:#065f46;">{{ numVinculados }}</strong> vinculados a stock
                 </div>
                 <span class="carta-badge">{{ cartaActual }}</span>
             </div>
@@ -956,11 +1009,25 @@
                         </template>
                         <template v-else>
                             <span class="item-name">{{ item.item_nombre }}</span>
+                            <!-- 🆕 D3 — Badge de vínculo de stock -->
+                            <span v-if="!item.item_bold" 
+                                  class="vinc-badge"
+                                  :class="item.producto_racion_id ? 'vinc-ok' : 'vinc-no'"
+                                  @click="abrirModalVincular(item)"
+                                  :title="item.producto_racion_id ? 'Vinculado a: ' + item.producto_racion_id + ' (click para cambiar)' : 'Sin vínculo de stock (click para vincular)'">
+                                {{ item.producto_racion_id ? '🔗 ' + item.producto_racion_id : '⚪ Sin vínculo' }}
+                            </span>
                             <span class="tipo-badge" :class="item.tipo_ficha || 'simple'">
                                 {{ getTipoLabel(item.tipo_ficha) }}
                             </span>
                             <div class="item-actions">
                                 <button class="icon-btn info" @click="editarFichaDeItem(item)" title="Editar ficha del item">📝</button>
+                                <button class="icon-btn vinc" 
+                                        @click="abrirModalVincular(item)" 
+                                        :title="item.item_bold ? 'No se puede vincular una cabecera' : (item.producto_racion_id ? 'Cambiar vínculo de stock' : 'Vincular a stock')"
+                                        :disabled="item.item_bold">
+                                    🔗
+                                </button>
                                 <button class="icon-btn" @click="toggleBold(item)" :title="item.item_bold ? 'Quitar cabecera' : 'Marcar como cabecera'">
                                     {{ item.item_bold ? '📌' : '📄' }}
                                 </button>
@@ -987,10 +1054,15 @@
                     <option value="ingrediente">⚖️ Productos</option>
                     <option value="simple">📦 Sin ficha</option>
                 </select>
+                <select v-model="filtroVinculo">
+                    <option value="">Todos los vínculos</option>
+                    <option value="vinculado">🔗 Solo vinculados</option>
+                    <option value="sin_vincular">⚪ Solo sin vincular</option>
+                </select>
             </div>
 
             <div v-if="itemsFiltrados.length === 0" style="padding:2rem; text-align:center; color:#7a726a;">
-                <p v-if="busquedaFichas || filtroTipoFicha">No hay items que coincidan.</p>
+                <p v-if="busquedaFichas || filtroTipoFicha || filtroVinculo">No hay items que coincidan.</p>
                 <p v-else>No hay items en el catálogo.</p>
             </div>
 
@@ -1012,6 +1084,21 @@
                     </div>
                     <div v-if="item.alergenos && item.alergenos.length" class="ficha-alergenos">
                         ⚠️ {{ item.alergenos.join(', ') }}
+                    </div>
+                    <!-- 🆕 D3 — Estado del vínculo -->
+                    <div v-if="!item.item_bold" class="ficha-vinc">
+                        <span v-if="item.producto_racion_id" 
+                              class="vinc-badge vinc-ok"
+                              @click="abrirModalVincular(item)"
+                              title="Click para cambiar">
+                            🔗 {{ item.producto_racion_id }}
+                        </span>
+                        <span v-else 
+                              class="vinc-badge vinc-no"
+                              @click="abrirModalVincular(item)"
+                              title="Click para vincular">
+                            ⚪ Sin vínculo · Click para vincular
+                        </span>
                     </div>
                 </div>
             </div>
@@ -1257,6 +1344,69 @@
         </div>
     </div>
 
+    <!-- ========== 🆕 D3 — MODAL VINCULAR A STOCK ========== -->
+    <div v-if="modalVincularVisible" class="modal-overlay" @click.self="cerrarModalVincular">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>🔗 Vincular a stock</h2>
+                <button class="close-btn" @click="cerrarModalVincular">✕</button>
+            </div>
+            <div style="padding:0.5rem 0;">
+                <div style="background:#f0ebe5; padding:0.8rem 1rem; border-radius:8px; margin-bottom:1rem;">
+                    <div style="font-size:0.7rem; color:#7a726a; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Item del catálogo</div>
+                    <div style="font-size:1.05rem; font-weight:700; color:#1e1e1e; margin-top:0.15rem;">{{ itemAVincular?.item_nombre }}</div>
+                    <div style="font-size:0.75rem; color:#7a726a; margin-top:0.15rem;">📦 {{ itemAVincular?.balda }}</div>
+                    <div v-if="itemAVincular?.producto_racion_id" 
+                         style="font-size:0.75rem; color:#065f46; margin-top:0.3rem;">
+                        Vínculo actual: <strong>🔗 {{ itemAVincular.producto_racion_id }}</strong>
+                    </div>
+                </div>
+
+                <label style="display:block; font-weight:600; font-size:0.85rem; color:#475569; margin-bottom:0.4rem;">
+                    Buscar producto en stock:
+                </label>
+                <input type="text" 
+                       v-model="busquedaProducto" 
+                       placeholder="Escribe para buscar..." 
+                       class="edit-input"
+                       style="width:100%; margin-bottom:0.8rem; padding:0.6rem 0.9rem; font-size:0.95rem;"
+                       ref="inputBusqueda"
+                       autofocus>
+
+                <div style="max-height:380px; overflow-y:auto; border:1px solid #e8e1d9; border-radius:10px;">
+                    <!-- Opción desvincular -->
+                    <div v-if="itemAVincular?.producto_racion_id" 
+                         class="vinc-opcion vinc-desvincular"
+                         @click="vincularProducto(null)">
+                        <div style="font-weight:700;">⚪ Sin vínculo</div>
+                        <div style="font-size:0.75rem; color:#b13e3e; margin-top:0.15rem;">Quitar vínculo actual</div>
+                    </div>
+
+                    <!-- Lista de productos -->
+                    <div v-for="p in productosFiltrados" :key="p.id" 
+                         class="vinc-opcion"
+                         :class="{ 'vinc-selected': p.id === itemAVincular?.producto_racion_id }"
+                         @click="vincularProducto(p.id)">
+                        <div style="font-weight:700;">{{ p.id }}</div>
+                        <div style="font-size:0.75rem; color:#7a726a; margin-top:0.15rem;">
+                            {{ p.zona || '—' }} · Stock: {{ Number(p.stock_actual || 0).toFixed(2) }} {{ p.unidad_compra || '' }}
+                            <span v-if="p.proveedor_principal">· 🏢 {{ p.proveedor_principal }}</span>
+                        </div>
+                    </div>
+
+                    <div v-if="productosFiltrados.length === 0" style="padding:2rem; text-align:center; color:#7a726a; font-size:0.85rem;">
+                        <div style="font-size:1.5rem; margin-bottom:0.5rem;">📭</div>
+                        <div v-if="busquedaProducto">No hay coincidencias con "<strong>{{ busquedaProducto }}</strong>"</div>
+                        <div v-else>No hay productos disponibles</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" @click="cerrarModalVincular">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ========== MODAL DETALLE SNAPSHOT ========== -->
     <div v-if="snapshotModalVisible" class="modal-overlay" @click.self="snapshotModalVisible = false">
         <div class="modal">
@@ -1310,7 +1460,7 @@
 
     <div class="footer">
         📊 Panel de control · Catálogo y fichas editables solo desde aquí
-        <br>🟢 Producto (ingrediente simple) · 🔵 Preparación (receta) · ⚪ Sin ficha
+        <br>🟢 Producto (ingrediente simple) · 🔵 Preparación (receta) · ⚪ Sin ficha · 🔗 Vinculado a stock
     </div>
 </div>
 
@@ -1451,10 +1601,16 @@ const CARTA_ACTUAL = 'carta_actual';
             // Fichas
             busquedaFichas: '',
             filtroTipoFicha: '',
+            filtroVinculo: '',          // 🆕 D3
             modalFichaVisible: false,
             editandoFichaItem: null,
             editForm: { tipo_ficha:'simple', peso:'', tiempo:'', alergenos:[], ingredientesText:'', elaboracion:'', notas:'' },
             alergenosDisponibles: ALERGENOS_DISPONIBLES,
+            // 🆕 D3 — Vinculación a stock
+            productosRaciones: [],
+            modalVincularVisible: false,
+            itemAVincular: null,
+            busquedaProducto: '',
             // Snapshots (C2.1)
             snapshots: [],
             snapshotsRango: '30',
@@ -1495,6 +1651,16 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
                 return n;
             },
+            // 🆕 D3 — Contar items vinculados
+            numVinculados() {
+                let n = 0;
+                for (const shelf of Object.values(this.catalogo)) {
+                    for (const it of shelf) {
+                        if (!it.item_bold && it.producto_racion_id) n++;
+                    }
+                }
+                return n;
+            },
             itemsFiltrados() {
                 const lista = [];
                 for (const [balda, items] of Object.entries(this.catalogo)) {
@@ -1502,11 +1668,31 @@ const CARTA_ACTUAL = 'carta_actual';
                         if (it.item_bold) continue;
                         if (this.filtroTipoFicha && (it.tipo_ficha || 'simple') !== this.filtroTipoFicha) continue;
                         if (this.busquedaFichas && !it.item_nombre.toLowerCase().includes(this.busquedaFichas.toLowerCase())) continue;
+                        // 🆕 D3 — Filtro por vínculo
+                        if (this.filtroVinculo === 'vinculado' && !it.producto_racion_id) continue;
+                        if (this.filtroVinculo === 'sin_vincular' && it.producto_racion_id) continue;
                         lista.push({ ...it, balda });
                     }
                 }
                 lista.sort((a, b) => a.item_nombre.localeCompare(b.item_nombre));
                 return lista;
+            },
+            // 🆕 D3 — Productos filtrados en el modal de vincular
+            productosFiltrados() {
+                if (!this.productosRaciones || this.productosRaciones.length === 0) {
+                    return [];
+                }
+                if (!this.busquedaProducto || this.busquedaProducto.trim().length === 0) {
+                    // Sin búsqueda: mostrar los primeros 50
+                    return this.productosRaciones.slice(0, 50);
+                }
+                const texto = this.busquedaProducto.toUpperCase().trim();
+                return this.productosRaciones
+                    .filter(p => 
+                        (p.id && p.id.toUpperCase().includes(texto)) ||
+                        (p.nombre_articulo && p.nombre_articulo.toUpperCase().includes(texto))
+                    )
+                    .slice(0, 50);
             },
 
             // ============================================================
@@ -1544,7 +1730,6 @@ const CARTA_ACTUAL = 'carta_actual';
                     return { hayDatos: false };
                 }
 
-                // Normalizar por número de snapshots para comparar manzanas con manzanas
                 const promRecientes = snapRecientes > 0 ? faltasRecientes / snapRecientes : 0;
                 const promAnteriores = snapAnteriores > 0 ? faltasAnteriores / snapAnteriores : 0;
 
@@ -1590,27 +1775,22 @@ const CARTA_ACTUAL = 'carta_actual';
             },
 
             // ============================================================
-            // C2.4 — FALTAS POR BALDA (% promedio sobre snapshots)
+            // C2.4 — FALTAS POR BALDA
             // ============================================================
             faltasPorBalda() {
                 if (!this.snapshots || this.snapshots.length === 0) return [];
                 if (!this.catalogo || Object.keys(this.catalogo).length === 0) return [];
 
-                // Total de items activos por balda (del catálogo actual)
                 const totalPorBalda = {};
                 for (const [balda, items] of Object.entries(this.catalogo)) {
                     totalPorBalda[balda] = items.filter(it => !it.item_bold).length;
                 }
 
-                // Acumular faltas por balda a lo largo de todos los snapshots
-                const faltasPorBalda = {};   // balda → total faltas
+                const faltasPorBalda = {};
                 let snapshotsConDatos = 0;
 
                 for (const snap of this.snapshots) {
                     const faltantes = snap.faltantes || [];
-                    if (faltantes.length === 0 && parseInt(snap.items_faltantes) === 0) {
-                        // Snapshot sin faltas: cuenta igual para el denominador
-                    }
                     snapshotsConDatos++;
 
                     const porBalda = {};
@@ -1625,8 +1805,6 @@ const CARTA_ACTUAL = 'carta_actual';
 
                 if (snapshotsConDatos === 0) return [];
 
-                // Calcular % por balda
-                // % = (faltas totales de la balda en todos los snapshots) / (items totales balda × snapshots)
                 const resultado = [];
                 for (const [balda, totalItems] of Object.entries(totalPorBalda)) {
                     if (totalItems === 0) continue;
@@ -1640,7 +1818,6 @@ const CARTA_ACTUAL = 'carta_actual';
                     });
                 }
 
-                // Ordenar por % descendente y filtrar las que tienen 0
                 return resultado
                     .filter(r => parseFloat(r.pct) > 0)
                     .sort((a, b) => parseFloat(b.pct) - parseFloat(a.pct));
@@ -1689,6 +1866,7 @@ const CARTA_ACTUAL = 'carta_actual';
                 this.loading = true;
                 this.syncStatus = 'syncing';
                 try {
+                    await this.cargarProductosRaciones();
                     await this.cargarCatalogo();
                     await this.recargarSupervision();
                     this.syncStatus = 'synced';
@@ -1719,6 +1897,21 @@ const CARTA_ACTUAL = 'carta_actual';
                 } catch (e) {
                     console.error('Error cargando catálogo:', e);
                     this.catalogo = {};
+                }
+            },
+
+            // 🆕 D3 — Cargar productos de stock
+            async cargarProductosRaciones() {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('productos_raciones')
+                        .select('id, nombre_articulo, zona, unidad_compra, stock_actual, proveedor_principal')
+                        .order('nombre_articulo', { ascending: true });
+                    if (error) throw error;
+                    this.productosRaciones = data || [];
+                } catch (e) {
+                    console.error('Error cargando productos_raciones:', e);
+                    this.productosRaciones = [];
                 }
             },
 
@@ -2052,6 +2245,58 @@ const CARTA_ACTUAL = 'carta_actual';
                 } catch (e) {
                     console.error('Error:', e);
                     this.showToast('Error al cargar catálogo', 'error');
+                }
+            },
+
+            // ============================================================
+            // 🆕 D3 — VINCULACIÓN A STOCK
+            // ============================================================
+            abrirModalVincular(item) {
+                if (item.item_bold) {
+                    this.showToast('Las cabeceras no se pueden vincular', 'warning');
+                    return;
+                }
+                this.itemAVincular = item;
+                this.busquedaProducto = '';
+                this.modalVincularVisible = true;
+                this.$nextTick(() => {
+                    const input = this.$refs.inputBusqueda;
+                    if (input) input.focus();
+                });
+            },
+
+            cerrarModalVincular() {
+                this.modalVincularVisible = false;
+                this.itemAVincular = null;
+                this.busquedaProducto = '';
+            },
+
+            async vincularProducto(productoId) {
+                if (!this.itemAVincular) return;
+                const itemId = this.itemAVincular.id;
+                const itemNombre = this.itemAVincular.item_nombre;
+
+                try {
+                    const { error } = await this.supabase
+                        .from('timbres_catalogo')
+                        .update({ 
+                            producto_racion_id: productoId,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', itemId);
+                    if (error) throw error;
+
+                    await this.cargarCatalogo();
+
+                    if (productoId) {
+                        this.showToast(`✅ "${itemNombre}" vinculado a ${productoId}`, 'success');
+                    } else {
+                        this.showToast(`⚪ Vínculo eliminado de "${itemNombre}"`, 'warning');
+                    }
+                    this.cerrarModalVincular();
+                } catch (e) {
+                    console.error('Error vinculando:', e);
+                    this.showToast('Error al vincular', 'error');
                 }
             },
 
