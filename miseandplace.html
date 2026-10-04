@@ -693,6 +693,29 @@
             outline: 2px solid #1e1e1e;
             outline-offset: 1px;
         }
+        /* 🆕 D3 — Aviso de descuento de stock */
+        .stock-aviso {
+            background: #eff6ff;
+            border-left: 3px solid #2563eb;
+            padding: 0.5rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #1e40af;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .stock-aviso.sin-vinculo {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+            color: #92400e;
+        }
+        .stock-aviso.descongelacion {
+            background: #f0fdf4;
+            border-left-color: #10b981;
+            color: #065f46;
+        }
 
         @media (max-width: 600px) {
             .app { padding: 0.8rem; }
@@ -979,6 +1002,27 @@
                         <option value="descongelacion">❄️ Descongelación</option>
                     </select>
                 </div>
+
+                <!-- 🆕 D3 — Aviso de descuento de stock -->
+                <div v-if="etiquetaForm.tipo === 'elaboracion'"
+                     class="stock-aviso"
+                     :class="{
+                         'sin-vinculo': !etiquetaItemActual?.producto_racion_id,
+                     }">
+                    <span v-if="etiquetaItemActual?.producto_racion_id">📦</span>
+                    <span v-else>⚠️</span>
+                    <span v-if="etiquetaItemActual?.producto_racion_id">
+                        Al imprimir, se descontará <strong>{{ etiquetaForm.cantidad || 1 }} ración</strong> del stock de <strong>{{ etiquetaItemActual.producto_racion_id }}</strong>
+                    </span>
+                    <span v-else>
+                        Este item <strong>no está vinculado</strong> a ningún producto de stock. No se descontará nada.
+                    </span>
+                </div>
+                <div v-else-if="etiquetaForm.tipo === 'descongelacion'" class="stock-aviso descongelacion">
+                    <span>❄️</span>
+                    <span>Etiqueta de descongelación — <strong>no afecta al stock</strong>.</span>
+                </div>
+
                 <div class="form-group">
                     <label>📦 Lote</label>
                     <input type="text" v-model="etiquetaForm.lote" placeholder="Ej: LOTE-001">
@@ -1200,6 +1244,7 @@ const CARTA_ACTUAL = 'carta_actual';
                         ingredientes: item.ingredientes || [],
                         elaboracion: item.elaboracion || null,
                         notas: item.notas || null,
+                        producto_racion_id: item.producto_racion_id || null,   // 🆕 D3
                         status: this.revisionHoy[item.id]?.status || null,
                         hecho: this.revisionHoy[item.id]?.hecho || false,
                         cantidad: this.revisionHoy[item.id]?.cantidad || 1,
@@ -1460,6 +1505,7 @@ const CARTA_ACTUAL = 'carta_actual';
                     ingredientes: item.ingredientes || [],
                     elaboracion: item.elaboracion,
                     notas: item.notas,
+                    producto_racion_id: item.producto_racion_id || null,   // 🆕 D3
                 };
                 this.modalVisible = true;
             },
@@ -1489,7 +1535,8 @@ const CARTA_ACTUAL = 'carta_actual';
                         name: this.fichaActual.name, 
                         bold: false, 
                         catalogo_id: 'ficha-' + this.fichaActual.name, 
-                        balda: this.fichaActual.shelf 
+                        balda: this.fichaActual.shelf,
+                        producto_racion_id: this.fichaActual.producto_racion_id || null   // 🆕 D3
                     });
                 }
             },
@@ -1553,6 +1600,45 @@ const CARTA_ACTUAL = 'carta_actual';
                     await this.cargarHistorialProduccion();
                 } catch (e) { console.warn('Error guardando etiqueta:', e); }
 
+                // 🆕 D3 — Descontar stock si es elaboración y está vinculado
+                let msgStock = '';
+                if (this.etiquetaForm.tipo === 'elaboracion') {
+                    const prodId = this.etiquetaItemActual?.producto_racion_id;
+                    if (prodId) {
+                        try {
+                            const { data: nuevoStock, error: errStock } = await this.supabase.rpc('ajustar_stock', {
+                                p_producto_id: prodId,
+                                p_cantidad: -cantidad,
+                                p_tipo: 'SALIDA',
+                                p_origen: 'MISE',
+                                p_origen_id: registro.id,
+                                p_proveedor: null,
+                                p_usuario: this.cocinero || 'COCINERO',
+                                p_notas: `Etiqueta elaboración: ${producto}`,
+                                p_unidad: null,
+                                p_coste_unitario: null,
+                                p_metadata: {
+                                    etiqueta_id: registro.id,
+                                    lote: lote,
+                                    cantidad_etiquetas: cantidad,
+                                    producto_catalogo: producto
+                                }
+                            });
+
+                            if (errStock) throw errStock;
+
+                            const stockNum = Number(nuevoStock);
+                            msgStock = ` · 📦 Stock: ${stockNum.toFixed(2)}`;
+
+                        } catch (eStock) {
+                            console.warn('⚠️ Error descontando stock:', eStock);
+                            msgStock = ' · ⚠️ Error stock';
+                        }
+                    } else {
+                        msgStock = ' · ⚠️ Sin vínculo de stock';
+                    }
+                }
+
                 try {
                     const r = await fetch(API_URL + '/imprimir_etiqueta_rapida', {
                         method: 'POST',
@@ -1560,7 +1646,7 @@ const CARTA_ACTUAL = 'carta_actual';
                         body: JSON.stringify({ etiquetas })
                     });
                     if (r.ok) {
-                        this.showToast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} enviada${cantidad > 1 ? 's' : ''}`, 'success');
+                        this.showToast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} enviada${cantidad > 1 ? 's' : ''}${msgStock}`, 'success');
                         if (this.etiquetaItemActual && !this.etiquetaItemActual.bold) {
                             this.etiquetaItemActual.status = 'hay';
                             this.etiquetaItemActual.hecho = true;
