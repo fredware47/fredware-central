@@ -94,34 +94,35 @@
         .buscador:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
 
         /* ============================================================
-           🆕 SISTEMA DE ACORDEÓN MÓVIL
+           SISTEMA DE ACORDEÓN MÓVIL — v2 (display en lugar de max-height)
            ============================================================ */
         .acordeon-header {
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 14px 16px;
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            background: linear-gradient(135deg, #065f46 0%, #10b981 100%);
             color: white;
+            border: none;
             border-radius: 12px;
             font-weight: 800;
             font-size: 14px;
             cursor: pointer;
             user-select: none;
-            transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+            box-shadow: 0 2px 8px rgba(16,185,129,0.3);
+            margin-bottom: 12px;
+            font-family: inherit;
+            text-align: left;
         }
         .acordeon-header:active { transform: scale(0.99); }
-        .acordeon-header.proveedores {
-            background: linear-gradient(135deg, #065f46 0%, #10b981 100%);
-            box-shadow: 0 2px 8px rgba(16,185,129,0.3);
-        }
         .acordeon-header .badge-contador {
             background: rgba(255,255,255,0.25);
             padding: 2px 10px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: 700;
+            margin-left: 6px;
         }
         .acordeon-header .flecha {
             font-size: 12px;
@@ -131,23 +132,17 @@
         .acordeon-header.abierto .flecha { transform: rotate(180deg); }
 
         .acordeon-contenido {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.35s ease-out, margin 0.35s ease-out;
-            margin-top: 0;
+            display: none;
         }
         .acordeon-contenido.abierto {
-            max-height: 2500px;
-            margin-top: 10px;
+            display: block;
         }
 
-        /* En desktop, todo visible siempre */
+        /* En desktop (>= 768px): sin acordeón, todo visible siempre */
         @media (min-width: 768px) {
             .acordeon-header { display: none !important; }
             .acordeon-contenido {
-                max-height: none !important;
-                margin-top: 0 !important;
-                overflow: visible !important;
+                display: block !important;
             }
         }
 
@@ -175,7 +170,7 @@
             <div class="flex flex-col items-end space-y-1">
                 <div class="flex items-center space-x-2">
                     <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.3</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.4</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -213,19 +208,16 @@
             </div>
         </div>
 
-        <!-- TAB 2: PEDIDOS (con acordeón móvil) -->
+        <!-- TAB 2: PEDIDOS (con acordeón móvil v2) -->
         <div id="tab-pedidos" class="tab-content">
             
-            <!-- ============================================
-                 ACORDEÓN 1: PROVEEDORES (solo visible en móvil)
-                 ============================================ -->
-            <div class="md:hidden mb-3">
-                <div class="acordeon-header proveedores" id="acordeon-prov-header" onclick="toggleAcordeon('prov')">
-                    <span>🏢 Distribuidores <span class="badge-contador" id="badge-num-prov">0</span></span>
-                    <span class="flecha">▼</span>
-                </div>
-            </div>
+            <!-- Botón acordeón (solo móvil) -->
+            <button type="button" class="acordeon-header" id="acordeon-prov-header" onclick="toggleAcordeon('prov')">
+                <span>🏢 Distribuidores <span class="badge-contador" id="badge-num-prov">0</span></span>
+                <span class="flecha">▼</span>
+            </button>
 
+            <!-- Contenido del acordeón -->
             <div class="acordeon-contenido" id="acordeon-prov-contenido">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- COLUMNA IZQUIERDA: PROVEEDORES -->
@@ -236,7 +228,7 @@
                                 <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider md:hidden">📋 Selecciona uno</h2>
                                 <button onclick="cargarProveedoresDesdeSupabase()" class="text-blue-600 text-xs font-bold hover:underline">🔄 Refrescar</button>
                             </div>
-                            <div id="lista-proveedores" class="space-y-1.5 max-h-[70vh] md:max-h-[70vh] max-h-[50vh] overflow-y-auto pr-1">
+                            <div id="lista-proveedores" class="space-y-1.5 max-h-[50vh] md:max-h-[70vh] overflow-y-auto pr-1">
                                 <div class="text-xs text-slate-400 p-2">⏳ Leyendo agenda...</div>
                             </div>
                         </div>
@@ -377,7 +369,7 @@
         const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
         const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
         const db_nube = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ [Pedidos v1.3] Cliente Supabase listo:', SUPABASE_URL);
+        console.log('✅ [Pedidos v1.4] Cliente Supabase listo:', SUPABASE_URL);
 
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
         const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -397,15 +389,18 @@
         let textoBusqueda = '';
         let proveedoresCache = [];
 
-        // ============================================================
-        // 🆕 SISTEMA DE ACORDEÓN MÓVIL
-        // ============================================================
-        let acordeonAbierto = 'prov'; // 'prov' | 'plantilla' | 'ninguno'
+        let acordeonAbierto = 'ninguno';
 
+        // ============================================================
+        // SISTEMA DE ACORDEÓN MÓVIL v2
+        // ============================================================
         function toggleAcordeon(cual) {
             const header = document.getElementById(`acordeon-${cual}-header`);
             const contenido = document.getElementById(`acordeon-${cual}-contenido`);
-            if (!header || !contenido) return;
+            if (!header || !contenido) {
+                console.warn('❌ [Acordeón] No encontrado:', cual);
+                return;
+            }
 
             const estaAbierto = contenido.classList.contains('abierto');
 
@@ -413,6 +408,7 @@
                 contenido.classList.remove('abierto');
                 header.classList.remove('abierto');
                 acordeonAbierto = 'ninguno';
+                console.log('📕 Acordeón cerrado:', cual);
             } else {
                 // Cerrar todos primero
                 document.querySelectorAll('.acordeon-contenido').forEach(c => c.classList.remove('abierto'));
@@ -421,6 +417,18 @@
                 contenido.classList.add('abierto');
                 header.classList.add('abierto');
                 acordeonAbierto = cual;
+                console.log('📖 Acordeón abierto:', cual);
+
+                // Debug: comprobar que el contenido tiene hijos
+                setTimeout(() => {
+                    const lista = document.getElementById('lista-proveedores');
+                    if (lista) {
+                        console.log('📦 Proveedores en DOM:', lista.children.length);
+                        if (lista.children.length === 0) {
+                            console.warn('⚠️ Contenedor de proveedores vacío');
+                        }
+                    }
+                }, 100);
             }
         }
 
@@ -521,7 +529,7 @@
                 }
                 // En móvil, abrir el acordeón de proveedores por defecto
                 if (window.innerWidth < 768) {
-                    setTimeout(() => abrirAcordeon('prov'), 100);
+                    setTimeout(() => abrirAcordeon('prov'), 150);
                 }
             }
             if (nombre === 'etiquetas') {
@@ -792,7 +800,6 @@
                     }
                 });
 
-                // Actualizar contador en el header del acordeón
                 const badgeCont = document.getElementById('badge-num-prov');
                 if (badgeCont) badgeCont.textContent = proveedores?.length || 0;
 
@@ -828,13 +835,11 @@
             }
         }
 
-        // 🆕 Envuelve cargarHojaInteractiva para que en móvil cambie de acordeón
         async function seleccionarProveedorYCambiar(provId, provNombre) {
             await cargarHojaInteractiva(provId, provNombre);
-            // En móvil, cerrar acordeón proveedores y abrir plantilla
+            // En móvil, cerrar acordeón proveedores y hacer scroll a la plantilla
             if (window.innerWidth < 768) {
                 cerrarAcordeon('prov');
-                // Scroll suave arriba para ver la plantilla
                 setTimeout(() => {
                     document.getElementById('nombre-proveedor-activo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 100);
@@ -1575,7 +1580,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Pedidos v1.3] Init');
+            console.log('🚀 [Pedidos v1.4] Init');
 
             const tabGuardada = localStorage.getItem('fredware_pedidos_tab') || 'faltas';
             setTab(tabGuardada);
