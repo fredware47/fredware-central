@@ -8,28 +8,12 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: #f1f5f9; color: #1e293b; padding: 16px; min-height: 100vh; }
-
-        /* ============ HEADER ============ */
-        .header {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: white;
-            padding: 16px 24px;
-            border-radius: 14px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        .header-top {
-            display: flex; justify-content: space-between; align-items: center;
-            gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
-        }
+        .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 16px 24px; border-radius: 14px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
         .header h1 { font-size: 20px; font-weight: 900; }
         .header .sub { font-size: 12px; opacity: 0.7; margin-top: 2px; }
         .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn {
-            border: none; border-radius: 8px; padding: 8px 14px; font-weight: 700;
-            font-size: 13px; cursor: pointer; transition: all 0.15s; text-decoration: none;
-            display: inline-flex; align-items: center; gap: 6px;
-        }
+        .btn { border: none; border-radius: 8px; padding: 8px 14px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.15s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
         .btn:active { transform: scale(0.97); }
         .btn-dark { background: rgba(255,255,255,0.12); color: white; border: 1px solid rgba(255,255,255,0.2); }
         .btn-dark:hover { background: rgba(255,255,255,0.22); }
@@ -45,33 +29,14 @@
         .btn-purple:hover { background: #7c3aed; }
         .btn-sm { padding: 5px 10px; font-size: 11px; }
 
-        /* ============ WEEK NAV ============ */
-        .week-nav {
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            flex-wrap: wrap;
-        }
-        .week-nav button {
-            background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
-            color: white; padding: 6px 12px; border-radius: 8px; cursor: pointer;
-            font-weight: 700; font-size: 12px;
-        }
+        .week-nav { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+        .week-nav button { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; }
         .week-nav button:hover { background: rgba(255,255,255,0.22); }
-        .week-label {
-            background: white; color: #0f172a;
-            padding: 6px 16px; border-radius: 8px;
-            font-weight: 900; font-size: 13px; text-align: center; min-width: 240px;
-        }
+        .week-label { background: white; color: #0f172a; padding: 6px 16px; border-radius: 8px; font-weight: 900; font-size: 13px; text-align: center; min-width: 240px; }
         .week-label small { display: block; font-weight: 400; font-size: 10px; opacity: 0.7; }
 
-        /* ============ AVISOS ============ */
-        .avisos-container {
-            display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;
-        }
-        .aviso {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 14px; border-radius: 10px; font-size: 13px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
+        .avisos-container { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .aviso { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .aviso.vuelta { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
         .aviso.proxima { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
         .aviso.urgente { background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
@@ -79,118 +44,43 @@
         .aviso .texto { flex: 1; }
         .aviso .texto strong { font-weight: 800; }
 
-        /* ============ TOOLBAR PICA ============ */
-        .toolbar-pica {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-            background: #f0fdf4; border: 1px solid #bbf7d0;
-            padding: 10px 16px; border-radius: 10px; margin-bottom: 12px;
-        }
-        .toolbar-pica .label {
-            font-weight: 700; font-size: 12px; color: #166534;
-            display: flex; align-items: center; gap: 6px;
-        }
-        .toolbar-pica .hint {
-            font-size: 11px; color: #64748b; font-style: italic;
-            margin-left: auto;
-        }
+        .toolbar-pica { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 16px; border-radius: 10px; margin-bottom: 12px; }
+        .toolbar-pica .label { font-weight: 700; font-size: 12px; color: #166534; display: flex; align-items: center; gap: 6px; }
+        .toolbar-pica .hint { font-size: 11px; color: #64748b; font-style: italic; margin-left: auto; }
 
-        /* ============ BANCO DE HORAS BANNER ============ */
-        .banco-alerta {
-            background: #fef3c7; border-left: 4px solid #f59e0b;
-            padding: 10px 16px; border-radius: 10px; margin-bottom: 12px;
-            font-size: 13px; display: none;
-        }
+        .banco-alerta { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px 16px; border-radius: 10px; margin-bottom: 12px; font-size: 13px; display: none; }
         .banco-alerta.visible { display: block; }
         .banco-alerta strong { color: #92400e; }
 
-        /* ============ TABLA ============ */
-        .tabla-container {
-            background: white; border-radius: 14px; padding: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow-x: auto;
-            margin-bottom: 16px;
-        }
-        .tabla {
-            width: 100%; border-collapse: collapse; font-size: 13px;
-            min-width: 1100px;
-        }
-        .tabla th {
-            background: #0f172a; color: white; padding: 10px 6px;
-            text-align: center; font-weight: 700; font-size: 11px;
-            text-transform: uppercase; letter-spacing: 0.3px;
-            position: sticky; top: 0;
-        }
-        .tabla th.emp-col {
-            text-align: left; padding-left: 12px; min-width: 180px;
-        }
-        .tabla th.horas-col {
-            background: #334155; min-width: 80px;
-        }
-        .tabla td {
-            padding: 4px 3px; text-align: center; border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle;
-        }
-        .tabla td.emp-col {
-            text-align: left; padding: 6px 12px; background: #f8fafc;
-            border-right: 2px solid #e2e8f0; border-left: 4px solid transparent;
-        }
-        .tabla td.horas-col {
-            background: #f1f5f9; font-weight: 900; font-size: 14px;
-            border-left: 2px solid #cbd5e1;
-        }
+        .tabla-container { background: white; border-radius: 14px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow-x: auto; margin-bottom: 16px; }
+        .tabla { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1100px; }
+        .tabla th { background: #0f172a; color: white; padding: 10px 6px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; position: sticky; top: 0; }
+        .tabla th.emp-col { text-align: left; padding-left: 12px; min-width: 180px; }
+        .tabla th.horas-col { background: #334155; min-width: 80px; }
+        .tabla td { padding: 4px 3px; text-align: center; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .tabla td.emp-col { text-align: left; padding: 6px 12px; background: #f8fafc; border-right: 2px solid #e2e8f0; border-left: 4px solid transparent; }
+        .tabla td.horas-col { background: #f1f5f9; font-weight: 900; font-size: 14px; border-left: 2px solid #cbd5e1; }
         .tabla td.horas-col.over { color: #dc2626; background: #fee2e2; }
         .tabla td.horas-col.ok { color: #059669; }
         .tabla tr:hover td.emp-col { background: #eff6ff; }
         .tabla tr.inactivo { opacity: 0.55; }
-
-        /* Fila separadora PICA */
-        .tabla tr.separador-pica td {
-            background: #f0fdf4 !important;
-            padding: 8px 12px;
-            font-size: 11px; font-weight: 900;
-            color: #166534; text-transform: uppercase;
-            letter-spacing: 1px;
-            border-top: 3px solid #10b981;
-            border-bottom: 3px solid #10b981;
-            text-align: left;
-        }
+        .tabla tr.separador-pica td { background: #f0fdf4 !important; padding: 8px 12px; font-size: 11px; font-weight: 900; color: #166534; text-transform: uppercase; letter-spacing: 1px; border-top: 3px solid #10b981; border-bottom: 3px solid #10b981; text-align: left; }
 
         .emp-nombre { font-weight: 700; font-size: 13px; color: #1e293b; }
         .emp-puesto { font-size: 10px; color: #64748b; margin-top: 1px; }
 
-        /* Badge estado clicable */
         .emp-estado-wrap { display: flex; align-items: center; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-        .emp-estado {
-            display: inline-flex; align-items: center; gap: 3px;
-            padding: 2px 8px; border-radius: 10px;
-            font-size: 9px; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 0.3px;
-            cursor: pointer; transition: all 0.15s;
-            border: 1px solid transparent;
-        }
+        .emp-estado { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
         .emp-estado:hover { transform: scale(1.05); }
         .estado-ACTIVO { background: #d1fae5; color: #065f46; border-color: #86efac; }
-        .estado-ACTIVO:hover { background: #a7f3d0; }
         .estado-BAJA { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
-        .estado-BAJA:hover { background: #fecaca; }
         .estado-VACACIONES { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
-        .estado-VACACIONES:hover { background: #bfdbfe; }
         .estado-FijoDiscontinuo { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
-        .estado-FijoDiscontinuo:hover { background: #fde68a; }
 
-        /* Fecha ausencia */
-        .emp-fecha-ausencia {
-            font-size: 9px; color: #64748b; font-style: italic;
-            margin-top: 2px; display: flex; align-items: center; gap: 3px;
-        }
+        .emp-fecha-ausencia { font-size: 9px; color: #64748b; font-style: italic; margin-top: 2px; display: flex; align-items: center; gap: 3px; }
         .emp-fecha-ausencia.alerta { color: #dc2626; font-weight: 700; font-style: normal; }
 
-        select.celda-turno {
-            width: 100%; min-width: 60px; padding: 5px 2px;
-            border: 2px solid #cbd5e1; border-radius: 6px;
-            font-weight: 700; font-size: 12px; text-align: center;
-            cursor: pointer; background: white; color: #1e293b;
-            -webkit-appearance: none; appearance: none;
-        }
+        select.celda-turno { width: 100%; min-width: 60px; padding: 5px 2px; border: 2px solid #cbd5e1; border-radius: 6px; font-weight: 700; font-size: 12px; text-align: center; cursor: pointer; background: white; color: #1e293b; -webkit-appearance: none; appearance: none; }
         select.celda-turno:focus { outline: none; border-color: #2563eb; }
         select.celda-turno.tipo-M { background: #d5f5e3; }
         select.celda-turno.tipo-T { background: #fadbd8; }
@@ -205,46 +95,89 @@
         .tabla tr.fila-pica td.emp-col { background: #f0fdf4; }
         .tabla tr.fila-pica:hover td.emp-col { background: #dcfce7; }
 
-        .eventos-row td { background: #fffbeb !important; }
-        .eventos-row td.emp-col { background: #fef3c7 !important; font-weight: 700; }
-        .eventos-input {
-            width: 100%; border: 1px dashed #fbbf24; border-radius: 6px;
-            padding: 4px 6px; font-size: 11px; background: white;
+        /* ============ EVENTOS (NUEVO) ============ */
+        .tabla tr.eventos-title-row td {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            padding: 8px 12px;
+            font-size: 11px; font-weight: 900;
+            color: #78350f; text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-top: 3px solid #f59e0b;
+            border-bottom: 2px solid #fbbf24;
+            text-align: left;
+        }
+        .tabla tr.eventos-subtitle-row td {
+            background: #fffbeb;
+            padding: 5px 12px;
+            font-size: 10px; font-weight: 800;
+            color: #92400e; text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #fde68a;
+            text-align: left;
+        }
+        .tabla tr.eventos-row td.emp-col {
+            background: #fffbeb;
+            padding: 5px 12px;
+            border-left-color: #fbbf24;
+        }
+        .tabla tr.eventos-row:hover td.emp-col { background: #fef3c7; }
+        .tabla tr.eventos-row td { background: #fffef9; }
+
+        .evento-label {
+            display: flex; align-items: center; gap: 6px;
+            font-weight: 700; font-size: 12px;
+            color: #1e293b;
+        }
+        .evento-label .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dot-grupo { background: #f59e0b; }
+        .dot-evento { background: #ec4899; }
+        .dot-coctel { background: #8b5cf6; }
+
+        .evento-input {
+            width: 100%; min-width: 50px;
+            padding: 5px 4px;
+            border: 1.5px solid #fbbf24;
+            border-radius: 6px;
+            font-weight: 700; font-size: 12px;
+            text-align: center;
+            background: white; color: #1e293b;
             font-family: inherit;
         }
-        .eventos-input:focus { outline: none; border-color: #f59e0b; border-style: solid; }
+        .evento-input:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.2); }
+        .evento-input::placeholder { color: #cbd5e1; font-weight: 400; }
+
+        .tabla tr.eventos-total-row td {
+            background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+            padding: 8px 6px;
+            font-weight: 900; font-size: 13px;
+            color: #78350f;
+            border-top: 2px solid #f59e0b;
+            border-bottom: 3px solid #f59e0b;
+        }
+        .tabla tr.eventos-total-row td.emp-col {
+            background: linear-gradient(135deg, #fde68a, #fcd34d) !important;
+            padding: 8px 12px;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .total-evento-cero { color: #a3a3a3; font-weight: 400; }
+        .total-evento-alto { color: #dc2626; }
 
         /* ============ SECCIONES INFO ============ */
-        .info-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;
-        }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         @media (max-width: 900px) { .info-grid { grid-template-columns: 1fr; } }
-
-        .info-card {
-            background: white; border-radius: 14px; padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .info-card h3 {
-            font-size: 13px; font-weight: 900; text-transform: uppercase;
-            color: #64748b; letter-spacing: 0.5px; margin-bottom: 12px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;
-        }
-        .info-card h3 .badge {
-            background: #f1f5f9; color: #475569;
-            padding: 2px 8px; border-radius: 10px;
-            font-size: 10px; font-weight: 700;
-        }
+        .info-card { background: white; border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .info-card h3 { font-size: 13px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+        .info-card h3 .badge { background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
         .info-card h3 .badge.alerta { background: #fee2e2; color: #991b1b; }
         .info-card h3 .badge.ok { background: #d1fae5; color: #065f46; }
-
         .info-list { display: flex; flex-direction: column; gap: 6px; }
         .info-empty { color: #94a3b8; font-style: italic; font-size: 12px; padding: 4px 0; }
-
-        .conflicto-item, .banco-item {
-            display: flex; align-items: flex-start; gap: 8px;
-            padding: 8px 10px; border-radius: 8px; font-size: 12px;
-        }
+        .conflicto-item, .banco-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 12px; }
         .conflicto-item { background: #fef2f2; border-left: 3px solid #ef4444; color: #991b1b; }
         .conflicto-item.warn { background: #fffbeb; border-left-color: #f59e0b; color: #92400e; }
         .conflicto-item.info { background: #eff6ff; border-left-color: #3b82f6; color: #1e40af; }
@@ -252,59 +185,23 @@
         .banco-item .fila { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
         .banco-item .acciones { display: flex; gap: 4px; flex-wrap: wrap; }
 
-        /* ============ TOAST ============ */
-        .toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: #0f172a; color: white; padding: 12px 20px; border-radius: 10px;
-            font-size: 13px; font-weight: 700; z-index: 9999;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            opacity: 0; transition: opacity 0.3s;
-        }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; z-index: 9999; box-shadow: 0 8px 24px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.3s; }
         .toast.visible { opacity: 1; }
         .toast.success { background: #059669; }
         .toast.error { background: #dc2626; }
         .toast.info { background: #2563eb; }
 
-        /* ============ MODAL ============ */
-        .modal-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.5); z-index: 1000;
-            align-items: center; justify-content: center; padding: 16px;
-        }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
         .modal-overlay.visible { display: flex; }
-        .modal {
-            background: white; border-radius: 16px; padding: 24px;
-            max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
+        .modal { background: white; border-radius: 16px; padding: 24px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         .modal h2 { font-size: 18px; font-weight: 900; margin-bottom: 16px; }
-        .modal label {
-            display: block; font-size: 11px; font-weight: 700;
-            text-transform: uppercase; color: #475569; margin-bottom: 4px;
-            margin-top: 12px;
-        }
-        .modal input, .modal select, .modal textarea {
-            width: 100%; padding: 8px 12px; border: 2px solid #cbd5e1;
-            border-radius: 8px; font-size: 13px; font-family: inherit;
-        }
-        .modal input:focus, .modal select:focus, .modal textarea:focus {
-            outline: none; border-color: #2563eb;
-        }
-        .modal-actions {
-            display: flex; gap: 8px; justify-content: flex-end;
-            margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;
-        }
+        .modal label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; margin-bottom: 4px; margin-top: 12px; }
+        .modal input, .modal select, .modal textarea { width: 100%; padding: 8px 12px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; }
+        .modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: #2563eb; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
 
-        /* Modal estado — opciones grandes */
-        .estado-opciones {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-            margin-top: 16px;
-        }
-        .estado-opcion {
-            padding: 14px 12px; border-radius: 10px; border: 2px solid #e2e8f0;
-            background: white; cursor: pointer; transition: all 0.15s;
-            text-align: center; font-weight: 700; font-size: 13px;
-        }
+        .estado-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+        .estado-opcion { padding: 14px 12px; border-radius: 10px; border: 2px solid #e2e8f0; background: white; cursor: pointer; transition: all 0.15s; text-align: center; font-weight: 700; font-size: 13px; }
         .estado-opcion:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .estado-opcion .icono { font-size: 24px; display: block; margin-bottom: 4px; }
         .estado-opcion.actual { border-color: #2563eb; background: #eff6ff; }
@@ -313,15 +210,10 @@
         .estado-opcion.op-vac { border-color: #93c5fd; background: #eff6ff; }
         .estado-opcion.op-fd { border-color: #fcd34d; background: #fffbeb; }
 
-        .fechas-ausencia {
-            background: #f8fafc; border: 1px dashed #cbd5e1;
-            border-radius: 10px; padding: 12px; margin-top: 16px;
-            display: none;
-        }
+        .fechas-ausencia { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px; margin-top: 16px; display: none; }
         .fechas-ausencia.visible { display: block; }
         .fechas-ausencia label { margin-top: 0; }
 
-        /* ============ PRINT ============ */
         @media print {
             body { background: white; padding: 0; }
             .header { background: white; color: black; padding: 8px 0; box-shadow: none; border-bottom: 2px solid #000; border-radius: 0; }
@@ -334,30 +226,17 @@
             .tabla th { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .tabla td.emp-col { background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             select.celda-turno { border: 1px solid #999; -webkit-appearance: none; appearance: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .eventos-input { border: 1px solid #ccc; }
-            .tabla tr.separador-pica td { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .evento-input { border: 1px solid #ccc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .tabla tr.separador-pica td, .tabla tr.eventos-title-row td, .tabla tr.eventos-total-row td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
         @page { size: A4 landscape; margin: 8mm; }
 
-        /* ============ LOADING ============ */
-        .loading-screen {
-            position: fixed; inset: 0; background: white; z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            flex-direction: column; gap: 16px;
-        }
+        .loading-screen { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
         .loading-screen.hidden { display: none; }
-        .spinner {
-            width: 48px; height: 48px; border: 4px solid #e2e8f0;
-            border-top-color: #2563eb; border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
+        .spinner { width: 48px; height: 48px; border: 4px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .status-bar {
-            background: #e0e7ff; color: #1e40af; padding: 8px 14px;
-            border-radius: 8px; font-size: 12px; font-weight: 700;
-            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
-        }
+        .status-bar { background: #e0e7ff; color: #1e40af; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
         .status-bar.ok { background: #d1fae5; color: #065f46; }
         .status-bar.error { background: #fee2e2; color: #991b1b; }
     </style>
@@ -369,7 +248,6 @@
     <div style="font-weight: 700; color: #475569;">Cargando horarios...</div>
 </div>
 
-<!-- ============ HEADER ============ -->
 <div class="header">
     <div class="header-top">
         <div>
@@ -377,60 +255,33 @@
             <div class="sub">Planificación semanal · Attica As Galeras</div>
         </div>
         <div class="header-actions">
-            <button class="btn btn-dark" onclick="toggleInactivos()" id="btnInactivos">
-                👁️ Mostrar inactivos
-            </button>
-            <button class="btn btn-dark" onclick="abrirModalEmpleado()">
-                ➕ Nuevo empleado
-            </button>
-            <button class="btn btn-blue" onclick="cargarSemana()">
-                📥 Cargar
-            </button>
-            <button class="btn btn-green" onclick="guardarSemana()">
-                💾 Guardar
-            </button>
-            <button class="btn btn-purple" onclick="imprimir()">
-                🖨️ Imprimir
-            </button>
+            <button class="btn btn-dark" onclick="toggleInactivos()" id="btnInactivos">👁️ Mostrar inactivos</button>
+            <button class="btn btn-dark" onclick="abrirModalEmpleado()">➕ Nuevo empleado</button>
+            <button class="btn btn-blue" onclick="cargarSemana()">📥 Cargar</button>
+            <button class="btn btn-green" onclick="guardarSemana()">💾 Guardar</button>
+            <button class="btn btn-purple" onclick="imprimir()">🖨️ Imprimir</button>
         </div>
     </div>
-
     <div class="week-nav">
         <button onclick="cambiarSemana(-1)">◀ Anterior</button>
         <button onclick="irSemanaActual()">🏠 Hoy</button>
-        <div class="week-label" id="weekLabel">
-            Semana 40<small>6 oct - 12 oct 2026</small>
-        </div>
+        <div class="week-label" id="weekLabel">Semana 40<small>6 oct - 12 oct 2026</small></div>
         <button onclick="cambiarSemana(1)">Siguiente ▶</button>
     </div>
 </div>
 
-<!-- ============ AVISOS ============ -->
 <div class="avisos-container" id="avisosContainer"></div>
 
-<!-- ============ TOOLBAR PICA ============ -->
 <div class="toolbar-pica no-print">
-    <div class="label">
-        🍴 Rotación Pica
-    </div>
-    <button class="btn btn-green btn-sm" onclick="aplicarRotacionPica()">
-        🔄 Aplicar rotación automática
-    </button>
-    <button class="btn btn-orange btn-sm" onclick="alternarRotacionPica()">
-        🔀 Invertir (Semana A ↔ B)
-    </button>
-    <div class="hint">
-        💡 Se aplica según semana par/impar. Puedes ajustar manualmente después.
-    </div>
+    <div class="label">🍴 Rotación Pica</div>
+    <button class="btn btn-green btn-sm" onclick="aplicarRotacionPica()">🔄 Aplicar rotación automática</button>
+    <button class="btn btn-orange btn-sm" onclick="alternarRotacionPica()">🔀 Invertir (Semana A ↔ B)</button>
+    <div class="hint">💡 Se aplica según semana par/impar. Puedes ajustar manualmente después.</div>
 </div>
 
-<!-- ============ BANCO DE HORAS ALERTA ============ -->
 <div class="banco-alerta" id="bancoAlerta"></div>
-
-<!-- ============ STATUS BAR ============ -->
 <div class="status-bar" id="statusBar" style="display: none;"></div>
 
-<!-- ============ TABLA SEMANAL ============ -->
 <div class="tabla-container">
     <table class="tabla">
         <thead>
@@ -450,33 +301,20 @@
     </table>
 </div>
 
-<!-- ============ INFO: CONFLICTOS Y BANCO ============ -->
 <div class="info-grid">
     <div class="info-card">
-        <h3>
-            ⚠️ Conflictos
-            <span class="badge" id="conflictosBadge">0</span>
-        </h3>
-        <div class="info-list" id="conflictosList">
-            <div class="info-empty">Cargando...</div>
-        </div>
+        <h3>⚠️ Conflictos <span class="badge" id="conflictosBadge">0</span></h3>
+        <div class="info-list" id="conflictosList"><div class="info-empty">Cargando...</div></div>
     </div>
-
     <div class="info-card">
-        <h3>
-            ⏰ Banco de horas
-            <span class="badge" id="bancoBadge">0</span>
-            <button class="btn btn-sm btn-orange" onclick="abrirModalBanco()" style="margin-left:auto;">
-                ➕ Añadir
-            </button>
+        <h3>⏰ Banco de horas <span class="badge" id="bancoBadge">0</span>
+            <button class="btn btn-sm btn-orange" onclick="abrirModalBanco()" style="margin-left:auto;">➕ Añadir</button>
         </h3>
-        <div class="info-list" id="bancoList">
-            <div class="info-empty">Sin pendientes</div>
-        </div>
+        <div class="info-list" id="bancoList"><div class="info-empty">Sin pendientes</div></div>
     </div>
 </div>
 
-<!-- ============ MODAL EMPLEADO ============ -->
+<!-- MODAL EMPLEADO -->
 <div class="modal-overlay" id="modalEmpleado">
     <div class="modal">
         <h2 id="modalEmpleadoTitle">➕ Nuevo empleado</h2>
@@ -503,42 +341,24 @@
     </div>
 </div>
 
-<!-- ============ MODAL ESTADO ============ -->
+<!-- MODAL ESTADO -->
 <div class="modal-overlay" id="modalEstado">
     <div class="modal">
         <h2 id="modalEstadoTitle">Cambiar estado</h2>
         <div id="modalEstadoEmpleado" style="font-size:13px; color:#64748b; margin-bottom:8px;"></div>
-
         <div class="estado-opciones" id="estadoOpciones">
-            <div class="estado-opcion op-activo" data-estado="ACTIVO" onclick="seleccionarEstado('ACTIVO')">
-                <span class="icono">✅</span>
-                Activo
-            </div>
-            <div class="estado-opcion op-baja" data-estado="BAJA" onclick="seleccionarEstado('BAJA')">
-                <span class="icono">🚫</span>
-                Baja
-            </div>
-            <div class="estado-opcion op-vac" data-estado="VACACIONES" onclick="seleccionarEstado('VACACIONES')">
-                <span class="icono">🏖️</span>
-                Vacaciones
-            </div>
-            <div class="estado-opcion op-fd" data-estado="FijoDiscontinuo" onclick="seleccionarEstado('FijoDiscontinuo')">
-                <span class="icono">🔄</span>
-                Fijo discontinuo
-            </div>
+            <div class="estado-opcion op-activo" data-estado="ACTIVO" onclick="seleccionarEstado('ACTIVO')"><span class="icono">✅</span>Activo</div>
+            <div class="estado-opcion op-baja" data-estado="BAJA" onclick="seleccionarEstado('BAJA')"><span class="icono">🚫</span>Baja</div>
+            <div class="estado-opcion op-vac" data-estado="VACACIONES" onclick="seleccionarEstado('VACACIONES')"><span class="icono">🏖️</span>Vacaciones</div>
+            <div class="estado-opcion op-fd" data-estado="FijoDiscontinuo" onclick="seleccionarEstado('FijoDiscontinuo')"><span class="icono">🔄</span>Fijo discontinuo</div>
         </div>
-
-        <!-- Fechas (solo si BAJA o VACACIONES) -->
         <div class="fechas-ausencia" id="fechasAusencia">
             <label>📅 Fecha inicio</label>
             <input type="date" id="inputFechaInicio">
             <label>📅 Fecha fin (opcional)</label>
             <input type="date" id="inputFechaFin">
-            <div style="font-size:11px;color:#64748b;margin-top:8px;font-style:italic;">
-                💡 Si no sabes la fecha fin, déjala vacía. Podrás actualizarla después.
-            </div>
+            <div style="font-size:11px;color:#64748b;margin-top:8px;font-style:italic;">💡 Si no sabes la fecha fin, déjala vacía. Podrás actualizarla después.</div>
         </div>
-
         <div class="modal-actions">
             <button class="btn btn-dark" onclick="cerrarModalEstado()">Cancelar</button>
             <button class="btn btn-green" onclick="guardarEstado()">💾 Guardar</button>
@@ -546,7 +366,7 @@
     </div>
 </div>
 
-<!-- ============ MODAL BANCO HORAS ============ -->
+<!-- MODAL BANCO HORAS -->
 <div class="modal-overlay" id="modalBanco">
     <div class="modal">
         <h2>⏰ Añadir al banco de horas</h2>
@@ -575,7 +395,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// CONFIGURACIÓN
+// CONFIG
 // ═══════════════════════════════════════════════════════════
 const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
@@ -583,6 +403,21 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 const DIAS_LABEL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+// 🆕 Tipos de evento — clasificados
+const TIPOS_EVENTO = [
+    // Grupos (desayuno, almuerzo, cena)
+    { key: 'grupo_desayuno',  label: 'Grupo desayuno',  icono: '🥐', grupo: 'grupo'  },
+    { key: 'grupo_almuerzo',  label: 'Grupo almuerzo',  icono: '🍽️', grupo: 'grupo'  },
+    { key: 'grupo_cena',      label: 'Grupo cena',      icono: '🌙', grupo: 'grupo'  },
+    // Eventos (almuerzo, cena)
+    { key: 'evento_almuerzo', label: 'Evento almuerzo', icono: '🎉', grupo: 'evento' },
+    { key: 'evento_cena',     label: 'Evento cena',     icono: '🎉', grupo: 'evento' },
+    // Cócteles
+    { key: 'coctel_manana',   label: 'Cóctel mañana',   icono: '🍸', grupo: 'coctel' },
+    { key: 'coctel_tarde',    label: 'Cóctel tarde',    icono: '🍸', grupo: 'coctel' },
+    { key: 'coctel_noche',    label: 'Cóctel noche',    icono: '🍸', grupo: 'coctel' }
+];
 
 const CICLO_PICA_A = {
     'Daniel': { lunes: 'L', martes: 'L', miercoles: 'P2', jueves: 'P2', viernes: 'M3', sabado: 'M3', domingo: 'M3' },
@@ -594,26 +429,15 @@ const CICLO_PICA_B = {
 };
 
 const state = {
-    empleados: [],
-    turnos: {},
-    ausencias: [],   // 🆕
-    semana: {
-        año: 0, numero_semana: 0,
-        fecha_inicio: '', fecha_fin: '',
-        asignaciones: {}, eventos: {}
-    },
-    banco: [],
-    mostrarInactivos: false,
-    empleadoEditando: null,
-    // 🆕 Estado del modal de cambio de estado
-    estadoEditando: null,
-    estadoSeleccionado: null
+    empleados: [], turnos: {}, ausencias: [],
+    semana: { año: 0, numero_semana: 0, fecha_inicio: '', fecha_fin: '', asignaciones: {}, eventos: {} },
+    banco: [], mostrarInactivos: false,
+    empleadoEditando: null, estadoEditando: null, estadoSeleccionado: null
 };
 
 // ═══════════════════════════════════════════════════════════
 // UTILIDADES
 // ═══════════════════════════════════════════════════════════
-
 function toast(msg, tipo = 'info') {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -621,7 +445,6 @@ function toast(msg, tipo = 'info') {
     clearTimeout(window._toastTimer);
     window._toastTimer = setTimeout(() => t.classList.remove('visible'), 2800);
 }
-
 function setStatus(msg, tipo = 'info') {
     const bar = document.getElementById('statusBar');
     bar.textContent = msg;
@@ -630,18 +453,23 @@ function setStatus(msg, tipo = 'info') {
     clearTimeout(window._statusTimer);
     window._statusTimer = setTimeout(() => bar.style.display = 'none', 4000);
 }
-
 function pad(n) { return String(n).padStart(2, '0'); }
-
+function fechaISO(date) { return date.toISOString().split('T')[0]; }
+function diffDias(f1, f2) {
+    return Math.round((new Date(f2 + 'T00:00:00') - new Date(f1 + 'T00:00:00')) / 86400000);
+}
+function formatFechaLarga(f) {
+    if (!f) return '';
+    const d = new Date(f + 'T00:00:00');
+    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+}
 function getISOWeek(date) {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-    return { año: d.getUTCFullYear(), semana: week };
+    return { año: d.getUTCFullYear(), semana: Math.ceil((((d - yearStart) / 86400000) + 1) / 7) };
 }
-
 function getFechaInicioSemanaISO(año, semana) {
     const simple = new Date(Date.UTC(año, 0, 1 + (semana - 1) * 7));
     const dow = simple.getUTCDay() || 7;
@@ -650,24 +478,16 @@ function getFechaInicioSemanaISO(año, semana) {
     else lunes.setUTCDate(simple.getUTCDate() + 8 - dow);
     return lunes;
 }
-
 function formatoFecha(fecha) {
     return `${pad(fecha.getDate())} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][fecha.getMonth()]}`;
 }
-
 function getFechasSemana() {
     const inicio = getFechaInicioSemanaISO(state.semana.año, state.semana.numero_semana);
     const fechas = [];
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(inicio);
-        d.setUTCDate(inicio.getUTCDate() + i);
-        fechas.push(d);
-    }
+    for (let i = 0; i < 7; i++) { const d = new Date(inicio); d.setUTCDate(inicio.getUTCDate() + i); fechas.push(d); }
     return fechas;
 }
-
 function cssId(str) { return String(str).replace(/[^a-zA-Z0-9]/g, '_'); }
-
 function escapeHtml(str) {
     if (str == null) return '';
     const div = document.createElement('div');
@@ -675,60 +495,72 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-function fechaISO(date) {
-    return date.toISOString().split('T')[0];
+// 🆕 Migrar formato antiguo de eventos (string) a objeto
+function migrarEventos(eventos) {
+    if (!eventos || typeof eventos !== 'object') return {};
+    const resultado = {};
+    DIAS.forEach(dia => {
+        const valorDia = eventos[dia];
+        if (typeof valorDia === 'string') {
+            // Formato antiguo: string libre → migrar a "notas" del día (no perder información)
+            resultado[dia] = {};
+            if (valorDia.trim()) resultado[dia]._notas = valorDia;
+        } else if (typeof valorDia === 'object' && valorDia !== null) {
+            resultado[dia] = { ...valorDia };
+        } else {
+            resultado[dia] = {};
+        }
+    });
+    return resultado;
 }
 
-function diffDias(fechaISO1, fechaISO2) {
-    const d1 = new Date(fechaISO1 + 'T00:00:00');
-    const d2 = new Date(fechaISO2 + 'T00:00:00');
-    return Math.round((d2 - d1) / 86400000);
+// 🆕 Calcular total de personas por día
+function calcularTotalDia(dia) {
+    const ev = state.semana.eventos[dia] || {};
+    let total = 0;
+    TIPOS_EVENTO.forEach(t => {
+        const v = parseInt(ev[t.key]) || 0;
+        total += v;
+    });
+    return total;
 }
 
-function formatFechaLarga(fechaISOStr) {
-    if (!fechaISOStr) return '';
-    const d = new Date(fechaISOStr + 'T00:00:00');
-    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+// 🆕 Calcular total por grupo (grupos, eventos, cócteles)
+function calcularTotalGrupo(dia, grupo) {
+    const ev = state.semana.eventos[dia] || {};
+    let total = 0;
+    TIPOS_EVENTO.filter(t => t.grupo === grupo).forEach(t => {
+        const v = parseInt(ev[t.key]) || 0;
+        total += v;
+    });
+    return total;
 }
 
 // ═══════════════════════════════════════════════════════════
 // CARGA DE DATOS
 // ═══════════════════════════════════════════════════════════
-
 async function cargarDatos() {
     try {
-        const { data: emps, error: errE } = await db
-            .from('horarios_empleados').select('*').order('orden', { ascending: true });
+        const { data: emps, error: errE } = await db.from('horarios_empleados').select('*').order('orden', { ascending: true });
         if (errE) throw errE;
         state.empleados = emps || [];
 
-        const { data: trn, error: errT } = await db
-            .from('horarios_turnos').select('*').order('orden', { ascending: true });
+        const { data: trn, error: errT } = await db.from('horarios_turnos').select('*').order('orden', { ascending: true });
         if (errT) throw errT;
         state.turnos = {};
         (trn || []).forEach(t => { state.turnos[t.codigo] = t; });
 
-        const { data: banc, error: errB } = await db
-            .from('horarios_banco_horas')
-            .select('*, horarios_empleados(nombre)')
-            .eq('estado', 'PENDIENTE')
+        const { data: banc, error: errB } = await db.from('horarios_banco_horas')
+            .select('*, horarios_empleados(nombre)').eq('estado', 'PENDIENTE')
             .order('fecha_original', { ascending: false });
         if (errB) throw errB;
         state.banco = banc || [];
 
-        // 🆕 Cargar ausencias (bajas y vacaciones actuales)
-        const { data: ausencias, error: errA } = await db
-            .from('horarios_ausencias')
-            .select('*')
-            .order('fecha_inicio', { ascending: false });
-        if (errA) {
-            console.warn('Tabla horarios_ausencias vacía o sin acceso:', errA.message);
-            state.ausencias = [];
-        } else {
-            state.ausencias = ausencias || [];
-        }
+        const { data: aus, error: errA } = await db.from('horarios_ausencias').select('*').order('fecha_inicio', { ascending: false });
+        if (errA) { console.warn('Sin ausencias:', errA.message); state.ausencias = []; }
+        else state.ausencias = aus || [];
 
-        console.log('✅ Datos cargados:', state.empleados.length, 'empleados,', state.ausencias.length, 'ausencias');
+        console.log('✅ Datos cargados:', state.empleados.length, 'empleados');
         irSemanaActual(true);
     } catch (e) {
         console.error('Error cargando datos:', e);
@@ -740,17 +572,13 @@ async function cargarDatos() {
 
 async function cargarSemana() {
     try {
-        const { data, error } = await db
-            .from('horarios_semanas').select('*')
-            .eq('año', state.semana.año)
-            .eq('numero_semana', state.semana.numero_semana)
-            .maybeSingle();
-
+        const { data, error } = await db.from('horarios_semanas').select('*')
+            .eq('año', state.semana.año).eq('numero_semana', state.semana.numero_semana).maybeSingle();
         if (error) throw error;
 
         if (data) {
             state.semana.asignaciones = data.asignaciones || {};
-            state.semana.eventos = data.eventos || {};
+            state.semana.eventos = migrarEventos(data.eventos);
             state.semana.notas = data.notas || '';
             toast('📥 Semana cargada', 'success');
         } else {
@@ -780,235 +608,126 @@ async function guardarSemana() {
             estado: 'BORRADOR',
             updated_at: new Date().toISOString()
         };
-        const { error } = await db.from('horarios_semanas')
-            .upsert([payload], { onConflict: 'año,numero_semana' });
+        const { error } = await db.from('horarios_semanas').upsert([payload], { onConflict: 'año,numero_semana' });
         if (error) throw error;
         toast('💾 Semana guardada', 'success');
         setStatus('✅ Guardado correctamente', 'ok');
     } catch (e) {
         console.error('Error guardando:', e);
-        toast('❌ Error al guardar: ' + e.message, 'error');
+        toast('❌ Error: ' + e.message, 'error');
         setStatus('❌ ' + e.message, 'error');
     }
 }
 
 // ═══════════════════════════════════════════════════════════
-// GESTIÓN DE ESTADOS (NUEVO)
+// GESTIÓN DE ESTADOS
 // ═══════════════════════════════════════════════════════════
+function getAusenciaActiva(empleadoId) {
+    const hoy = fechaISO(new Date());
+    return state.ausencias.filter(a => a.empleado_id === empleadoId)
+        .filter(a => !a.fecha_fin || a.fecha_fin >= hoy)
+        .sort((a, b) => new Date(b.fecha_inicio) - new Date(a.fecha_inicio))[0] || null;
+}
 
 function abrirModalEstado(nombreEmpleado) {
     const emp = state.empleados.find(e => e.nombre === nombreEmpleado);
     if (!emp) return;
-
     state.estadoEditando = emp;
     state.estadoSeleccionado = null;
-
-    document.getElementById('modalEstadoTitle').textContent = '🔄 Cambiar estado';
-    document.getElementById('modalEstadoEmpleado').innerHTML = `
-        <strong style="color:#0f172a;font-size:15px;">${escapeHtml(emp.nombre)}</strong>
-        ${emp.puesto ? ` · ${escapeHtml(emp.puesto)}` : ''}
-        <br><span style="font-size:11px;">Estado actual: <strong>${emp.estado}</strong></span>
-    `;
-
-    // Marcar opción actual
+    document.getElementById('modalEstadoEmpleado').innerHTML =
+        `<strong style="color:#0f172a;font-size:15px;">${escapeHtml(emp.nombre)}</strong>${emp.puesto ? ` · ${escapeHtml(emp.puesto)}` : ''}<br><span style="font-size:11px;">Estado actual: <strong>${emp.estado}</strong></span>`;
     document.querySelectorAll('.estado-opcion').forEach(el => {
         el.classList.remove('actual');
         if (el.dataset.estado === emp.estado) el.classList.add('actual');
     });
-
-    // Ocultar bloque de fechas por defecto
     document.getElementById('fechasAusencia').classList.remove('visible');
     document.getElementById('inputFechaInicio').value = fechaISO(new Date());
     document.getElementById('inputFechaFin').value = '';
-
-    // Si hay una ausencia activa, precargar fechas
     const ausActiva = getAusenciaActiva(emp.id);
     if (ausActiva) {
         document.getElementById('inputFechaInicio').value = ausActiva.fecha_inicio || '';
         document.getElementById('inputFechaFin').value = ausActiva.fecha_fin || '';
     }
-
     document.getElementById('modalEstado').classList.add('visible');
 }
 
 function cerrarModalEstado() {
     document.getElementById('modalEstado').classList.remove('visible');
-    state.estadoEditando = null;
-    state.estadoSeleccionado = null;
+    state.estadoEditando = null; state.estadoSeleccionado = null;
 }
 
 function seleccionarEstado(nuevoEstado) {
     state.estadoSeleccionado = nuevoEstado;
-
     document.querySelectorAll('.estado-opcion').forEach(el => {
         el.classList.remove('actual');
         if (el.dataset.estado === nuevoEstado) el.classList.add('actual');
     });
-
     const fechas = document.getElementById('fechasAusencia');
-    if (nuevoEstado === 'BAJA' || nuevoEstado === 'VACACIONES') {
-        fechas.classList.add('visible');
-    } else {
-        fechas.classList.remove('visible');
-    }
-}
-
-function getAusenciaActiva(empleadoId) {
-    // Devuelve la ausencia más reciente sin fecha_fin o con fecha_fin futura
-    const hoy = fechaISO(new Date());
-    const candidatas = state.ausencias
-        .filter(a => a.empleado_id === empleadoId)
-        .filter(a => !a.fecha_fin || a.fecha_fin >= hoy)
-        .sort((a, b) => new Date(b.fecha_inicio) - new Date(a.fecha_inicio));
-    return candidatas[0] || null;
+    if (nuevoEstado === 'BAJA' || nuevoEstado === 'VACACIONES') fechas.classList.add('visible');
+    else fechas.classList.remove('visible');
 }
 
 async function guardarEstado() {
     if (!state.estadoEditando) return;
-    if (!state.estadoSeleccionado) {
-        toast('Selecciona un estado', 'warning');
-        return;
-    }
-
+    if (!state.estadoSeleccionado) { toast('Selecciona un estado', 'warning'); return; }
     const emp = state.estadoEditando;
     const nuevoEstado = state.estadoSeleccionado;
-
-    if (nuevoEstado === emp.estado) {
-        toast('Sin cambios', 'info');
-        cerrarModalEstado();
-        return;
-    }
-
+    if (nuevoEstado === emp.estado) { toast('Sin cambios', 'info'); cerrarModalEstado(); return; }
     try {
-        // 1. Actualizar estado en horarios_empleados
-        const { error: errUpd } = await db
-            .from('horarios_empleados')
-            .update({ estado: nuevoEstado, updated_at: new Date().toISOString() })
-            .eq('id', emp.id);
+        const { error: errUpd } = await db.from('horarios_empleados')
+            .update({ estado: nuevoEstado, updated_at: new Date().toISOString() }).eq('id', emp.id);
         if (errUpd) throw errUpd;
-
-        // 2. Gestionar ausencias
         const ausActiva = getAusenciaActiva(emp.id);
-
         if (nuevoEstado === 'BAJA' || nuevoEstado === 'VACACIONES') {
-            // Registrar nueva ausencia (o actualizar la activa)
             const tipoAus = nuevoEstado === 'BAJA' ? 'BAJA' : 'VACACIONES';
-            const fechaInicio = document.getElementById('inputFechaInicio').value || fechaISO(new Date());
-            const fechaFin = document.getElementById('inputFechaFin').value || null;
-
+            const fIni = document.getElementById('inputFechaInicio').value || fechaISO(new Date());
+            const fFin = document.getElementById('inputFechaFin').value || null;
             if (ausActiva && ausActiva.tipo === tipoAus) {
-                // Actualizar fechas
-                const { error } = await db.from('horarios_ausencias')
-                    .update({ fecha_inicio: fechaInicio, fecha_fin: fechaFin })
-                    .eq('id', ausActiva.id);
+                const { error } = await db.from('horarios_ausencias').update({ fecha_inicio: fIni, fecha_fin: fFin }).eq('id', ausActiva.id);
                 if (error) throw error;
             } else {
-                // Cerrar ausencia anterior si existía
-                if (ausActiva) {
-                    await db.from('horarios_ausencias')
-                        .update({ fecha_fin: fechaISO(new Date()) })
-                        .eq('id', ausActiva.id);
-                }
-                // Crear nueva
-                const { error } = await db.from('horarios_ausencias').insert([{
-                    empleado_id: emp.id,
-                    tipo: tipoAus,
-                    fecha_inicio: fechaInicio,
-                    fecha_fin: fechaFin,
-                    notas: null
-                }]);
+                if (ausActiva) await db.from('horarios_ausencias').update({ fecha_fin: fechaISO(new Date()) }).eq('id', ausActiva.id);
+                const { error } = await db.from('horarios_ausencias').insert([{ empleado_id: emp.id, tipo: tipoAus, fecha_inicio: fIni, fecha_fin: fFin }]);
                 if (error) throw error;
             }
-        } else if (nuevoEstado === 'ACTIVO' || nuevoEstado === 'FijoDiscontinuo') {
-            // Cerrar ausencia activa si existe
+        } else {
             if (ausActiva) {
-                const { error } = await db.from('horarios_ausencias')
-                    .update({ fecha_fin: fechaISO(new Date()) })
-                    .eq('id', ausActiva.id);
+                const { error } = await db.from('horarios_ausencias').update({ fecha_fin: fechaISO(new Date()) }).eq('id', ausActiva.id);
                 if (error) throw error;
             }
         }
-
-        // Actualizar local
         emp.estado = nuevoEstado;
-        emp.updated_at = new Date().toISOString();
-
-        // Recargar ausencias
         const { data: nuevasAus } = await db.from('horarios_ausencias').select('*');
         state.ausencias = nuevasAus || [];
-
         toast(`✅ ${emp.nombre} → ${nuevoEstado}`, 'success');
         cerrarModalEstado();
         render();
-    } catch (e) {
-        console.error('Error guardando estado:', e);
-        toast('Error: ' + e.message, 'error');
-    }
+    } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 // ═══════════════════════════════════════════════════════════
-// AVISOS DE VUELTA
+// AVISOS
 // ═══════════════════════════════════════════════════════════
-
 function renderAvisos() {
     const cont = document.getElementById('avisosContainer');
     cont.innerHTML = '';
-
-    const hoy = new Date();
-    const hoyISO = fechaISO(hoy);
+    const hoyISO = fechaISO(new Date());
     const avisos = [];
-
-    // Revisar ausencias con fecha_fin cercana
     state.ausencias.forEach(aus => {
         if (!aus.fecha_fin) return;
         const emp = state.empleados.find(e => e.id === aus.empleado_id);
         if (!emp) return;
-
-        const diasHasta = diffDias(hoyISO, aus.fecha_fin);
-
-        if (diasHasta < 0) {
-            // Ya pasó la fecha → avisar que actualice el estado
-            avisos.push({
-                tipo: 'urgente',
-                emoji: '⚠️',
-                texto: `<strong>${escapeHtml(emp.nombre)}</strong> tenía previsto volver el ${formatFechaLarga(aus.fecha_fin)} (hace ${Math.abs(diasHasta)} día${Math.abs(diasHasta) !== 1 ? 's' : ''}). Actualiza su estado.`
-            });
-        } else if (diasHasta === 0) {
-            avisos.push({
-                tipo: 'vuelta',
-                emoji: '🎉',
-                texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve <strong>HOY</strong>.`
-            });
-        } else if (diasHasta === 1) {
-            avisos.push({
-                tipo: 'proxima',
-                emoji: '⏰',
-                texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve <strong>mañana</strong>.`
-            });
-        } else if (diasHasta <= 7) {
-            avisos.push({
-                tipo: 'proxima',
-                emoji: '📅',
-                texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve en <strong>${diasHasta} día${diasHasta !== 1 ? 's' : ''}</strong> (${formatFechaLarga(aus.fecha_fin)}).`
-            });
-        }
+        const dias = diffDias(hoyISO, aus.fecha_fin);
+        if (dias < 0) avisos.push({ tipo: 'urgente', emoji: '⚠️', texto: `<strong>${escapeHtml(emp.nombre)}</strong> tenía previsto volver el ${formatFechaLarga(aus.fecha_fin)} (hace ${Math.abs(dias)}d). Actualiza su estado.` });
+        else if (dias === 0) avisos.push({ tipo: 'vuelta', emoji: '🎉', texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve <strong>HOY</strong>.` });
+        else if (dias === 1) avisos.push({ tipo: 'proxima', emoji: '⏰', texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve <strong>mañana</strong>.` });
+        else if (dias <= 7) avisos.push({ tipo: 'proxima', emoji: '📅', texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve en <strong>${dias} días</strong> (${formatFechaLargaL(aus.fecha_fin)}).`.replace('formatFechaLargaL', '') });
     });
-
-    // Ordenar: urgentes primero, luego por días
-    avisos.sort((a, b) => {
-        const orden = { urgente: 0, vuelta: 1, proxima: 2 };
-        return orden[a.tipo] - orden[b.tipo];
-    });
-
-    if (avisos.length === 0) return;
-
+    avisos.sort((a, b) => ({ urgente: 0, vuelta: 1, proxima: 2 })[a.tipo] - ({ urgente: 0, vuelta: 1, proxima: 2 })[b.tipo]);
     avisos.forEach(av => {
         const div = document.createElement('div');
         div.className = 'aviso ' + av.tipo;
-        div.innerHTML = `
-            <span class="emoji">${av.emoji}</span>
-            <span class="texto">${av.texto}</span>
-        `;
+        div.innerHTML = `<span class="emoji">${av.emoji}</span><span class="texto">${av.texto}</span>`;
         cont.appendChild(div);
     });
 }
@@ -1016,48 +735,33 @@ function renderAvisos() {
 // ═══════════════════════════════════════════════════════════
 // ROTACIÓN PICA
 // ═══════════════════════════════════════════════════════════
-
 function esSemanaA() { return state.semana.numero_semana % 2 === 1; }
-
 function aplicarRotacionPica() {
     const esA = esSemanaA();
     const ciclo = esA ? CICLO_PICA_A : CICLO_PICA_B;
-
     const picas = state.empleados.filter(e => e.tipo_personal === 'PICA');
     if (picas.length === 0) { toast('No hay empleados tipo Pica', 'warning'); return; }
-
-    let aplicados = 0;
+    let n = 0;
     picas.forEach(emp => {
-        const asignacion = ciclo[emp.nombre];
-        if (asignacion) {
-            state.semana.asignaciones[emp.nombre] = { ...asignacion };
-            aplicados++;
-        }
+        const asig = ciclo[emp.nombre];
+        if (asig) { state.semana.asignaciones[emp.nombre] = { ...asig }; n++; }
     });
-
     render();
-    toast(`🔄 Rotación Pica aplicada (Semana ${esA ? 'A' : 'B'}) · ${aplicados} empleado${aplicados > 1 ? 's' : ''}`, 'success');
+    toast(`🔄 Rotación Pica (Semana ${esA ? 'A' : 'B'}) · ${n} empleado${n > 1 ? 's' : ''}`, 'success');
 }
-
 function alternarRotacionPica() {
     const picas = state.empleados.filter(e => e.tipo_personal === 'PICA');
-    if (picas.length === 0) { toast('No hay empleados tipo Pica', 'warning'); return; }
-
+    if (picas.length === 0) { toast('No hay Pica', 'warning'); return; }
     picas.forEach(emp => {
         const actual = state.semana.asignaciones[emp.nombre] || {};
-        const diaRef = actual.lunes;
-        let nuevoCiclo;
         if (emp.nombre === 'Daniel' || emp.nombre === 'Matias') {
-            if (diaRef === 'L') {
-                nuevoCiclo = (CICLO_PICA_A[emp.nombre].lunes === 'L') ? CICLO_PICA_B : CICLO_PICA_A;
-            } else {
-                nuevoCiclo = (CICLO_PICA_A[emp.nombre].lunes === 'L') ? CICLO_PICA_A : CICLO_PICA_B;
-            }
+            const nuevoCiclo = actual.lunes === 'L'
+                ? (CICLO_PICA_A[emp.nombre].lunes === 'L' ? CICLO_PICA_B : CICLO_PICA_A)
+                : (CICLO_PICA_A[emp.nombre].lunes === 'L' ? CICLO_PICA_A : CICLO_PICA_B);
             const asig = nuevoCiclo[emp.nombre];
             if (asig) state.semana.asignaciones[emp.nombre] = { ...asig };
         }
     });
-
     render();
     toast('🔀 Rotación Pica invertida', 'info');
 }
@@ -1065,60 +769,43 @@ function alternarRotacionPica() {
 // ═══════════════════════════════════════════════════════════
 // NAVEGACIÓN
 // ═══════════════════════════════════════════════════════════
-
 function cambiarSemana(delta) {
-    let newWeek = state.semana.numero_semana + delta;
-    let newYear = state.semana.año;
-    if (newWeek < 1) { newWeek = 52; newYear--; }
-    if (newWeek > 52) { newWeek = 1; newYear++; }
-    state.semana.año = newYear;
-    state.semana.numero_semana = newWeek;
-    cargarSemana();
-    actualizarCabeceraSemana();
+    let w = state.semana.numero_semana + delta;
+    let y = state.semana.año;
+    if (w < 1) { w = 52; y--; }
+    if (w > 52) { w = 1; y++; }
+    state.semana.año = y; state.semana.numero_semana = w;
+    cargarSemana(); actualizarCabeceraSemana();
 }
-
 function irSemanaActual(silencioso = false) {
     const { año, semana } = getISOWeek(new Date());
-    state.semana.año = año;
-    state.semana.numero_semana = semana;
+    state.semana.año = año; state.semana.numero_semana = semana;
     if (!silencioso) cargarSemana();
     actualizarCabeceraSemana();
 }
-
 function actualizarCabeceraSemana() {
     const fechas = getFechasSemana();
-    const label = document.getElementById('weekLabel');
     const esA = esSemanaA();
-    label.innerHTML = `
-        Semana ${state.semana.numero_semana} ${esA ? '(A)' : '(B)'}
-        <small>${formatoFecha(fechas[0])} - ${formatoFecha(fechas[6])} ${fechas[0].getUTCFullYear()}</small>
-    `;
-
+    document.getElementById('weekLabel').innerHTML =
+        `Semana ${state.semana.numero_semana} ${esA ? '(A)' : '(B)'}<small>${formatoFecha(fechas[0])} - ${formatoFecha(fechas[6])} ${fechas[0].getUTCFullYear()}</small>`;
     const today = new Date();
-    const heads = ['thLun', 'thMar', 'thMie', 'thJue', 'thVie', 'thSab', 'thDom'];
-    heads.forEach((id, i) => {
+    ['thLun','thMar','thMie','thJue','thVie','thSab','thDom'].forEach((id, i) => {
         const el = document.getElementById(id);
         const f = fechas[i];
-        const esHoy = f.getUTCDate() === today.getDate() &&
-                      f.getUTCMonth() === today.getMonth() &&
-                      f.getUTCFullYear() === today.getFullYear();
+        const esHoy = f.getUTCDate() === today.getDate() && f.getUTCMonth() === today.getMonth() && f.getUTCFullYear() === today.getFullYear();
         el.innerHTML = `${DIAS_LABEL[i]}<br><span style="font-size:10px;font-weight:400;opacity:0.7;">${f.getUTCDate()}</span>`;
-        if (esHoy) el.style.background = '#dc2626';
-        else el.style.background = '';
+        el.style.background = esHoy ? '#dc2626' : '';
     });
 }
 
 // ═══════════════════════════════════════════════════════════
 // CÁLCULO HORAS
 // ═══════════════════════════════════════════════════════════
-
 function calcularHorasTurno(codigo) {
     if (!codigo) return 0;
     const t = state.turnos[codigo];
-    if (!t) return 0;
-    return parseFloat(t.horas_totales) || 0;
+    return t ? (parseFloat(t.horas_totales) || 0) : 0;
 }
-
 function calcularHorasEmpleado(nombre) {
     const asig = state.semana.asignaciones[nombre] || {};
     let total = 0;
@@ -1129,7 +816,6 @@ function calcularHorasEmpleado(nombre) {
 // ═══════════════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════════════
-
 function render() {
     renderAvisos();
     renderTabla();
@@ -1141,36 +827,23 @@ function render() {
 function renderTabla() {
     const tbody = document.getElementById('tablaBody');
     tbody.innerHTML = '';
-
     const visibles = state.empleados.filter(e => state.mostrarInactivos || e.estado === 'ACTIVO');
-
     if (visibles.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="padding:30px;text-align:center;color:#94a3b8;">
-            No hay empleados que mostrar.
-        </td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="padding:30px;text-align:center;color:#94a3b8;">No hay empleados que mostrar.</td></tr>`;
         return;
     }
-
     const cocineros = visibles.filter(e => e.tipo_personal !== 'PICA');
     const picas = visibles.filter(e => e.tipo_personal === 'PICA');
-
-    cocineros.forEach(emp => {
-        const tr = renderFilaEmpleado(emp);
-        tbody.appendChild(tr);
-    });
-
+    cocineros.forEach(emp => tbody.appendChild(renderFilaEmpleado(emp)));
     if (picas.length > 0) {
         const trSep = document.createElement('tr');
         trSep.className = 'separador-pica';
         trSep.innerHTML = `<td colspan="9">🍴 PICA · Rotación automática (A/B)</td>`;
         tbody.appendChild(trSep);
-        picas.forEach(emp => {
-            const tr = renderFilaEmpleado(emp, true);
-            tbody.appendChild(tr);
-        });
+        picas.forEach(emp => tbody.appendChild(renderFilaEmpleado(emp, true)));
     }
-
-    renderFilaEventos(tbody);
+    // 🆕 Sección de eventos completa
+    renderSeccionEventos(tbody);
 }
 
 function renderFilaEmpleado(emp, esPica = false) {
@@ -1181,7 +854,6 @@ function renderFilaEmpleado(emp, esPica = false) {
     const tdEmp = document.createElement('td');
     tdEmp.className = 'emp-col';
 
-    // 🆕 Estado clicable + fecha ausencia
     const ausActiva = getAusenciaActiva(emp.id);
     let fechaHTML = '';
     if (ausActiva && ausActiva.fecha_fin) {
@@ -1196,14 +868,10 @@ function renderFilaEmpleado(emp, esPica = false) {
     }
 
     tdEmp.innerHTML = `
-        <div class="emp-nombre" ondblclick="abrirModalEmpleado('${escapeHtml(emp.nombre)}')" style="cursor:pointer;" title="Doble click para editar">
-            ${escapeHtml(emp.nombre)}
-        </div>
+        <div class="emp-nombre" ondblclick="abrirModalEmpleado('${escapeHtml(emp.nombre)}')" style="cursor:pointer;" title="Doble click para editar">${escapeHtml(emp.nombre)}</div>
         ${emp.puesto ? `<div class="emp-puesto">${escapeHtml(emp.puesto)}</div>` : ''}
         <div class="emp-estado-wrap">
-            <span class="emp-estado estado-${emp.estado}" onclick="abrirModalEstado('${escapeHtml(emp.nombre)}')" title="Click para cambiar estado">
-                ${emp.estado}
-            </span>
+            <span class="emp-estado estado-${emp.estado}" onclick="abrirModalEstado('${escapeHtml(emp.nombre)}')" title="Click para cambiar estado">${emp.estado}</span>
         </div>
         ${fechaHTML}
     `;
@@ -1217,31 +885,23 @@ function renderFilaEmpleado(emp, esPica = false) {
         const valorActual = asig[dia] || '';
         select.value = valorActual;
         actualizarColorSelect(select, valorActual);
-
         const grupos = {
             '— Libres —': ['L', 'LR', 'FR', 'V', 'B'],
             '— Mañana —': ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7'],
             '— Tarde —': ['T1', 'T2', 'T3', 'T4', 'T5'],
             '— Partido —': ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7']
         };
-
         const optInicio = document.createElement('option');
         optInicio.value = ''; optInicio.textContent = '—';
         select.appendChild(optInicio);
-
-        Object.entries(grupos).forEach(([nombreGrupo, codigos]) => {
-            const group = document.createElement('optgroup');
-            group.label = nombreGrupo;
-            codigos.forEach(cod => {
-                const t = state.turnos[cod];
-                if (!t) return;
-                const opt = document.createElement('option');
-                opt.value = cod; opt.textContent = cod; opt.title = t.nombre;
-                group.appendChild(opt);
+        Object.entries(grupos).forEach(([ng, cods]) => {
+            const g = document.createElement('optgroup'); g.label = ng;
+            cods.forEach(c => {
+                const t = state.turnos[c]; if (!t) return;
+                const o = document.createElement('option'); o.value = c; o.textContent = c; o.title = t.nombre; g.appendChild(o);
             });
-            if (group.children.length > 0) select.appendChild(group);
+            if (g.children.length > 0) select.appendChild(g);
         });
-
         select.onchange = (e) => {
             if (!state.semana.asignaciones[emp.nombre]) state.semana.asignaciones[emp.nombre] = {};
             state.semana.asignaciones[emp.nombre][dia] = e.target.value;
@@ -1249,50 +909,137 @@ function renderFilaEmpleado(emp, esPica = false) {
             renderHorasEmpleado(emp.nombre);
             renderConflictos();
         };
-
-        td.appendChild(select);
-        tr.appendChild(td);
+        td.appendChild(select); tr.appendChild(td);
     });
 
     const tdHoras = document.createElement('td');
     tdHoras.className = 'horas-col';
     tdHoras.id = `horas-${cssId(emp.nombre)}`;
     tr.appendChild(tdHoras);
-
     setTimeout(() => renderHorasEmpleado(emp.nombre), 0);
     return tr;
 }
 
-function renderFilaEventos(tbody) {
-    const trEventos = document.createElement('tr');
-    trEventos.className = 'eventos-row';
-    const tdEmpEv = document.createElement('td');
-    tdEmpEv.className = 'emp-col';
-    tdEmpEv.innerHTML = `<div style="font-weight:700;font-size:12px;color:#92400e;">🎉 Eventos/Grupos</div>
-                         <div style="font-size:10px;color:#a16207;">Escribe los eventos del día</div>`;
-    trEventos.appendChild(tdEmpEv);
+// 🆕 Sección de eventos completa con subtítulos y totales
+function renderSeccionEventos(tbody) {
+    // Title
+    const trTitle = document.createElement('tr');
+    trTitle.className = 'eventos-title-row';
+    trTitle.innerHTML = `<td colspan="9">📅 SERVICIOS ESPECIALES · Grupos · Eventos · Cócteles</td>`;
+    tbody.appendChild(trTitle);
+
+    // Subtítulo: Grupos
+    const trSubG = document.createElement('tr');
+    trSubG.className = 'eventos-subtitle-row';
+    trSubG.innerHTML = `<td colspan="9">🍽️ GRUPOS (desayuno, almuerzo, cena)</td>`;
+    tbody.appendChild(trSubG);
+
+    TIPOS_EVENTO.filter(t => t.grupo === 'grupo').forEach(tipo => {
+        tbody.appendChild(renderFilaEvento(tipo));
+    });
+
+    // Subtítulo: Eventos
+    const trSubE = document.createElement('tr');
+    trSubE.className = 'eventos-subtitle-row';
+    trSubE.innerHTML = `<td colspan="9">🎉 EVENTOS (almuerzo, cena)</td>`;
+    tbody.appendChild(trSubE);
+
+    TIPOS_EVENTO.filter(t => t.grupo === 'evento').forEach(tipo => {
+        tbody.appendChild(renderFilaEvento(tipo));
+    });
+
+    // Subtítulo: Cócteles
+    const trSubC = document.createElement('tr');
+    trSubC.className = 'eventos-subtitle-row';
+    trSubC.innerHTML = `<td colspan="9">🍸 CÓCTELES</td>`;
+    tbody.appendChild(trSubC);
+
+    TIPOS_EVENTO.filter(t => t.grupo === 'coctel').forEach(tipo => {
+        tbody.appendChild(renderFilaEvento(tipo));
+    });
+
+    // Fila TOTAL
+    const trTotal = document.createElement('tr');
+    trTotal.className = 'eventos-total-row';
+    const tdLabelTotal = document.createElement('td');
+    tdLabelTotal.className = 'emp-col';
+    tdLabelTotal.innerHTML = `📊 <strong>TOTAL SERVICIOS</strong>`;
+    trTotal.appendChild(tdLabelTotal);
+
+    DIAS.forEach(dia => {
+        const td = document.createElement('td');
+        td.id = `total-evento-${dia}`;
+        td.textContent = '0';
+        trTotal.appendChild(td);
+    });
+
+    // Columna horas (vacía para totales)
+    const tdVacio = document.createElement('td');
+    tdVacio.className = 'horas-col';
+    tdVacio.style.background = '#fde68a';
+    trTotal.appendChild(tdVacio);
+
+    tbody.appendChild(trTotal);
+
+    // Actualizar totales
+    setTimeout(actualizarTotalesEventos, 0);
+}
+
+function renderFilaEvento(tipo) {
+    const tr = document.createElement('tr');
+    tr.className = 'eventos-row';
+    const tdLabel = document.createElement('td');
+    tdLabel.className = 'emp-col';
+    const dotClass = tipo.grupo === 'grupo' ? 'dot-grupo' : tipo.grupo === 'evento' ? 'dot-evento' : 'dot-coctel';
+    tdLabel.innerHTML = `<div class="evento-label"><span class="dot ${dotClass}"></span>${tipo.icono} ${tipo.label}</div>`;
+    tr.appendChild(tdLabel);
 
     DIAS.forEach(dia => {
         const td = document.createElement('td');
         const inp = document.createElement('input');
-        inp.type = 'text'; inp.className = 'eventos-input'; inp.placeholder = 'Evento...';
-        inp.value = state.semana.eventos[dia] || '';
-        inp.onchange = (e) => { state.semana.eventos[dia] = e.target.value; };
-        td.appendChild(inp); trEventos.appendChild(td);
+        inp.type = 'number';
+        inp.className = 'evento-input';
+        inp.placeholder = '0';
+        inp.min = 0;
+        inp.dataset.dia = dia;
+        inp.dataset.tipo = tipo.key;
+        const val = state.semana.eventos[dia]?.[tipo.key];
+        inp.value = (val !== undefined && val !== null && val !== '') ? val : '';
+        inp.onchange = (e) => {
+            if (!state.semana.eventos[dia]) state.semana.eventos[dia] = {};
+            const v = e.target.value.trim();
+            state.semana.eventos[dia][tipo.key] = v === '' ? null : parseInt(v) || 0;
+            actualizarTotalesEventos();
+        };
+        td.appendChild(inp);
+        tr.appendChild(td);
     });
 
     const tdVacio = document.createElement('td');
-    tdVacio.className = 'horas-col'; tdVacio.style.background = '#fef3c7';
-    trEventos.appendChild(tdVacio);
-    tbody.appendChild(trEventos);
+    tdVacio.className = 'horas-col';
+    tdVacio.style.background = '#fffbeb';
+    tr.appendChild(tdVacio);
+    return tr;
+}
+
+// 🆕 Actualizar los totales por día
+function actualizarTotalesEventos() {
+    DIAS.forEach(dia => {
+        const el = document.getElementById(`total-evento-${dia}`);
+        if (!el) return;
+        const total = calcularTotalDia(dia);
+        el.textContent = total;
+        el.className = '';
+        if (total === 0) el.classList.add('total-evento-cero');
+        else if (total >= 50) el.classList.add('total-evento-alto');
+    });
 }
 
 function actualizarColorSelect(select, valor) {
     select.classList.remove('tipo-M', 'tipo-T', 'tipo-P', 'tipo-L', 'tipo-V', 'tipo-LR', 'tipo-FR', 'tipo-B', 'tipo-vacio');
     if (!valor) { select.classList.add('tipo-vacio'); return; }
     const t = state.turnos[valor];
-    if (!t) { select.classList.add('tipo-vacio'); return; }
-    select.classList.add('tipo-' + (t.tipo || 'vacio'));
+    select.classList.add('tipo-' + (t ? (t.tipo || 'vacio') : 'vacio'));
 }
 
 function renderHorasEmpleado(nombre) {
@@ -1308,112 +1055,64 @@ function renderHorasEmpleado(nombre) {
 // ═══════════════════════════════════════════════════════════
 // CONFLICTOS
 // ═══════════════════════════════════════════════════════════
-
 function renderConflictos() {
     const conflictos = [];
     const visibles = state.empleados.filter(e => state.mostrarInactivos || e.estado === 'ACTIVO');
-
     visibles.forEach(emp => {
         const horas = calcularHorasEmpleado(emp.nombre);
         const asig = state.semana.asignaciones[emp.nombre] || {};
-
-        if (horas > 40) {
-            conflictos.push({ tipo: 'warn',
-                msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (${(horas - 40).toFixed(1)}h extras)` });
-        }
-        if (horas < 40 && horas > 0 && emp.estado === 'ACTIVO') {
-            conflictos.push({ tipo: 'info',
-                msg: `ℹ️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (le faltan ${(40 - horas).toFixed(1)}h)` });
-        }
+        if (horas > 40) conflictos.push({ tipo: 'warn', msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (${(horas - 40).toFixed(1)}h extras)` });
+        if (horas < 40 && horas > 0 && emp.estado === 'ACTIVO') conflictos.push({ tipo: 'info', msg: `ℹ️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (le faltan ${(40 - horas).toFixed(1)}h)` });
         const libres = DIAS.map(d => !asig[d] || ['L', 'V', 'LR', 'FR', 'B'].includes(asig[d]));
-        const dosConsec = (libres[0] && libres[1]) || (libres[1] && libres[2]) ||
-                          (libres[2] && libres[3]) || (libres[3] && libres[4]) ||
-                          (libres[4] && libres[5]) || (libres[5] && libres[6]);
-        if (emp.estado === 'ACTIVO' && horas > 0 && !dosConsec) {
-            conflictos.push({ tipo: 'warn',
-                msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: no tiene 2 días libres consecutivos` });
-        }
+        const dosConsec = (libres[0] && libres[1]) || (libres[1] && libres[2]) || (libres[2] && libres[3]) || (libres[3] && libres[4]) || (libres[4] && libres[5]) || (libres[5] && libres[6]);
+        if (emp.estado === 'ACTIVO' && horas > 0 && !dosConsec) conflictos.push({ tipo: 'warn', msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: sin 2 libres consecutivos` });
     });
-
     const list = document.getElementById('conflictosList');
     const badge = document.getElementById('conflictosBadge');
-
-    if (conflictos.length === 0) {
-        list.innerHTML = `<div class="info-empty">✅ Sin conflictos detectados</div>`;
-        badge.textContent = '0'; badge.className = 'badge ok';
-    } else {
-        list.innerHTML = conflictos.map(c => `<div class="conflicto-item ${c.tipo}">${c.msg}</div>`).join('');
-        badge.textContent = conflictos.length; badge.className = 'badge alerta';
-    }
+    if (conflictos.length === 0) { list.innerHTML = `<div class="info-empty">✅ Sin conflictos</div>`; badge.textContent = '0'; badge.className = 'badge ok'; }
+    else { list.innerHTML = conflictos.map(c => `<div class="conflicto-item ${c.tipo}">${c.msg}</div>`).join(''); badge.textContent = conflictos.length; badge.className = 'badge alerta'; }
 }
 
 // ═══════════════════════════════════════════════════════════
-// BANCO DE HORAS
+// BANCO HORAS
 // ═══════════════════════════════════════════════════════════
-
 function renderBanco() {
     const list = document.getElementById('bancoList');
     const badge = document.getElementById('bancoBadge');
-
-    if (state.banco.length === 0) {
-        list.innerHTML = `<div class="info-empty">✅ Sin pendientes</div>`;
-        badge.textContent = '0'; badge.className = 'badge ok';
-        return;
-    }
-
+    if (state.banco.length === 0) { list.innerHTML = `<div class="info-empty">✅ Sin pendientes</div>`; badge.textContent = '0'; badge.className = 'badge ok'; return; }
     badge.textContent = state.banco.length; badge.className = 'badge alerta';
-
     list.innerHTML = state.banco.map(b => {
         const nombre = b.horarios_empleados?.nombre || '?';
         const icono = b.tipo === 'LR' ? '🔄' : b.tipo === 'FR' ? '📅' : '➕';
         const label = b.tipo === 'LR' ? 'Libre Recuperado' : b.tipo === 'FR' ? 'Festivo Recuperado' : 'Hora extra';
-        return `
-            <div class="banco-item">
-                <div class="fila">
-                    <div>
-                        <strong>${icono} ${escapeHtml(nombre)}</strong>
-                        <div style="font-size:10px;margin-top:2px;">${label} · ${b.horas}h · ${b.fecha_original}</div>
-                        ${b.motivo ? `<div style="font-size:10px;opacity:0.7;margin-top:2px;">📝 ${escapeHtml(b.motivo)}</div>` : ''}
-                    </div>
-                    <div class="acciones">
-                        <button class="btn btn-sm btn-green" onclick="compensarBanco(${b.id})">✅</button>
-                        <button class="btn btn-sm btn-red" onclick="eliminarBanco(${b.id})">🗑️</button>
-                    </div>
-                </div>
-            </div>
-        `;
+        return `<div class="banco-item"><div class="fila"><div><strong>${icono} ${escapeHtml(nombre)}</strong><div style="font-size:10px;margin-top:2px;">${label} · ${b.horas}h · ${b.fecha_original}</div>${b.motivo ? `<div style="font-size:10px;opacity:0.7;margin-top:2px;">📝 ${escapeHtml(b.motivo)}</div>` : ''}</div><div class="acciones"><button class="btn btn-sm btn-green" onclick="compensarBanco(${b.id})">✅</button><button class="btn btn-sm btn-red" onclick="eliminarBanco(${b.id})">🗑️</button></div></div></div>`;
     }).join('');
 }
-
 function renderBancoAlerta() {
     const alerta = document.getElementById('bancoAlerta');
     if (state.banco.length === 0) { alerta.classList.remove('visible'); return; }
     const lr = state.banco.filter(b => b.tipo === 'LR').length;
     const fr = state.banco.filter(b => b.tipo === 'FR').length;
     const ex = state.banco.filter(b => b.tipo === 'EXTRA').length;
-    const partes = [];
-    if (lr > 0) partes.push(`${lr} Libre${lr > 1 ? 's' : ''} Recuperado${lr > 1 ? 's' : ''}`);
-    if (fr > 0) partes.push(`${fr} Festivo${fr > 1 ? 's' : ''} Recuperado${fr > 1 ? 's' : ''}`);
-    if (ex > 0) partes.push(`${ex} hora${ex > 1 ? 's' : ''} extra`);
-    alerta.innerHTML = `<strong>⏰ Banco de horas:</strong> Hay ${partes.join(' + ')} pendiente${(lr+fr+ex) > 1 ? 's' : ''} de compensar`;
+    const p = [];
+    if (lr > 0) p.push(`${lr} L.r`);
+    if (fr > 0) p.push(`${fr} F.r`);
+    if (ex > 0) p.push(`${ex} extras`);
+    alerta.innerHTML = `<strong>⏰ Banco de horas:</strong> Hay ${p.join(' + ')} pendiente${(lr+fr+ex) > 1 ? 's' : ''} de compensar`;
     alerta.classList.add('visible');
 }
-
 async function compensarBanco(id) {
     if (!confirm('¿Marcar como compensado?')) return;
     try {
-        const { error } = await db.from('horarios_banco_horas')
-            .update({ estado: 'COMPENSADO', fecha_compensada: fechaISO(new Date()) })
-            .eq('id', id);
+        const { error } = await db.from('horarios_banco_horas').update({ estado: 'COMPENSADO', fecha_compensada: fechaISO(new Date()) }).eq('id', id);
         if (error) throw error;
         state.banco = state.banco.filter(b => b.id !== id);
         renderBanco(); renderBancoAlerta();
         toast('✅ Compensado', 'success');
     } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
-
 async function eliminarBanco(id) {
-    if (!confirm('¿Eliminar este registro del banco?')) return;
+    if (!confirm('¿Eliminar del banco?')) return;
     try {
         const { error } = await db.from('horarios_banco_horas').delete().eq('id', id);
         if (error) throw error;
@@ -1424,14 +1123,12 @@ async function eliminarBanco(id) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// MODAL EMPLEADO
+// MODALES
 // ═══════════════════════════════════════════════════════════
-
 function abrirModalEmpleado(nombreEditando = null) {
     state.empleadoEditando = nombreEditando;
     const modal = document.getElementById('modalEmpleado');
     const title = document.getElementById('modalEmpleadoTitle');
-
     if (nombreEditando) {
         const emp = state.empleados.find(e => e.nombre === nombreEditando);
         if (emp) {
@@ -1444,26 +1141,18 @@ function abrirModalEmpleado(nombreEditando = null) {
         }
     } else {
         title.textContent = '➕ Nuevo empleado';
-        document.getElementById('inputNombre').value = '';
-        document.getElementById('inputPuesto').value = '';
+        ['inputNombre','inputPuesto','inputTurnoPref'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('inputTipo').value = 'COCINERO';
-        document.getElementById('inputTurnoPref').value = '';
         document.getElementById('inputSoloManana').checked = false;
     }
-
     modal.classList.add('visible');
     setTimeout(() => document.getElementById('inputNombre').focus(), 100);
 }
-
-function cerrarModalEmpleado() {
-    document.getElementById('modalEmpleado').classList.remove('visible');
-    state.empleadoEditando = null;
-}
+function cerrarModalEmpleado() { document.getElementById('modalEmpleado').classList.remove('visible'); state.empleadoEditando = null; }
 
 async function guardarEmpleado() {
     const nombre = document.getElementById('inputNombre').value.trim();
-    if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
-
+    if (!nombre) { toast('Nombre obligatorio', 'error'); return; }
     const payload = {
         nombre,
         puesto: document.getElementById('inputPuesto').value.trim() || null,
@@ -1471,110 +1160,74 @@ async function guardarEmpleado() {
         turno_preferido: document.getElementById('inputTurnoPref').value.trim() || null,
         solo_manana: document.getElementById('inputSoloManana').checked
     };
-
     try {
         let error;
         if (state.empleadoEditando) {
             const res = await db.from('horarios_empleados').update(payload).eq('nombre', state.empleadoEditando);
             error = res.error;
         } else {
-            const maxOrden = Math.max(...state.empleados.map(e => e.orden || 0), 0);
-            payload.orden = maxOrden + 1;
-            payload.estado = 'ACTIVO';
+            const maxO = Math.max(...state.empleados.map(e => e.orden || 0), 0);
+            payload.orden = maxO + 1; payload.estado = 'ACTIVO';
             const res = await db.from('horarios_empleados').insert([payload]);
             error = res.error;
         }
         if (error) throw error;
-        toast('💾 Empleado guardado', 'success');
+        toast('💾 Guardado', 'success');
         cerrarModalEmpleado();
-        await recargarEmpleados();
+        const { data } = await db.from('horarios_empleados').select('*').order('orden');
+        state.empleados = data || [];
         render();
     } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
-async function recargarEmpleados() {
-    const { data } = await db.from('horarios_empleados').select('*').order('orden');
-    state.empleados = data || [];
-}
-
-// ═══════════════════════════════════════════════════════════
-// MODAL BANCO
-// ═══════════════════════════════════════════════════════════
-
 function abrirModalBanco() {
-    const modal = document.getElementById('modalBanco');
     const sel = document.getElementById('bancoEmpleado');
-    sel.innerHTML = state.empleados
-        .filter(e => e.estado === 'ACTIVO')
-        .map(e => `<option value="${e.id}">${escapeHtml(e.nombre)}</option>`)
-        .join('');
+    sel.innerHTML = state.empleados.filter(e => e.estado === 'ACTIVO').map(e => `<option value="${e.id}">${escapeHtml(e.nombre)}</option>`).join('');
     document.getElementById('bancoFecha').value = fechaISO(new Date());
     document.getElementById('bancoHoras').value = '8';
     document.getElementById('bancoMotivo').value = '';
-    modal.classList.add('visible');
+    document.getElementById('modalBanco').classList.add('visible');
 }
-
 function cerrarModalBanco() { document.getElementById('modalBanco').classList.remove('visible'); }
-
 async function guardarBanco() {
     const empleado_id = document.getElementById('bancoEmpleado').value;
     const tipo = document.getElementById('bancoTipo').value;
     const fecha_original = document.getElementById('bancoFecha').value;
     const horas = parseFloat(document.getElementById('bancoHoras').value) || 8;
     const motivo = document.getElementById('bancoMotivo').value.trim() || null;
-
     if (!empleado_id || !fecha_original) { toast('Faltan datos', 'error'); return; }
-
     try {
-        const { error } = await db.from('horarios_banco_horas').insert([{
-            empleado_id, tipo, fecha_original, horas, motivo, estado: 'PENDIENTE'
-        }]);
+        const { error } = await db.from('horarios_banco_horas').insert([{ empleado_id, tipo, fecha_original, horas, motivo, estado: 'PENDIENTE' }]);
         if (error) throw error;
-
-        const { data } = await db.from('horarios_banco_horas')
-            .select('*, horarios_empleados(nombre)')
-            .eq('estado', 'PENDIENTE')
-            .order('fecha_original', { ascending: false });
+        const { data } = await db.from('horarios_banco_horas').select('*, horarios_empleados(nombre)').eq('estado', 'PENDIENTE').order('fecha_original', { ascending: false });
         state.banco = data || [];
-
         renderBanco(); renderBancoAlerta(); cerrarModalBanco();
-        toast('✅ Añadido al banco', 'success');
+        toast('✅ Añadido', 'success');
     } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 // ═══════════════════════════════════════════════════════════
 // UI UTILS
 // ═══════════════════════════════════════════════════════════
-
 function toggleInactivos() {
     state.mostrarInactivos = !state.mostrarInactivos;
-    const btn = document.getElementById('btnInactivos');
-    btn.textContent = state.mostrarInactivos ? '👁️ Solo activos' : '👁️ Mostrar inactivos';
+    document.getElementById('btnInactivos').textContent = state.mostrarInactivos ? '👁️ Solo activos' : '👁️ Mostrar inactivos';
     render();
 }
-
 function imprimir() { window.print(); }
 
 // ═══════════════════════════════════════════════════════════
-// INICIALIZACIÓN
+// INIT
 // ═══════════════════════════════════════════════════════════
-
 document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            cerrarModalEmpleado();
-            cerrarModalEstado();
-            cerrarModalBanco();
-        }
+        if (e.key === 'Escape') { cerrarModalEmpleado(); cerrarModalEstado(); cerrarModalBanco(); }
     });
     document.querySelectorAll('.modal-overlay').forEach(m => {
         m.addEventListener('click', (e) => {
-            if (e.target === m) {
-                cerrarModalEmpleado(); cerrarModalEstado(); cerrarModalBanco();
-            }
+            if (e.target === m) { cerrarModalEmpleado(); cerrarModalEstado(); cerrarModalBanco(); }
         });
     });
-
     await cargarDatos();
     await cargarSemana();
     actualizarCabeceraSemana();
