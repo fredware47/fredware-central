@@ -42,13 +42,11 @@
         .btn-guardar-supabase { background: #3b82f6; color: white; font-weight: bold; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 13px; }
         .btn-guardar-supabase:hover { background: #2563eb; }
 
-        /* Botón urgente en faltas */
         .btn-urgente-falta { background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; margin-right: 6px; }
         .btn-urgente-falta:hover { background: #d97706; transform: scale(1.03); }
         .btn-urgente-falta.activo { background: #dc2626; animation: pulse-urgente 1.5s ease-in-out infinite; }
         @keyframes pulse-urgente { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.7); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
 
-        /* Pestaña Pedidos */
         .badge-conn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
         .badge-conn.loading { background: #fef3c7; color: #92400e; animation: pulse-badge 1.5s ease-in-out infinite; }
         .badge-conn.online { background: #d1fae5; color: #065f46; }
@@ -119,7 +117,7 @@
             <div class="flex flex-col items-end space-y-1">
                 <div class="flex items-center space-x-2">
                     <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.1</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.2</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -161,7 +159,6 @@
         <div id="tab-pedidos" class="tab-content">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                <!-- COLUMNA IZQUIERDA: PROVEEDORES -->
                 <div class="md:col-span-1 space-y-4">
                     <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                         <div class="flex justify-between items-center mb-3">
@@ -174,7 +171,6 @@
                     </div>
                 </div>
 
-                <!-- COLUMNA DERECHA: PLANTILLA + FALTAS -->
                 <div class="md:col-span-2 space-y-4">
                     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                         <div class="p-5 border-b border-slate-100">
@@ -263,7 +259,6 @@
 
     </main>
 
-    <!-- FOOTER STICKY (solo visible en pestaña Pedidos) -->
     <div id="footer-sticky" class="footer-sticky">
         <div class="max-w-4xl mx-auto flex justify-between items-center flex-wrap gap-3">
             <div>
@@ -287,9 +282,32 @@
 
     <script>
         // ============================================================
-        // CONFIGURACIÓN
+        // 🛡️ CAPTURADOR DE ERRORES VISIBLE EN PANTALLA
         // ============================================================
-        const db_nube = window.fredware.supabase;
+        window.addEventListener('error', function(e) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#fee2e2;color:#991b1b;padding:10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:2px solid #dc2626;';
+            div.textContent = '⚠️ ERROR: ' + e.message + ' (línea ' + e.lineno + ')';
+            document.body.appendChild(div);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#fef3c7;color:#92400e;padding:10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:2px solid #f59e0b;';
+            div.textContent = '⚠️ PROMESA: ' + (e.reason && (e.reason.message || e.reason.toString ? e.reason.toString() : String(e.reason)) || 'desconocido');
+            document.body.appendChild(div);
+        });
+
+        // ============================================================
+        // 🔌 CLIENTE SUPABASE PROPIO (sin depender de window.fredware)
+        // Proyecto correcto: bhyprsjokwgazzzlfnbf
+        // ============================================================
+        const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+        const db_nube = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log('✅ [Pedidos] Cliente Supabase propio inicializado');
+        console.log('   URL:', SUPABASE_URL);
+
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
         const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
@@ -300,7 +318,6 @@
         let cestaGlobal = [];
         let faltasPendientesCache = [];
 
-        // Estado pestaña Pedidos
         let proveedorActivo = null;
         let proveedorNombre = null;
         let articulosCargados = [];
@@ -310,14 +327,25 @@
         let proveedoresCache = [];
 
         // ============================================================
-        // UTILIDADES DEL NÚCLEO
+        // UTILIDADES DEL NÚCLEO (si está disponible)
         // ============================================================
         function lanzarToast(mensaje, tipo = 'success') {
-            window.fredware.ui.toast(mensaje, tipo);
+            if (window.fredware && window.fredware.ui && window.fredware.ui.toast) {
+                window.fredware.ui.toast(mensaje, tipo);
+            } else {
+                // Fallback básico
+                console.log(`[${tipo}] ${mensaje}`);
+            }
         }
 
         function escapeHtml(text) {
-            return window.fredware.util.escapeHtml(text);
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function limpiarSufijosInsumo(texto) {
@@ -380,51 +408,47 @@
         }
 
         // ============================================================
-        // SUSCRIPCIÓN AL NÚCLEO
+        // SUSCRIPCIÓN AL NÚCLEO (solo si existe)
         // ============================================================
-        window.fredware.subscribe((state) => {
-            console.log('📡 [Pedidos] Estado del núcleo:', {
-                recepciones: state.recepciones?.length,
-                productos: state.productos?.length,
-                inicializado: state.inicializado
-            });
-
-            const badgeRed = document.getElementById('badge-red');
-            if (badgeRed && !badgeRed.dataset.online) {
-                if (state.inicializado) {
+        function suscribirAlNucleo() {
+            if (!window.fredware || !window.fredware.subscribe) {
+                console.log('ℹ️ [Pedidos] Núcleo no disponible, sigo en modo independiente');
+                // Marcar como online igualmente
+                const badgeRed = document.getElementById('badge-red');
+                if (badgeRed) {
                     badgeRed.className = 'badge-conn online';
                     badgeRed.textContent = '🟢 ONLINE';
-                    badgeRed.dataset.online = 'true';
-                } else {
-                    badgeRed.className = 'badge-conn loading';
-                    badgeRed.textContent = '🟡 CONECTANDO...';
                 }
+                return;
             }
 
-            const timestamp = document.getElementById('timestamp-sincro');
-            if (timestamp && state.ultimaActualizacion) {
-                const hora = new Date(state.ultimaActualizacion).toTimeString().split(' ')[0];
-                timestamp.textContent = `Última actualización: ${hora}`;
-            }
-        });
+            window.fredware.subscribe((state) => {
+                console.log('📡 [Pedidos] Estado del núcleo:', {
+                    recepciones: state.recepciones?.length,
+                    productos: state.productos?.length,
+                    inicializado: state.inicializado
+                });
 
-        async function esperarAlNucleo() {
-            const MAX_INTENTOS = 30;
-            for (let i = 0; i < MAX_INTENTOS; i++) {
-                if (window.fredware && window.fredware.state && window.fredware.state.inicializado) {
-                    return true;
+                const badgeRed = document.getElementById('badge-red');
+                if (badgeRed && !badgeRed.dataset.online) {
+                    if (state.inicializado) {
+                        badgeRed.className = 'badge-conn online';
+                        badgeRed.textContent = '🟢 ONLINE';
+                        badgeRed.dataset.online = 'true';
+                    }
                 }
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            return false;
+
+                const timestamp = document.getElementById('timestamp-sincro');
+                if (timestamp && state.ultimaActualizacion) {
+                    const hora = new Date(state.ultimaActualizacion).toTimeString().split(' ')[0];
+                    timestamp.textContent = `Última actualización: ${hora}`;
+                }
+            });
         }
 
         // ============================================================
-        // ═══════════════════════════════════════════════════════════
         // BLOQUE FALTAS
-        // ═══════════════════════════════════════════════════════════
         // ============================================================
-
         async function obtenerFaltas() {
             const { data, error } = await db_nube
                 .from('faltas_cocina')
@@ -434,12 +458,9 @@
             return data || [];
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // 🔥 v1.1: agregarFalta con fallback a articulos_habituales
-        // ═══════════════════════════════════════════════════════════
         async function agregarFalta(insumo, productoInfo = null) {
             if (!insumo || !String(insumo).trim()) {
-                console.error('❌ [agregarFalta] insumo vacío, abortando');
+                console.error('❌ [agregarFalta] insumo vacío');
                 lanzarToast('Error: el nombre del producto está vacío', 'error');
                 return { error: 'insumo vacío' };
             }
@@ -455,10 +476,10 @@
 
             try {
                 let producto = productoInfo;
-                if (!producto) {
-                    const matchId = await fredware.productos.buscar(insumoLimpio);
+                if (!producto && window.fredware && window.fredware.productos) {
+                    const matchId = await window.fredware.productos.buscar(insumoLimpio);
                     if (matchId) {
-                        producto = fredware.state.productos.find(p => p.id === matchId);
+                        producto = window.fredware.state.productos.find(p => p.id === matchId);
                     }
                 }
                 if (producto && producto.nombre_articulo) {
@@ -470,7 +491,7 @@
                 console.warn('No se pudo asignar proveedor desde productoInfo:', e);
             }
 
-            // 🆕 FIX v1.1: si no hay proveedor_principal, buscar en articulos_habituales
+            // Fallback: buscar en articulos_habituales
             if (proveedorId === 'S/P') {
                 try {
                     const { data: habituales, error: errHab } = await db_nube
@@ -481,9 +502,7 @@
 
                     if (!errHab && habituales && habituales.length > 0 && habituales[0].proveedor_id) {
                         proveedorId = habituales[0].proveedor_id;
-                        console.log(`✅ [agregarFalta] Proveedor recuperado de articulos_habituales: "${insumoLimpio}" → ${proveedorId}`);
-                    } else {
-                        console.log(`⚠️ [agregarFalta] "${insumoLimpio}" no está en articulos_habituales. Se guarda como S/P.`);
+                        console.log(`✅ [agregarFalta] Proveedor recuperado: "${insumoLimpio}" → ${proveedorId}`);
                     }
                 } catch (e) {
                     console.warn('No se pudo buscar en articulos_habituales:', e);
@@ -605,145 +624,50 @@
                 return;
             }
 
-            const seleccionado = input.fredwareGetSeleccionado ? input.fredwareGetSeleccionado() : null;
-
-            if (!seleccionado) {
-                try {
-                    const matchId = await fredware.productos.buscar(valor);
-                    if (matchId) {
-                        const producto = fredware.state.productos.find(p => p.id === matchId);
-                        if (producto) {
-                            const conf = await Swal.fire({
-                                title: '🔍 ¿Querías decir...?',
-                                html: `<p style="font-size:14px;color:#64748b;">Escribiste:</p>
-                                       <p style="font-size:16px;font-weight:700;color:#475569;">"${escapeHtml(valor)}"</p>
-                                       <p style="font-size:14px;color:#64748b;margin-top:12px;">Producto encontrado:</p>
-                                       <p style="font-size:20px;font-weight:900;color:#0ea5e9;">${escapeHtml(producto.nombre_articulo)}</p>
-                                       <p style="font-size:11px;color:#94a3b8;margin-top:8px;">Zona: ${escapeHtml(producto.zona)} · Tipo: ${escapeHtml(producto.tipo)}</p>`,
-                                icon: 'question',
-                                showCancelButton: true,
-                                confirmButtonColor: '#10b981',
-                                confirmButtonText: '✅ Sí, es ese',
-                                cancelButtonText: '➕ Crear nuevo'
-                            });
-                            if (conf.isConfirmed) {
-                                const faltas = await obtenerFaltas();
-                                if (faltas.some(f => f.insumo === producto.nombre_articulo)) {
-                                    lanzarToast("Ya está anotado.", "warning");
-                                    input.value = '';
-                                    if (input.fredwareReset) input.fredwareReset();
-                                    return;
-                                }
-                                await agregarFalta(producto.nombre_articulo, producto);
-                                input.value = '';
-                                if (input.fredwareReset) input.fredwareReset();
-                                lanzarToast(`⚠️ Falta añadida: ${producto.nombre_articulo}`);
-                                await renderFaltasLocales();
-                                sincronizarConOficina('faltas', await obtenerFaltas());
-                                return;
-                            } else {
-                                await abrirModalCrearProductoDesdeFalta(valor);
-                                return;
-                            }
-                        }
-                    }
-                    const conf = await Swal.fire({
-                        title: '🆕 Producto nuevo',
-                        html: `<p style="font-size:14px;">"<strong>${escapeHtml(valor)}</strong>" no está en el catálogo.</p>
-                               <p style="font-size:12px;color:#64748b;margin-top:8px;">¿Quieres crearlo como producto nuevo?</p>`,
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#f59e0b',
-                        confirmButtonText: '➕ Crear producto',
-                        cancelButtonText: 'Cancelar'
-                    });
-                    if (conf.isConfirmed) {
-                        await abrirModalCrearProductoDesdeFalta(valor);
-                    }
-                } catch (error) {
-                    console.error('Error al validar producto:', error);
-                    lanzarToast('Error al validar el producto', 'error');
-                }
-                return;
-            }
-
-            const nombreExacto = seleccionado?.nombre_articulo || seleccionado?.nombre;
-            if (!nombreExacto) {
-                lanzarToast('⚠️ El producto seleccionado no tiene nombre.', 'warning');
-                return;
-            }
-
             try {
                 const faltas = await obtenerFaltas();
-                if (faltas.some(f => f.insumo === nombreExacto)) {
-                    lanzarToast("Insumo ya anotado anteriormente.", "warning");
+                const existe = faltas.some(f => 
+                    limpiarSufijosInsumo(f.insumo).toUpperCase() === valor
+                );
+                if (existe) {
+                    lanzarToast("Ya está anotado.", "warning");
                     input.value = '';
-                    if (input.fredwareReset) input.fredwareReset();
                     return;
                 }
-                await agregarFalta(nombreExacto, seleccionado);
+
+                await agregarFalta(valor, null);
                 input.value = '';
-                if (input.fredwareReset) input.fredwareReset();
-                lanzarToast(`⚠️ Falta añadida: ${nombreExacto}`);
+                lanzarToast(`⚠️ Falta añadida: ${valor}`);
                 await renderFaltasLocales();
                 sincronizarConOficina('faltas', await obtenerFaltas());
             } catch (error) {
-                lanzarToast("Error al registrar falta en la nube.", "error");
-            }
-        }
-
-        async function abrirModalCrearProductoDesdeFalta(nombrePropuesto) {
-            const nuevo = await fredware.productos.mostrarModalCrearProducto(nombrePropuesto);
-            if (nuevo) {
-                const input = document.getElementById('insumo-falta');
-                if (input) {
-                    input.value = '';
-                    if (input.fredwareReset) input.fredwareReset();
-                }
-                const nombreProducto = nuevo?.nombre || nuevo?.nombre_articulo || nombrePropuesto;
-                const conf = await Swal.fire({
-                    title: '✅ Producto creado',
-                    html: `<p style="font-size:15px;"><strong>${escapeHtml(nombreProducto)}</strong> se ha añadido al catálogo.</p>
-                           <p style="font-size:13px;color:#64748b;margin-top:8px;">¿Quieres añadirlo también a las faltas?</p>`,
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonColor: '#10b981',
-                    confirmButtonText: '➕ Añadir falta',
-                    cancelButtonText: 'Solo crear producto'
-                });
-                if (conf.isConfirmed) {
-                    try {
-                        await fredware.productos.cargar();
-                        const productoCreado = fredware.state.productos.find(p =>
-                            p.nombre_articulo && p.nombre_articulo.toUpperCase() === String(nombreProducto).toUpperCase()
-                        );
-                        await agregarFalta(nombreProducto, productoCreado || null);
-                        lanzarToast(`⚠️ Falta añadida: ${nombreProducto}`);
-                        await renderFaltasLocales();
-                        sincronizarConOficina('faltas', await obtenerFaltas());
-                    } catch (e) {
-                        console.error('Error añadiendo falta:', e);
-                    }
-                }
+                console.error('Error al registrar falta:', error);
+                lanzarToast('Error al registrar falta', 'error');
             }
         }
 
         // ============================================================
-        // ═══════════════════════════════════════════════════════════
         // BLOQUE PEDIDOS
-        // ═══════════════════════════════════════════════════════════
         // ============================================================
-
         async function cargarProveedoresDesdeSupabase() {
             const container = document.getElementById('lista-proveedores');
+            if (!container) return;
             container.innerHTML = '<div class="text-xs text-slate-400 p-2">⏳ Sincronizando...</div>';
 
             try {
+                console.log('🔄 [Pedidos] Cargando proveedores...');
+                
                 const { data: proveedores, error: errProv } = await db_nube
                     .from('proveedores')
                     .select('id, nombre')
                     .order('nombre', { ascending: true });
-                if (errProv) throw errProv;
+                
+                if (errProv) {
+                    console.error('❌ Error cargando proveedores:', errProv);
+                    throw errProv;
+                }
+                
+                console.log(`✅ [Pedidos] ${proveedores?.length || 0} proveedores recibidos`);
                 proveedoresCache = proveedores || [];
 
                 const { data: articulos } = await db_nube
@@ -780,7 +704,7 @@
                     const numArt = contadores[p.id] || 0;
                     const numFaltas = contadoresFaltas[p.id] || 0;
                     const numUrgentes = contadoresUrgentes[p.id] || 0;
-                    const safeId = `btn-prov-${p.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    const safeId = `btn-prov-${String(p.id).replace(/[^a-zA-Z0-9]/g, '_')}`;
 
                     let badgeFaltas = '';
                     if (numUrgentes > 0) {
@@ -798,7 +722,7 @@
                 });
             } catch (error) {
                 console.error('Error cargando proveedores:', error);
-                container.innerHTML = '<div class="text-xs text-red-500 p-2">❌ Error al cargar.</div>';
+                container.innerHTML = `<div class="text-xs text-red-500 p-2">❌ Error: ${escapeHtml(error.message || 'desconocido')}</div>`;
             }
         }
 
@@ -806,10 +730,11 @@
             proveedorActivo = provId;
             proveedorNombre = provNombre;
             textoBusqueda = '';
-            document.getElementById('buscador').value = '';
+            const buscador = document.getElementById('buscador');
+            if (buscador) buscador.value = '';
 
             document.querySelectorAll('#lista-proveedores button').forEach(b => b.classList.remove('active'));
-            const safeBtnId = `btn-prov-${provId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            const safeBtnId = `btn-prov-${String(provId).replace(/[^a-zA-Z0-9]/g, '_')}`;
             const btn = document.getElementById(safeBtnId);
             if (btn) btn.classList.add('active');
 
@@ -864,7 +789,7 @@
                 actualizarFooter();
             } catch (error) {
                 console.error('Error cargando hoja:', error);
-                contenedor.innerHTML = '<div class="text-center text-red-500 py-12 text-sm">❌ Error al leer la plantilla.</div>';
+                contenedor.innerHTML = `<div class="text-center text-red-500 py-12 text-sm">❌ Error: ${escapeHtml(error.message || 'desconocido')}</div>`;
             }
         }
 
@@ -1303,11 +1228,8 @@
         }
 
         // ============================================================
-        // ═══════════════════════════════════════════════════════════
         // BLOQUE ETIQUETAS
-        // ═══════════════════════════════════════════════════════════
         // ============================================================
-
         function obtenerEtiquetasLocales() {
             try { return JSON.parse(localStorage.getItem('fredware_etiquetas_locales')) || []; }
             catch { return []; }
@@ -1552,55 +1474,62 @@
         }
 
         // ============================================================
-        // PESTAÑAS (listener)
-        // ============================================================
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const tab = this.dataset.tab;
-                if (tab === 'tab-faltas') setTab('faltas');
-                else if (tab === 'tab-pedidos') setTab('pedidos');
-                else if (tab === 'tab-etiquetas') setTab('etiquetas');
-            });
-        });
-
-        // ============================================================
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Pedidos v1.1] Init — esperando al núcleo...');
+            console.log('🚀 [Pedidos v1.2] Init');
 
             const tabGuardada = localStorage.getItem('fredware_pedidos_tab') || 'faltas';
             setTab(tabGuardada);
 
-            await esperarAlNucleo();
+            // Marcar como online (ya que tenemos cliente propio)
+            const badgeRed = document.getElementById('badge-red');
+            if (badgeRed) {
+                badgeRed.className = 'badge-conn online';
+                badgeRed.textContent = '🟢 ONLINE';
+            }
+
+            // Suscribirse al núcleo si existe (para timestamp y estado)
+            suscribirAlNucleo();
+
+            // Cargar datos
             await renderFaltasLocales();
             await cargarProveedoresDesdeSupabase();
 
-            try {
-                await fredware.productos.cargar();
-                fredware.productos.comboboxEstricto('insumo-falta', {
-                    zonas: null,
-                    placeholder: 'Escribe para buscar producto...',
-                    onSelect: (producto) => {
-                        if (!producto) return;
-                        console.log('📦 [Pedidos] Producto seleccionado:', producto?.nombre_articulo);
-                    }
-                });
-                console.log('✅ [Pedidos] Combobox montado');
-            } catch (error) {
-                console.error('❌ [Pedidos] Error al montar el combobox:', error);
+            // Combobox si el núcleo está disponible
+            if (window.fredware && window.fredware.productos) {
+                try {
+                    await window.fredware.productos.cargar();
+                    window.fredware.productos.comboboxEstricto('insumo-falta', {
+                        zonas: null,
+                        placeholder: 'Escribe para buscar producto...',
+                        onSelect: (producto) => {
+                            if (!producto) return;
+                            console.log('📦 [Pedidos] Producto seleccionado:', producto?.nombre_articulo);
+                        }
+                    });
+                    console.log('✅ [Pedidos] Combobox montado');
+                } catch (error) {
+                    console.error('❌ [Pedidos] Error al montar el combobox:', error);
+                }
             }
 
-            db_nube
-                .channel('faltas-changes-pedidos')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'faltas_cocina' }, () => {
-                    renderFaltasLocales();
-                })
-                .subscribe();
+            // Suscripción realtime a faltas
+            try {
+                db_nube
+                    .channel('faltas-changes-pedidos')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'faltas_cocina' }, () => {
+                        renderFaltasLocales();
+                    })
+                    .subscribe();
+            } catch (e) {
+                console.warn('Realtime no disponible:', e);
+            }
 
             setInterval(actualizarContadorEtiquetas, 30000);
         }
 
+        // Exponer funciones globales
         window.setTab = setTab;
         window.registrarFaltaCocina = registrarFaltaCocina;
         window.borrarFaltaLocal = borrarFaltaLocal;
@@ -1624,7 +1553,12 @@
         window.imprimirResumenDia = imprimirResumenDia;
         window.limpiarEtiquetasDia = limpiarEtiquetasDia;
 
-        init();
+        // Arrancar cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     </script>
 </body>
 </html>
