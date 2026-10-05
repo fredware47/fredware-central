@@ -2,586 +2,645 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>📋 Fredware - Ficha Técnica de Recetas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📖 Recetario · Fredware</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f1f5f9; color: #1e293b; padding: 10px; }
-        .container { max-width: 1200px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        h1 { font-size: 20px; text-align: center; margin-bottom: 15px; background: #0f172a; color: white; padding: 14px; border-radius: 8px; font-weight: 800; text-transform: uppercase; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f2ee;
+            color: #1e1e1e;
+            min-height: 100vh;
+        }
+        .error-banner {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin: 1rem;
+            font-size: 0.9rem;
+            border-left: 4px solid #b13e3e;
+        }
+        .error-banner strong { display: block; margin-bottom: 0.3rem; }
+        .error-banner code {
+            background: rgba(0,0,0,0.05);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            word-break: break-all;
+        }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+        .app {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1rem;
+            min-height: 100vh;
+        }
+        @media (max-width: 900px) {
+            .app { grid-template-columns: 1fr; }
+        }
 
-        .box { background: #ffffff; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .box-title { font-size: 14px; font-weight: 700; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        label { display: block; font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 2px; }
-        input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background-color: #f8fafc; }
-        input:focus, select:focus, textarea:focus { border-color: #10b981; background-color: #fff; }
-        textarea { resize: vertical; min-height: 60px; }
+        .header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 1.2rem 1.5rem;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        .header h1 { font-weight: 600; font-size: 1.4rem; }
+        .header h1 small { font-weight: 400; font-size: 0.8rem; color: #7a726a; margin-left: 0.5rem; }
+        .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 
-        .btn { background: #10b981; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn:hover { background: #059669; }
-        .btn-danger { background: #ef4444; }
-        .btn-danger:hover { background: #dc2626; }
-        .btn-blue { background: #3b82f6; }
-        .btn-blue:hover { background: #2563eb; }
-        .btn-sm { padding: 4px 10px; font-size: 12px; }
-        .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #475569; }
-        .btn-outline:hover { background: #f1f5f9; }
+        .sidebar {
+            background: white;
+            border-radius: 20px;
+            padding: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            overflow-y: auto;
+            max-height: calc(100vh - 100px);
+            position: sticky;
+            top: 1rem;
+        }
+        .search-box {
+            width: 100%;
+            padding: 0.6rem 1rem;
+            border: 1px solid #d5cdc3;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            margin-bottom: 0.8rem;
+            background: #faf8f6;
+            font-family: inherit;
+        }
+        .categoria-group { margin-bottom: 1rem; }
+        .categoria-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #7a726a;
+            padding: 0.4rem 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .categoria-title .count {
+            background: #f0ebe5;
+            padding: 0.1rem 0.5rem;
+            border-radius: 30px;
+            font-size: 0.65rem;
+        }
+        .receta-item {
+            padding: 0.6rem 0.8rem;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.2rem;
+            transition: 0.15s;
+        }
+        .receta-item:hover { background: #f8fafc; }
+        .receta-item.active { background: #1e1e1e; color: white; }
+        .receta-item.active .receta-pax { color: #a1a1aa; }
+        .receta-nombre {
+            font-size: 0.85rem;
+            font-weight: 500;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .receta-pax { font-size: 0.7rem; color: #7a726a; white-space: nowrap; }
 
-        .tabla-ingredientes { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .tabla-ingredientes th { background: #f1f5f9; padding: 6px 4px; font-size: 10px; text-transform: uppercase; border: 1px solid #cbd5e1; text-align: center; }
-        .tabla-ingredientes td { padding: 4px; border: 1px solid #cbd5e1; vertical-align: middle; }
-        .tabla-ingredientes input, .tabla-ingredientes select { width: 100%; padding: 4px 6px; border: none; background: transparent; font-size: 12px; text-align: center; }
-        .tabla-ingredientes input:focus, .tabla-ingredientes select:focus { background: #fffbe6; outline: 2px solid #10b981; }
+        .main {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            min-height: 500px;
+        }
+        .empty-main {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; height: 500px; color: #7a726a;
+        }
+        .empty-main .emoji { font-size: 3rem; margin-bottom: 1rem; }
 
-        .resultados { background: #f8fafc; border-radius: 8px; padding: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-        .resultado-item { background: white; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; text-align: center; }
-        .resultado-item .label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; }
-        .resultado-item .value { font-size: 18px; font-weight: 800; color: #0f172a; }
+        .receta-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+            padding-bottom: 1rem; border-bottom: 2px solid #f0ebe5;
+        }
+        .receta-title { font-size: 1.6rem; font-weight: 700; }
+        .receta-title input {
+            font-size: 1.6rem; font-weight: 700; border: none;
+            background: transparent; width: 100%; font-family: inherit;
+        }
+        .receta-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+        .meta-tag {
+            background: #f0ebe5; padding: 0.2rem 0.7rem;
+            border-radius: 30px; font-size: 0.75rem;
+        }
+        .meta-tag.categoria { background: #dbeafe; color: #1e40af; font-weight: 600; }
+        .meta-tag.preparacion { background: #fef3c7; color: #92400e; }
 
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
-        .badge-green { background: #dcfce7; color: #166534; }
-        .badge-red { background: #fee2e2; color: #991b1b; }
-        .badge-yellow { background: #fef9c3; color: #854d0e; }
+        .receta-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
-        .toast { background: #1e293b; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast-success { border-left: 4px solid #10b981; }
-        .toast-error { border-left: 4px solid #ef4444; }
+        .btn {
+            border: none; padding: 0.55rem 1.1rem; border-radius: 40px;
+            font-weight: 500; font-size: 0.85rem; cursor: pointer;
+            font-family: inherit; display: inline-flex; align-items: center; gap: 0.4rem;
+            transition: 0.15s;
+        }
+        .btn-primary { background: #1e1e1e; color: white; }
+        .btn-primary:hover { background: #333; }
+        .btn-outline { background: transparent; border: 1px solid #d5cdc3; color: #333; }
+        .btn-outline:hover { background: #f0ebe5; }
+        .btn-success { background: #1e7e34; color: white; }
+        .btn-warning { background: #c97d2b; color: white; }
+        .btn-danger { background: #b13e3e; color: white; }
+        .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.75rem; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .selector-recetas { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .selector-recetas select { flex: 1; min-width: 200px; }
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 0.8rem; margin-bottom: 1.2rem;
+        }
+        .calc-card {
+            background: #f8fafc; padding: 1rem; border-radius: 12px;
+            text-align: center; border: 1px solid #e2e8f0;
+        }
+        .calc-card .label {
+            font-size: 0.65rem; color: #64748b;
+            text-transform: uppercase; font-weight: 700;
+        }
+        .calc-card .value { font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem; }
+        .calc-card .sub { font-size: 0.65rem; color: #94a3b8; margin-top: 0.2rem; }
+        .calc-card.highlight { background: #d1fae5; border-color: #6ee7b7; }
+        .calc-card.highlight .value { color: #065f46; }
+        .calc-card.warning { background: #fef3c7; border-color: #fcd34d; }
+        .calc-card.warning .value { color: #92400e; }
+        .calc-card.danger { background: #fee2e2; border-color: #fca5a5; }
+        .calc-card.danger .value { color: #991b1b; }
 
-        @media (max-width: 768px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.8rem; margin-bottom: 1.2rem;
+        }
+        .info-field { background: #faf8f6; padding: 0.7rem 1rem; border-radius: 10px; }
+        .info-field .label {
+            font-size: 0.7rem; color: #7a726a;
+            text-transform: uppercase; font-weight: 700;
+        }
+        .info-field .value { font-size: 1rem; font-weight: 600; margin-top: 0.2rem; }
+        .info-field input, .info-field select {
+            width: 100%; border: 1px solid #d5cdc3; border-radius: 6px;
+            padding: 0.3rem 0.5rem; font-size: 0.9rem; font-family: inherit;
+            background: white;
+        }
+
+        .tabla-wrap {
+            overflow-x: auto; border-radius: 12px;
+            border: 1px solid #e8e1d9; margin-bottom: 1rem;
+        }
+        .tabla-ing {
+            width: 100%; border-collapse: collapse;
+            font-size: 0.85rem; min-width: 800px;
+        }
+        .tabla-ing thead { background: #f0ebe5; }
+        .tabla-ing th {
+            padding: 0.6rem 0.5rem; font-weight: 700; font-size: 0.7rem;
+            text-transform: uppercase; color: #4b4540; text-align: left;
+        }
+        .tabla-ing th.num { text-align: right; }
+        .tabla-ing th.center { text-align: center; }
+        .tabla-ing td { padding: 0.5rem; border-top: 1px solid #f0ebe5; }
+        .tabla-ing td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .tabla-ing td.center { text-align: center; }
+        .tabla-ing input, .tabla-ing select {
+            width: 100%; border: 1px solid transparent;
+            background: transparent; padding: 0.25rem 0.4rem;
+            border-radius: 4px; font-size: 0.85rem; font-family: inherit;
+            text-align: right;
+        }
+        .tabla-ing input.text { text-align: left; }
+        .tabla-ing input:focus { border-color: #1e1e1e; background: white; outline: none; }
+
+        .vinc-badge {
+            display: inline-flex; align-items: center; gap: 0.2rem;
+            padding: 0.15rem 0.55rem; border-radius: 30px;
+            font-size: 0.7rem; font-weight: 600; cursor: pointer;
+            max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; transition: 0.15s;
+        }
+        .vinc-badge.ok { background: #d1fae5; color: #065f46; }
+        .vinc-badge.ok:hover { background: #a7f3d0; }
+        .vinc-badge.no { background: #f1f5f9; color: #94a3b8; }
+        .vinc-badge.no:hover { background: #e2e8f0; color: #475569; }
+
+        .texto-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 1rem; margin-bottom: 1rem;
+        }
+        @media (max-width: 768px) { .texto-grid { grid-template-columns: 1fr; } }
+        .texto-field label {
+            display: block; font-size: 0.75rem; font-weight: 700;
+            color: #475569; text-transform: uppercase; margin-bottom: 0.4rem;
+        }
+        .texto-field textarea {
+            width: 100%; min-height: 100px; padding: 0.7rem 1rem;
+            border: 1px solid #d5cdc3; border-radius: 10px;
+            font-size: 0.85rem; font-family: inherit;
+            background: #faf8f6; resize: vertical;
+        }
+        .texto-field textarea:focus { outline: 2px solid #1e1e1e; background: white; }
+
+        .alergenos-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .alergeno-chip {
+            padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.75rem;
+            font-weight: 500; cursor: pointer; background: #f1f5f9;
+            color: #475569; border: 2px solid transparent;
+        }
+        .alergeno-chip.selected { background: #1e1e1e; color: white; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; padding: 1rem;
+        }
+        .modal {
+            background: white; border-radius: 24px; max-width: 600px;
+            width: 100%; max-height: 90vh; overflow-y: auto;
+            padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 1rem; padding-bottom: 0.8rem;
+            border-bottom: 2px solid #eee8e0;
+        }
+        .modal-header h2 { font-weight: 700; font-size: 1.2rem; }
+        .close-btn {
+            background: none; border: none; font-size: 1.8rem;
+            cursor: pointer; color: #94a3b8; line-height: 1;
+        }
+        .vinc-opcion {
+            padding: 0.7rem 1rem; border-bottom: 1px solid #f0ebe5;
+            cursor: pointer; transition: 0.15s;
+        }
+        .vinc-opcion:hover { background: #f8faf8; }
+        .vinc-opcion.selected { background: #d1fae5; border-left: 3px solid #059669; }
+        .vinc-opcion.desvincular { background: #fef2f2; border-bottom: 2px solid #fecaca; }
+        .vinc-opcion.desvincular:hover { background: #fee2e2; }
+
+        .toast {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%); background: #1e1e1e;
+            color: white; padding: 0.8rem 1.5rem; border-radius: 12px;
+            font-size: 0.9rem; z-index: 9999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .toast.success { background: #1e7e34; }
+        .toast.error { background: #b13e3e; }
+        .toast.warning { background: #c97d2b; }
+
+        .spinner {
+            display: inline-block; width: 30px; height: 30px;
+            border: 3px solid #f0ebe5; border-top-color: #1e1e1e;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-sidebar { color: #7a726a; text-align: center; padding: 2rem 1rem; font-size: 0.85rem; }
+
+        @media print {
+            body { background: white; }
+            .app { display: block; padding: 0; }
+            .sidebar, .header, .receta-actions, .btn, .modal-overlay, .toast, .vinc-badge { display: none !important; }
+            .main { box-shadow: none; padding: 0; }
+            .tabla-ing { font-size: 10px; }
+            .tabla-ing input { border: none; background: transparent; }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>📋 FICHA TÉCNICA DE RECETAS (ESTILO EXCEL)</h1>
+<div id="app" class="app">
+    <!-- BANNER DE ERROR -->
+    <div v-if="errorGlobal" class="error-banner" style="grid-column:1/-1;">
+        <strong>⚠️ Error:</strong>
+        {{ errorGlobal }}
+    </div>
 
-    <!-- Barra de carga/selector de recetas -->
-    <div class="box">
-        <div class="box-title">📂 Cargar Receta Existente</div>
-        <div class="selector-recetas">
-            <select id="selector-recetas" onchange="cargarRecetaSeleccionada()">
-                <option value="">-- Seleccionar receta para editar --</option>
-            </select>
-            <button class="btn btn-outline btn-sm" onclick="cargarListaRecetas()">🔄 Refrescar lista</button>
-            <button class="btn btn-outline btn-sm" onclick="limpiarFormulario()">🗑️ Nuevo</button>
+    <!-- HEADER -->
+    <div class="header">
+        <h1>📖 Recetario <small>{{ recetas.length }} recetas</small></h1>
+        <div class="header-actions">
+            <button class="btn btn-outline btn-sm" @click="recargarTodo" :disabled="loading">🔄 Recargar</button>
+            <button class="btn btn-primary btn-sm" @click="nuevaReceta" :disabled="!supabaseReady">➕ Nueva receta</button>
         </div>
     </div>
 
-    <div class="box">
-        <div class="box-title">🍽️ Datos Generales del Plato</div>
-        <div class="grid-3">
-            <div><label>Código</label><input type="text" id="plato-codigo" placeholder="Ej: 10001"></div>
-            <div><label>Nombre del Plato *</label><input type="text" id="plato-nombre" placeholder="Ej: Ensaladilla"></div>
-            <div>
-                <label>Categoría</label>
-                <select id="plato-categoria">
-                    <option value="ENTRANTES">Entrantes</option>
-                    <option value="CARNES">Carnes</option>
-                    <option value="PESCADOS">Pescados</option>
-                    <option value="POSTRES">Postres</option>
-                    <option value="VEGETALES">Vegetales</option>
-                    <option value="ARROCES">Arroces</option>
-                    <option value="FAST GOOD">Fast Good</option>
-                </select>
-            </div>
-            <div>
-                <label>Temporada</label>
-                <select id="plato-temporada">
-                    <option value="Anual">Anual</option>
-                    <option value="Primavera">Primavera</option>
-                    <option value="Verano">Verano</option>
-                    <option value="Otoño">Otoño</option>
-                    <option value="Invierno">Invierno</option>
-                </select>
-            </div>
-            <div><label>Nº Raciones (Pax)</label><input type="number" id="plato-pax" value="1" min="1"></div>
-            <div><label>URL de la Foto</label><input type="text" id="plato-foto" placeholder="https://..."></div>
-            <div><label>PVP Actual (€)</label><input type="number" id="plato-pvp" value="0.00" step="0.05"></div>
-            <div><label>IVA (%)</label><input type="number" id="plato-iva" value="10.0" step="0.1" min="0" max="21"></div>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <input type="text" class="search-box" v-model="busqueda" placeholder="🔍 Buscar receta...">
+        <div v-if="loading" style="text-align:center; padding:2rem;">
+            <div class="spinner"></div>
         </div>
-        <div class="grid-2" style="margin-top:10px;">
-            <div>
-                <label>Presentación / Emplatado</label>
-                <textarea id="plato-presentacion" rows="2" placeholder="Ej: Emplatar en fuente rectangular pequeña"></textarea>
-            </div>
-            <div>
-                <label>Elaboración (pasos)</label>
-                <textarea id="plato-elaboracion" rows="2" placeholder="1- Cocer las patatas..."></textarea>
-            </div>
+        <div v-else-if="recetasAgrupadas.length === 0" class="empty-sidebar">
+            <p v-if="!supabaseReady">Conectando a Supabase…</p>
+            <p v-else>No hay recetas.</p>
         </div>
-        <div class="grid-3" style="margin-top:10px;">
-            <div><label>✔️ Apto para Celíacos</label><input type="checkbox" id="plato-celiacos"></div>
-            <div><label>✔️ Apto para Vegetarianos</label><input type="checkbox" id="plato-vegetarianos"></div>
-            <div><label>✔️ Apto para Diabéticos</label><input type="checkbox" id="plato-diabeticos"></div>
+        <div v-else>
+            <div v-for="grupo in recetasAgrupadas" :key="grupo.categoria" class="categoria-group">
+                <div class="categoria-title">
+                    <span>{{ grupo.categoria }}</span>
+                    <span class="count">{{ grupo.recetas.length }}</span>
+                </div>
+                <div v-for="r in grupo.recetas" :key="r.id"
+                     class="receta-item"
+                     :class="{ active: recetaActual && recetaActual.id === r.id }"
+                     @click="seleccionarReceta(r.id)">
+                    <span class="receta-nombre">{{ r.nombre_plato }}</span>
+                    <span class="receta-pax">{{ r.pax }}p</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="box">
-        <div class="box-title">
-            <span>🧾 Ingredientes y Costes</span>
-            <button class="btn btn-blue btn-sm" onclick="agregarFilaIngrediente()">➕ Añadir Ingrediente</button>
+    <!-- MAIN -->
+    <div class="main">
+        <div v-if="loading" style="text-align:center; padding:3rem;">
+            <div class="spinner"></div>
+            <p style="margin-top:1rem; color:#7a726a;">Cargando...</p>
         </div>
-        <div style="overflow-x:auto;">
-            <table class="tabla-ingredientes" id="tabla-ingredientes">
-                <thead>
-                    <tr>
-                        <th style="min-width:120px;">Ingrediente</th>
-                        <th style="min-width:70px;">Aprov. (%)</th>
-                        <th style="min-width:70px;">Peso Neto</th>
-                        <th style="min-width:70px;">Peso Bruto</th>
-                        <th style="min-width:80px;">Precio Compra</th>
-                        <th style="min-width:70px;">Unidad</th>
-                        <th style="min-width:80px;">Coste CMP</th>
-                        <th style="min-width:50px;">🗑️</th>
-                    </tr>
-                </thead>
-                <tbody id="cuerpo-ingredientes">
-                    <!-- Filas añadidas dinámicamente -->
-                </tbody>
-            </table>
+
+        <div v-else-if="!recetaActual" class="empty-main">
+            <div class="emoji">👈</div>
+            <p style="font-size:1.1rem; font-weight:600;">Selecciona una receta</p>
         </div>
-        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn" onclick="calcularResultados()">🧮 Calcular Costes</button>
-            <button class="btn btn-blue" onclick="guardarReceta()">💾 Guardar Receta en Supabase</button>
-            <button class="btn btn-danger" onclick="confirmarEliminarReceta()">🗑️ Eliminar Receta</button>
+
+        <div v-else>
+            <!-- HEADER RECETA -->
+            <div class="receta-header">
+                <div style="flex:1; min-width:250px;">
+                    <div class="receta-title">
+                        <input v-if="modoEdicion" v-model="formReceta.nombre_plato">
+                        <template v-else>{{ recetaActual.nombre_plato }}</template>
+                    </div>
+                    <div class="receta-meta">
+                        <span class="meta-tag categoria" :class="{ preparacion: recetaActual.categoria === 'PREPARACION' }">
+                            {{ recetaActual.categoria || 'SIN CATEGORÍA' }}
+                        </span>
+                        <span v-if="recetaActual.codigo" class="meta-tag">🔢 {{ recetaActual.codigo }}</span>
+                        <span class="meta-tag">🍽️ {{ recetaActual.pax }} raciones</span>
+                    </div>
+                </div>
+                <div class="receta-actions">
+                    <template v-if="!modoEdicion">
+                        <button class="btn btn-outline btn-sm" @click="activarEdicion">✏️ Editar</button>
+                        <button class="btn btn-outline btn-sm" @click="imprimirReceta">🖨️ Imprimir</button>
+                        <button class="btn btn-warning btn-sm" @click="recalcularCostes" :disabled="recalculando">
+                            {{ recalculando ? '⏳...' : '🔄 Recalcular' }}
+                        </button>
+                        <button class="btn btn-danger btn-sm" @click="confirmarEliminar">🗑️</button>
+                    </template>
+                    <template v-else>
+                        <button class="btn btn-outline btn-sm" @click="cancelarEdicion">Cancelar</button>
+                        <button class="btn btn-success btn-sm" @click="guardarReceta" :disabled="guardando">
+                            {{ guardando ? '⏳ Guardando...' : '💾 Guardar' }}
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- CÁLCULOS -->
+            <div class="calc-grid">
+                <div class="calc-card">
+                    <div class="label">Coste total Excel</div>
+                    <div class="value">{{ fmt(costeTotal) }} €</div>
+                </div>
+                <div class="calc-card">
+                    <div class="label">Coste / ración</div>
+                    <div class="value">{{ fmt(costeRacion) }} €</div>
+                </div>
+                <div class="calc-card" :class="calcCardCMP">
+                    <div class="label">% CMP</div>
+                    <div class="value">{{ pctCMP }} %</div>
+                </div>
+                <div class="calc-card" :class="calcCardMBC">
+                    <div class="label">% MBC</div>
+                    <div class="value">{{ pctMBC }} %</div>
+                </div>
+                <div class="calc-card highlight">
+                    <div class="label">PVP ideal (70%)</div>
+                    <div class="value">{{ fmt(pvpIdeal) }} €</div>
+                </div>
+                <div class="calc-card">
+                    <div class="label">PVP actual</div>
+                    <div class="value">{{ fmt(recetaActual.pvp_actual) }} €</div>
+                </div>
+            </div>
+
+            <!-- INFO -->
+            <div class="info-grid">
+                <div class="info-field">
+                    <div class="label">Código</div>
+                    <div class="value">
+                        <input v-if="modoEdicion" v-model="formReceta.codigo">
+                        <template v-else>{{ recetaActual.codigo || '—' }}</template>
+                    </div>
+                </div>
+                <div class="info-field">
+                    <div class="label">Pax</div>
+                    <div class="value">
+                        <input v-if="modoEdicion" type="number" v-model.number="formReceta.pax" min="1">
+                        <template v-else>{{ recetaActual.pax }}</template>
+                    </div>
+                </div>
+                <div class="info-field">
+                    <div class="label">PVP actual (€)</div>
+                    <div class="value">
+                        <input v-if="modoEdicion" type="number" step="0.1" v-model.number="formReceta.pvp_actual">
+                        <template v-else>{{ recetaActual.pvp_actual }}</template>
+                    </div>
+                </div>
+                <div class="info-field">
+                    <div class="label">IVA (%)</div>
+                    <div class="value">
+                        <input v-if="modoEdicion" type="number" step="0.5" v-model.number="formReceta.iva">
+                        <template v-else>{{ recetaActual.iva }}</template>
+                    </div>
+                </div>
+                <div class="info-field">
+                    <div class="label">Categoría</div>
+                    <div class="value">
+                        <select v-if="modoEdicion" v-model="formReceta.categoria">
+                            <option value="ENTRANTES">Entrantes</option>
+                            <option value="CARNES">Carnes</option>
+                            <option value="PESCADOS">Pescados</option>
+                            <option value="POSTRES">Postres</option>
+                            <option value="VEGETALES">Vegetales</option>
+                            <option value="ARROCES">Arroces</option>
+                            <option value="FAST_GOOD">Fast Good</option>
+                            <option value="PREPARACION">Preparación</option>
+                        </select>
+                        <template v-else>{{ recetaActual.categoria }}</template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FLAGS DIETAS -->
+            <div class="alergenos-row">
+                <span class="alergeno-chip" :class="{ selected: editandoOActual('celiacos') }"
+                      @click="toggleFlag('celiacos')">🌾 Celíacos</span>
+                <span class="alergeno-chip" :class="{ selected: editandoOActual('vegetarianos') }"
+                      @click="toggleFlag('vegetarianos')">🥬 Vegetarianos</span>
+                <span class="alergeno-chip" :class="{ selected: editandoOActual('diabeticos') }"
+                      @click="toggleFlag('diabeticos')">🩺 Diabéticos</span>
+            </div>
+
+            <!-- INGREDIENTES -->
+            <div class="tabla-wrap">
+                <table class="tabla-ing">
+                    <thead>
+                        <tr>
+                            <th style="min-width:180px;">Ingrediente</th>
+                            <th class="center" style="width:60px;">🔗</th>
+                            <th class="num" style="width:80px;">Aprov.%</th>
+                            <th class="num" style="width:90px;">Peso neto</th>
+                            <th class="num" style="width:90px;">Peso bruto</th>
+                            <th class="num" style="width:90px;">€/ud</th>
+                            <th class="num" style="width:90px;">Coste €</th>
+                            <th v-if="modoEdicion" class="center" style="width:50px;">—</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(ing, i) in ingredientes" :key="ing.id || 'new'+i">
+                            <td>
+                                <input v-if="modoEdicion" class="text" v-model="ing.nombre_ingrediente">
+                                <template v-else>{{ ing.nombre_ingrediente }}</template>
+                            </td>
+                            <td class="center">
+                                <span class="vinc-badge" :class="ing.producto_id ? 'ok' : 'no'"
+                                      @click="abrirModalVincular(ing)"
+                                      :title="ing.producto_id ? 'Vinculado a: ' + ing.producto_id : 'Sin vínculo'">
+                                    {{ ing.producto_id ? '🔗' : '⚪' }}
+                                </span>
+                            </td>
+                            <td class="num">
+                                <input v-if="modoEdicion" type="number" v-model.number="ing.aprovechamiento" @change="recalcularFila(ing)">
+                                <template v-else>{{ ing.aprovechamiento }}</template>
+                            </td>
+                            <td class="num">
+                                <input v-if="modoEdicion" type="number" step="0.001" v-model.number="ing.peso_neto" @change="recalcularFila(ing)">
+                                <template v-else>{{ fmt3(ing.peso_neto) }}</template>
+                            </td>
+                            <td class="num">
+                                <input v-if="modoEdicion" type="number" step="0.001" v-model.number="ing.peso_bruto" @change="recalcularFila(ing)">
+                                <template v-else>{{ fmt3(ing.peso_bruto) }}</template>
+                            </td>
+                            <td class="num">
+                                <input v-if="modoEdicion" type="number" step="0.001" v-model.number="ing.precio_compra" @change="recalcularFila(ing)">
+                                <template v-else>{{ fmt3(ing.precio_compra) }}</template>
+                            </td>
+                            <td class="num" style="font-weight:600;">{{ fmt3(ing.coste_cmp) }}</td>
+                            <td v-if="modoEdicion" class="center">
+                                <button class="btn btn-danger btn-sm" @click="eliminarIngrediente(i)">✕</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#f8fafc; font-weight:700;">
+                            <td :colspan="modoEdicion ? 7 : 6" style="text-align:right; padding:0.7rem;">TOTAL</td>
+                            <td class="num" style="padding:0.7rem;">{{ fmt3(costeTotal) }} €</td>
+                            <td v-if="modoEdicion"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <button v-if="modoEdicion" class="btn btn-outline btn-sm" @click="añadirIngrediente" style="margin-bottom:1rem;">
+                ➕ Añadir ingrediente
+            </button>
+
+            <!-- TEXTOS -->
+            <div class="texto-grid">
+                <div class="texto-field">
+                    <label>📋 Presentación</label>
+                    <textarea v-model="formReceta.presentacion" :readonly="!modoEdicion"></textarea>
+                </div>
+                <div class="texto-field">
+                    <label>👨‍🍳 Elaboración</label>
+                    <textarea v-model="formReceta.elaboracion" :readonly="!modoEdicion"></textarea>
+                </div>
+            </div>
+
+            <div class="texto-field" style="margin-bottom:1rem;">
+                <label>⚠️ Notas de cocina</label>
+                <textarea v-model="formReceta.notas_cocina" :readonly="!modoEdicion"></textarea>
+            </div>
         </div>
     </div>
 
-    <div class="box">
-        <div class="box-title">📊 Resultados Teóricos y Reales</div>
-        <div id="panel-resultados" class="resultados">
-            <div class="resultado-item"><span class="label">Coste Total</span><div class="value" id="res-coste-total">0.00 €</div></div>
-            <div class="resultado-item"><span class="label">Coste / Ración</span><div class="value" id="res-coste-racion">0.00 €</div></div>
-            <div class="resultado-item"><span class="label">% CMP</span><div class="value" id="res-cmp-porc">0.0 %</div></div>
-            <div class="resultado-item"><span class="label">% MBC</span><div class="value" id="res-mbc-porc">0.0 %</div></div>
-            <div class="resultado-item"><span class="label">PVP Ideal</span><div class="value" id="res-pvp-ideal">0.00 €</div></div>
-            <div class="resultado-item"><span class="label">PVP Actual</span><div class="value" id="res-pvp-actual">0.00 €</div></div>
-            <div class="resultado-item"><span class="label">Diferencia %</span><div class="value" id="res-diferencia">0.0 %</div></div>
-            <div class="resultado-item"><span class="label">IVA (%)</span><div class="value" id="res-iva">10.0 %</div></div>
+    <!-- MODAL VINCULAR -->
+    <div v-if="modalVincularVisible" class="modal-overlay" @click.self="cerrarModalVincular">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>🔗 Vincular a stock</h2>
+                <button class="close-btn" @click="cerrarModalVincular">✕</button>
+            </div>
+            <div style="background:#f0ebe5; padding:0.8rem 1rem; border-radius:8px; margin-bottom:1rem;">
+                <div style="font-size:0.7rem; color:#7a726a; text-transform:uppercase; font-weight:700;">Ingrediente</div>
+                <div style="font-size:1.05rem; font-weight:700; margin-top:0.15rem;">{{ ingAVincular && ingAVincular.nombre_ingrediente }}</div>
+                <div v-if="ingAVincular && ingAVincular.producto_id" style="font-size:0.75rem; color:#065f46; margin-top:0.3rem;">
+                    Actual: <strong>🔗 {{ ingAVincular.producto_id }}</strong>
+                </div>
+            </div>
+            <label style="display:block; font-weight:600; font-size:0.85rem; color:#475569; margin-bottom:0.4rem;">
+                Buscar producto:
+            </label>
+            <input type="text" v-model="busquedaProducto"
+                   placeholder="Escribe para buscar..."
+                   style="width:100%; margin-bottom:0.8rem; padding:0.6rem 0.9rem; font-size:0.95rem; border:1px solid #d5cdc3; border-radius:8px; font-family:inherit;">
+            <div style="max-height:380px; overflow-y:auto; border:1px solid #e8e1d9; border-radius:10px;">
+                <div v-if="ingAVincular && ingAVincular.producto_id" class="vinc-opcion desvincular" @click="vincularProducto(null)">
+                    <div style="font-weight:700;">⚪ Sin vínculo</div>
+                    <div style="font-size:0.75rem; color:#b13e3e; margin-top:0.15rem;">Quitar vínculo actual</div>
+                </div>
+                <div v-for="p in productosFiltrados" :key="p.id"
+                     class="vinc-opcion"
+                     :class="{ selected: ingAVincular && p.id === ingAVincular.producto_id }"
+                     @click="vincularProducto(p.id)">
+                    <div style="font-weight:700;">{{ p.id }}</div>
+                    <div style="font-size:0.75rem; color:#7a726a; margin-top:0.15rem;">
+                        {{ p.zona || '—' }} · Stock: {{ Number(p.stock_actual || 0).toFixed(2) }} {{ p.unidad_compra || '' }}
+                    </div>
+                </div>
+                <div v-if="productosFiltrados.length === 0" style="padding:2rem; text-align:center; color:#7a726a; font-size:0.85rem;">
+                    📭 No hay coincidencias
+                </div>
+            </div>
+            <div style="margin-top:1rem; display:flex; justify-content:flex-end;">
+                <button class="btn btn-outline" @click="cerrarModalVincular">Cerrar</button>
+            </div>
         </div>
     </div>
+
+    <!-- TOAST -->
+    <div v-if="toast.show" class="toast" :class="toast.type">{{ toast.message }}</div>
 </div>
 
-<div id="toast-container"></div>
-
-<script>
-    // ============================================================
-    // CONFIGURACIÓN SUPABASE
-    // ============================================================
-    const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let recetaActualId = null;
-
-    // ============================================================
-    // TOAST
-    // ============================================================
-    function lanzarToast(mensaje, tipo = 'success') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${tipo}`;
-        toast.innerHTML = `<span>${tipo === 'success' ? '✅' : '❌'}</span> ${mensaje}`;
-        container.appendChild(toast);
-        setTimeout(() => toast.classList.add('show'), 50);
-        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
-    }
-
-    // ============================================================
-    // MANEJO DE INGREDIENTES
-    // ============================================================
-    let filaIngredienteCount = 0;
-
-    function agregarFilaIngrediente(nombre = '', aprov = 100, neto = 0, bruto = 0, precio = 0, unidad = 'KG', coste = 0) {
-        const tbody = document.getElementById('cuerpo-ingredientes');
-        const row = document.createElement('tr');
-        row.dataset.index = filaIngredienteCount++;
-        row.innerHTML = `
-            <td><input type="text" class="ing-nombre" value="${nombre}" placeholder="Ej: patata" style="text-align:left;"></td>
-            <td><input type="number" class="ing-aprov" value="${aprov}" step="0.1" min="0" max="100" onchange="recalcularFila(this)"></td>
-            <td><input type="number" class="ing-neto" value="${neto}" step="0.001" min="0" onchange="recalcularFila(this)"></td>
-            <td><input type="number" class="ing-bruto" value="${bruto}" step="0.001" min="0" onchange="recalcularFila(this)"></td>
-            <td><input type="number" class="ing-precio" value="${precio}" step="0.001" min="0" onchange="recalcularFila(this)"></td>
-            <td>
-                <select class="ing-unidad">
-                    <option value="KG" ${unidad==='KG'?'selected':''}>Kg</option>
-                    <option value="L" ${unidad==='L'?'selected':''}>Litros</option>
-                    <option value="UNIDADES" ${unidad==='UNIDADES'?'selected':''}>Unidades</option>
-                    <option value="CAJAS" ${unidad==='CAJAS'?'selected':''}>Cajas</option>
-                </select>
-            </td>
-            <td><input type="text" class="ing-coste" value="${coste.toFixed(3)}" readonly style="font-weight:bold;color:#2563eb;"></td>
-            <td><button class="btn-danger btn-sm" onclick="eliminarFila(this)">🗑️</button></td>
-        `;
-        tbody.appendChild(row);
-        // Forzar recalculo de todos los costes
-        recalcularTodos();
-    }
-
-    function eliminarFila(btn) {
-        const row = btn.closest('tr');
-        row.remove();
-        recalcularTodos();
-    }
-
-    function recalcularFila(input) {
-        const row = input.closest('tr');
-        const aprov = parseFloat(row.querySelector('.ing-aprov').value) || 100;
-        const neto = parseFloat(row.querySelector('.ing-neto').value) || 0;
-        const brutoInput = row.querySelector('.ing-bruto');
-        const precio = parseFloat(row.querySelector('.ing-precio').value) || 0;
-        const costeInput = row.querySelector('.ing-coste');
-
-        // Si el bruto está vacío o es 0, lo calculamos a partir del neto y aprovechamiento
-        let bruto = parseFloat(brutoInput.value) || 0;
-        if (bruto === 0 && neto > 0 && aprov > 0) {
-            bruto = neto / (aprov / 100);
-            brutoInput.value = bruto.toFixed(3);
-        }
-        const coste = bruto * precio;
-        costeInput.value = coste.toFixed(3);
-        calcularResultados();
-    }
-
-    function recalcularTodos() {
-        document.querySelectorAll('#cuerpo-ingredientes tr').forEach(row => {
-            const inputs = row.querySelectorAll('input');
-            if (inputs.length > 0) {
-                // Disparamos el recalculo sobre el campo neto o bruto
-                const netoInput = row.querySelector('.ing-neto');
-                if (netoInput) recalcularFila(netoInput);
-            }
-        });
-    }
-
-    // ============================================================
-    // CÁLCULO DE RESULTADOS
-    // ============================================================
-    function calcularResultados() {
-        const filas = document.querySelectorAll('#cuerpo-ingredientes tr');
-        let costeTotal = 0;
-        filas.forEach(row => {
-            const coste = parseFloat(row.querySelector('.ing-coste').value) || 0;
-            costeTotal += coste;
-        });
-
-        const pax = parseInt(document.getElementById('plato-pax').value) || 1;
-        const costeRacion = pax > 0 ? costeTotal / pax : 0;
-        const pvpActual = parseFloat(document.getElementById('plato-pvp').value) || 0;
-        const iva = parseFloat(document.getElementById('plato-iva').value) || 10;
-
-        let cmpPorc = 0, mbcPorc = 0, pvpIdeal = 0, diferencia = 0;
-        if (pvpActual > 0) {
-            cmpPorc = (costeRacion / pvpActual) * 100;
-            mbcPorc = 100 - cmpPorc;
-        }
-        // PVP Ideal: margen objetivo del 70% (MBC)
-        const margenObjetivo = 0.70;
-        pvpIdeal = costeRacion / (1 - margenObjetivo);
-        if (pvpActual > 0) diferencia = ((pvpIdeal - pvpActual) / pvpActual) * 100;
-
-        document.getElementById('res-coste-total').textContent = costeTotal.toFixed(2) + ' €';
-        document.getElementById('res-coste-racion').textContent = costeRacion.toFixed(2) + ' €';
-        document.getElementById('res-cmp-porc').textContent = cmpPorc.toFixed(1) + ' %';
-        document.getElementById('res-mbc-porc').textContent = mbcPorc.toFixed(1) + ' %';
-        document.getElementById('res-pvp-ideal').textContent = pvpIdeal.toFixed(2) + ' €';
-        document.getElementById('res-pvp-actual').textContent = pvpActual.toFixed(2) + ' €';
-        document.getElementById('res-diferencia').textContent = diferencia.toFixed(1) + ' %';
-        document.getElementById('res-iva').textContent = iva.toFixed(1) + ' %';
-    }
-
-    // ============================================================
-    // GUARDAR EN SUPABASE
-    // ============================================================
-    async function guardarReceta() {
-        // Validar campos obligatorios
-        const nombre = document.getElementById('plato-nombre').value.trim();
-        if (!nombre) {
-            lanzarToast('El nombre del plato es obligatorio.', 'error');
-            document.getElementById('plato-nombre').focus();
-            return;
-        }
-
-        const filas = document.querySelectorAll('#cuerpo-ingredientes tr');
-        if (filas.length === 0) {
-            lanzarToast('Agrega al menos un ingrediente.', 'error');
-            return;
-        }
-
-        // Recoger datos del plato
-        const platoData = {
-            id: document.getElementById('plato-codigo').value.trim() || nombre.toUpperCase().replace(/\s+/g, '_'),
-            nombre_plato: nombre,
-            categoria: document.getElementById('plato-categoria').value,
-            temporada: document.getElementById('plato-temporada').value,
-            pax: parseInt(document.getElementById('plato-pax').value) || 1,
-            foto_url: document.getElementById('plato-foto').value.trim(),
-            presentacion: document.getElementById('plato-presentacion').value.trim(),
-            elaboracion: document.getElementById('plato-elaboracion').value.trim(),
-            celiacos: document.getElementById('plato-celiacos').checked,
-            vegetarianos: document.getElementById('plato-vegetarianos').checked,
-            diabeticos: document.getElementById('plato-diabeticos').checked,
-            pvp_actual: parseFloat(document.getElementById('plato-pvp').value) || 0,
-            iva: parseFloat(document.getElementById('plato-iva').value) || 10,
-            codigo: document.getElementById('plato-codigo').value.trim()
-        };
-
-        // 1. Guardar/Actualizar plato en recetas_platos
-        const { error: errorPlato } = await supabase
-            .from('recetas_platos')
-            .upsert([platoData], { onConflict: 'id' });
-
-        if (errorPlato) {
-            lanzarToast('Error al guardar plato: ' + errorPlato.message, 'error');
-            return;
-        }
-
-        const platoId = platoData.id;
-
-        // 2. Eliminar ingredientes viejos
-        await supabase
-            .from('ingredientes_receta')
-            .delete()
-            .eq('plato_id', platoId);
-
-        // 3. Insertar nuevos ingredientes
-        const ingredientes = [];
-        let hayError = false;
-        for (const row of filas) {
-            const nombreIng = row.querySelector('.ing-nombre').value.trim();
-            if (!nombreIng) continue;
-            const aprov = parseFloat(row.querySelector('.ing-aprov').value) || 100;
-            const neto = parseFloat(row.querySelector('.ing-neto').value) || 0;
-            const bruto = parseFloat(row.querySelector('.ing-bruto').value) || 0;
-            const precio = parseFloat(row.querySelector('.ing-precio').value) || 0;
-            const unidad = row.querySelector('.ing-unidad').value;
-            const coste = parseFloat(row.querySelector('.ing-coste').value) || 0;
-
-            // Buscar o crear el insumo en maestro_escandallos para obtener el ID
-            let insumoId = nombreIng;
-            // Intentar obtener ID existente
-            const { data: existing } = await supabase
-                .from('maestro_escandallos')
-                .select('id')
-                .eq('id', nombreIng)
-                .maybeSingle();
-
-            if (existing) {
-                insumoId = existing.id;
-            } else {
-                // Si no existe, lo creamos (opcional)
-                // Pero para simplificar, guardamos el nombre como ID
-                // o podríamos crear el registro automáticamente
-                // Aquí lo dejamos como el nombre, pero es mejor tener el ID real.
-                // Por ahora, usamos el nombre como ID (esto requiere que la tabla acepte cualquier texto)
-                insumoId = nombreIng;
-            }
-
-            ingredientes.push({
-                plato_id: platoId,
-                insumo_inventario_id: insumoId,
-                cantidad_por_porcion: neto,
-                aprovechamiento: aprov,
-                peso_neto: neto,
-                peso_bruto: bruto,
-                precio_compra: precio,
-                unidad_inventario: unidad,
-                coste_cmp: coste
-            });
-        }
-
-        if (ingredientes.length > 0) {
-            const { error: errorIng } = await supabase
-                .from('ingredientes_receta')
-                .insert(ingredientes);
-
-            if (errorIng) {
-                lanzarToast('Error al guardar ingredientes: ' + errorIng.message, 'error');
-                return;
-            }
-        }
-
-        recetaActualId = platoId;
-        lanzarToast(`✅ Receta "${platoData.nombre_plato}" guardada correctamente.`);
-        cargarListaRecetas(); // Actualizar selector
-    }
-
-    // ============================================================
-    // ELIMINAR RECETA
-    // ============================================================
-    async function confirmarEliminarReceta() {
-        const nombre = document.getElementById('plato-nombre').value.trim();
-        if (!nombre) {
-            lanzarToast('No hay receta cargada para eliminar.', 'warning');
-            return;
-        }
-        if (!confirm(`¿Estás seguro de eliminar la receta "${nombre}" y todos sus ingredientes?`)) return;
-
-        const id = document.getElementById('plato-codigo').value.trim() || nombre.toUpperCase().replace(/\s+/g, '_');
-        const { error } = await supabase
-            .from('recetas_platos')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            lanzarToast('Error al eliminar: ' + error.message, 'error');
-            return;
-        }
-        lanzarToast('Receta eliminada.', 'success');
-        limpiarFormulario();
-        cargarListaRecetas();
-    }
-
-    // ============================================================
-    // CARGAR LISTA DE RECETAS PARA SELECTOR
-    // ============================================================
-    async function cargarListaRecetas() {
-        const select = document.getElementById('selector-recetas');
-        const { data, error } = await supabase
-            .from('recetas_platos')
-            .select('id, nombre_plato')
-            .order('nombre_plato', { ascending: true });
-
-        if (error) {
-            console.error('Error cargando lista:', error);
-            return;
-        }
-
-        select.innerHTML = '<option value="">-- Seleccionar receta para editar --</option>';
-        if (data) {
-            data.forEach(rec => {
-                const option = document.createElement('option');
-                option.value = rec.id;
-                option.textContent = rec.nombre_plato;
-                select.appendChild(option);
-            });
-        }
-    }
-
-    async function cargarRecetaSeleccionada() {
-        const select = document.getElementById('selector-recetas');
-        const id = select.value;
-        if (!id) {
-            limpiarFormulario();
-            return;
-        }
-        await cargarReceta(id);
-    }
-
-    async function cargarReceta(id) {
-        const { data: plato, error } = await supabase
-            .from('recetas_platos')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (error || !plato) {
-            lanzarToast('No se encontró la receta.', 'error');
-            return;
-        }
-
-        recetaActualId = id;
-        document.getElementById('plato-codigo').value = plato.codigo || '';
-        document.getElementById('plato-nombre').value = plato.nombre_plato || '';
-        document.getElementById('plato-categoria').value = plato.categoria || 'ENTRANTES';
-        document.getElementById('plato-temporada').value = plato.temporada || 'Anual';
-        document.getElementById('plato-pax').value = plato.pax || 1;
-        document.getElementById('plato-foto').value = plato.foto_url || '';
-        document.getElementById('plato-pvp').value = plato.pvp_actual || 0;
-        document.getElementById('plato-iva').value = plato.iva || 10;
-        document.getElementById('plato-presentacion').value = plato.presentacion || '';
-        document.getElementById('plato-elaboracion').value = plato.elaboracion || '';
-        document.getElementById('plato-celiacos').checked = plato.celiacos || false;
-        document.getElementById('plato-vegetarianos').checked = plato.vegetarianos || false;
-        document.getElementById('plato-diabeticos').checked = plato.diabeticos || false;
-
-        // Cargar ingredientes
-        const { data: ingredientes, error: errIng } = await supabase
-            .from('ingredientes_receta')
-            .select('*')
-            .eq('plato_id', id);
-
-        if (errIng) {
-            lanzarToast('Error al cargar ingredientes.', 'error');
-            return;
-        }
-
-        // Limpiar tabla actual
-        document.getElementById('cuerpo-ingredientes').innerHTML = '';
-        filaIngredienteCount = 0;
-
-        if (ingredientes && ingredientes.length > 0) {
-            ingredientes.forEach(ing => {
-                agregarFilaIngrediente(
-                    ing.insumo_inventario_id || '',
-                    ing.aprovechamiento || 100,
-                    ing.peso_neto || 0,
-                    ing.peso_bruto || 0,
-                    ing.precio_compra || 0,
-                    ing.unidad_inventario || 'KG',
-                    ing.coste_cmp || 0
-                );
-            });
-        }
-        calcularResultados();
-    }
-
-    // ============================================================
-    // LIMPIAR FORMULARIO
-    // ============================================================
-    function limpiarFormulario() {
-        recetaActualId = null;
-        document.getElementById('plato-codigo').value = '';
-        document.getElementById('plato-nombre').value = '';
-        document.getElementById('plato-categoria').value = 'ENTRANTES';
-        document.getElementById('plato-temporada').value = 'Anual';
-        document.getElementById('plato-pax').value = 1;
-        document.getElementById('plato-foto').value = '';
-        document.getElementById('plato-pvp').value = '0.00';
-        document.getElementById('plato-iva').value = '10.0';
-        document.getElementById('plato-presentacion').value = '';
-        document.getElementById('plato-elaboracion').value = '';
-        document.getElementById('plato-celiacos').checked = false;
-        document.getElementById('plato-vegetarianos').checked = false;
-        document.getElementById('plato-diabeticos').checked = false;
-
-        document.getElementById('cuerpo-ingredientes').innerHTML = '';
-        filaIngredienteCount = 0;
-        // Añadir una fila vacía de ejemplo
-        agregarFilaIngrediente('', 100, 0, 0, 0, 'KG', 0);
-        calcularResultados();
-        document.getElementById('selector-recetas').value = '';
-    }
-
-    // ============================================================
-    // INICIALIZACIÓN
-    // ============================================================
-    window.onload = function() {
-        cargarListaRecetas();
-        limpiarFormulario(); // Esto añade una fila vacía
-    };
-
-    // Exponer funciones globales
-    window.agregarFilaIngrediente = agregarFilaIngrediente;
-    window.eliminarFila = eliminarFila;
-    window.recalcularFila = recalcularFila;
-    window.calcularResultados = calcularResultados;
-    window.guardarReceta = guardarReceta;
-    window.cargarReceta = cargarReceta;
-    window.cargarListaRecetas = cargarListaRecetas;
-    window.cargarRecetaSeleccionada = cargarRecetaSeleccionada;
-    window.limpiarFormulario = limpiarFormulario;
-    window.confirmarEliminarReceta = confirmarEliminarReceta;
-</script>
+<!-- AQUÍ VA EL SCRIPT (siguiente mensaje) -->
 </body>
 </html>
