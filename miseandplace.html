@@ -116,9 +116,9 @@
         .tab-content { display: none; animation: fade 0.2s ease; }
         .tab-content.active { display: block; }
         @keyframes fade { from { opacity: 0.5; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-        
+
         .grid { display: grid; grid-template-columns: 1fr; gap: 1.2rem; }
-        
+
         .shelf-card {
             background: #fcfaf8;
             border-radius: 16px;
@@ -172,18 +172,18 @@
         }
         .icon-btn:hover { background: #e8e1d9; color: #1e1e1e; }
         .icon-btn.info:hover { background: #dbeafe; color: #2563eb; }
-        .icon-btn.etiqueta-btn { 
-            background: #fef3c7; 
-            color: #92400e; 
-            border-radius: 8px; 
-            padding: 0.2rem 0.6rem; 
-            font-size: 0.8rem; 
-            font-weight: bold; 
+        .icon-btn.etiqueta-btn {
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 8px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.8rem;
+            font-weight: bold;
             min-height: 32px;
             min-width: 40px;
         }
         .icon-btn.etiqueta-btn:hover { background: #f59e0b; color: white; }
-        
+
         .item-row {
             display: flex;
             align-items: center;
@@ -197,29 +197,29 @@
         }
         .item-row:hover { background: #f1f5f9; border-radius: 4px; }
         .item-row:last-child { border-bottom: none; }
-        .item-row.bold-item { 
-            font-weight: 700; 
-            background: #f3efe9; 
-            border-radius: 8px; 
-            padding: 0.4rem 0.6rem; 
-            margin: 0.2rem 0; 
-            border-bottom: 2px solid #d5cdc3; 
-            cursor: default; 
+        .item-row.bold-item {
+            font-weight: 700;
+            background: #f3efe9;
+            border-radius: 8px;
+            padding: 0.4rem 0.6rem;
+            margin: 0.2rem 0;
+            border-bottom: 2px solid #d5cdc3;
+            cursor: default;
             font-size: 1.05rem;
         }
         .item-row.bold-item:hover { background: #f3efe9; }
-        
-        .item-name { 
-            flex: 1; 
-            color: #1f1d1b; 
-            min-width: 0; 
-            word-break: break-word; 
-            font-size: 1.05rem; 
+
+        .item-name {
+            flex: 1;
+            color: #1f1d1b;
+            min-width: 0;
+            word-break: break-word;
+            font-size: 1.05rem;
             font-weight: 500;
             padding: 0.1rem 0;
         }
         .item-actions { display: flex; gap: 0.3rem; flex-wrap: wrap; align-items: center; }
-        
+
         .status-btn {
             border: none;
             padding: 0.3rem 0.7rem;
@@ -238,7 +238,7 @@
         .status-btn.active-elaborar { background: #c97d2b; color: white; }
         .status-btn.active-descongelar { background: #2b6f8a; color: white; }
         .status-btn:hover { opacity: 0.8; }
-        
+
         .stats-bar {
             display: flex;
             flex-wrap: wrap;
@@ -254,7 +254,7 @@
         .stats-bar .num.no { color: #b13e3e; }
         .stats-bar .num.elaborar { color: #c97d2b; }
         .stats-bar .num.descongelar { color: #2b6f8a; }
-        
+
         .ultima-produccion {
             font-size: 0.8rem;
             color: #64748b;
@@ -275,7 +275,7 @@
         }
         .ultima-produccion .prod-verde { color: #1e7e34; }
         .ultima-produccion .prod-rojo { color: #dc2626; }
-        
+
         .action-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         @media (max-width: 700px) { .action-list { grid-template-columns: 1fr; } }
         .action-card {
@@ -693,7 +693,6 @@
             outline: 2px solid #1e1e1e;
             outline-offset: 1px;
         }
-        /* 🆕 D3 — Aviso de descuento de stock */
         .stock-aviso {
             background: #eff6ff;
             border-left: 3px solid #2563eb;
@@ -793,9 +792,9 @@
                                 <span class="badge">{{ shelf.filter(it => !it.bold).length }}</span>
                             </div>
                         </div>
-                        <div v-for="item in shelf" :key="item.catalogo_id" 
-                             class="item-row" 
-                             :class="{ 'bold-item': item.bold }" 
+                        <div v-for="item in shelf" :key="item.catalogo_id"
+                             class="item-row"
+                             :class="{ 'bold-item': item.bold }"
                              @click="!item.bold && openFicha(item)">
                             <span class="item-name">{{ item.name }}</span>
                             <div class="ultima-produccion" v-if="!item.bold && historialProduccion[item.name]">
@@ -885,7 +884,7 @@
                 <p style="color:#5e5a55;font-size:0.8rem;">Últimas etiquetas generadas</p>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.3rem; max-height:500px; overflow-y:auto;">
-                <div v-for="(item, index) in historialProduccionList" :key="index" 
+                <div v-for="(item, index) in historialProduccionList" :key="index"
                      style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0.6rem; background:#f8faf8; border-radius:8px; border-left:3px solid #2563eb; font-size:0.8rem; flex-wrap:wrap; gap:0.3rem;">
                     <div>
                         <strong>{{ item.producto }}</strong>
@@ -1003,7 +1002,6 @@
                     </select>
                 </div>
 
-                <!-- 🆕 D3 — Aviso de descuento de stock -->
                 <div v-if="etiquetaForm.tipo === 'elaboracion'"
                      class="stock-aviso"
                      :class="{
@@ -1244,7 +1242,7 @@ const CARTA_ACTUAL = 'carta_actual';
                         ingredientes: item.ingredientes || [],
                         elaboracion: item.elaboracion || null,
                         notas: item.notas || null,
-                        producto_racion_id: item.producto_racion_id || null,   // 🆕 D3
+                        producto_racion_id: item.producto_racion_id || null,
                         status: this.revisionHoy[item.id]?.status || null,
                         hecho: this.revisionHoy[item.id]?.hecho || false,
                         cantidad: this.revisionHoy[item.id]?.cantidad || 1,
@@ -1410,9 +1408,6 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
             },
 
-            // ============================================================
-            // C2.1 — CERRAR RONDA (SNAPSHOT)
-            // ============================================================
             async cerrarRonda() {
                 if (!this.cocinero) {
                     this.showToast('⚠️ Pon tu nombre antes de cerrar la ronda', 'error');
@@ -1505,7 +1500,7 @@ const CARTA_ACTUAL = 'carta_actual';
                     ingredientes: item.ingredientes || [],
                     elaboracion: item.elaboracion,
                     notas: item.notas,
-                    producto_racion_id: item.producto_racion_id || null,   // 🆕 D3
+                    producto_racion_id: item.producto_racion_id || null,
                 };
                 this.modalVisible = true;
             },
@@ -1531,12 +1526,12 @@ const CARTA_ACTUAL = 'carta_actual';
 
             abrirModalEtiquetaDesdeFicha() {
                 if (this.fichaActual) {
-                    this.abrirModalEtiqueta({ 
-                        name: this.fichaActual.name, 
-                        bold: false, 
-                        catalogo_id: 'ficha-' + this.fichaActual.name, 
+                    this.abrirModalEtiqueta({
+                        name: this.fichaActual.name,
+                        bold: false,
+                        catalogo_id: 'ficha-' + this.fichaActual.name,
                         balda: this.fichaActual.shelf,
-                        producto_racion_id: this.fichaActual.producto_racion_id || null   // 🆕 D3
+                        producto_racion_id: this.fichaActual.producto_racion_id || null
                     });
                 }
             },
@@ -1600,7 +1595,6 @@ const CARTA_ACTUAL = 'carta_actual';
                     await this.cargarHistorialProduccion();
                 } catch (e) { console.warn('Error guardando etiqueta:', e); }
 
-                // 🆕 D3 — Descontar stock si es elaboración y está vinculado
                 let msgStock = '';
                 if (this.etiquetaForm.tipo === 'elaboracion') {
                     const prodId = this.etiquetaItemActual?.producto_racion_id;
@@ -1640,13 +1634,14 @@ const CARTA_ACTUAL = 'carta_actual';
                 }
 
                 try {
-                    const r = await fetch(API_URL + '/imprimir_etiqueta_rapida', {
+                    // 🔥 CAMBIO: Usar V2 (asíncrono) - NO espera a que se imprima
+                    const r = await fetch(API_URL + '/imprimir_etiqueta_rapida_v2', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                         body: JSON.stringify({ etiquetas })
                     });
                     if (r.ok) {
-                        this.showToast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} enviada${cantidad > 1 ? 's' : ''}${msgStock}`, 'success');
+                        this.showToast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} en cola de impresión${msgStock}`, 'success');
                         if (this.etiquetaItemActual && !this.etiquetaItemActual.bold) {
                             this.etiquetaItemActual.status = 'hay';
                             this.etiquetaItemActual.hecho = true;
@@ -1717,12 +1712,13 @@ const CARTA_ACTUAL = 'carta_actual';
                     etiquetas.push({ producto: registro.producto, unidad: lote, fecha: `${tipoTexto}: ${fechaOrig}`, texto_qr: qrTexto });
                 }
                 try {
-                    const r = await fetch(API_URL + '/imprimir_etiqueta_rapida', {
+                    // 🔥 CAMBIO: Usar V2 (asíncrono) también al reimprimir
+                    const r = await fetch(API_URL + '/imprimir_etiqueta_rapida_v2', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                         body: JSON.stringify({ etiquetas })
                     });
-                    this.showToast(r.ok ? '✅ Reimpresa' : '❌ Error', r.ok ? 'success' : 'error');
+                    this.showToast(r.ok ? '✅ Reimpresa en cola' : '❌ Error', r.ok ? 'success' : 'error');
                 } catch (e) { this.showToast('❌ Error', 'error'); }
             },
 
