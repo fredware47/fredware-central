@@ -26,31 +26,10 @@
         #contenedor-qr { display: flex; justify-content: center; margin: 15px 0; }
         #reader { background-color: #000; border-radius: 8px; overflow: hidden; border: 2px solid #3b82f6; }
         
-        /* Estilos para el visor */
-        .visor-area {
-            background: #0f172a;
-            color: #e2e8f0;
-            font-family: 'Courier New', monospace;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            word-break: break-all;
-        }
-        .visor-texto {
-            background: #1e293b;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 10px 0;
-            font-size: 14px;
-        }
-        .visor-campo {
-            background: #334155;
-            padding: 8px;
-            border-radius: 6px;
-            margin: 5px 0;
-        }
+        .visor-area { background: #0f172a; color: #e2e8f0; font-family: 'Courier New', monospace; padding: 15px; border-radius: 12px; margin-bottom: 15px; word-break: break-all; }
+        .visor-texto { background: #1e293b; padding: 12px; border-radius: 8px; margin: 10px 0; font-size: 14px; }
+        .visor-campo { background: #334155; padding: 8px; border-radius: 6px; margin: 5px 0; }
         
-        /* Toast y otros */
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
         .toast.show { opacity: 1; }
         .historial { background: #f1f5f9; border-radius: 8px; padding: 10px; margin-top: 15px; max-height: 200px; overflow-y: auto; font-size: 12px; }
@@ -58,32 +37,15 @@
         .reimprimir { background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 12px; margin-left: 8px; }
         .estado-offline { background: #fef9c3; color: #854d0e; padding: 5px; border-radius: 6px; text-align: center; font-size: 12px; margin-bottom: 10px; display: none; }
         
-        /* Panel de impresión para secos */
-        .panel-impresion-secos {
-            background: #eef2f7;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 10px;
-            border: 1px solid #cbd5e1;
-        }
-        .panel-impresion-secos .etiqueta-preview {
-            background: white;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            border: 1px solid #dadce0;
-            text-align: left;
-            font-family: monospace;
-            font-size: 13px;
-            line-height: 1.6;
-        }
-        .panel-impresion-secos .etiqueta-preview strong {
-            color: #10b981;
-        }
+        .panel-impresion-secos { background: #eef2f7; padding: 12px; border-radius: 8px; margin-top: 10px; border: 1px solid #cbd5e1; }
+        .panel-impresion-secos .etiqueta-preview { background: white; padding: 10px; border-radius: 6px; margin-top: 10px; border: 1px solid #dadce0; text-align: left; font-family: monospace; font-size: 13px; line-height: 1.6; }
+        .panel-impresion-secos .etiqueta-preview strong { color: #10b981; }
         #contenedor-qr-secos { display: flex; justify-content: center; margin: 10px 0; }
     </style>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- 🆕 SDK de Supabase para guardado directo -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -145,7 +107,6 @@
             <label>Fecha de Caducidad:</label>
             <input type="date" id="p2-fecha-cad">
             
-            <!-- Módulo de impresión integrado para secos -->
             <div class="panel-impresion-secos" id="panel-impresion-secos">
                 <h4 style="margin-top:0; color:#1e293b;">🖨️ Módulo de Impresión</h4>
                 <p style="font-size:12px; color:#666; margin:0 0 10px 0;">Al hacer clic en "EMITIR Y GUARDAR SECO" se generará una etiqueta con los datos del producto.</p>
@@ -161,7 +122,6 @@
         </div>
     </div>
 
-    <!-- Pestaña Visor -->
     <div id="app3" class="app-section">
         <div class="box">
             <h3>🔍 Visor del Escáner</h3>
@@ -183,7 +143,6 @@
         </div>
     </div>
 
-    <!-- Historial de etiquetas emitidas -->
     <div class="historial" id="historial-container">
         <strong>📋 Últimas etiquetas emitidas:</strong>
         <div id="lista-historial">(No hay etiquetas aún)</div>
@@ -193,6 +152,26 @@
 <div id="toast-mensaje" class="toast"></div>
 
 <script>
+    // ============================================================
+    // 🆕 CONFIGURACIÓN SUPABASE (migración guardado)
+    // ============================================================
+    const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
+
+    // 🚩 BANDERA DE ROLLBACK
+    // true  → guarda en Supabase directo (NUEVO)
+    // false → guarda en servidor Python (ORIGINAL)
+    const USAR_SUPABASE_DIRECTO = true;
+
+    // Cliente Supabase (singleton)
+    let _supabaseCaducidades = null;
+    function getSupabaseCaducidades() {
+        if (!_supabaseCaducidades) {
+            _supabaseCaducidades = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+        return _supabaseCaducidades;
+    }
+
     // ----- URL fija del servidor (ngrok) -----
     const IP_SERVIDOR_CENTRAL = "https://untried-january-thinning.ngrok-free.dev";
     
@@ -263,7 +242,7 @@
         }
     }
     
-    // ----- Historial local (con try/catch para localStorage) -----
+    // ----- Historial local -----
     let historialEtiquetas = [];
     try {
         const saved = localStorage.getItem('fredware_historial');
@@ -353,28 +332,101 @@
         }
     }
     
-    function dispararServidorDual(paqueteImpresion, datosBD, esReintento = false) {
+    // ============================================================
+    // 🆕 DISPARAR IMPRESIÓN + GUARDADO
+    // ============================================================
+    async function dispararServidorDual(paqueteImpresion, datosBD, esReintento = false) {
         const headers = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
-        return Promise.all([
-            fetch(`${IP_SERVIDOR_CENTRAL}/imprimir_lote`, { method: 'POST', headers, body: JSON.stringify(paqueteImpresion) }),
-            fetch(`${IP_SERVIDOR_CENTRAL}/guardar_mercancia`, { method: 'POST', headers, body: JSON.stringify(datosBD) })
-        ]).then(([res1, res2]) => {
-            if (res1.ok && res2.ok) {
-                if (!esReintento) mostrarToast("✅ Guardado en SQL y orden enviada a la impresora.", "#10b981");
-                return true;
-            } else {
-                throw new Error("Error en el servidor");
-            }
-        }).catch(error => {
-            if (!esReintento) {
-                guardarEnCola(paqueteImpresion, datosBD);
-                mostrarToast("⚠️ Error de conexión: se guardó localmente", "#ef4444");
-            }
-            throw error;
+
+        // ============================================================
+        // PASO 1: SIEMPRE imprimir con el servidor (Brother)
+        // ============================================================
+        const promesaImpresion = fetch(`${IP_SERVIDOR_CENTRAL}/imprimir_lote`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(paqueteImpresion)
         });
+
+        // ============================================================
+        // PASO 2: Guardar (Supabase directo O servidor Python)
+        // ============================================================
+        let promesaGuardado;
+
+        if (USAR_SUPABASE_DIRECTO) {
+            // 🔥 MODO NUEVO: Supabase directo
+            promesaGuardado = (async () => {
+                try {
+                    const sb = getSupabaseCaducidades();
+
+                    const registro = {
+                        id: `REC_CAD_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                        producto: (datosBD.producto || 'S/P').toUpperCase(),
+                        proveedor: (datosBD.proveedor || 'S/P').toUpperCase(),
+                        cantidad: parseInt(datosBD.cantidad_total || datosBD.cantidad || 1),
+                        unidad: 'UN',
+                        fecha_registro: datosBD.fecha_registro || new Date().toISOString(),
+                        fecha_recibido: datosBD.fecha_registro || new Date().toISOString(),
+                        observaciones: `[CADUCIDADES] ${datosBD.conservacion || 'NEVERA'}`,
+                        temperatura: null,
+                        conservacion: datosBD.conservacion || 'NEVERA',
+                        autorizado_por: 'APP_CADUCIDADES',
+                        origen: 'CADUCIDADES',
+                        metadata: { origen_app: 'caducidades.html', flujo: 'guardar_mercancia' }
+                    };
+
+                    const { error } = await sb.from('recepciones').insert([registro]);
+
+                    if (error) {
+                        console.error('❌ [Caducidades] Error Supabase:', error);
+                        throw new Error(error.message);
+                    }
+
+                    console.log('✅ [Caducidades] Guardado en Supabase:', registro.producto);
+                    return { ok: true, source: 'supabase' };
+
+                } catch (err) {
+                    console.error('❌ [Caducidades] Fallo Supabase, cayendo a servidor:', err);
+                    // Fallback: si Supabase falla, intentar con el servidor Python
+                    const res = await fetch(`${IP_SERVIDOR_CENTRAL}/guardar_mercancia`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(datosBD)
+                    });
+                    if (!res.ok) throw new Error('Fallback también falló');
+                    return { ok: true, source: 'servidor_fallback' };
+                }
+            })();
+        } else {
+            // 🔙 MODO ORIGINAL: todo al servidor Python
+            promesaGuardado = fetch(`${IP_SERVIDOR_CENTRAL}/guardar_mercancia`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(datosBD)
+            });
+        }
+
+        // ============================================================
+        // EJECUTAR AMBAS EN PARALELO
+        // ============================================================
+        return Promise.all([promesaImpresion, promesaGuardado])
+            .then(([res1, res2]) => {
+                if (res1.ok && (res2.ok || res2.ok === undefined)) {
+                    if (!esReintento) mostrarToast("✅ Guardado en SQL y orden enviada a la impresora.", "#10b981");
+                    return true;
+                } else {
+                    throw new Error("Error en el servidor");
+                }
+            })
+            .catch(error => {
+                if (!esReintento) {
+                    guardarEnCola(paqueteImpresion, datosBD);
+                    mostrarToast("⚠️ Error de conexión: se guardó localmente", "#ef4444");
+                }
+                throw error;
+            });
     }
     
-    // ----- Generar QR (para la pestaña de elaborados) -----
+    // ----- Generar QR (elaborados) -----
     function generarQRLocal(texto) {
         const contenedor = document.getElementById('contenedor-qr');
         if (!contenedor) return;
@@ -394,7 +446,7 @@
         }
     }
     
-    // ----- Generar QR para la pestaña de secos -----
+    // ----- Generar QR (secos) -----
     function generarQRSecos(texto) {
         const contenedor = document.getElementById('contenedor-qr-secos');
         if (!contenedor) return;
@@ -414,7 +466,7 @@
         }
     }
     
-    // ----- Escáner QR (INTACTO - SIN MODIFICAR) -----
+    // ----- Escáner QR (INTACTO) -----
     let ultimoEscaneoTime = 0;
     function onScanSuccess(decodedText) {
         const ahora = Date.now();
@@ -512,7 +564,7 @@
         return 'NEVERA';
     }
     
-    // ----- Emitir elaborado (INTACTO - SIN MODIFICAR) -----
+    // ----- Emitir elaborado (INTACTO) -----
     function enviarEtiquetaElaborado() {
         const nombreInput = document.getElementById('p1-nombre');
         const loteInput = document.getElementById('p1-lote');
@@ -574,7 +626,7 @@
         }
     }
     
-    // ----- Emitir seco (CON MÓDULO DE IMPRESIÓN INTEGRADO) -----
+    // ----- Emitir seco (INTACTO) -----
     function enviarEtiquetaSeco() {
         const nombreInput = document.getElementById('p2-nombre');
         const loteInput = document.getElementById('p2-lote');
@@ -608,14 +660,11 @@
             }] 
         };
         
-        // Mostrar la previsualización en el panel de secos
         const previewDiv = document.getElementById('preview-secos');
         if (previewDiv) previewDiv.style.display = 'block';
         
-        // Generar QR en el contenedor de secos
         generarQRSecos(cadenaQr);
         
-        // Mostrar datos de la etiqueta
         const etiquetaDatosSecos = document.getElementById('etiqueta-datos-secos');
         if (etiquetaDatosSecos) {
             etiquetaDatosSecos.innerHTML = `
@@ -626,7 +675,6 @@
             `;
         }
         
-        // También mostrar en el panel principal de vista previa
         const etiquetaDatos = document.getElementById('etiqueta-datos');
         if (etiquetaDatos) {
             etiquetaDatos.innerHTML = `PRODUCTO SECO: ${nombre}<br>LOTE FABRICANTE: ${lote}<br>CADUCIDAD: ${fechaCadFormateada}`;
@@ -639,7 +687,7 @@
         dispararServidorDual(paqueteImpresion, datosBD).catch(() => {});
     }
     
-    // ----- Cambiar pestañas (definida ANTES de que se use) -----
+    // ----- Cambiar pestañas -----
     function cambiarApp(appNum) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
@@ -648,7 +696,6 @@
             if (btn) btn.classList.add('active');
             const section = document.getElementById('app1');
             if (section) section.classList.add('active');
-            // Iniciar scanner si estamos en la pestaña 1
             iniciarScanner();
         } else if (appNum === 2) {
             const btn = document.getElementById('btn-tab2');
