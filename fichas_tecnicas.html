@@ -7,19 +7,21 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- 🆕 Librería QR para incluir en ficha A4 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- 🔥 NÚCLEO UNIFICADO v2 -->
     <script src="shared-core.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; }
-        
+
         .container { max-width: 1200px; margin: 0 auto; }
         .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        
+
         .fredware-header { background: #1e293b; color: white; padding: 12px 20px; border-radius: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .fredware-header h1 { font-size: 20px; font-weight: 900; }
         .fredware-header .sub { font-size: 11px; color: #94a3b8; font-weight: 400; }
-        
+
         .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
         .btn:active { transform: scale(0.97); }
         .btn-primary { background: #2563eb; color: white; }
@@ -36,12 +38,12 @@
         .btn-outline:hover { background: #f1f5f9; }
         .btn-download { background: #0891b2; color: white; }
         .btn-download:hover { background: #0e7490; }
-        
+
         .ficha-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; cursor: pointer; }
         .ficha-item:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.1); }
         .ficha-item.seleccionada { border-color: #2563eb; background: #eff6ff; }
         .ficha-item.editando { border-color: #8b5cf6; background: #f5f3ff; box-shadow: 0 2px 8px rgba(139,92,246,0.15); }
-        
+
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .flex { display: flex; }
         .flex-wrap { flex-wrap: wrap; }
@@ -65,33 +67,33 @@
         .text-emerald-600 { color: #059669; }
         .text-blue-600 { color: #2563eb; }
         .text-amber-600 { color: #d97706; }
-        
+
         .badge-conn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
         .badge-conn.loading { background: #fef3c7; color: #92400e; animation: pulse-badge 1.5s ease-in-out infinite; }
         .badge-conn.online { background: #d1fae5; color: #065f46; }
         @keyframes pulse-badge { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        
+
         .badge-recibido { background: #d1fae5; color: #065f46; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; }
         .badge-no-recibido { background: #fee2e2; color: #991b1b; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; }
         .badge-antiguo { background: #fef3c7; color: #92400e; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; }
         .badge-editando { background: #ede9fe; color: #6d28d9; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; }
-        
+
         input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; }
         input:focus, textarea:focus, select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-        
+
         .autocomplete-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #cbd5e1; border-radius: 0 0 10px 10px; max-height: 200px; overflow-y: auto; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; }
         .suggestion-item { padding: 10px 14px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #f1f5f9; }
         .suggestion-item:hover { background: #eff6ff; }
         .suggestion-item .producto { font-weight: 700; color: #1e293b; }
         .suggestion-item .detalle { font-size: 11px; color: #94a3b8; }
-        
+
         .ingrediente-linea { background: #f8fafc; padding: 6px 12px; border-radius: 6px; margin-bottom: 4px; border-left: 3px solid #10b981; }
-        
+
         .checkbox-seleccion { width: 18px; height: 18px; cursor: pointer; accent-color: #2563eb; }
-        
+
         .edit-banner { background: #ede9fe; border: 1px solid #c4b5fd; color: #6d28d9; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; margin-bottom: 12px; display: none; align-items: center; gap: 8px; }
         .edit-banner.visible { display: flex; }
-        
+
         @media (max-width: 640px) {
             .grid-2 { grid-template-columns: 1fr; }
         }
@@ -106,7 +108,7 @@
             <span class="text-3xl">📄</span>
             <div>
                 <h1>FREDWARE - Fichas de Producción</h1>
-                <span class="sub">Trazabilidad y Control de Producción · v4.1 (núcleo v2)</span>
+                <span class="sub">Trazabilidad y Control de Producción · v4.2 (QR en ficha A4)</span>
             </div>
             <div style="margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <span id="statusBadge" class="badge-conn loading">🟡 CONECTANDO...</span>
@@ -129,9 +131,9 @@
             <div id="edit-banner" class="edit-banner">
                 ✏️ Editando ficha existente — Modifica los campos y pulsa "Actualizar Ficha"
             </div>
-            
+
             <h2 id="form-titulo" class="text-lg font-black text-slate-800 mb-4">📝 Nueva Ficha de Producción</h2>
-            
+
             <div class="grid-2">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre de la Preparación *</label>
@@ -162,13 +164,13 @@
                         <button onclick="agregarIngrediente()" class="btn btn-success" style="white-space:nowrap;">➕ Añadir</button>
                     </div>
                 </div>
-                
+
                 <div id="lista-ingredientes" class="mt-3 max-h-[300px] overflow-y-auto">
                     <div class="text-xs text-slate-400 text-center py-4">Los ingredientes añadidos aparecerán aquí</div>
                 </div>
-                
+
                 <textarea id="ficha-ingredientes" style="display:none;"></textarea>
-                
+
                 <div class="text-xs text-slate-400 mt-1">💡 Escribe el nombre del ingrediente y el sistema buscará automáticamente la última recepción</div>
             </div>
 
@@ -198,7 +200,7 @@
     <div id="tab-historial" class="tab-content">
         <div class="card">
             <h2 class="text-lg font-black text-slate-800 mb-4">📋 Historial de Fichas de Producción</h2>
-            
+
             <div class="flex gap-2 mb-4 flex-wrap">
                 <input type="text" id="buscar-historial" placeholder="🔍 Buscar por nombre o lote..." class="flex-1 uppercase" oninput="filtrarHistorial()">
                 <button onclick="recargarHistorial()" class="btn btn-primary" style="white-space:nowrap;">🔄 Recargar</button>
@@ -267,7 +269,6 @@ function sincronizarRecepcionesDesdeNucleo(recepcionesNucleo) {
 
     console.log(`📦 [Fichas] Recepciones sincronizadas: ${recepcionesGlobal.length}`);
 
-    // Actualizar badge
     const badge = document.getElementById('statusBadge');
     if (badge) {
         badge.className = 'badge-conn online';
@@ -284,7 +285,6 @@ window.fredware.subscribe((state) => {
         inicializado: state.inicializado
     });
 
-    // 🔥 Copiar recepciones SIEMPRE que haya (sin esperar a inicializado)
     if (state.recepciones && state.recepciones.length > 0) {
         sincronizarRecepcionesDesdeNucleo(state.recepciones);
     }
@@ -341,26 +341,60 @@ function formatearFechaDDMMYYYY(fechaStr) {
 }
 
 // ============================================================
+// 🆕 GENERAR QR COMO IMAGEN (DATA URL)
+// ============================================================
+function generarQRDataURL(texto, size = 120) {
+    return new Promise((resolve) => {
+        const tempDiv = document.createElement('div');
+        tempDiv.style.cssText = 'position:absolute; left:-9999px; top:0;';
+        document.body.appendChild(tempDiv);
+
+        try {
+            new QRCode(tempDiv, {
+                text: texto,
+                width: size,
+                height: size,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+
+            setTimeout(() => {
+                let dataUrl = '';
+                const canvas = tempDiv.querySelector('canvas');
+                const img = tempDiv.querySelector('img');
+                if (canvas) dataUrl = canvas.toDataURL('image/png');
+                else if (img) dataUrl = img.src;
+                tempDiv.remove();
+                resolve(dataUrl);
+            }, 150);
+        } catch (e) {
+            console.warn('Error generando QR:', e);
+            tempDiv.remove();
+            resolve('');
+        }
+    });
+}
+
+// ============================================================
 // 🔍 CONSULTAR RECEPCIONES PARA AUTOCOMPLETADO
 // ============================================================
 function verificarRecepcion(producto) {
-    // 🔥 Ahora lee del núcleo, sin consultar Supabase
     if (!recepcionesGlobal || recepcionesGlobal.length === 0) return null;
-    
+
     const upper = producto.toUpperCase();
-    const encontradas = recepcionesGlobal.filter(r => 
+    const encontradas = recepcionesGlobal.filter(r =>
         r.producto && r.producto.toUpperCase().includes(upper)
     );
-    
+
     if (encontradas.length === 0) return null;
-    
-    // Ordenar por fecha descendente y devolver la más reciente
+
     encontradas.sort((a, b) => {
         const fa = new Date(a.fecha_recibido || a.fecha_registro || 0);
         const fb = new Date(b.fecha_recibido || b.fecha_registro || 0);
         return fb - fa;
     });
-    
+
     return encontradas[0];
 }
 
@@ -419,16 +453,16 @@ async function eliminarFichaDB(id) {
 function buscarAutocompletado(busqueda) {
     const box = document.getElementById('autocomplete-box');
     const texto = busqueda.trim().toUpperCase();
-    
+
     if (!texto || texto.length < 2) {
         box.style.display = 'none';
         return;
     }
-    
-    const coincidencias = recepcionesGlobal.filter(r => 
+
+    const coincidencias = recepcionesGlobal.filter(r =>
         r.producto && r.producto.toUpperCase().includes(texto)
     );
-    
+
     const ingredientesConocidos = new Set();
     fichasGlobal.forEach(f => {
         if (f.ingredientes_detalle) {
@@ -444,10 +478,10 @@ function buscarAutocompletado(busqueda) {
             });
         }
     });
-    
+
     const resultados = [];
     const vistos = new Set();
-    
+
     for (const r of coincidencias) {
         const key = r.producto.toUpperCase();
         if (!vistos.has(key)) {
@@ -463,7 +497,7 @@ function buscarAutocompletado(busqueda) {
             });
         }
     }
-    
+
     for (const nombre of ingredientesConocidos) {
         if (!vistos.has(nombre)) {
             vistos.add(nombre);
@@ -478,12 +512,12 @@ function buscarAutocompletado(busqueda) {
             });
         }
     }
-    
+
     if (resultados.length === 0) {
         box.style.display = 'none';
         return;
     }
-    
+
     resultados.sort((a, b) => {
         const aStarts = a.coincidencia.startsWith(texto);
         const bStarts = b.coincidencia.startsWith(texto);
@@ -491,14 +525,14 @@ function buscarAutocompletado(busqueda) {
         if (!aStarts && bStarts) return 1;
         return a.coincidencia.localeCompare(b.coincidencia);
     });
-    
+
     const mostrar = resultados.slice(0, 8);
-    
+
     box.innerHTML = '';
     for (const item of mostrar) {
         const div = document.createElement('div');
         div.className = 'suggestion-item';
-        
+
         let estadoHTML = '';
         if (item.recepcion) {
             const fecha = new Date(item.recepcion.fecha_recibido || item.recepcion.fecha_registro);
@@ -512,10 +546,10 @@ function buscarAutocompletado(busqueda) {
         } else {
             estadoHTML = `<span class="badge-no-recibido">❌ Sin recepciones registradas</span>`;
         }
-        
+
         const label = item.tipo === 'recepcion' ? '📦 Recibido' : '📝 Conocido';
         const fechaStr = item.fecha ? formatearFechaDDMMYYYY(item.fecha) : '';
-        
+
         div.innerHTML = `
             <div class="producto">${escapeHtml(item.producto)}</div>
             <div class="detalle">${label} | Proveedor: ${escapeHtml(item.proveedor)} ${fechaStr ? '| 📅 ' + fechaStr : ''} ${estadoHTML}</div>
@@ -523,7 +557,7 @@ function buscarAutocompletado(busqueda) {
         div.onclick = () => seleccionarSugerencia(item);
         box.appendChild(div);
     }
-    
+
     box.style.display = 'block';
 }
 
@@ -531,10 +565,10 @@ function seleccionarSugerencia(item) {
     const input = document.getElementById('ingrediente-input');
     input.value = '';
     document.getElementById('autocomplete-box').style.display = 'none';
-    
+
     let fecha = item.fecha;
     let proveedor = item.proveedor || 'S/P';
-    
+
     if (!fecha) {
         Swal.fire({
             title: `📅 Fecha de llegada de ${item.producto}`,
@@ -555,7 +589,7 @@ function seleccionarSugerencia(item) {
         });
         return;
     }
-    
+
     const fechaFormateada = formatearFechaDDMMYYYY(fecha) || 'S/F';
     agregarIngredienteConDatos(item.producto, proveedor, fechaFormateada);
 }
@@ -579,13 +613,13 @@ function agregarIngrediente() {
     const input = document.getElementById('ingrediente-input');
     const texto = input.value.trim();
     if (!texto) return;
-    
+
     const upper = texto.toUpperCase();
-    
-    const encontrado = recepcionesGlobal.find(r => 
+
+    const encontrado = recepcionesGlobal.find(r =>
         r.producto && r.producto.toUpperCase() === upper
     );
-    
+
     if (encontrado) {
         const fecha = formatearFechaDDMMYYYY(encontrado.fecha_recibido || encontrado.fecha_registro) || 'S/F';
         agregarIngredienteConDatos(encontrado.producto, encontrado.proveedor || 'S/P', fecha);
@@ -626,14 +660,14 @@ function renderizarIngredientes() {
         container.innerHTML = '<div class="text-xs text-slate-400 text-center py-4">No hay ingredientes añadidos</div>';
         return;
     }
-    
+
     container.innerHTML = ingredientesLista.map((item, idx) => `
         <div class="ingrediente-linea flex justify-between items-center">
             <span class="text-sm font-medium text-slate-800">• ${escapeHtml(item.texto)}</span>
             <button onclick="eliminarIngrediente(${idx})" class="text-red-500 hover:text-red-700 text-sm font-bold px-2">✕</button>
         </div>
     `).join('');
-    
+
     const textarea = document.getElementById('ficha-ingredientes');
     textarea.value = ingredientesLista.map(item => `• ${item.texto}`).join('\n');
 }
@@ -1006,7 +1040,7 @@ function filtrarHistorial() {
         renderizarHistorial(fichasGlobal);
         return;
     }
-    const filtradas = fichasGlobal.filter(f => 
+    const filtradas = fichasGlobal.filter(f =>
         f.nombre_produccion.toUpperCase().includes(busqueda) ||
         f.lote.toUpperCase().includes(busqueda)
     );
@@ -1025,13 +1059,13 @@ function descargarTodasFichas() {
     const ahora = new Date();
     const pad = (n) => n.toString().padStart(2, '0');
     const fecha = `${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}`;
-    
+
     const datos = {
         fecha_exportacion: ahora.toISOString(),
         total_fichas: fichasGlobal.length,
         fichas: fichasGlobal
     };
-    
+
     const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1041,7 +1075,7 @@ function descargarTodasFichas() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
+
     toast(`✅ ${fichasGlobal.length} fichas descargadas`);
 }
 
@@ -1152,15 +1186,22 @@ async function eliminarFicha(id) {
 }
 
 // ============================================================
-// VENTANA DE IMPRESIÓN A4
+// VENTANA DE IMPRESIÓN A4 (con QR generado)
 // ============================================================
-function abrirVentanaImpresionA4(fichas) {
+async function abrirVentanaImpresionA4(fichas) {
     if (!fichas || fichas.length === 0) {
         toast('⚠️ No hay fichas para imprimir', 'warning');
         return;
     }
 
-    const htmlFichas = fichas.map(f => generarHTMLFichaA4(f)).join(
+    // 🆕 Generar QRs para cada ficha ANTES de abrir la ventana
+    const fichasConQR = await Promise.all(fichas.map(async (f) => {
+        const qrTexto = `PROD:${f.nombre}|LOTE:${f.lote}|FECHA:${f.fecha_prep}`;
+        const qrDataURL = await generarQRDataURL(qrTexto, 120);
+        return { ...f, qrDataURL };
+    }));
+
+    const htmlFichas = fichasConQR.map(f => generarHTMLFichaA4(f)).join(
         '<div style="page-break-after: always;"></div>'
     );
 
@@ -1226,6 +1267,9 @@ function abrirVentanaImpresionA4(fichas) {
     toast(`✅ ${fichas.length} ficha(s) lista(s) — elige impresora en el diálogo`);
 }
 
+// ============================================================
+// GENERAR HTML DE FICHA A4 (con QR)
+// ============================================================
 function generarHTMLFichaA4(ficha) {
     const ingredientesHTML = (ficha.ingredientes || '')
         .split('\n')
@@ -1236,6 +1280,14 @@ function generarHTMLFichaA4(ficha) {
             return `<li>• ${escapeHtml(limpia)}</li>`;
         })
         .join('');
+
+    // 🆕 Bloque QR (solo si se ha generado)
+    const qrHTML = ficha.qrDataURL
+        ? `<div style="text-align:center; margin: 6mm 0 4mm 0;">
+               <img src="${ficha.qrDataURL}" alt="QR" style="width: 30mm; height: 30mm; display: block; margin: 0 auto;">
+               <div style="font-size: 8pt; color: #94a3b8; margin-top: 1mm;">Escanea para trazabilidad</div>
+           </div>`
+        : '';
 
     return `
         <div class="ficha-a4">
@@ -1271,6 +1323,8 @@ function generarHTMLFichaA4(ficha) {
                 ${ingredientesHTML || '<li>Sin ingredientes registrados.</li>'}
             </ul>
 
+            ${qrHTML}
+
             <div class="firma-box">
                 <div class="firma-linea">Firma del Responsable de Cocina</div>
                 <div class="firma-linea">Firma del Responsable APPCC</div>
@@ -1289,7 +1343,6 @@ function generarHTMLFichaA4(ficha) {
 // ============================================================
 function recargarDatos() {
     cargarHistorial();
-    // 🔥 Refrescar también las recepciones del núcleo
     if (window.fredware.state.recepciones && window.fredware.state.recepciones.length > 0) {
         sincronizarRecepcionesDesdeNucleo(window.fredware.state.recepciones);
     }
@@ -1306,19 +1359,15 @@ function recargarHistorial() {
 async function initApp() {
     console.log('🚀 [Fichas] Init — esperando al núcleo...');
 
-    // Asegurar que la pestaña "crear" está activa
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById('tab-crear').classList.add('active');
 
     setFechaHoy();
 
-    // Cargar historial (independiente del núcleo)
     await cargarHistorial();
 
-    // Esperar al núcleo
     await esperarAlNucleo();
 
-    // 🔥 COPIAR RECEPCIONES MANUALMENTE (no confiar solo en el suscriptor)
     if (window.fredware.state.recepciones && window.fredware.state.recepciones.length > 0) {
         sincronizarRecepcionesDesdeNucleo(window.fredware.state.recepciones);
     }
