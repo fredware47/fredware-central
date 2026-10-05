@@ -43,9 +43,15 @@
         .card-pedidos:hover { background: #e0f2fe !important; }
         .card-historial { border-color: #64748b !important; background: #f8fafc !important; }
         .card-historial:hover { background: #f1f5f9 !important; }
-        /* 🆕 Stock — destacado */
+        /* 🆕 Stock */
         .card-stock { border-color: #059669 !important; background: #ecfdf5 !important; }
         .card-stock:hover { background: #d1fae5 !important; }
+        /* 🆕 Horarios */
+        .card-horarios { border-color: #6366f1 !important; background: #eef2ff !important; }
+        .card-horarios:hover { background: #e0e7ff !important; }
+        /* 🆕 Recetario */
+        .card-recetario { border-color: #ea580c !important; background: #fff7ed !important; }
+        .card-recetario:hover { background: #ffedd5 !important; }
 
         @media (max-width: 640px) {
             .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -90,7 +96,7 @@
                 <span class="desc">Vista global de recepciones e inventario</span>
             </a>
 
-            <!-- 🆕 STOCK -->
+            <!-- STOCK -->
             <a href="stock.html" class="card card-stock">
                 <span class="icono">📦</span>
                 <span class="nombre">Stock <span class="badge-activo">Nuevo</span></span>
@@ -125,21 +131,21 @@
                 <span class="desc">Cesta y pedidos</span>
             </a>
 
-            <!-- ⭐ RECEPCIÓN (antes Faltas) -->
+            <!-- RECEPCIÓN -->
             <a href="recepcion.html" class="card card-recepcion">
                 <span class="icono">🚚</span>
                 <span class="nombre">Recepción</span>
                 <span class="desc">Entradas y etiquetas</span>
             </a>
 
-            <!-- ⭐ PEDIDOS (antes Listas) -->
+            <!-- PEDIDOS -->
             <a href="pedidos.html" class="card card-pedidos">
                 <span class="icono">📋</span>
                 <span class="nombre">Pedidos</span>
                 <span class="desc">Faltas, pedidos y etiquetas</span>
             </a>
 
-            <!-- ⭐ HISTORIAL (antes Recepcion) -->
+            <!-- HISTORIAL -->
             <a href="historial.html" class="card card-historial">
                 <span class="icono">📦</span>
                 <span class="nombre">Historial</span>
@@ -154,10 +160,17 @@
             </a>
 
             <!-- RECETARIO -->
-            <a href="recetario.html" class="card">
+            <a href="recetario.html" class="card card-recetario">
                 <span class="icono">🍽️</span>
                 <span class="nombre">Recetario</span>
                 <span class="desc">Carta y alérgenos</span>
+            </a>
+
+            <!-- HORARIOS (NUEVO) -->
+            <a href="horarios.html" class="card card-horarios">
+                <span class="icono">📅</span>
+                <span class="nombre">Horarios</span>
+                <span class="desc">Turnos del equipo</span>
             </a>
 
             <!-- HORAS EXTRAS -->
