@@ -8,159 +8,38 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f2ee;
-            color: #1e1e1e;
-            min-height: 100vh;
-        }
-        .error-banner {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            margin: 1rem;
-            font-size: 0.9rem;
-            border-left: 4px solid #b13e3e;
-        }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f5f2ee; color: #1e1e1e; min-height: 100vh; }
+        .error-banner { background: #fee2e2; color: #991b1b; padding: 1rem 1.5rem; border-radius: 12px; margin: 1rem; font-size: 0.9rem; border-left: 4px solid #b13e3e; }
         .error-banner strong { display: block; margin-bottom: 0.3rem; }
-        .error-banner code {
-            background: rgba(0,0,0,0.05);
-            padding: 0.1rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            word-break: break-all;
-        }
-
-        .app {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 1rem;
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 1rem;
-            min-height: 100vh;
-        }
-        @media (max-width: 900px) {
-            .app { grid-template-columns: 1fr; }
-        }
-
-        .header {
-            grid-column: 1 / -1;
-            background: white;
-            padding: 1.2rem 1.5rem;
-            border-radius: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.8rem;
-        }
+        .app { max-width: 1600px; margin: 0 auto; padding: 1rem; display: grid; grid-template-columns: 320px 1fr; gap: 1rem; min-height: 100vh; }
+        @media (max-width: 900px) { .app { grid-template-columns: 1fr; } }
+        .header { grid-column: 1 / -1; background: white; padding: 1.2rem 1.5rem; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; }
         .header h1 { font-weight: 600; font-size: 1.4rem; }
         .header h1 small { font-weight: 400; font-size: 0.8rem; color: #7a726a; margin-left: 0.5rem; }
         .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-
-        .sidebar {
-            background: white;
-            border-radius: 20px;
-            padding: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            overflow-y: auto;
-            max-height: calc(100vh - 100px);
-            position: sticky;
-            top: 1rem;
-        }
-        .search-box {
-            width: 100%;
-            padding: 0.6rem 1rem;
-            border: 1px solid #d5cdc3;
-            border-radius: 30px;
-            font-size: 0.9rem;
-            margin-bottom: 0.8rem;
-            background: #faf8f6;
-            font-family: inherit;
-        }
+        .sidebar { background: white; border-radius: 20px; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow-y: auto; max-height: calc(100vh - 100px); position: sticky; top: 1rem; }
+        .search-box { width: 100%; padding: 0.6rem 1rem; border: 1px solid #d5cdc3; border-radius: 30px; font-size: 0.9rem; margin-bottom: 0.8rem; background: #faf8f6; font-family: inherit; }
         .categoria-group { margin-bottom: 1rem; }
-        .categoria-title {
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #7a726a;
-            padding: 0.4rem 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .categoria-title .count {
-            background: #f0ebe5;
-            padding: 0.1rem 0.5rem;
-            border-radius: 30px;
-            font-size: 0.65rem;
-        }
-        .receta-item {
-            padding: 0.6rem 0.8rem;
-            border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.2rem;
-            transition: 0.15s;
-        }
+        .categoria-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #7a726a; padding: 0.4rem 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .categoria-title .count { background: #f0ebe5; padding: 0.1rem 0.5rem; border-radius: 30px; font-size: 0.65rem; }
+        .receta-item { padding: 0.6rem 0.8rem; border-radius: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem; transition: 0.15s; }
         .receta-item:hover { background: #f8fafc; }
         .receta-item.active { background: #1e1e1e; color: white; }
         .receta-item.active .receta-pax { color: #a1a1aa; }
-        .receta-nombre {
-            font-size: 0.85rem;
-            font-weight: 500;
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+        .receta-nombre { font-size: 0.85rem; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .receta-pax { font-size: 0.7rem; color: #7a726a; white-space: nowrap; }
-
-        .main {
-            background: white;
-            border-radius: 20px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            min-height: 500px;
-        }
-        .empty-main {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; height: 500px; color: #7a726a;
-        }
+        .main { background: white; border-radius: 20px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); min-height: 500px; }
+        .empty-main { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 500px; color: #7a726a; }
         .empty-main .emoji { font-size: 3rem; margin-bottom: 1rem; }
-
-        .receta-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
-            padding-bottom: 1rem; border-bottom: 2px solid #f0ebe5;
-        }
+        .receta-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #f0ebe5; }
         .receta-title { font-size: 1.6rem; font-weight: 700; }
-        .receta-title input {
-            font-size: 1.6rem; font-weight: 700; border: none;
-            background: transparent; width: 100%; font-family: inherit;
-        }
+        .receta-title input { font-size: 1.6rem; font-weight: 700; border: none; background: transparent; width: 100%; font-family: inherit; }
         .receta-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
-        .meta-tag {
-            background: #f0ebe5; padding: 0.2rem 0.7rem;
-            border-radius: 30px; font-size: 0.75rem;
-        }
+        .meta-tag { background: #f0ebe5; padding: 0.2rem 0.7rem; border-radius: 30px; font-size: 0.75rem; }
         .meta-tag.categoria { background: #dbeafe; color: #1e40af; font-weight: 600; }
         .meta-tag.preparacion { background: #fef3c7; color: #92400e; }
-
         .receta-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-
-        .btn {
-            border: none; padding: 0.55rem 1.1rem; border-radius: 40px;
-            font-weight: 500; font-size: 0.85rem; cursor: pointer;
-            font-family: inherit; display: inline-flex; align-items: center; gap: 0.4rem;
-            transition: 0.15s;
-        }
+        .btn { border: none; padding: 0.55rem 1.1rem; border-radius: 40px; font-weight: 500; font-size: 0.85rem; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 0.4rem; transition: 0.15s; }
         .btn-primary { background: #1e1e1e; color: white; }
         .btn-primary:hover { background: #333; }
         .btn-outline { background: transparent; border: 1px solid #d5cdc3; color: #333; }
@@ -170,20 +49,9 @@
         .btn-danger { background: #b13e3e; color: white; }
         .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.75rem; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .calc-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 0.8rem; margin-bottom: 1.2rem;
-        }
-        .calc-card {
-            background: #f8fafc; padding: 1rem; border-radius: 12px;
-            text-align: center; border: 1px solid #e2e8f0;
-        }
-        .calc-card .label {
-            font-size: 0.65rem; color: #64748b;
-            text-transform: uppercase; font-weight: 700;
-        }
+        .calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.8rem; margin-bottom: 1.2rem; }
+        .calc-card { background: #f8fafc; padding: 1rem; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
+        .calc-card .label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: 700; }
         .calc-card .value { font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem; }
         .calc-card .sub { font-size: 0.65rem; color: #94a3b8; margin-top: 0.2rem; }
         .calc-card.highlight { background: #d1fae5; border-color: #6ee7b7; }
@@ -192,138 +60,53 @@
         .calc-card.warning .value { color: #92400e; }
         .calc-card.danger { background: #fee2e2; border-color: #fca5a5; }
         .calc-card.danger .value { color: #991b1b; }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 0.8rem; margin-bottom: 1.2rem;
-        }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.8rem; margin-bottom: 1.2rem; }
         .info-field { background: #faf8f6; padding: 0.7rem 1rem; border-radius: 10px; }
-        .info-field .label {
-            font-size: 0.7rem; color: #7a726a;
-            text-transform: uppercase; font-weight: 700;
-        }
+        .info-field .label { font-size: 0.7rem; color: #7a726a; text-transform: uppercase; font-weight: 700; }
         .info-field .value { font-size: 1rem; font-weight: 600; margin-top: 0.2rem; }
-        .info-field input, .info-field select {
-            width: 100%; border: 1px solid #d5cdc3; border-radius: 6px;
-            padding: 0.3rem 0.5rem; font-size: 0.9rem; font-family: inherit;
-            background: white;
-        }
-
-        .tabla-wrap {
-            overflow-x: auto; border-radius: 12px;
-            border: 1px solid #e8e1d9; margin-bottom: 1rem;
-        }
-        .tabla-ing {
-            width: 100%; border-collapse: collapse;
-            font-size: 0.85rem; min-width: 800px;
-        }
+        .info-field input, .info-field select { width: 100%; border: 1px solid #d5cdc3; border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.9rem; font-family: inherit; background: white; }
+        .tabla-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #e8e1d9; margin-bottom: 1rem; }
+        .tabla-ing { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 800px; }
         .tabla-ing thead { background: #f0ebe5; }
-        .tabla-ing th {
-            padding: 0.6rem 0.5rem; font-weight: 700; font-size: 0.7rem;
-            text-transform: uppercase; color: #4b4540; text-align: left;
-        }
+        .tabla-ing th { padding: 0.6rem 0.5rem; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; color: #4b4540; text-align: left; }
         .tabla-ing th.num { text-align: right; }
         .tabla-ing th.center { text-align: center; }
         .tabla-ing td { padding: 0.5rem; border-top: 1px solid #f0ebe5; }
         .tabla-ing td.num { text-align: right; font-variant-numeric: tabular-nums; }
         .tabla-ing td.center { text-align: center; }
-        .tabla-ing input, .tabla-ing select {
-            width: 100%; border: 1px solid transparent;
-            background: transparent; padding: 0.25rem 0.4rem;
-            border-radius: 4px; font-size: 0.85rem; font-family: inherit;
-            text-align: right;
-        }
+        .tabla-ing input, .tabla-ing select { width: 100%; border: 1px solid transparent; background: transparent; padding: 0.25rem 0.4rem; border-radius: 4px; font-size: 0.85rem; font-family: inherit; text-align: right; }
         .tabla-ing input.text { text-align: left; }
         .tabla-ing input:focus { border-color: #1e1e1e; background: white; outline: none; }
-
-        .vinc-badge {
-            display: inline-flex; align-items: center; gap: 0.2rem;
-            padding: 0.15rem 0.55rem; border-radius: 30px;
-            font-size: 0.7rem; font-weight: 600; cursor: pointer;
-            max-width: 180px; overflow: hidden; text-overflow: ellipsis;
-            white-space: nowrap; transition: 0.15s;
-        }
+        .vinc-badge { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.15rem 0.55rem; border-radius: 30px; font-size: 0.7rem; font-weight: 600; cursor: pointer; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: 0.15s; }
         .vinc-badge.ok { background: #d1fae5; color: #065f46; }
         .vinc-badge.ok:hover { background: #a7f3d0; }
         .vinc-badge.no { background: #f1f5f9; color: #94a3b8; }
         .vinc-badge.no:hover { background: #e2e8f0; color: #475569; }
-
-        .texto-grid {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 1rem; margin-bottom: 1rem;
-        }
+        .texto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
         @media (max-width: 768px) { .texto-grid { grid-template-columns: 1fr; } }
-        .texto-field label {
-            display: block; font-size: 0.75rem; font-weight: 700;
-            color: #475569; text-transform: uppercase; margin-bottom: 0.4rem;
-        }
-        .texto-field textarea {
-            width: 100%; min-height: 100px; padding: 0.7rem 1rem;
-            border: 1px solid #d5cdc3; border-radius: 10px;
-            font-size: 0.85rem; font-family: inherit;
-            background: #faf8f6; resize: vertical;
-        }
+        .texto-field label { display: block; font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 0.4rem; }
+        .texto-field textarea { width: 100%; min-height: 100px; padding: 0.7rem 1rem; border: 1px solid #d5cdc3; border-radius: 10px; font-size: 0.85rem; font-family: inherit; background: #faf8f6; resize: vertical; }
         .texto-field textarea:focus { outline: 2px solid #1e1e1e; background: white; }
-
         .alergenos-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-        .alergeno-chip {
-            padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.75rem;
-            font-weight: 500; cursor: pointer; background: #f1f5f9;
-            color: #475569; border: 2px solid transparent;
-        }
+        .alergeno-chip { padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.75rem; font-weight: 500; cursor: pointer; background: #f1f5f9; color: #475569; border: 2px solid transparent; }
         .alergeno-chip.selected { background: #1e1e1e; color: white; }
-
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000; padding: 1rem;
-        }
-        .modal {
-            background: white; border-radius: 24px; max-width: 600px;
-            width: 100%; max-height: 90vh; overflow-y: auto;
-            padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            margin-bottom: 1rem; padding-bottom: 0.8rem;
-            border-bottom: 2px solid #eee8e0;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+        .modal { background: white; border-radius: 24px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; padding-bottom: 0.8rem; border-bottom: 2px solid #eee8e0; }
         .modal-header h2 { font-weight: 700; font-size: 1.2rem; }
-        .close-btn {
-            background: none; border: none; font-size: 1.8rem;
-            cursor: pointer; color: #94a3b8; line-height: 1;
-        }
-        .vinc-opcion {
-            padding: 0.7rem 1rem; border-bottom: 1px solid #f0ebe5;
-            cursor: pointer; transition: 0.15s;
-        }
+        .close-btn { background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #94a3b8; line-height: 1; }
+        .vinc-opcion { padding: 0.7rem 1rem; border-bottom: 1px solid #f0ebe5; cursor: pointer; transition: 0.15s; }
         .vinc-opcion:hover { background: #f8faf8; }
         .vinc-opcion.selected { background: #d1fae5; border-left: 3px solid #059669; }
         .vinc-opcion.desvincular { background: #fef2f2; border-bottom: 2px solid #fecaca; }
         .vinc-opcion.desvincular:hover { background: #fee2e2; }
-
-        .toast {
-            position: fixed; bottom: 20px; left: 50%;
-            transform: translateX(-50%); background: #1e1e1e;
-            color: white; padding: 0.8rem 1.5rem; border-radius: 12px;
-            font-size: 0.9rem; z-index: 9999;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: white; padding: 0.8rem 1.5rem; border-radius: 12px; font-size: 0.9rem; z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
         .toast.success { background: #1e7e34; }
         .toast.error { background: #b13e3e; }
         .toast.warning { background: #c97d2b; }
-
-        .spinner {
-            display: inline-block; width: 30px; height: 30px;
-            border: 3px solid #f0ebe5; border-top-color: #1e1e1e;
-            border-radius: 50%; animation: spin 0.8s linear infinite;
-        }
+        .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid #f0ebe5; border-top-color: #1e1e1e; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
         .empty-sidebar { color: #7a726a; text-align: center; padding: 2rem 1rem; font-size: 0.85rem; }
-
         @media print {
             body { background: white; }
             .app { display: block; padding: 0; }
@@ -336,13 +119,10 @@
 </head>
 <body>
 <div id="app" class="app">
-    <!-- BANNER DE ERROR -->
     <div v-if="errorGlobal" class="error-banner" style="grid-column:1/-1;">
-        <strong>⚠️ Error:</strong>
-        {{ errorGlobal }}
+        <strong>⚠️ Error:</strong> {{ errorGlobal }}
     </div>
 
-    <!-- HEADER -->
     <div class="header">
         <h1>📖 Recetario <small>{{ recetas.length }} recetas</small></h1>
         <div class="header-actions">
@@ -351,12 +131,9 @@
         </div>
     </div>
 
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <input type="text" class="search-box" v-model="busqueda" placeholder="🔍 Buscar receta...">
-        <div v-if="loading" style="text-align:center; padding:2rem;">
-            <div class="spinner"></div>
-        </div>
+        <div v-if="loading" style="text-align:center; padding:2rem;"><div class="spinner"></div></div>
         <div v-else-if="recetasAgrupadas.length === 0" class="empty-sidebar">
             <p v-if="!supabaseReady">Conectando a Supabase…</p>
             <p v-else>No hay recetas.</p>
@@ -367,8 +144,7 @@
                     <span>{{ grupo.categoria }}</span>
                     <span class="count">{{ grupo.recetas.length }}</span>
                 </div>
-                <div v-for="r in grupo.recetas" :key="r.id"
-                     class="receta-item"
+                <div v-for="r in grupo.recetas" :key="r.id" class="receta-item"
                      :class="{ active: recetaActual && recetaActual.id === r.id }"
                      @click="seleccionarReceta(r.id)">
                     <span class="receta-nombre">{{ r.nombre_plato }}</span>
@@ -378,20 +154,16 @@
         </div>
     </div>
 
-    <!-- MAIN -->
     <div class="main">
         <div v-if="loading" style="text-align:center; padding:3rem;">
             <div class="spinner"></div>
             <p style="margin-top:1rem; color:#7a726a;">Cargando...</p>
         </div>
-
         <div v-else-if="!recetaActual" class="empty-main">
             <div class="emoji">👈</div>
             <p style="font-size:1.1rem; font-weight:600;">Selecciona una receta</p>
         </div>
-
         <div v-else>
-            <!-- HEADER RECETA -->
             <div class="receta-header">
                 <div style="flex:1; min-width:250px;">
                     <div class="receta-title">
@@ -424,7 +196,6 @@
                 </div>
             </div>
 
-            <!-- CÁLCULOS -->
             <div class="calc-grid">
                 <div class="calc-card">
                     <div class="label">Coste total Excel</div>
@@ -452,7 +223,6 @@
                 </div>
             </div>
 
-            <!-- INFO -->
             <div class="info-grid">
                 <div class="info-field">
                     <div class="label">Código</div>
@@ -500,17 +270,12 @@
                 </div>
             </div>
 
-            <!-- FLAGS DIETAS -->
             <div class="alergenos-row">
-                <span class="alergeno-chip" :class="{ selected: editandoOActual('celiacos') }"
-                      @click="toggleFlag('celiacos')">🌾 Celíacos</span>
-                <span class="alergeno-chip" :class="{ selected: editandoOActual('vegetarianos') }"
-                      @click="toggleFlag('vegetarianos')">🥬 Vegetarianos</span>
-                <span class="alergeno-chip" :class="{ selected: editandoOActual('diabeticos') }"
-                      @click="toggleFlag('diabeticos')">🩺 Diabéticos</span>
+                <span class="alergeno-chip" :class="{ selected: editandoOActual('celiacos') }" @click="toggleFlag('celiacos')">🌾 Celíacos</span>
+                <span class="alergeno-chip" :class="{ selected: editandoOActual('vegetarianos') }" @click="toggleFlag('vegetarianos')">🥬 Vegetarianos</span>
+                <span class="alergeno-chip" :class="{ selected: editandoOActual('diabeticos') }" @click="toggleFlag('diabeticos')">🩺 Diabéticos</span>
             </div>
 
-            <!-- INGREDIENTES -->
             <div class="tabla-wrap">
                 <table class="tabla-ing">
                     <thead>
@@ -534,7 +299,7 @@
                             <td class="center">
                                 <span class="vinc-badge" :class="ing.producto_id ? 'ok' : 'no'"
                                       @click="abrirModalVincular(ing)"
-                                      :title="ing.producto_id ? 'Vinculado a: ' + ing.producto_id : 'Sin vínculo'">
+                                      :title="ing.producto_id ? 'Vinculado: ' + ing.producto_id : 'Sin vínculo'">
                                     {{ ing.producto_id ? '🔗' : '⚪' }}
                                 </span>
                             </td>
@@ -574,7 +339,6 @@
                 ➕ Añadir ingrediente
             </button>
 
-            <!-- TEXTOS -->
             <div class="texto-grid">
                 <div class="texto-field">
                     <label>📋 Presentación</label>
@@ -593,7 +357,6 @@
         </div>
     </div>
 
-    <!-- MODAL VINCULAR -->
     <div v-if="modalVincularVisible" class="modal-overlay" @click.self="cerrarModalVincular">
         <div class="modal">
             <div class="modal-header">
@@ -607,11 +370,8 @@
                     Actual: <strong>🔗 {{ ingAVincular.producto_id }}</strong>
                 </div>
             </div>
-            <label style="display:block; font-weight:600; font-size:0.85rem; color:#475569; margin-bottom:0.4rem;">
-                Buscar producto:
-            </label>
-            <input type="text" v-model="busquedaProducto"
-                   placeholder="Escribe para buscar..."
+            <label style="display:block; font-weight:600; font-size:0.85rem; color:#475569; margin-bottom:0.4rem;">Buscar producto:</label>
+            <input type="text" v-model="busquedaProducto" placeholder="Escribe para buscar..."
                    style="width:100%; margin-bottom:0.8rem; padding:0.6rem 0.9rem; font-size:0.95rem; border:1px solid #d5cdc3; border-radius:8px; font-family:inherit;">
             <div style="max-height:380px; overflow-y:auto; border:1px solid #e8e1d9; border-radius:10px;">
                 <div v-if="ingAVincular && ingAVincular.producto_id" class="vinc-opcion desvincular" @click="vincularProducto(null)">
@@ -637,10 +397,447 @@
         </div>
     </div>
 
-    <!-- TOAST -->
     <div v-if="toast.show" class="toast" :class="toast.type">{{ toast.message }}</div>
 </div>
 
-<!-- AQUÍ VA EL SCRIPT (siguiente mensaje) -->
+<script>
+(function() {
+    'use strict';
+    const SUPABASE_URL = 'https://bhyprsjokwgazzzlfnbf.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y';
+
+    function fmt(n, dec) {
+        if (n === null || n === undefined || isNaN(n)) return '—';
+        return Number(n).toFixed(dec === undefined ? 2 : dec);
+    }
+    function fmt3(n) {
+        if (n === null || n === undefined || isNaN(n)) return '—';
+        return Number(n).toFixed(3);
+    }
+
+    new Vue({
+        el: '#app',
+        data: {
+            loading: true,
+            errorGlobal: '',
+            supabaseReady: false,
+            recalculando: false,
+            guardando: false,
+            supabase: null,
+            recetas: [],
+            recetaActual: null,
+            ingredientes: [],
+            productosRaciones: [],
+            busqueda: '',
+            modoEdicion: false,
+            toast: { show: false, message: '', type: 'success' },
+            formReceta: {},
+            modalVincularVisible: false,
+            ingAVincular: null,
+            busquedaProducto: ''
+        },
+        computed: {
+            recetasAgrupadas() {
+                const filtro = (this.busqueda || '').trim().toLowerCase();
+                const filtradas = filtro ? this.recetas.filter(r => (r.nombre_plato || '').toLowerCase().includes(filtro)) : this.recetas;
+                const grupos = {};
+                for (const r of filtradas) {
+                    const cat = r.categoria || 'SIN CATEGORÍA';
+                    if (!grupos[cat]) grupos[cat] = [];
+                    grupos[cat].push(r);
+                }
+                const orden = ['ENTRANTES','CARNES','PESCADOS','VEGETALES','ARROCES','FAST_GOOD','POSTRES','PREPARACION','SIN CATEGORÍA'];
+                return Object.keys(grupos).sort((a, b) => {
+                    const ia = orden.indexOf(a), ib = orden.indexOf(b);
+                    if (ia === -1 && ib === -1) return a.localeCompare(b);
+                    if (ia === -1) return 1;
+                    if (ib === -1) return -1;
+                    return ia - ib;
+                }).map(cat => ({ categoria: cat, recetas: grupos[cat] }));
+            },
+            costeTotal() {
+                let t = 0;
+                for (const ing of this.ingredientes) t += Number(ing.coste_cmp) || 0;
+                return t;
+            },
+            costeRacion() {
+                const pax = Number(this.recetaActual && this.recetaActual.pax) || 1;
+                return pax > 0 ? this.costeTotal / pax : 0;
+            },
+            pctCMP() {
+                const pvp = Number(this.recetaActual && this.recetaActual.pvp_actual) || 0;
+                if (pvp <= 0) return '0.0';
+                const iva = Number(this.recetaActual.iva) || 0;
+                const sinIva = pvp / (1 + iva / 100);
+                return sinIva > 0 ? ((this.costeRacion / sinIva) * 100).toFixed(1) : '0.0';
+            },
+            pctMBC() {
+                const cmp = parseFloat(this.pctCMP) || 0;
+                return (100 - cmp).toFixed(1);
+            },
+            pvpIdeal() {
+                return this.costeRacion / 0.30;
+            },
+            calcCardCMP() {
+                const v = parseFloat(this.pctCMP) || 0;
+                if (v >= 40) return 'danger';
+                if (v >= 32) return 'warning';
+                return '';
+            },
+            calcCardMBC() {
+                const v = parseFloat(this.pctMBC) || 0;
+                if (v < 60) return 'danger';
+                if (v < 70) return 'warning';
+                return 'highlight';
+            },
+            productosFiltrados() {
+                if (!this.productosRaciones || this.productosRaciones.length === 0) return [];
+                if (!this.busquedaProducto || this.busquedaProducto.trim() === '') return this.productosRaciones.slice(0, 50);
+                const txt = this.busquedaProducto.toUpperCase().trim();
+                return this.productosRaciones.filter(p =>
+                    (p.id && p.id.toUpperCase().includes(txt)) ||
+                    (p.nombre_articulo && p.nombre_articulo.toUpperCase().includes(txt))
+                ).slice(0, 50);
+            }
+        },
+        methods: {
+            fmt(n, dec) { return fmt(n, dec); },
+            fmt3(n) { return fmt3(n); },
+            showToast(message, type = 'success') {
+                this.toast = { show: true, message, type };
+                clearTimeout(this._toastTimer);
+                this._toastTimer = setTimeout(() => { this.toast.show = false; }, 3000);
+            },
+            async init() {
+                try {
+                    if (typeof supabase === 'undefined' || !supabase.createClient) throw new Error('Supabase SDK no cargado');
+                    if (!window._fredSupabase) window._fredSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    this.supabase = window._fredSupabase;
+                    this.supabaseReady = true;
+                } catch (e) {
+                    this.errorGlobal = 'No se pudo conectar a Supabase: ' + (e.message || e);
+                    this.loading = false;
+                    return;
+                }
+                await this.recargarTodo();
+            },
+            async recargarTodo() {
+                this.loading = true;
+                this.errorGlobal = '';
+                try {
+                    await Promise.all([this.cargarRecetas(), this.cargarProductos()]);
+                } catch (e) {
+                    this.errorGlobal = 'Error al cargar: ' + (e.message || e);
+                } finally {
+                    this.loading = false;
+                }
+            },
+            async cargarRecetas() {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('recetas_platos')
+                        .select('id,nombre_plato,categoria,pax,pvp_actual,iva,temporada,codigo')
+                        .eq('activo', true)
+                        .order('categoria').order('nombre_plato');
+                    if (error) throw error;
+                    this.recetas = data || [];
+                } catch (e) {
+                    throw new Error('Error recetas: ' + (e.message || e));
+                }
+            },
+            async cargarProductos() {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('productos_raciones')
+                        .select('id,nombre_articulo,zona,unidad_compra,stock_actual')
+                        .order('nombre_articulo');
+                    if (error) throw error;
+                    this.productosRaciones = data || [];
+                } catch (e) {
+                    this.productosRaciones = [];
+                }
+            },
+            async seleccionarReceta(id) {
+                if (this.modoEdicion && !confirm('Hay cambios sin guardar. ¿Descartar?')) return;
+                try {
+                    const { data, error } = await this.supabase
+                        .from('recetas_platos').select('*').eq('id', id).single();
+                    if (error) throw error;
+                    this.recetaActual = data;
+                    this.cargarFormReceta(data);
+                    await this.cargarIngredientes(id);
+                    this.modoEdicion = false;
+                } catch (e) {
+                    this.errorGlobal = 'Error al abrir receta: ' + (e.message || e);
+                }
+            },
+            cargarFormReceta(r) {
+                this.formReceta = {
+                    nombre_plato: r.nombre_plato || '',
+                    codigo: r.codigo || '',
+                    categoria: r.categoria || 'ENTRANTES',
+                    temporada: r.temporada || 'Anual',
+                    pax: r.pax || 1,
+                    pvp_actual: Number(r.pvp_actual) || 0,
+                    iva: Number(r.iva) || 10,
+                    presentacion: r.presentacion || '',
+                    elaboracion: r.elaboracion || '',
+                    notas_cocina: r.notas_cocina || '',
+                    celiacos: !!r.celiacos,
+                    vegetarianos: !!r.vegetarianos,
+                    diabeticos: !!r.diabeticos
+                };
+            },
+            async cargarIngredientes(recetaId) {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('ingredientes_receta').select('*').eq('receta_id', recetaId).order('orden');
+                    if (error) throw error;
+                    this.ingredientes = (data || []).map(i => ({
+                        id: i.id,
+                        orden: i.orden,
+                        nombre_ingrediente: i.nombre_ingrediente || '',
+                        aprovechamiento: Number(i.aprovechamiento) || 100,
+                        peso_neto: Number(i.peso_neto) || 0,
+                        peso_bruto: Number(i.peso_bruto) || 0,
+                        precio_compra: Number(i.precio_compra) || 0,
+                        coste_cmp: Number(i.coste_cmp) || 0,
+                        producto_id: i.producto_id || null,
+                        insumo_escandallo_id: i.insumo_escandallo_id || null,
+                        notas: i.notas || ''
+                    }));
+                } catch (e) {
+                    this.ingredientes = [];
+                    throw new Error('Error ingredientes: ' + (e.message || e));
+                }
+            },
+            recalcularFila(ing) {
+                const aprov = Number(ing.aprovechamiento) || 100;
+                const neto = Number(ing.peso_neto) || 0;
+                if (aprov > 0 && neto > 0) ing.peso_bruto = +(neto / (aprov / 100)).toFixed(4);
+                const bruto = Number(ing.peso_bruto) || 0;
+                const precio = Number(ing.precio_compra) || 0;
+                ing.coste_cmp = +(bruto * precio).toFixed(4);
+            },
+            activarEdicion() {
+                if (!this.recetaActual) return;
+                this.cargarFormReceta(this.recetaActual);
+                this.modoEdicion = true;
+            },
+            cancelarEdicion() {
+                if (!confirm('¿Descartar cambios?')) return;
+                this.cargarFormReceta(this.recetaActual);
+                this.modoEdicion = false;
+                this.cargarIngredientes(this.recetaActual.id);
+            },
+            editandoOActual(campo) {
+                if (this.modoEdicion) return this.formReceta[campo];
+                return this.recetaActual ? this.recetaActual[campo] : false;
+            },
+            toggleFlag(campo) {
+                if (!this.modoEdicion) return;
+                this.formReceta[campo] = !this.formReceta[campo];
+            },
+            añadirIngrediente() {
+                this.ingredientes.push({
+                    id: null, orden: this.ingredientes.length + 1, nombre_ingrediente: '',
+                    aprovechamiento: 100, peso_neto: 0, peso_bruto: 0, precio_compra: 0,
+                    coste_cmp: 0, producto_id: null, insumo_escandallo_id: null, notas: ''
+                });
+            },
+            eliminarIngrediente(idx) {
+                if (!confirm('¿Eliminar este ingrediente?')) return;
+                this.ingredientes.splice(idx, 1);
+            },
+            abrirModalVincular(ing) {
+                this.ingAVincular = ing;
+                this.busquedaProducto = '';
+                this.modalVincularVisible = true;
+            },
+            cerrarModalVincular() {
+                this.modalVincularVisible = false;
+                this.ingAVincular = null;
+                this.busquedaProducto = '';
+            },
+            async vincularProducto(productoId) {
+                if (!this.ingAVincular) return;
+                const ing = this.ingAVincular;
+                // Si está en modo edición → solo cambio local
+                if (this.modoEdicion || !ing.id) {
+                    ing.producto_id = productoId;
+                    this.showToast(productoId ? '🔗 Vínculo aplicado (guarda para confirmar)' : '⚪ Vínculo quitado (guarda para confirmar)', 'warning');
+                    this.cerrarModalVincular();
+                    return;
+                }
+                // Si no → update directo en BBDD
+                try {
+                    const { error } = await this.supabase
+                        .from('ingredientes_receta')
+                        .update({ producto_id: productoId })
+                        .eq('id', ing.id);
+                    if (error) throw error;
+                    ing.producto_id = productoId;
+                    this.showToast(productoId ? '🔗 Vinculado a ' + productoId : '⚪ Vínculo eliminado', 'success');
+                    this.cerrarModalVincular();
+                } catch (e) {
+                    this.showToast('Error: ' + (e.message || e), 'error');
+                }
+            },
+            async guardarReceta() {
+                if (!this.recetaActual) return;
+                if (!this.formReceta.nombre_plato || !this.formReceta.nombre_plato.trim()) {
+                    this.showToast('El nombre no puede estar vacío', 'error');
+                    return;
+                }
+                this.guardando = true;
+                try {
+                    // 1) Update receta
+                    const { error: errR } = await this.supabase
+                        .from('recetas_platos')
+                        .update({
+                            nombre_plato: this.formReceta.nombre_plato.trim(),
+                            codigo: this.formReceta.codigo || null,
+                            categoria: this.formReceta.categoria,
+                            temporada: this.formReceta.temporada,
+                            pax: Number(this.formReceta.pax) || 1,
+                            pvp_actual: Number(this.formReceta.pvp_actual) || 0,
+                            iva: Number(this.formReceta.iva) || 10,
+                            presentacion: this.formReceta.presentacion || null,
+                            elaboracion: this.formReceta.elaboracion || null,
+                            notas_cocina: this.formReceta.notas_cocina || null,
+                            celiacos: !!this.formReceta.celiacos,
+                            vegetarianos: !!this.formReceta.vegetarianos,
+                            diabeticos: !!this.formReceta.diabeticos
+                        })
+                        .eq('id', this.recetaActual.id);
+                    if (errR) throw errR;
+
+                    // 2) Borrar ingredientes viejos
+                    const { error: errDel } = await this.supabase
+                        .from('ingredientes_receta')
+                        .delete()
+                        .eq('receta_id', this.recetaActual.id);
+                    if (errDel) throw errDel;
+
+                    // 3) Insertar nuevos
+                    const filas = this.ingredientes
+                        .filter(i => i.nombre_ingrediente && i.nombre_ingrediente.trim())
+                        .map((i, idx) => ({
+                            receta_id: this.recetaActual.id,
+                            orden: idx + 1,
+                            nombre_ingrediente: i.nombre_ingrediente.trim(),
+                            aprovechamiento: Number(i.aprovechamiento) || 100,
+                            peso_neto: Number(i.peso_neto) || 0,
+                            peso_bruto: Number(i.peso_bruto) || 0,
+                            precio_compra: Number(i.precio_compra) || 0,
+                            coste_cmp: Number(i.coste_cmp) || 0,
+                            unidad_inventario: null,
+                            producto_id: i.producto_id || null,
+                            insumo_escandallo_id: i.insumo_escandallo_id || null,
+                            notas: i.notas || null
+                        }));
+                    if (filas.length > 0) {
+                        const { error: errIns } = await this.supabase.from('ingredientes_receta').insert(filas);
+                        if (errIns) throw errIns;
+                    }
+
+                    this.showToast('✅ Receta guardada', 'success');
+                    this.modoEdicion = false;
+                    // Recargar desde BBDD
+                    await this.seleccionarReceta(this.recetaActual.id);
+                    await this.cargarRecetas();
+                } catch (e) {
+                    this.showToast('Error al guardar: ' + (e.message || e), 'error');
+                } finally {
+                    this.guardando = false;
+                }
+            },
+            async confirmarEliminar() {
+                if (!this.recetaActual) return;
+                if (!confirm('⚠️ ¿Eliminar la receta "' + this.recetaActual.nombre_plato + '"?\n\nSe borrarán también sus ingredientes.')) return;
+                try {
+                    const { error } = await this.supabase.from('recetas_platos').delete().eq('id', this.recetaActual.id);
+                    if (error) throw error;
+                    this.showToast('Receta eliminada', 'success');
+                    this.recetaActual = null;
+                    this.ingredientes = [];
+                    await this.cargarRecetas();
+                } catch (e) {
+                    this.showToast('Error: ' + (e.message || e), 'error');
+                }
+            },
+            async recalcularCostes() {
+                if (!this.recetaActual) return;
+                const vinculados = this.ingredientes.filter(i => i.producto_id);
+                if (vinculados.length === 0) {
+                    this.showToast('No hay ingredientes vinculados a stock', 'warning');
+                    return;
+                }
+                if (!confirm(`Se van a recalcular ${vinculados.length} ingredientes con los precios actuales de stock.\n\n¿Continuar?`)) return;
+                this.recalculando = true;
+                try {
+                    // Traemos los productos vinculados
+                    const ids = vinculados.map(i => i.producto_id);
+                    const { data: prods, error } = await this.supabase
+                        .from('productos_raciones')
+                        .select('id,precio_compra,coste_unitario')
+                        .in('id', ids);
+                    if (error) throw error;
+                    const mapa = {};
+                    for (const p of (prods || [])) {
+                        mapa[p.id] = Number(p.precio_compra || p.coste_unitario) || 0;
+                    }
+                    let actualizados = 0;
+                    for (const ing of this.ingredientes) {
+                        if (!ing.producto_id) continue;
+                        const nuevoPrecio = mapa[ing.producto_id];
+                        if (nuevoPrecio && nuevoPrecio > 0) {
+                            ing.precio_compra_actual = nuevoPrecio;
+                            ing.precio_compra = nuevoPrecio; // opcional: pisar el histórico
+                            this.recalcularFila(ing);
+                            actualizados++;
+                        }
+                    }
+                    this.showToast(`✅ ${actualizados} ingredientes recalculados. Guarda para aplicar.`, 'success');
+                } catch (e) {
+                    this.showToast('Error: ' + (e.message || e), 'error');
+                } finally {
+                    this.recalculando = false;
+                }
+            },
+            async nuevaReceta() {
+                const nombre = prompt('Nombre de la nueva receta:');
+                if (!nombre || !nombre.trim()) return;
+                const id = nombre.toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '');
+                try {
+                    const { error } = await this.supabase.from('recetas_platos').insert([{
+                        id,
+                        nombre_plato: nombre.trim(),
+                        categoria: 'ENTRANTES',
+                        temporada: 'Anual',
+                        pax: 1,
+                        pvp_actual: 0,
+                        iva: 10,
+                        activo: true
+                    }]);
+                    if (error) throw error;
+                    this.showToast('✅ Receta creada', 'success');
+                    await this.cargarRecetas();
+                    await this.seleccionarReceta(id);
+                    this.modoEdicion = true;
+                } catch (e) {
+                    this.showToast('Error: ' + (e.message || e), 'error');
+                }
+            },
+            imprimirReceta() {
+                window.print();
+            }
+        },
+        mounted() {
+            this.init();
+        }
+    });
+})();
+</script>
 </body>
 </html>
