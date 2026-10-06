@@ -489,8 +489,7 @@ DOCUMENTOS:
 🎯 RESUMEN EJECUTIVO
 ════════════════════════════════════════════════════════════
 
-Fredware es un sistema en evolución que aspira a ser una
-fusión de MarketMan + Apicbase + Leanpath, pero:
+Fredware es un sistema en evolución:
   · Hecho a medida para Attica As Galeras
   · Sin costes de licencia
   · Integrado con hardware existente
