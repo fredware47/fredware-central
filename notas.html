@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📝 Fredware - Notas de Reunión</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E📝%3C/text%3E%3C/svg%3E">
+    <meta name="theme-color" content="#1e293b">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="shared-core.js"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        .nota-card {
+            background: white; border: 1px solid #e2e8f0;
+            border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+            transition: all 0.2s; position: relative;
+        }
+        .nota-card:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .nota-card.urgente { border-left: 4px solid #dc2626; background: #fef2f2; }
+        .nota-card.hecho { opacity: 0.55; background: #f8fafc; }
+        .nota-card.hecho .nota-texto { text-decoration: line-through; color: #94a3b8; }
+
+        .nota-texto {
+            font-size: 15px; color: #1e293b; line-height: 1.4;
+            word-break: break-word; font-weight: 500;
+        }
+        .nota-meta {
+            font-size: 11px; color: #94a3b8; margin-top: 6px;
+            display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+        }
+
+        .etiqueta-chip {
+            display: inline-block; padding: 2px 10px; border-radius: 20px;
+            font-size: 10px; font-weight: 700; margin-right: 4px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .etiqueta-pedido { background: #dbeafe; color: #1e40af; }
+        .etiqueta-grupo { background: #fef3c7; color: #92400e; }
+        .etiqueta-alergia { background: #fce7f3; color: #9d174d; }
+        .etiqueta-urgente { background: #fee2e2; color: #991b1b; }
+        .etiqueta-personal { background: #e0e7ff; color: #4338ca; }
+        .etiqueta-proveedor { background: #d1fae5; color: #065f46; }
+        .etiqueta-llamada { background: #f3e8ff; color: #6b21a8; }
+        .etiqueta-revisar { background: #cffafe; color: #155e75; }
+        .etiqueta-otro { background: #f1f5f9; color: #475569; }
+
+        .btn-icon {
+            background: none; border: none; cursor: pointer;
+            padding: 5px 8px; border-radius: 6px; font-size: 14px;
+            transition: all 0.15s;
+        }
+        .btn-icon:hover { background: #f1f5f9; }
+        .btn-icon.danger:hover { background: #fee2e2; }
+        .btn-icon.success:hover { background: #d1fae5; }
+        .btn-icon.info:hover { background: #dbeafe; }
+
+        .input-rapido {
+            width: 100%; padding: 14px 16px; font-size: 15px;
+            border: 2px solid #cbd5e1; border-radius: 12px;
+            background: #f8fafc; font-family: inherit;
+            transition: all 0.2s;
+        }
+        .input-rapido:focus {
+            outline: none; border-color: #1e293b; background: white;
+            box-shadow: 0 0 0 3px rgba(30,41,59,0.1);
+        }
+
+        .preview-deteccion {
+            background: #f0fdf4; border-left: 3px solid #10b981;
+            padding: 8px 12px; border-radius: 8px; font-size: 12px;
+            color: #065f46; margin-top: 8px;
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+        .preview-deteccion.visible { display: block; }
+        .preview-deteccion.sin-deteccion {
+            background: #f8fafc; border-left-color: #94a3b8; color: #64748b;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .atag-help {
+            background: #f0f9ff; border-left: 3px solid #0ea5e9;
+            padding: 8px 12px; border-radius: 8px; font-size: 12px;
+            color: #0c4a6e; margin-top: 8px;
+        }
+        .atag-help code {
+            background: white; padding: 1px 6px; border-radius: 4px;
+            font-weight: 700; color: #0ea5e9;
+        }
+
+        .dia-separador {
+            background: #1e293b; color: white; padding: 8px 14px;
+            border-radius: 10px; font-weight: 900; font-size: 13px;
+            text-transform: uppercase; letter-spacing: 1px;
+            margin: 16px 0 8px 0; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 6px;
+        }
+        .dia-separador .contador {
+            background: rgba(255,255,255,0.2); padding: 2px 10px;
+            border-radius: 20px; font-size: 11px; font-weight: 700;
+        }
+
+        .filtro-chip {
+            padding: 6px 14px; border-radius: 20px; border: 1px solid #cbd5e1;
+            background: white; cursor: pointer; font-size: 12px;
+            font-weight: 600; transition: all 0.15s; color: #475569;
+        }
+        .filtro-chip:hover { border-color: #1e293b; }
+        .filtro-chip.active { background: #1e293b; color: white; border-color: #1e293b; }
+
+        .loading-spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* PDF cards */
+        .pdf-card {
+            background: white; border: 1px solid #e2e8f0;
+            border-radius: 12px; padding: 12px 14px;
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.15s;
+        }
+        .pdf-card:hover { border-color: #dc2626; box-shadow: 0 2px 8px rgba(220,38,38,0.1); }
+        .pdf-card.urgente-expira { border-left: 4px solid #dc2626; background: #fef2f2; }
+        .pdf-card.cerca-expira { border-left: 4px solid #f59e0b; background: #fffbeb; }
+        .pdf-card.ok-expira { border-left: 4px solid #10b981; }
+
+        .pdf-icono {
+            background: #fee2e2; color: #dc2626;
+            width: 42px; height: 42px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0;
+        }
+        .pdf-info { flex: 1; min-width: 0; }
+        .pdf-nombre {
+            font-weight: 700; font-size: 13px; color: #1e293b;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .pdf-meta {
+            font-size: 11px; color: #94a3b8;
+            display: flex; gap: 8px; margin-top: 3px; flex-wrap: wrap;
+        }
+        .pdf-acciones { display: flex; gap: 4px; flex-shrink: 0; }
+
+        .badge-expira {
+            display: inline-block; padding: 1px 8px; border-radius: 10px;
+            font-size: 10px; font-weight: 700; margin-top: 4px;
+        }
+        .badge-expira.urgente { background: #fee2e2; color: #991b1b; }
+        .badge-expira.cerca { background: #fef3c7; color: #92400e; }
+        .badge-expira.ok { background: #d1fae5; color: #065f46; }
+
+        .zona-upload {
+            border: 2px dashed #cbd5e1; border-radius: 12px;
+            padding: 20px; text-align: center; cursor: pointer;
+            transition: all 0.2s; background: #fafbfc;
+        }
+        .zona-upload:hover { border-color: #dc2626; background: #fef2f2; }
+        .zona-upload.arrastrando {
+            border-color: #dc2626; background: #fee2e2;
+            transform: scale(1.01);
+        }
+
+        .barra-progreso {
+            height: 6px; background: #e2e8f0; border-radius: 3px;
+            overflow: hidden; margin-top: 8px; display: none;
+        }
+        .barra-progreso.visible { display: block; }
+        .barra-progreso-fill {
+            height: 100%; background: #dc2626; width: 0%;
+            transition: width 0.2s;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-24 font-sans">
+
+    <header class="bg-white border-b border-slate-300 py-4 px-5 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-3xl mx-auto">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <div class="flex items-center space-x-3">
+                    <span class="text-3xl">📝</span>
+                    <div>
+                        <h1 class="text-lg font-black tracking-tight">BLOCK DE NOTAS</h1>
+                        <p class="text-xs text-slate-500 font-bold tracking-wider uppercase">Reunión semanal · Jefes</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="btn-cocinero" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition-all"></button>
+                    <button onclick="cargarTodo()" class="bg-slate-200 hover:bg-slate-300 px-3 py-2 rounded-xl text-xs font-bold transition-all">🔄</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto w-full px-4 mt-5 space-y-4">
+
+        <!-- HOJAS DE SERVICIO -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    📎 Hojas de servicio
+                    <span id="contador-pdfs" class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                </h2>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="limpiarExpiradosManual()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition-all" title="Eliminar PDFs expirados">
+                        🧹 Limpiar
+                    </button>
+                    <button onclick="abrirSelectorPDF()" class="bg-red-500 hover:bg-red-600 text-white font-bold text-xs px-3 py-2 rounded-lg transition-all">
+                        ➕ Subir PDF
+                    </button>
+                </div>
+            </div>
+
+            <div id="zona-upload" class="zona-upload mb-3">
+                <div style="font-size:32px; margin-bottom:4px;">📄</div>
+                <div style="font-size:13px; font-weight:700; color:#475569;">Arrastra el PDF aquí o pulsa "Subir PDF"</div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Máximo 10 MB · Solo PDFs</div>
+                <div style="font-size:10px; color:#94a3b8; margin-top:2px;">💡 Se borrará el miércoles siguiente</div>
+                <div id="barra-progreso" class="barra-progreso">
+                    <div id="barra-progreso-fill" class="barra-progreso-fill"></div>
+                </div>
+            </div>
+
+            <input type="file" id="input-pdf" accept="application/pdf" style="display:none;">
+
+            <div id="lista-pdfs" class="space-y-2">
+                <div class="text-center text-slate-400 text-xs py-3">Cargando...</div>
+            </div>
+        </div>
+
+        <!-- NUEVA NOTA -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">✍️ Nueva nota</label>
+            <div class="flex gap-2 items-start">
+                <input
+                    type="text"
+                    id="input-nota"
+                    class="input-rapido flex-1"
+                    placeholder="Escribe natural... el sistema clasifica solo"
+                    autocomplete="off"
+                    oninput="previsualizarDeteccion()"
+                    onkeypress="if(event.key==='Enter') guardarNota()"
+                >
+                <button onclick="guardarNota()" id="btn-guardar" class="bg-slate-900 hover:bg-slate-700 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
+                    ➕ Añadir
+                </button>
+            </div>
+
+            <div id="preview-deteccion" class="preview-deteccion"></div>
+
+            <details class="atag-help">
+                <summary style="cursor:pointer; font-weight:700;">💡 Detección automática de etiquetas</summary>
+                <div style="margin-top:8px; line-height:1.6;">
+                    <strong>📦 Pedido:</strong> pedir, comprar, reponer, falta...
+                    <br>
+                    <strong>👥 Grupo:</strong> grupo, pax, personas, reserva...
+                    <br>
+                    <strong>⚠️ Alergia:</strong> alergia, intolerante, celíaco, vegano...
+                    <br>
+                    <strong>🚨 Urgente:</strong> urgente, corre prisa, ya mismo...
+                    <br>
+                    <strong>👤 Personal:</strong> personal, cocinero, libre, turno...
+                    <br>
+                    <strong>🏢 Proveedor:</strong> proveedor, reparto, Makro, Namastelle...
+                    <br>
+                    <strong>📞 Llamada:</strong> llamar, teléfono, contactar, avisar...
+                    <br>
+                    <strong>👁️ Revisar:</strong> revisar, comprobar, verificar, chequear...
+                </div>
+            </details>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="text-xs font-bold text-slate-500 uppercase mr-1">Estado:</span>
+                <button class="filtro-chip active" data-filtro="pendientes" onclick="setFiltroEstado('pendientes')">⏳ Pendientes</button>
+                <button class="filtro-chip" data-filtro="todos" onclick="setFiltroEstado('todos')">📋 Todos</button>
+                <button class="filtro-chip" data-filtro="hechos" onclick="setFiltroEstado('hechos')">✅ Hechos</button>
+            </div>
+
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="text-xs font-bold text-slate-500 uppercase mr-1">Etiqueta:</span>
+                <button class="filtro-chip active" data-tag="" onclick="setFiltroTag('')">Todas</button>
+                <button class="filtro-chip" data-tag="pedido" onclick="setFiltroTag('pedido')">📦 Pedido</button>
+                <button class="filtro-chip" data-tag="grupo" onclick="setFiltroTag('grupo')">👥 Grupo</button>
+                <button class="filtro-chip" data-tag="alergia" onclick="setFiltroTag('alergia')">⚠️ Alergia</button>
+                <button class="filtro-chip" data-tag="urgente" onclick="setFiltroTag('urgente')">🚨 Urgente</button>
+                <button class="filtro-chip" data-tag="personal" onclick="setFiltroTag('personal')">👤 Personal</button>
+                <button class="filtro-chip" data-tag="proveedor" onclick="setFiltroTag('proveedor')">🏢 Proveedor</button>
+                <button class="filtro-chip" data-tag="llamada" onclick="setFiltroTag('llamada')">📞 Llamada</button>
+                <button class="filtro-chip" data-tag="revisar" onclick="setFiltroTag('revisar')">👁️ Revisar</button>
+            </div>
+
+            <div class="flex flex-wrap gap-2 items-center justify-between">
+                <div class="flex gap-2 items-center">
+                    <span class="text-xs font-bold text-slate-500 uppercase">Desde:</span>
+                    <select id="filtro-dias" onchange="cargarNotas()" class="text-sm bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 font-semibold">
+                        <option value="1">Hoy</option>
+                        <option value="7" selected>Última semana</option>
+                        <option value="30">Último mes</option>
+                        <option value="365">Todo</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="copiarTodo()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-2 rounded-lg text-xs transition-all">
+                        📋 Copiar todo
+                    </button>
+                    <button onclick="limpiarHechos()" class="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-2 rounded-lg text-xs transition-all">
+                        🗑️ Borrar hechos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="lista-notas">
+            <div class="text-center text-slate-400 py-12">
+                <div class="loading-spinner" style="border-color: #cbd5e1; border-top-color: #64748b;"></div>
+                <p class="mt-3 text-sm">Cargando notas...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+    // ============================================================
+    // BLOCK DE NOTAS + HOJAS DE SERVICIO CON EXPIRACIÓN
+    // ============================================================
+    const db = window.fredware.supabase;
+    const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const BUCKET_PDFS = 'hojas-servicio';
+
+    let notasGlobal = [];
+    let pdfsGlobal = [];
+    let filtroEstado = 'pendientes';
+    let filtroTag = '';
+
+    const TAGS_VALIDAS = ['pedido','grupo','alergia','urgente','personal','proveedor','llamada','revisar'];
+
+    const DICCIONARIO = {
+        pedido: ['pedir','pedido','pedidos','comprar','compra','compras','encargar','encargo','encargado','reponer','reposicion','falta','faltan','faltaba','agotado','se acabo','solicitar','solicitud','proveeduria'],
+        grupo: ['grupo','grupos','pax','personas','comensales','reserva','reservas','mesa','mesas','evento','eventos','banquete','celebracion','cumpleaños','boda','comunion','empresa','colegio','excursion'],
+        alergia: ['alergia','alergias','alergico','alergicos','intolerante','intolerantes','intolerancia','celiaco','celiacos','celiaquia','sin gluten','sin lactosa','sin huevo','sin frutos secos','vegano','veganos','vegetariano','vegetarianos','diabetico','diabeticos','apcc'],
+        urgente: ['urgente','urgencia','urgentemente','corre prisa','prisa','rapido','ya mismo','hoy mismo','cuanto antes','inmediato','inmediatamente','critico','critica','para ayer'],
+        personal: ['personal','cocinero','cocineros','cocina','libre','libra','librar','vacaciones','vacacion','baja','bajas','enfermo','enferma','turno','turnos','horario','horarios','fichar','falta personal','no viene','no puedo ir'],
+        proveedor: ['proveedor','proveedores','proveeduria','reparto','repartos','reparte','no reparte','distribuidor','distribuidora','distribucion','makro','pescasa','namastelle','galicia','frutas pepe','cash','mayorista'],
+        llamada: ['llamar','llamada','llamadas','llamo','llame','telefono','telefonear','telefonar','contactar','contacto','contacte','avisar','aviso','avisado','comunicar','comunicacion'],
+        revisar: ['revisar','revisa','revisado','revision','comprobar','comprueba','comprobado','verificar','verifica','verificado','mirar','mira','mirando','chequear','chequeo','chequeado','confirmar','confirma','confirmado','supervisar','supervisa','supervision']
+    };
+
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
+    function toast(msg, tipo='success') { window.fredware.ui.toast(msg, tipo); }
+    function esc(t) { return window.fredware.util.escapeHtml(t); }
+    function pad(n) { return String(n).padStart(2,'0'); }
+
+    function fechaHoy() { return new Date().toISOString().split('T')[0]; }
+
+    function formatearFecha(f) {
+        if (!f) return '';
+        const d = new Date(f + 'T00:00:00');
+        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+    }
+
+    function diaSemana(fechaStr) {
+        const d = new Date(fechaStr + 'T00:00:00');
+        return DIAS[d.getDay()];
+    }
+
+    function tiempoRelativo(isoStr) {
+        if (!isoStr) return '';
+        const dif = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+        if (dif < 60) return 'ahora';
+        if (dif < 3600) return `hace ${Math.floor(dif/60)} min`;
+        if (dif < 86400) return `hace ${Math.floor(dif/3600)} h`;
+        if (dif < 604800) return `hace ${Math.floor(dif/86400)} d`;
+        return formatearFecha(isoStr.split('T')[0]);
+    }
+
+    function normalizar(texto) {
+        return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function formatearBytes(bytes) {
+        if (!bytes) return '';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function semanaISO(fechaStr) {
+        const d = new Date(fechaStr + 'T00:00:00');
+        const dia = (d.getDay() + 6) % 7;
+        d.setDate(d.getDate() - dia + 3);
+        const año = d.getFullYear();
+        const primerJueves = new Date(año, 0, 4);
+        const diff = d - primerJueves;
+        const semana = 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
+        return `${año}-W${String(semana).padStart(2, '0')}`;
+    }
+
+    // ============================================================
+    // 🆕 CALCULAR FECHA DE EXPIRACIÓN
+    // Regla: Miércoles siguiente al domingo de la semana del PDF
+    // ============================================================
+    function calcularExpiracion(fechaStr) {
+        const fecha = new Date(fechaStr + 'T00:00:00');
+        const diaSemana = fecha.getDay(); // 0=domingo, 1=lunes... 6=sábado
+
+        // Días hasta el domingo de esta semana
+        const diasHastaDomingo = (7 - diaSemana) % 7;
+
+        const domingo = new Date(fecha);
+        domingo.setDate(fecha.getDate() + diasHastaDomingo);
+
+        // Miércoles siguiente = domingo + 3
+        const miercoles = new Date(domingo);
+        miercoles.setDate(domingo.getDate() + 3);
+
+        return miercoles.toISOString().split('T')[0];
+    }
+
+    // ============================================================
+    // 🆕 DÍAS RESTANTES HASTA EXPIRACIÓN
+    // ============================================================
+    function diasHastaExpirar(fechaExpira) {
+        const hoy = new Date();
+        hoy.setHours(0,0,0,0);
+        const exp = new Date(fechaExpira + 'T00:00:00');
+        return Math.ceil((exp - hoy) / (1000 * 60 * 60 * 24));
+    }
+
+    // ============================================================
+    // 🆕 AUTO-DETECCIÓN DE ETIQUETAS
+    // ============================================================
+    function detectarEtiquetas(textoOriginal) {
+        const textoNorm = normalizar(textoOriginal);
+        const etiquetasDetectadas = new Set();
+
+        const tagsExplicitos = textoOriginal.match(/#(\w+)/g) || [];
+        tagsExplicitos.forEach(tag => {
+            const tagLimpio = tag.substring(1).toLowerCase();
+            if (TAGS_VALIDAS.includes(tagLimpio)) etiquetasDetectadas.add(tagLimpio);
+        });
+
+        Object.entries(DICCIONARIO).forEach(([etiqueta, palabras]) => {
+            const encontrado = palabras.some(p => textoNorm.includes(normalizar(p)));
+            if (encontrado) etiquetasDetectadas.add(etiqueta);
+        });
+
+        const textoLimpio = textoOriginal.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
+
+        return {
+            etiquetas: Array.from(etiquetasDetectadas),
+            texto: textoLimpio
+        };
+    }
+
+    function previsualizarDeteccion() {
+        const input = document.getElementById('input-nota');
+        const preview = document.getElementById('preview-deteccion');
+        const texto = input.value.trim();
+
+        if (!texto || texto.length < 3) {
+            preview.classList.remove('visible');
+            return;
+        }
+
+        const { etiquetas } = detectarEtiquetas(texto);
+
+        if (etiquetas.length === 0) {
+            preview.className = 'preview-deteccion visible sin-deteccion';
+            preview.innerHTML = `📄 <em>Sin etiqueta — nota genérica</em>`;
+        } else {
+            const iconosMap = { pedido:'📦', grupo:'👥', alergia:'⚠️', urgente:'🚨', personal:'👤', proveedor:'🏢', llamada:'📞', revisar:'👁️' };
+            const chips = etiquetas.map(t => `<span class="etiqueta-chip etiqueta-${t}">${iconosMap[t]} ${t}</span>`).join(' ');
+            preview.className = 'preview-deteccion visible';
+            preview.innerHTML = `✨ Detectado: ${chips}`;
+        }
+    }
+
+    // ============================================================
+    // CARGAR TODO
+    // ============================================================
+    async function cargarTodo() {
+        await Promise.all([cargarNotas(), cargarPDFs()]);
+    }
+
+    // ============================================================
+    // 🆕 LIMPIAR PDFs EXPIRADOS (AUTOMÁTICO)
+    // ============================================================
+    async function limpiarExpiradosAuto(silencioso = false) {
+        try {
+            const hoy = fechaHoy();
+            const { data: expirados, error } = await db
+                .from('hojas_servicio')
+                .select('id, storage_path, nombre')
+                .lt('expira_en', hoy);
+
+            if (error) throw error;
+            if (!expirados || expirados.length === 0) return 0;
+
+            let borrados = 0;
+
+            for (const pdf of expirados) {
+                // 1. Borrar de Storage
+                try {
+                    await db.storage.from(BUCKET_PDFS).remove([pdf.storage_path]);
+                } catch (e) {
+                    console.warn('Storage error:', e);
+                }
+
+                // 2. Borrar de BD
+                try {
+                    const { error: dbErr } = await db
+                        .from('hojas_servicio')
+                        .delete()
+                        .eq('id', pdf.id);
+                    if (!dbErr) borrados++;
+                } catch (e) {
+                    console.warn('BD error:', e);
+                }
+            }
+
+            if (borrados > 0 && !silencioso) {
+                toast(`🗑️ ${borrados} hoja${borrados > 1 ? 's' : ''} antigua${borrados > 1 ? 's' : ''} eliminada${borrados > 1 ? 's' : ''}`, 'info');
+            }
+
+            return borrados;
+        } catch (e) {
+            console.error('Error limpiando:', e);
+            return 0;
+        }
+    }
+
+    // Botón manual
+    async function limpiarExpiradosManual() {
+        const ok = await Swal.fire({
+            title: '🧹 Limpiar expirados',
+            text: 'Se eliminarán los PDFs cuya fecha de expiración ya pasó',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '🧹 Limpiar ahora',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc2626'
+        });
+        if (!ok.isConfirmed) return;
+
+        const borrados = await limpiarExpiradosAuto(false);
+        if (borrados === 0) {
+            toast('✅ No hay PDFs expirados', 'success');
+        }
+        await cargarPDFs();
+    }
+
+    // ============================================================
+    // PDFs — CARGAR
+    // ============================================================
+    async function cargarPDFs() {
+        const contenedor = document.getElementById('lista-pdfs');
+        try {
+            // 🆕 Primero limpia expirados (silencioso)
+            await limpiarExpiradosAuto(true);
+
+            // Luego carga solo los NO expirados
+            const hoy = fechaHoy();
+            const { data, error } = await db
+                .from('hojas_servicio')
+                .select('*')
+                .gte('expira_en', hoy)
+                .order('fecha', { ascending: false })
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (error) throw error;
+
+            pdfsGlobal = data || [];
+            document.getElementById('contador-pdfs').textContent = pdfsGlobal.length;
+            renderPDFs();
+        } catch (e) {
+            console.error('Error PDFs:', e);
+            contenedor.innerHTML = `<div class="text-center text-red-500 text-xs py-3">❌ ${esc(e.message)}</div>`;
+        }
+    }
+
+    function renderPDFs() {
+        const contenedor = document.getElementById('lista-pdfs');
+
+        if (pdfsGlobal.length === 0) {
+            contenedor.innerHTML = `
+                <div class="text-center text-slate-400 text-xs py-4">
+                    📭 Sin hojas de servicio activas
+                </div>
+            `;
+            return;
+        }
+
+        const hoy = fechaHoy();
+
+        contenedor.innerHTML = pdfsGlobal.map(pdf => {
+            const diasRestantes = diasHastaExpirar(pdf.expira_en);
+
+            // Clases según urgencia
+            let claseCard = 'pdf-card';
+            let claseBadge = 'badge-expira';
+            let textoBadge = '';
+
+            if (diasRestantes <= 0) {
+                claseCard += ' urgente-expira';
+                claseBadge += ' urgente';
+                textoBadge = '⚠️ Expira hoy';
+            } else if (diasRestantes === 1) {
+                claseCard += ' urgente-expira';
+                claseBadge += ' urgente';
+                textoBadge = '⏰ Expira mañana';
+            } else if (diasRestantes <= 3) {
+                claseCard += ' cerca-expira';
+                claseBadge += ' cerca';
+                textoBadge = `⏳ ${diasRestantes} días`;
+            } else {
+                claseCard += ' ok-expira';
+                claseBadge += ' ok';
+                textoBadge = `✅ ${diasRestantes} días`;
+            }
+
+            return `
+                <div class="${claseCard}">
+                    <div class="pdf-icono">📄</div>
+                    <div class="pdf-info">
+                        <div class="pdf-nombre" title="${esc(pdf.nombre)}">${esc(pdf.nombre)}</div>
+                        <div class="pdf-meta">
+                            <span>📅 ${formatearFecha(pdf.fecha)}</span>
+                            ${pdf.tamaño_kb ? `<span>💾 ${formatearBytes(pdf.tamaño_kb * 1024)}</span>` : ''}
+                            ${pdf.autor ? `<span>👤 ${esc(pdf.autor)}</span>` : ''}
+                        </div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:2px;">
+                            <span class="${claseBadge}">${textoBadge}</span>
+                            <span style="font-size:10px; color:#94a3b8;">Se borra el ${formatearFecha(pdf.expira_en)}</span>
+                        </div>
+                    </div>
+                    <div class="pdf-acciones">
+                        <button class="btn-icon info" onclick="verPDF('${esc(pdf.url_pdf)}')" title="Ver PDF">👁️</button>
+                        <button class="btn-icon" onclick="descargarPDF('${esc(pdf.url_pdf)}', '${esc(pdf.nombre)}')" title="Descargar">⬇️</button>
+                        <button class="btn-icon danger" onclick="borrarPDF(${pdf.id}, '${esc(pdf.storage_path)}')" title="Borrar">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ============================================================
+    // PDFs — SUBIR
+    // ============================================================
+    function abrirSelectorPDF() {
+        document.getElementById('input-pdf').click();
+    }
+
+    async function subirPDF(file) {
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            toast('⚠️ Solo se permiten PDFs', 'warning');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            toast('⚠️ Máximo 10 MB', 'warning');
+            return;
+        }
+
+        // Calcular expiración por defecto (basado en hoy)
+        const expiraDefault = calcularExpiracion(fechaHoy());
+
+        const { value: formData } = await Swal.fire({
+            title: '📄 Subir hoja de servicio',
+            html: `
+                <div style="text-align:left; font-size:14px;">
+                    <p style="margin-bottom:12px; color:#64748b;">
+                        <strong>${esc(file.name)}</strong><br>
+                        <span style="font-size:12px;">${formatearBytes(file.size)}</span>
+                    </p>
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Nombre visible</label>
+                    <input id="pdf-nombre" type="text" value="${esc(file.name.replace('.pdf',''))}" 
+                           style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; margin-bottom:12px;">
+                    
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Fecha del servicio</label>
+                    <input id="pdf-fecha" type="date" value="${fechaHoy()}" 
+                           style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; margin-bottom:8px;"
+                           onchange="actualizarPreviewExpiracion()">
+                    
+                    <div id="preview-expiracion" style="background:#fef3c7; padding:8px 12px; border-radius:8px; font-size:12px; color:#92400e; margin-bottom:12px;">
+                        ⏳ Se borrará el <strong>${formatearFecha(expiraDefault)}</strong> (miércoles siguiente)
+                    </div>
+                    
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Notas (opcional)</label>
+                    <input id="pdf-notas" type="text" placeholder="Ej: Semana 40, grupos, etc."
+                           style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px;">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '📤 Subir',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc2626',
+            didOpen: () => {
+                window.actualizarPreviewExpiracion = () => {
+                    const fecha = document.getElementById('pdf-fecha').value;
+                    if (!fecha) return;
+                    const expira = calcularExpiracion(fecha);
+                    document.getElementById('preview-expiracion').innerHTML = 
+                        `⏳ Se borrará el <strong>${formatearFecha(expira)}</strong> (miércoles siguiente)`;
+                };
+            },
+            preConfirm: () => {
+                const nombre = document.getElementById('pdf-nombre').value.trim();
+                const fecha = document.getElementById('pdf-fecha').value;
+                const notas = document.getElementById('pdf-notas').value.trim();
+                if (!nombre) {
+                    Swal.showValidationMessage('El nombre es obligatorio');
+                    return false;
+                }
+                if (!fecha) {
+                    Swal.showValidationMessage('La fecha es obligatoria');
+                    return false;
+                }
+                return { nombre, fecha, notas };
+            }
+        });
+
+        if (!formData) return;
+
+        const expiraEn = calcularExpiracion(formData.fecha);
+
+        const barra = document.getElementById('barra-progreso');
+        const barraFill = document.getElementById('barra-progreso-fill');
+        barra.classList.add('visible');
+        barraFill.style.width = '30%';
+
+        try {
+            const timestamp = Date.now();
+            const nombreSeguro = formData.nombre.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 60);
+            const storagePath = `${formData.fecha}/${timestamp}_${nombreSeguro}.pdf`;
+
+            const { error: uploadError } = await db.storage
+                .from(BUCKET_PDFS)
+                .upload(storagePath, file, {
+                    contentType: 'application/pdf',
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (uploadError) throw uploadError;
+
+            barraFill.style.width = '70%';
+
+            const { data: urlData } = db.storage.from(BUCKET_PDFS).getPublicUrl(storagePath);
+
+            const autor = localStorage.getItem('fredware_jefe_nombre') || null;
+
+            const { error: dbError } = await db.from('hojas_servicio').insert([{
+                nombre: formData.nombre,
+                fecha: formData.fecha,
+                expira_en: expiraEn,
+                semana: semanaISO(formData.fecha),
+                url_pdf: urlData.publicUrl,
+                storage_path: storagePath,
+                tamaño_kb: Math.round(file.size / 1024),
+                autor: autor,
+                notas: formData.notas || null
+            }]);
+
+            if (dbError) throw dbError;
+
+            barraFill.style.width = '100%';
+
+            toast(`✅ Subida · se borrará el ${formatearFecha(expiraEn)}`);
+            await cargarPDFs();
+
+        } catch (e) {
+            console.error('Error subiendo PDF:', e);
+            toast('❌ ' + (e.message || 'Error al subir'), 'error');
+        } finally {
+            setTimeout(() => {
+                barra.classList.remove('visible');
+                barraFill.style.width = '0%';
+            }, 800);
+        }
+    }
+
+    // ============================================================
+    // PDFs — VER / DESCARGAR / BORRAR
+    // ============================================================
+    function verPDF(url) {
+        window.open(url, '_blank');
+    }
+
+    function descargarPDF(url, nombre) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombre + '.pdf';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    async function borrarPDF(id, storagePath) {
+        const ok = await Swal.fire({
+            title: '¿Borrar esta hoja?',
+            text: 'Se elimina inmediatamente',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!ok.isConfirmed) return;
+
+        try {
+            try {
+                await db.storage.from(BUCKET_PDFS).remove([storagePath]);
+            } catch (e) {
+                console.warn('Storage error:', e);
+            }
+
+            const { error: dbError } = await db.from('hojas_servicio').delete().eq('id', id);
+            if (dbError) throw dbError;
+
+            toast('🗑️ PDF borrado', 'info');
+            await cargarPDFs();
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    // ============================================================
+    // DRAG & DROP
+    // ============================================================
+    function setupDragDrop() {
+        const zona = document.getElementById('zona-upload');
+        const input = document.getElementById('input-pdf');
+
+        zona.addEventListener('click', () => input.click());
+
+        ['dragenter', 'dragover'].forEach(evt => {
+            zona.addEventListener(evt, (e) => {
+                e.preventDefault();
+                zona.classList.add('arrastrando');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+            zona.addEventListener(evt, (e) => {
+                e.preventDefault();
+                zona.classList.remove('arrastrando');
+            });
+        });
+
+        zona.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) subirPDF(file);
+        });
+
+        input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) subirPDF(file);
+            input.value = '';
+        });
+    }
+
+    // ============================================================
+    // NOTAS — CARGAR
+    // ============================================================
+    async function cargarNotas() {
+        const contenedor = document.getElementById('lista-notas');
+        contenedor.innerHTML = '<div class="text-center py-12"><div class="loading-spinner" style="border-color: #cbd5e1; border-top-color: #64748b;"></div></div>';
+
+        try {
+            const dias = parseInt(document.getElementById('filtro-dias').value) || 7;
+            const desde = new Date();
+            desde.setDate(desde.getDate() - dias);
+
+            const { data, error } = await db
+                .from('notas_reunion')
+                .select('*')
+                .gte('fecha', desde.toISOString().split('T')[0])
+                .order('urgente', { ascending: false })
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            notasGlobal = data || [];
+            renderNotas();
+        } catch (e) {
+            console.error('Error cargando notas:', e);
+            contenedor.innerHTML = `<div class="text-center text-red-500 py-8 text-sm">❌ Error: ${esc(e.message)}</div>`;
+        }
+    }
+
+    function renderNotas() {
+        const contenedor = document.getElementById('lista-notas');
+
+        let filtradas = [...notasGlobal];
+        if (filtroEstado === 'pendientes') filtradas = filtradas.filter(n => !n.hecho);
+        if (filtroEstado === 'hechos') filtradas = filtradas.filter(n => n.hecho);
+        if (filtroTag) filtradas = filtradas.filter(n => (n.etiquetas || []).includes(filtroTag));
+
+        if (filtradas.length === 0) {
+            contenedor.innerHTML = `
+                <div class="text-center text-slate-400 py-12 bg-white rounded-2xl border border-slate-200">
+                    <div class="text-5xl mb-3">📭</div>
+                    <div class="text-sm font-medium">No hay notas con estos filtros</div>
+                </div>
+            `;
+            return;
+        }
+
+        const grupos = {};
+        filtradas.forEach(n => {
+            const f = n.fecha || fechaHoy();
+            if (!grupos[f]) grupos[f] = [];
+            grupos[f].push(n);
+        });
+
+        const fechas = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
+
+        contenedor.innerHTML = fechas.map(fecha => {
+            const notasDelDia = grupos[fecha];
+            const pendientes = notasDelDia.filter(n => !n.hecho).length;
+            const dia = diaSemana(fecha);
+
+            return `
+                <div class="dia-separador">
+                    <span>${dia === 'Martes' ? '📅' : '📆'} ${dia} ${formatearFecha(fecha)}</span>
+                    <span class="contador">${pendientes} pendiente${pendientes !== 1 ? 's' : ''}</span>
+                </div>
+                ${notasDelDia.map(n => renderNota(n)).join('')}
+            `;
+        }).join('');
+    }
+
+    function renderNota(n) {
+        const clases = ['nota-card'];
+        if (n.urgente) clases.push('urgente');
+        if (n.hecho) clases.push('hecho');
+
+        const etiquetasHTML = (n.etiquetas || []).map(tag => {
+            const claseMap = { pedido:'etiqueta-pedido', grupo:'etiqueta-grupo', alergia:'etiqueta-alergia', urgente:'etiqueta-urgente', personal:'etiqueta-personal', proveedor:'etiqueta-proveedor', llamada:'etiqueta-llamada', revisar:'etiqueta-revisar' };
+            const iconoMap = { pedido:'📦', grupo:'👥', alergia:'⚠️', urgente:'🚨', personal:'👤', proveedor:'🏢', llamada:'📞', revisar:'👁️' };
+            const clase = claseMap[tag] || 'etiqueta-otro';
+            const icono = iconoMap[tag] || '•';
+            return `<span class="etiqueta-chip ${clase}">${icono} ${tag}</span>`;
+        }).join('');
+
+        const acciones = [];
+        if (n.hecho) {
+            acciones.push(`<button class="btn-icon success" onclick="toggleHecho(${n.id}, false)" title="Marcar como pendiente">↩️</button>`);
+        } else {
+            acciones.push(`<button class="btn-icon success" onclick="toggleHecho(${n.id}, true)" title="Marcar como hecho">✅</button>`);
+        }
+        if ((n.etiquetas || []).includes('pedido')) {
+            acciones.push(`<button class="btn-icon info" onclick="enviarACesta(${n.id})" title="Enviar a cesta">🛒</button>`);
+        }
+        acciones.push(`<button class="btn-icon" onclick="editarNota(${n.id})" title="Editar">✏️</button>`);
+        acciones.push(`<button class="btn-icon danger" onclick="borrarNota(${n.id})" title="Borrar">🗑️</button>`);
+
+        return `
+            <div class="${clases.join(' ')}">
+                <div class="nota-texto">${n.urgente ? '🚨 ' : ''}${esc(n.texto)}</div>
+                <div class="nota-meta">
+                    ${etiquetasHTML}
+                    ${n.autor ? `<span>👤 ${esc(n.autor)}</span>` : ''}
+                    <span>🕐 ${tiempoRelativo(n.created_at)}</span>
+                    <div style="margin-left:auto; display:flex; gap:2px;">${acciones.join('')}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ============================================================
+    // NOTAS — ACCIONES
+    // ============================================================
+    async function guardarNota() {
+        const input = document.getElementById('input-nota');
+        const textoOriginal = input.value.trim();
+        if (!textoOriginal) return;
+
+        const { etiquetas, texto } = detectarEtiquetas(textoOriginal);
+        if (!texto) {
+            toast('⚠️ La nota está vacía', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('btn-guardar');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading-spinner"></span>';
+
+        try {
+            const autor = localStorage.getItem('fredware_jefe_nombre') || null;
+            const urgente = etiquetas.includes('urgente');
+
+            const { error } = await db.from('notas_reunion').insert([{
+                texto: texto,
+                fecha: fechaHoy(),
+                dia_semana: diaSemana(fechaHoy()),
+                etiquetas: etiquetas,
+                urgente: urgente,
+                autor: autor,
+                hecho: false
+            }]);
+
+            if (error) throw error;
+
+            input.value = '';
+            document.getElementById('preview-deteccion').classList.remove('visible');
+
+            const msg = etiquetas.length > 0
+                ? `✅ Guardada · ${etiquetas.map(t => '#' + t).join(' ')}`
+                : '✅ Guardada (sin etiqueta)';
+            toast(msg);
+
+            await cargarNotas();
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '➕ Añadir';
+            input.focus();
+        }
+    }
+
+    async function toggleHecho(id, nuevoEstado) {
+        try {
+            const { error } = await db.from('notas_reunion')
+                .update({ hecho: nuevoEstado, updated_at: new Date().toISOString() })
+                .eq('id', id);
+            if (error) throw error;
+
+            const nota = notasGlobal.find(n => n.id === id);
+            if (nota) nota.hecho = nuevoEstado;
+            renderNotas();
+            toast(nuevoEstado ? '✅ Hecha' : '↩️ Vuelta a pendientes', 'success');
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    async function borrarNota(id) {
+        const ok = await Swal.fire({
+            title: '¿Borrar esta nota?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!ok.isConfirmed) return;
+
+        try {
+            const { error } = await db.from('notas_reunion').delete().eq('id', id);
+            if (error) throw error;
+            toast('🗑️ Nota borrada', 'info');
+            await cargarNotas();
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    async function editarNota(id) {
+        const nota = notasGlobal.find(n => n.id === id);
+        if (!nota) return;
+
+        const { value: nuevoTexto } = await Swal.fire({
+            title: '✏️ Editar nota',
+            input: 'textarea',
+            inputValue: nota.texto,
+            inputAttributes: { rows: 3 },
+            showCancelButton: true,
+            confirmButtonText: '💾 Guardar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#1e293b'
+        });
+        if (!nuevoTexto || nuevoTexto.trim() === nota.texto) return;
+
+        const { etiquetas } = detectarEtiquetas(nuevoTexto);
+
+        try {
+            const { error } = await db.from('notas_reunion')
+                .update({ texto: nuevoTexto.trim(), etiquetas, urgente: etiquetas.includes('urgente'), updated_at: new Date().toISOString() })
+                .eq('id', id);
+            if (error) throw error;
+            toast('✅ Nota actualizada');
+            await cargarNotas();
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    async function enviarACesta(id) {
+        const nota = notasGlobal.find(n => n.id === id);
+        if (!nota) return;
+
+        const ok = await Swal.fire({
+            title: '🛒 Enviar a cesta',
+            html: `<p style="font-size:14px;">"${esc(nota.texto)}"</p>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '🛒 Enviar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#0ea5e9'
+        });
+        if (!ok.isConfirmed) return;
+
+        try {
+            const { error } = await db.from('cesta_pedidos').insert([{
+                id: 'NOTA_' + Date.now() + '_' + Math.random().toString(36).substring(2,6),
+                detalle: `[1 UNIDADES] ${nota.texto}`,
+                proveedor_id: 'S/P',
+                estado: 'PENDIENTE',
+                fecha_registro: new Date().toISOString(),
+                fecha_entrega_esperada: fechaHoy()
+            }]);
+            if (error) throw error;
+
+            toast('🛒 Enviado a cesta', 'success');
+            await toggleHecho(id, true);
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    function copiarTodo() {
+        let filtradas = [...notasGlobal];
+        if (filtroEstado === 'pendientes') filtradas = filtradas.filter(n => !n.hecho);
+        if (filtroTag) filtradas = filtradas.filter(n => (n.etiquetas || []).includes(filtroTag));
+
+        if (filtradas.length === 0) {
+            toast('No hay notas', 'warning');
+            return;
+        }
+
+        const grupos = {};
+        filtradas.forEach(n => {
+            const f = n.fecha || fechaHoy();
+            if (!grupos[f]) grupos[f] = [];
+            grupos[f].push(n);
+        });
+
+        const fechas = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
+        const lineas = ['📝 NOTAS REUNIÓN - FREDWARE', ''];
+
+        fechas.forEach(fecha => {
+            lineas.push(`📅 ${diaSemana(fecha)} ${formatearFecha(fecha)}`);
+            grupos[fecha].forEach(n => {
+                const tag = (n.etiquetas || []).length ? `[${n.etiquetas.map(t=>t.toUpperCase()).join('][')}] ` : '';
+                const check = n.hecho ? '✅' : '⏳';
+                lineas.push(`  ${check} ${tag}${n.texto}`);
+            });
+            lineas.push('');
+        });
+
+        const texto = lineas.join('\n');
+
+        navigator.clipboard.writeText(texto).then(() => {
+            toast('📋 Copiado', 'success');
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = texto;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+            toast('📋 Copiado', 'success');
+        });
+    }
+
+    async function limpiarHechos() {
+        const hechos = notasGlobal.filter(n => n.hecho);
+        if (hechos.length === 0) {
+            toast('No hay notas hechas', 'warning');
+            return;
+        }
+
+        const ok = await Swal.fire({
+            title: `¿Borrar ${hechos.length} notas hechas?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!ok.isConfirmed) return;
+
+        try {
+            const ids = hechos.map(n => n.id);
+            const { error } = await db.from('notas_reunion').delete().in('id', ids);
+            if (error) throw error;
+            toast(`🗑️ ${ids.length} borradas`, 'info');
+            await cargarNotas();
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    function setFiltroEstado(estado) {
+        filtroEstado = estado;
+        document.querySelectorAll('[data-filtro]').forEach(b => {
+            b.classList.toggle('active', b.dataset.filtro === estado);
+        });
+        renderNotas();
+    }
+
+    function setFiltroTag(tag) {
+        filtroTag = tag;
+        document.querySelectorAll('[data-tag]').forEach(b => {
+            b.classList.toggle('active', b.dataset.tag === tag);
+        });
+        renderNotas();
+    }
+
+    function editarCocinero() {
+        const actual = localStorage.getItem('fredware_jefe_nombre') || '';
+        const nuevo = prompt('👤 ¿Quién eres?', actual);
+        if (nuevo !== null && nuevo.trim()) {
+            localStorage.setItem('fredware_jefe_nombre', nuevo.trim());
+            actualizarBotonCocinero();
+            toast('✅ Guardado como: ' + nuevo.trim(), 'success');
+        }
+    }
+
+    function actualizarBotonCocinero() {
+        const nombre = localStorage.getItem('fredware_jefe_nombre') || '';
+        const btn = document.getElementById('btn-cocinero');
+        if (nombre) {
+            btn.innerHTML = '👤 ' + esc(nombre);
+            btn.className = 'bg-emerald-100 text-emerald-800 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-emerald-200';
+        } else {
+            btn.innerHTML = '👤 Poner nombre';
+            btn.className = 'bg-amber-100 text-amber-800 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-amber-200';
+        }
+    }
+
+    // ============================================================
+    // INICIALIZACIÓN
+    // ============================================================
+    document.getElementById('btn-cocinero').addEventListener('click', editarCocinero);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        actualizarBotonCocinero();
+        setupDragDrop();
+        cargarTodo();
+        document.getElementById('input-nota').focus();
+    });
+    </script>
+</body>
+</html>
