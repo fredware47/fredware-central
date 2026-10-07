@@ -51,6 +51,8 @@
         .etiqueta-urgente { background: #fee2e2; color: #991b1b; }
         .etiqueta-personal { background: #e0e7ff; color: #4338ca; }
         .etiqueta-proveedor { background: #d1fae5; color: #065f46; }
+        .etiqueta-llamada { background: #f3e8ff; color: #6b21a8; }
+        .etiqueta-revisar { background: #cffafe; color: #155e75; }
         .etiqueta-otro { background: #f1f5f9; color: #475569; }
 
         .btn-icon {
@@ -74,7 +76,6 @@
             box-shadow: 0 0 0 3px rgba(30,41,59,0.1);
         }
 
-        /* Preview de detección automática */
         .preview-deteccion {
             background: #f0fdf4; border-left: 3px solid #10b981;
             padding: 8px 12px; border-radius: 8px; font-size: 12px;
@@ -152,7 +153,6 @@
 
     <main class="max-w-3xl mx-auto w-full px-4 mt-5 space-y-4">
 
-        <!-- INPUT RÁPIDO CON AUTO-DETECCIÓN -->
         <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">✍️ Nueva nota</label>
             <div class="flex gap-2 items-start">
@@ -170,10 +170,8 @@
                 </button>
             </div>
 
-            <!-- Preview de detección automática -->
             <div id="preview-deteccion" class="preview-deteccion"></div>
 
-            <!-- Ayuda colapsable -->
             <details class="atag-help">
                 <summary style="cursor:pointer; font-weight:700;">💡 Cómo funciona la detección automática</summary>
                 <div style="margin-top:8px; line-height:1.6;">
@@ -190,13 +188,16 @@
                     <strong>👤 Personal:</strong> <em>personal, cocinero, libre, vacaciones, baja, turno</em>
                     <br>
                     <strong>🏢 Proveedor:</strong> <em>proveedor, reparto, distribuidor, Makro, Namastelle</em>
+                    <br>
+                    <strong>📞 Llamada:</strong> <em>llamar, llamada, teléfono, contactar, avisar</em>
+                    <br>
+                    <strong>👁️ Revisar:</strong> <em>revisar, comprobar, verificar, mirar, chequear</em>
                     <br><br>
                     <em>También puedes forzar con <code>#pedido</code> al inicio si quieres control manual.</em>
                 </div>
             </details>
         </div>
 
-        <!-- FILTROS -->
         <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
             <div class="flex flex-wrap gap-2 items-center">
                 <span class="text-xs font-bold text-slate-500 uppercase mr-1">Estado:</span>
@@ -214,6 +215,8 @@
                 <button class="filtro-chip" data-tag="urgente" onclick="setFiltroTag('urgente')">🚨 Urgente</button>
                 <button class="filtro-chip" data-tag="personal" onclick="setFiltroTag('personal')">👤 Personal</button>
                 <button class="filtro-chip" data-tag="proveedor" onclick="setFiltroTag('proveedor')">🏢 Proveedor</button>
+                <button class="filtro-chip" data-tag="llamada" onclick="setFiltroTag('llamada')">📞 Llamada</button>
+                <button class="filtro-chip" data-tag="revisar" onclick="setFiltroTag('revisar')">👁️ Revisar</button>
             </div>
 
             <div class="flex flex-wrap gap-2 items-center justify-between">
@@ -237,7 +240,6 @@
             </div>
         </div>
 
-        <!-- LISTA DE NOTAS -->
         <div id="lista-notas">
             <div class="text-center text-slate-400 py-12">
                 <div class="loading-spinner" style="border-color: #cbd5e1; border-top-color: #64748b;"></div>
@@ -258,13 +260,11 @@
     let filtroEstado = 'pendientes';
     let filtroTag = '';
 
-    const TAGS_VALIDAS = ['pedido','grupo','alergia','urgente','personal','proveedor'];
+    const TAGS_VALIDAS = ['pedido','grupo','alergia','urgente','personal','proveedor','llamada','revisar'];
 
     // ============================================================
-    // 🆕 DICCIONARIO DE AUTO-DETECCIÓN
+    // DICCIONARIO DE AUTO-DETECCIÓN
     // ============================================================
-    // Cada etiqueta tiene una lista de palabras clave que la activan.
-    // Se busca en el texto en minúsculas. Sin acentos también.
     const DICCIONARIO = {
         pedido: [
             'pedir', 'pedido', 'pedidos', 'comprar', 'compra', 'compras',
@@ -305,6 +305,24 @@
             'distribuidor', 'distribuidora', 'distribucion',
             'makro', 'pescasa', 'namastelle', 'galicia',
             'frutas pepe', 'cash', 'mayorista'
+        ],
+        // 🆕 LLAMADA
+        llamada: [
+            'llamar', 'llamada', 'llamadas', 'llamo', 'llame',
+            'telefono', 'telefonear', 'telefonar',
+            'contactar', 'contacto', 'contacte',
+            'avisar', 'aviso', 'avisado',
+            'comunicar', 'comunicacion'
+        ],
+        // 🆕 REVISAR
+        revisar: [
+            'revisar', 'revisa', 'revisado', 'revision',
+            'comprobar', 'comprueba', 'comprobado',
+            'verificar', 'verifica', 'verificado',
+            'mirar', 'mira', 'mirando',
+            'chequear', 'chequeo', 'chequeado',
+            'confirmar', 'confirma', 'confirmado',
+            'supervisar', 'supervisa', 'supervision'
         ]
     };
 
@@ -340,7 +358,6 @@
         return formatearFecha(isoStr.split('T')[0]);
     }
 
-    // Quitar acentos para comparar
     function normalizar(texto) {
         return texto.toLowerCase()
             .normalize('NFD')
@@ -348,13 +365,13 @@
     }
 
     // ============================================================
-    // 🆕 AUTO-DETECCIÓN DE ETIQUETAS
+    // AUTO-DETECCIÓN DE ETIQUETAS
     // ============================================================
     function detectarEtiquetas(textoOriginal) {
         const textoNorm = normalizar(textoOriginal);
         const etiquetasDetectadas = new Set();
 
-        // 1. Buscar primero los #tags explícitos (usuario avanzado)
+        // 1. Buscar #tags explícitos
         const tagsExplicitos = textoOriginal.match(/#(\w+)/g) || [];
         tagsExplicitos.forEach(tag => {
             const tagLimpio = tag.substring(1).toLowerCase();
@@ -367,13 +384,12 @@
         Object.entries(DICCIONARIO).forEach(([etiqueta, palabras]) => {
             const encontrado = palabras.some(palabra => {
                 const palabraNorm = normalizar(palabra);
-                // Buscar palabra completa o como fragmento rodeado de espacios/signos
                 return textoNorm.includes(palabraNorm);
             });
             if (encontrado) etiquetasDetectadas.add(etiqueta);
         });
 
-        // 3. Limpiar el texto: quitar #tags explícitos
+        // 3. Limpiar #tags
         const textoLimpio = textoOriginal
             .replace(/#\w+/g, '')
             .replace(/\s+/g, ' ')
@@ -386,7 +402,7 @@
     }
 
     // ============================================================
-    // 🆕 PREVIEW EN VIVO MIENTRAS ESCRIBES
+    // PREVIEW EN VIVO
     // ============================================================
     function previsualizarDeteccion() {
         const input = document.getElementById('input-nota');
@@ -406,9 +422,10 @@
         } else {
             const iconosMap = {
                 pedido: '📦', grupo: '👥', alergia: '⚠️',
-                urgente: '🚨', personal: '👤', proveedor: '🏢'
+                urgente: '🚨', personal: '👤', proveedor: '🏢',
+                llamada: '📞', revisar: '👁️'
             };
-            const chips = etiquetas.map(t => 
+            const chips = etiquetas.map(t =>
                 `<span class="etiqueta-chip etiqueta-${t}">${iconosMap[t]} ${t}</span>`
             ).join(' ');
             preview.className = 'preview-deteccion visible';
@@ -502,7 +519,9 @@
                 alergia: 'etiqueta-alergia',
                 urgente: 'etiqueta-urgente',
                 personal: 'etiqueta-personal',
-                proveedor: 'etiqueta-proveedor'
+                proveedor: 'etiqueta-proveedor',
+                llamada: 'etiqueta-llamada',
+                revisar: 'etiqueta-revisar'
             };
             const iconoMap = {
                 pedido: '📦',
@@ -510,7 +529,9 @@
                 alergia: '⚠️',
                 urgente: '🚨',
                 personal: '👤',
-                proveedor: '🏢'
+                proveedor: '🏢',
+                llamada: '📞',
+                revisar: '👁️'
             };
             const clase = claseMap[tag] || 'etiqueta-otro';
             const icono = iconoMap[tag] || '•';
@@ -579,7 +600,7 @@
             input.value = '';
             document.getElementById('preview-deteccion').classList.remove('visible');
 
-            const msg = etiquetas.length > 0 
+            const msg = etiquetas.length > 0
                 ? `✅ Guardada · ${etiquetas.map(t => '#' + t).join(' ')}`
                 : '✅ Guardada (sin etiqueta)';
             toast(msg);
@@ -660,7 +681,6 @@
         });
         if (!nuevoTexto || nuevoTexto.trim() === nota.texto) return;
 
-        // Re-detectar etiquetas al editar
         const { etiquetas } = detectarEtiquetas(nuevoTexto);
 
         try {
