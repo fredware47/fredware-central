@@ -10,29 +10,22 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f5f2ee; color: #1e1e1e; min-height: 100vh; }
         .app { max-width: 1600px; margin: 0 auto; padding: 1rem; min-height: 100vh; }
-
         .header { background: white; padding: 1.2rem 1.5rem; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 1rem; }
         .header h1 { font-weight: 600; font-size: 1.4rem; }
         .header h1 small { font-weight: 400; font-size: 0.8rem; color: #7a726a; margin-left: 0.5rem; }
-
         .tabs-nav { display: flex; gap: 0.3rem; background: white; padding: 0.4rem; border-radius: 60px; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); flex-wrap: wrap; }
         .tab-btn { flex: 1 1 auto; padding: 0.7rem 1.2rem; border: none; background: transparent; border-radius: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; font-family: inherit; color: #4b4540; transition: 0.15s; }
         .tab-btn.active { background: #1e1e1e; color: white; }
         .tab-btn:hover:not(.active) { background: #f0ebe5; }
-
-        /* LAYOUT 2 COLUMNAS (Recetario) */
         .layout-2col { display: grid; grid-template-columns: 320px 1fr; gap: 1rem; }
         @media (max-width: 900px) { .layout-2col { grid-template-columns: 1fr; } }
-
         .sidebar { background: white; border-radius: 20px; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); max-height: calc(100vh - 200px); overflow-y: auto; position: sticky; top: 1rem; }
         .search-box { width: 100%; padding: 0.6rem 1rem; border: 1px solid #d5cdc3; border-radius: 30px; font-size: 0.9rem; margin-bottom: 0.8rem; background: #faf8f6; font-family: inherit; }
         .cat-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #7a726a; padding: 0.6rem 0.5rem 0.3rem; }
         .receta-item { padding: 0.6rem 0.8rem; border-radius: 10px; cursor: pointer; font-size: 0.85rem; transition: 0.15s; margin-bottom: 0.1rem; }
         .receta-item:hover { background: #f8fafc; }
         .receta-item.active { background: #1e1e1e; color: white; }
-
         .main-panel { background: white; border-radius: 20px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); min-height: 500px; }
-
         .btn { border: none; padding: 0.55rem 1.1rem; border-radius: 40px; font-weight: 500; font-size: 0.85rem; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 0.4rem; transition: 0.15s; }
         .btn-primary { background: #1e1e1e; color: white; }
         .btn-primary:hover { background: #333; }
@@ -43,15 +36,11 @@
         .btn-danger { background: #b13e3e; color: white; }
         .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.75rem; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
         input, select, textarea { font-family: inherit; }
-
         .form-input { width: 100%; padding: 0.5rem 0.7rem; border: 1px solid #d5cdc3; border-radius: 8px; font-size: 0.9rem; background: #faf8f6; }
         .form-input:focus { outline: 2px solid #1e1e1e; background: white; }
-
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.8rem; margin-bottom: 1rem; }
         .form-field label { display: block; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.3rem; }
-
         .ing-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .ing-table thead { background: #f0ebe5; }
         .ing-table th { padding: 0.5rem; text-align: left; font-size: 0.7rem; text-transform: uppercase; color: #4b4540; font-weight: 700; }
@@ -60,19 +49,15 @@
         .ing-table td.center { text-align: center; }
         .ing-table input, .ing-table select { width: 100%; border: 1px solid transparent; background: transparent; padding: 0.3rem 0.4rem; border-radius: 6px; font-size: 0.85rem; font-family: inherit; }
         .ing-table input:focus, .ing-table select:focus { border-color: #1e1e1e; background: white; outline: none; }
-
         .empty-state { color: #7a726a; text-align: center; padding: 3rem 1rem; font-style: italic; }
         .empty-main { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; color: #7a726a; }
         .empty-main .emoji { font-size: 3rem; margin-bottom: 1rem; }
-
-        /* CALCULADORA */
         .plato-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.8rem; border-radius: 10px; transition: 0.15s; cursor: pointer; border: 1px solid transparent; }
         .plato-item:hover { background: #f8fafc; }
         .plato-item.selected { background: #fef3c7; border-color: #fcd34d; }
         .plato-item input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: #1e7e34; }
         .plato-item .plato-info { flex: 1; }
         .plato-item .plato-cat { font-size: 0.65rem; background: #f0ebe5; padding: 0.1rem 0.5rem; border-radius: 10px; color: #4b4540; font-weight: 600; }
-
         .resultado-tabla { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         .resultado-tabla thead { background: #1e7e34; color: white; }
         .resultado-tabla th { padding: 0.7rem 0.5rem; text-align: left; font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
@@ -80,33 +65,34 @@
         .resultado-tabla td { padding: 0.6rem 0.5rem; border-bottom: 1px solid #f0ebe5; font-size: 0.9rem; }
         .resultado-tabla td.num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
         .resultado-tabla tr:hover { background: #f8fafc; }
-
         .calc-card { background: linear-gradient(135deg, #1e7e34 0%, #15662a 100%); color: white; padding: 1rem 1.5rem; border-radius: 16px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
         .calc-card .big-num { font-size: 2rem; font-weight: 900; }
         .calc-card .label { font-size: 0.75rem; opacity: 0.85; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-
         .badge-cat { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
         .cat-PRIMERO { background: #dbeafe; color: #1e40af; }
         .cat-PRINCIPAL { background: #fee2e2; color: #991b1b; }
         .cat-POSTRE { background: #fce7f3; color: #9d174d; }
         .cat-GUARNICION { background: #fef3c7; color: #92400e; }
         .cat-OTRO { background: #f1f5f9; color: #475569; }
-
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: white; padding: 0.8rem 1.5rem; border-radius: 12px; font-size: 0.9rem; z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 90vw; }
         .toast.success { background: #1e7e34; }
         .toast.error { background: #b13e3e; }
         .toast.warning { background: #c97d2b; }
         .toast.info { background: #1e40af; }
-
         .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid #f0ebe5; border-top-color: #1e1e1e; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
         .panel-white { background: white; border-radius: 20px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 1rem; }
-
         .historico-item { padding: 1rem 1.2rem; border-radius: 12px; background: #faf8f6; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; cursor: pointer; transition: 0.15s; }
         .historico-item:hover { background: #f0ebe5; }
-
         .error-box { background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; font-size: 0.85rem; }
+        .modo-toggle { display: flex; gap: 0.4rem; align-items: center; background: #faf8f6; border: 1px solid #e8e1d9; border-radius: 30px; padding: 0.25rem 0.4rem; font-size: 0.75rem; }
+        .modo-toggle label { cursor: pointer; padding: 0.25rem 0.7rem; border-radius: 20px; font-weight: 600; color: #64748b; transition: 0.15s; }
+        .modo-toggle input[type="radio"] { display: none; }
+        .modo-toggle input[type="radio"]:checked + span { background: #1e1e1e; color: white; }
+        .modo-toggle span { display: inline-block; padding: 0.25rem 0.7rem; border-radius: 20px; }
+        .ficha-clave { background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .formula-hint { font-size: 0.72rem; color: #64748b; background: #f8fafc; border-left: 3px solid #1e7e34; padding: 0.5rem 0.8rem; border-radius: 0 8px 8px 0; margin-top: 0.6rem; }
+        .formula-hint code { background: #e8e1d9; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
     </style>
 </head>
 <body>
@@ -155,6 +141,7 @@
                          class="receta-item"
                          :class="{active: recetaActual && recetaActual.id === r.id}"
                          @click="seleccionarReceta(r.id)">
+                        <span v-if="r.clave" class="ficha-clave" style="margin-right:0.3rem;">{{ r.clave }}</span>
                         {{ r.nombre }}
                     </div>
                 </div>
@@ -168,11 +155,26 @@
                 </div>
 
                 <div v-else>
-                    <!-- Header receta -->
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; padding-bottom:1rem; border-bottom:2px solid #f0ebe5; flex-wrap:wrap; gap:0.5rem;">
-                        <div style="flex:1; min-width:250px;">
-                            <input class="form-input" v-model="formReceta.nombre" placeholder="Nombre de la receta" style="font-size:1.3rem; font-weight:700; margin-bottom:0.5rem;">
-                            <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                    <!-- ===== FICHA DE PRODUCCIÓN (cabecera) ===== -->
+                    <div style="border: 2px solid #1e1e1e; border-radius: 12px; overflow: hidden; margin-bottom: 1rem;">
+                        <div style="background:#1e1e1e; color:white; padding:0.5rem 1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                            <div style="font-weight:700; letter-spacing:1px; font-size:0.85rem;">FICHA DE PRODUCCIÓN</div>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <span style="font-size:0.75rem; opacity:0.8;">CLAVE:</span>
+                                <input v-model="formReceta.clave" placeholder="ej: vincci"
+                                       style="width:130px; padding:0.25rem 0.6rem; border:none; border-radius:6px; font-size:0.8rem; font-weight:700; text-align:center;">
+                            </div>
+                        </div>
+
+                        <div style="padding:1rem;">
+                            <!-- Nombre del plato -->
+                            <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap; margin-bottom:0.8rem;">
+                                <span style="font-size:0.75rem; font-weight:700; color:#64748b; white-space:nowrap;">NOMBRE DEL PLATO:</span>
+                                <input class="form-input" v-model="formReceta.nombre" placeholder="Nombre de la receta"
+                                       style="flex:1; min-width:200px; font-size:1.15rem; font-weight:700;">
+                            </div>
+
+                            <div style="display:flex; gap:0.8rem; align-items:center; flex-wrap:wrap; margin-bottom:0.8rem;">
                                 <span class="badge-cat" :class="'cat-' + (formReceta.categoria || 'OTRO')">{{ formReceta.categoria || 'OTRO' }}</span>
                                 <select class="form-input" v-model="formReceta.categoria" style="width:auto; font-size:0.75rem; padding:0.2rem 0.6rem;">
                                     <option value="PRIMERO">Primero</option>
@@ -181,25 +183,47 @@
                                     <option value="POSTRE">Postre</option>
                                     <option value="OTRO">Otro</option>
                                 </select>
+
+                                <!-- Selector de modo -->
+                                <div class="modo-toggle">
+                                    <label>
+                                        <input type="radio" :value="false" v-model="formReceta.modoLote">
+                                        <span :style="!formReceta.modoLote ? 'background:#1e1e1e;color:white;' : ''">Por persona</span>
+                                    </label>
+                                    <label>
+                                        <input type="radio" :value="true" v-model="formReceta.modoLote">
+                                        <span :style="formReceta.modoLote ? 'background:#1e1e1e;color:white;' : ''">Por lote</span>
+                                    </label>
+                                </div>
+
+                                <div v-if="formReceta.modoLote" style="display:flex; align-items:center; gap:0.3rem; font-size:0.8rem; color:#4b4540;">
+                                    <span>Lote para</span>
+                                    <input type="number" min="1" :value="formReceta.paxLote"
+                                           @input="cambiarPaxLote($event.target.value)"
+                                           style="width:60px; padding:0.2rem 0.4rem; border:1px solid #d5cdc3; border-radius:6px; text-align:center; font-weight:700;">
+                                    <span>pax</span>
+                                </div>
+                            </div>
+
+                            <!-- Descripción -->
+                            <div>
+                                <label style="display:block; font-size:0.7rem; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:0.3rem;">Notas / Descripción</label>
+                                <textarea class="form-input" v-model="formReceta.descripcion" rows="2" placeholder="Notas sobre esta receta..."></textarea>
                             </div>
                         </div>
-                        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-                            <button type="button" class="btn btn-danger btn-sm" @click="eliminarReceta">🗑️ Eliminar</button>
-                            <button type="button" class="btn btn-success btn-sm" @click="guardarReceta" :disabled="guardando">
-                                {{ guardando ? '⏳ Guardando…' : '💾 Guardar' }}
-                            </button>
-                        </div>
                     </div>
 
-                    <!-- Descripción -->
-                    <div class="form-field" style="margin-bottom:1rem;">
-                        <label>Descripción / Notas</label>
-                        <textarea class="form-input" v-model="formReceta.descripcion" rows="2" placeholder="Notas sobre esta receta..."></textarea>
+                    <!-- Botones de acción -->
+                    <div style="display:flex; justify-content:flex-end; gap:0.4rem; flex-wrap:wrap; margin-bottom:1rem;">
+                        <button type="button" class="btn btn-danger btn-sm" @click="eliminarReceta">🗑️ Eliminar</button>
+                        <button type="button" class="btn btn-success btn-sm" @click="guardarReceta" :disabled="guardando">
+                            {{ guardando ? '⏳ Guardando…' : '💾 Guardar' }}
+                        </button>
                     </div>
 
-                    <!-- Tabla de ingredientes -->
+                    <!-- ===== Tabla de ingredientes ===== -->
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;">
-                        <h3 style="font-size:1rem; font-weight:700;">📝 Ingredientes por persona</h3>
+                        <h3 style="font-size:1rem; font-weight:700;">📝 Ingredientes</h3>
                         <div style="display:flex; align-items:center; gap:0.6rem;">
                             <div style="font-size:0.8rem; color:#64748b;">
                                 Vista para
@@ -211,21 +235,36 @@
                     </div>
 
                     <div style="overflow-x:auto; border-radius:12px; border:1px solid #e8e1d9;">
-                        <table class="ing-table" style="min-width:600px;">
+                        <table class="ing-table" style="min-width:640px;">
                             <thead>
                                 <tr>
-                                    <th style="width:40%;">Ingrediente</th>
-                                    <th class="center" style="width:15%;">Cant/pax</th>
+                                    <th style="width:38%;">Ingrediente</th>
+                                    <th class="center" style="width:16%;">
+                                        <template v-if="formReceta.modoLote">Total lote ({{ formReceta.paxLote }} pax)</template>
+                                        <template v-else>Cant/pax</template>
+                                    </th>
                                     <th class="center" style="width:12%;">Unidad</th>
                                     <th class="center" style="width:18%;">Para {{ paxVista }} pax</th>
                                     <th class="center" style="width:10%;">Stock</th>
-                                    <th class="center" style="width:5%;"></th>
+                                    <th class="center" style="width:6%;"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="(ing, i) in ingredientes" :key="ing._uid">
                                     <td><input v-model="ing.nombre" placeholder="Ej: Pollo"></td>
-                                    <td class="center"><input type="number" step="0.001" v-model.number="ing.cantidad_por_persona" style="text-align:center;"></td>
+                                    <td class="center">
+                                        <!-- Modo LOTE: input = total del lote -->
+                                        <input v-if="formReceta.modoLote"
+                                               type="number" step="0.001" min="0"
+                                               :value="valLote(ing)"
+                                               @input="setLote(ing, $event.target.value)"
+                                               style="text-align:center; font-weight:700; color:#1e7e34;">
+                                        <!-- Modo PERSONA: input = cantidad por persona -->
+                                        <input v-else
+                                               type="number" step="0.001" min="0"
+                                               v-model.number="ing.cantidad_por_persona"
+                                               style="text-align:center;">
+                                    </td>
                                     <td class="center">
                                         <select v-model="ing.unidad" style="text-align:center;">
                                             <option value="KG">KG</option>
@@ -255,6 +294,13 @@
                         </table>
                     </div>
 
+                    <!-- Pista de fórmula -->
+                    <div v-if="formReceta.modoLote && ingredientes.length > 0" class="formula-hint">
+                        🔢 <strong>Fórmula:</strong> Cantidad por persona =
+                        <code>Total lote ÷ {{ formReceta.paxLote }} pax</code>.
+                        Ej: para el repollo, escribe <code>1</code> (1 repollo para {{ formReceta.paxLote }} pax) → guarda <code>{{ fmt(1/formReceta.paxLote) }}</code> por persona.
+                    </div>
+
                     <button type="button" class="btn btn-outline btn-sm" style="margin-top:1rem;" @click="agregarIngrediente">➕ Añadir ingrediente</button>
                     <button type="button" class="btn btn-success btn-sm" style="margin-top:1rem;" @click="guardarReceta" :disabled="guardando">
                         {{ guardando ? '⏳ Guardando…' : '💾 Guardar receta' }}
@@ -267,7 +313,6 @@
         <!-- TAB 2: CALCULAR GRUPO                        -->
         <!-- ============================================ -->
         <div v-if="tab === 'calcular'">
-
             <div class="panel-white">
                 <h2 style="font-size:1.1rem; font-weight:700; margin-bottom:1rem;">🎯 Datos del grupo</h2>
                 <div class="form-grid">
@@ -329,7 +374,6 @@
                 </button>
             </div>
 
-            <!-- Resultado -->
             <div v-if="resultado.length > 0" class="panel-white">
                 <div class="calc-card">
                     <div>
@@ -388,7 +432,6 @@
                     </div>
                 </details>
             </div>
-
         </div>
 
         <!-- ============================================ -->
@@ -416,7 +459,6 @@
                 </div>
             </div>
 
-            <!-- Modal detalle histórico -->
             <div v-if="historicoDetalle" class="panel-white">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                     <h3 style="font-size:1rem; font-weight:700;">
@@ -469,7 +511,10 @@
             recetaActual: null,
             ingredientes: [],
             busqueda: '',
-            formReceta: { nombre: '', categoria: 'PRINCIPAL', descripcion: '' },
+            formReceta: {
+                nombre: '', categoria: 'PRINCIPAL', descripcion: '',
+                clave: '', modoLote: false, paxLote: 20
+            },
             paxVista: 20,
             guardando: false,
 
@@ -503,13 +548,11 @@
             }
         },
         methods: {
-            // ---------- utilidades ----------
             showToast(message, type = 'success') {
                 this.toast = { show: true, message, type };
                 clearTimeout(this._toastTimer);
-                this._toastTimer = setTimeout(() => { this.toast.show = false; }, 4000);
+                this._toastTimer = setTimeout(() => { this.toast.show = false; }, 4500);
             },
-            /** Convierte un error de Supabase en texto legible */
             sbError(e) {
                 if (!e) return 'Error desconocido';
                 if (typeof e === 'string') return e;
@@ -533,7 +576,33 @@
                 return prefijo + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
             },
 
-            // ---------- INIT ----------
+            // ---- Conversiones modo lote ↔ por persona ----
+            /** Valor mostrado en el input cuando estamos en modo LOTE */
+            valLote(ing) {
+                const pax = Number(this.formReceta.paxLote) || 1;
+                const v = (Number(ing.cantidad_por_persona) || 0) * pax;
+                return Math.round(v * 10000) / 10000;
+            },
+            /** Guarda lo que el usuario escribe en modo LOTE */
+            setLote(ing, valor) {
+                const num = Number(valor) || 0;
+                const pax = Number(this.formReceta.paxLote) || 1;
+                ing.cantidad_por_persona = num / pax;
+            },
+            /** Cuando el usuario cambia el tamaño del lote, mantener los totales */
+            cambiarPaxLote(valor) {
+                const nuevo = Number(valor) || 1;
+                const viejo = Number(this.formReceta.paxLote) || 1;
+                if (this.formReceta.modoLote && viejo > 0 && nuevo > 0 && viejo !== nuevo) {
+                    const factor = viejo / nuevo;
+                    for (const ing of this.ingredientes) {
+                        ing.cantidad_por_persona = (Number(ing.cantidad_por_persona) || 0) * factor;
+                    }
+                }
+                this.formReceta.paxLote = nuevo;
+            },
+
+            // ---- INIT ----
             async init() {
                 try {
                     this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -568,7 +637,7 @@
                 this.recetas = data || [];
             },
 
-            // ---------- RECETAS ----------
+            // ---- RECETAS ----
             async seleccionarReceta(id) {
                 const receta = this.recetas.find(r => r.id === id);
                 if (!receta) {
@@ -580,18 +649,19 @@
                 this.formReceta = {
                     nombre: receta.nombre || '',
                     categoria: receta.categoria || 'PRINCIPAL',
-                    descripcion: receta.descripcion || ''
+                    descripcion: receta.descripcion || '',
+                    clave: receta.clave || '',
+                    modoLote: receta.modo_cantidad === 'LOTE',
+                    paxLote: Number(receta.pax_lote) || 20
                 };
                 this.ingredientes = [];
 
-                // 1er intento: con orden
                 let { data, error } = await this.supabase
                     .from('grupos_recetas_ingredientes')
                     .select('*')
                     .eq('receta_id', id)
                     .order('orden');
 
-                // Reintento sin ORDER por si la columna 'orden' no existe
                 if (error) {
                     const r2 = await this.supabase
                         .from('grupos_recetas_ingredientes')
@@ -621,28 +691,40 @@
                 try {
                     const { data, error } = await this.supabase
                         .from('grupos_recetas')
-                        .insert([{
-                            nombre: nombre.trim(),
-                            categoria: 'PRINCIPAL',
-                            activo: true
-                        }])
+                        .insert([{ nombre: nombre.trim(), categoria: 'PRINCIPAL', activo: true }])
                         .select()
                         .single();
                     if (error) throw error;
 
                     this.showToast('✅ Receta creada', 'success');
                     await this.cargarRecetas();
-
-                    // Si el select no la devuelve (RLS), la añadimos localmente
-                    if (!this.recetas.some(r => r.id === data.id)) {
-                        this.recetas.push(data);
-                    }
+                    if (!this.recetas.some(r => r.id === data.id)) this.recetas.push(data);
                     await this.seleccionarReceta(data.id);
-                    // Fila en blanco lista para escribir
                     this.agregarIngrediente();
                 } catch (e) {
                     this.showToast('Error: ' + this.sbError(e), 'error');
                 }
+            },
+
+            /** Intenta actualizar la receta, eliminando columnas opcionales si no existen */
+            async _updateReceta(id, payload) {
+                const opcionales = ['clave', 'modo_cantidad', 'pax_lote'];
+                let intento = { ...payload };
+                for (let i = 0; i <= opcionales.length; i++) {
+                    const { error } = await this.supabase.from('grupos_recetas').update(intento).eq('id', id);
+                    if (!error) return;
+                    const msg = ((error.message || '') + ' ' + (error.details || '')).toLowerCase();
+                    let quitado = false;
+                    for (const col of opcionales) {
+                        if (col in intento && msg.includes(col)) {
+                            delete intento[col];
+                            quitado = true;
+                            break;
+                        }
+                    }
+                    if (!quitado) throw error;
+                }
+                throw new Error('No se pudo actualizar la receta');
             },
 
             async guardarReceta() {
@@ -656,16 +738,15 @@
                 try {
                     const recetaId = this.recetaActual.id;
 
-                    // 1) Actualizar cabecera
-                    const { error: errR } = await this.supabase
-                        .from('grupos_recetas')
-                        .update({
-                            nombre: this.formReceta.nombre.trim(),
-                            categoria: this.formReceta.categoria,
-                            descripcion: this.formReceta.descripcion || null
-                        })
-                        .eq('id', recetaId);
-                    if (errR) throw errR;
+                    // 1) Cabecera (con fallback si faltan columnas)
+                    await this._updateReceta(recetaId, {
+                        nombre: this.formReceta.nombre.trim(),
+                        categoria: this.formReceta.categoria,
+                        descripcion: this.formReceta.descripcion || null,
+                        clave: this.formReceta.clave ? this.formReceta.clave.trim() : null,
+                        modo_cantidad: this.formReceta.modoLote ? 'LOTE' : 'PERSONA',
+                        pax_lote: this.formReceta.modoLote ? Number(this.formReceta.paxLote) || 20 : null
+                    });
 
                     // 2) Borrar ingredientes antiguos
                     const { error: errD } = await this.supabase
@@ -674,7 +755,7 @@
                         .eq('receta_id', recetaId);
                     if (errD) throw errD;
 
-                    // 3) Insertar los nuevos
+                    // 3) Insertar nuevos (cantidad_por_persona ya está en formato canónico)
                     const filas = this.ingredientes
                         .filter(i => i.nombre && String(i.nombre).trim())
                         .map((i, idx) => ({
@@ -700,7 +781,6 @@
                 }
             },
 
-            /** Inserta ingredientes; si fallan columnas opcionales, reintenta sin ellas */
             async _insertarIngredientes(filas) {
                 const { error } = await this.supabase
                     .from('grupos_recetas_ingredientes')
@@ -746,7 +826,7 @@
                 }
             },
 
-            // ---------- INGREDIENTES ----------
+            // ---- INGREDIENTES ----
             agregarIngrediente() {
                 const nuevo = {
                     _uid: this.uid('ing'),
@@ -756,9 +836,7 @@
                     unidad: 'KG',
                     producto_stock_id: null
                 };
-                // Reasignación completa → reactividad garantizada
                 this.ingredientes = this.ingredientes.concat([nuevo]);
-
                 this.$nextTick(() => {
                     const inputs = this.$el.querySelectorAll('.ing-table tbody tr td:first-child input');
                     if (inputs.length) inputs[inputs.length - 1].focus();
@@ -771,7 +849,7 @@
                 this.ingredientes = copia;
             },
 
-            // ---------- CALCULADORA ----------
+            // ---- CALCULADORA ----
             recetasPorCat(cat) {
                 return this.recetas.filter(r => r.categoria === cat);
             },
@@ -899,7 +977,7 @@
                 }
             },
 
-            // ---------- HISTÓRICO ----------
+            // ---- HISTÓRICO ----
             async cargarHistorico() {
                 try {
                     const { data, error } = await this.supabase
@@ -914,9 +992,7 @@
                 }
             },
 
-            verHistorico(h) {
-                this.historicoDetalle = h;
-            },
+            verHistorico(h) { this.historicoDetalle = h; },
 
             async eliminarHistorico(id) {
                 if (!confirm('¿Eliminar este cálculo?')) return;
@@ -931,9 +1007,7 @@
                 }
             }
         },
-        mounted() {
-            this.init();
-        }
+        mounted() { this.init(); }
     });
 })();
 </script>
