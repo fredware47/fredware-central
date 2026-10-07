@@ -43,15 +43,18 @@
         .card-pedidos:hover { background: #e0f2fe !important; }
         .card-historial { border-color: #64748b !important; background: #f8fafc !important; }
         .card-historial:hover { background: #f1f5f9 !important; }
-        /* 🆕 Stock */
+        /* Stock */
         .card-stock { border-color: #059669 !important; background: #ecfdf5 !important; }
         .card-stock:hover { background: #d1fae5 !important; }
-        /* 🆕 Horarios */
+        /* Horarios */
         .card-horarios { border-color: #6366f1 !important; background: #eef2ff !important; }
         .card-horarios:hover { background: #e0e7ff !important; }
-        /* 🆕 Recetario */
+        /* Recetario */
         .card-recetario { border-color: #ea580c !important; background: #fff7ed !important; }
         .card-recetario:hover { background: #ffedd5 !important; }
+        /* 🆕 Notas */
+        .card-notas { border-color: #f59e0b !important; background: #fffbeb !important; }
+        .card-notas:hover { background: #fef3c7 !important; }
 
         @media (max-width: 640px) {
             .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -75,6 +78,13 @@
         <p class="sub">Selecciona una herramienta para empezar</p>
         <div class="grid">
 
+            <!-- 🆕 NOTAS REUNIÓN (destacada) -->
+            <a href="notas.html" class="card card-notas">
+                <span class="icono">📝</span>
+                <span class="nombre">Notas Reunión <span class="badge-nuevo">Nuevo</span></span>
+                <span class="desc">Block semanal · jefes</span>
+            </a>
+
             <!-- PERSONAL -->
             <a href="personal.html" class="card card-personal">
                 <span class="icono">👥</span>
@@ -85,28 +95,28 @@
             <!-- ETIQUETAS RÁPIDAS -->
             <a href="etiquetas.html" class="card card-etiquetas">
                 <span class="icono">🏷️</span>
-                <span class="nombre">Etiquetas Rápidas <span class="badge-nuevo">Nuevo</span></span>
+                <span class="nombre">Etiquetas Rápidas</span>
                 <span class="desc">Elaboración y descongelación</span>
             </a>
 
             <!-- DASHBOARD UNIFICADO -->
             <a href="dashboard-unified.html" class="card card-dashboard">
                 <span class="icono">📊</span>
-                <span class="nombre">Dashboard Unificado <span class="badge-nuevo">Nuevo</span></span>
+                <span class="nombre">Dashboard Unificado</span>
                 <span class="desc">Vista global de recepciones e inventario</span>
             </a>
 
             <!-- STOCK -->
             <a href="stock.html" class="card card-stock">
                 <span class="icono">📦</span>
-                <span class="nombre">Stock <span class="badge-activo">Nuevo</span></span>
+                <span class="nombre">Stock <span class="badge-activo">Activo</span></span>
                 <span class="desc">Movimientos · Ajustes · Historial</span>
             </a>
 
             <!-- MISE AND PLACE JEFE -->
             <a href="miseandplacejefe.html" class="card card-mise-jefe">
                 <span class="icono">⏰</span>
-                <span class="nombre">Mise and Place Jefe <span class="badge-nuevo">Nuevo</span></span>
+                <span class="nombre">Mise and Place Jefe</span>
                 <span class="desc">Supervisión de timbres</span>
             </a>
 
@@ -166,23 +176,24 @@
                 <span class="desc">Carta y alérgenos</span>
             </a>
 
-            <!-- HORARIOS (NUEVO) -->
+            <!-- HORARIOS -->
             <a href="horarios.html" class="card card-horarios">
                 <span class="icono">📅</span>
                 <span class="nombre">Horarios</span>
                 <span class="desc">Turnos del equipo</span>
             </a>
 
-            <!-- HORAS EXTRAS -->
+            <!-- HORAS EXTRAS (cocineros) -->
             <a href="horas-cocineros.html" class="card" style="border-color: #22c55e; background: #f0fdf4;">
                 <span class="icono">🕒</span>
-                <span class="nombre">Horas Extra <span class="badge-nuevo">Nuevo</span></span>
+                <span class="nombre">Horas Extra</span>
                 <span class="desc">Registro para cocineros</span>
             </a>
 
+            <!-- HORAS EXTRAS (jefe) -->
             <a href="horas-jefe.html" class="card" style="border-color: #8b5cf6; background: #f5f3ff;">
                 <span class="icono">📊</span>
-                <span class="nombre">Horas Extra Jefe <span class="badge-nuevo">Nuevo</span></span>
+                <span class="nombre">Horas Extra Jefe</span>
                 <span class="desc">Panel de control (Jefe)</span>
             </a>
 
