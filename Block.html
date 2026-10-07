@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📝 Fredware - Notas de Reunión</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E📝%3C/text%3E%3C/svg%3E">
+    <meta name="theme-color" content="#1e293b">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="shared-core.js"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        .tab-btn {
+            padding: 8px 16px; border: none; border-radius: 10px;
+            font-weight: 700; cursor: pointer; font-size: 13px;
+            transition: all 0.2s; background: #e2e8f0; color: #475569;
+        }
+        .tab-btn.active { background: #1e293b; color: white; }
+
+        .nota-card {
+            background: white; border: 1px solid #e2e8f0;
+            border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+            transition: all 0.2s; position: relative;
+        }
+        .nota-card:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .nota-card.urgente { border-left: 4px solid #dc2626; background: #fef2f2; }
+        .nota-card.hecho { opacity: 0.55; background: #f8fafc; }
+        .nota-card.hecho .nota-texto { text-decoration: line-through; color: #94a3b8; }
+
+        .nota-texto {
+            font-size: 15px; color: #1e293b; line-height: 1.4;
+            word-break: break-word; font-weight: 500;
+        }
+        .nota-meta {
+            font-size: 11px; color: #94a3b8; margin-top: 6px;
+            display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+        }
+
+        .etiqueta-chip {
+            display: inline-block; padding: 2px 10px; border-radius: 20px;
+            font-size: 10px; font-weight: 700; margin-right: 4px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .etiqueta-pedido { background: #dbeafe; color: #1e40af; }
+        .etiqueta-grupo { background: #fef3c7; color: #92400e; }
+        .etiqueta-alergia { background: #fce7f3; color: #9d174d; }
+        .etiqueta-urgente { background: #fee2e2; color: #991b1b; }
+        .etiqueta-personal { background: #e0e7ff; color: #4338ca; }
+        .etiqueta-proveedor { background: #d1fae5; color: #065f46; }
+        .etiqueta-otro { background: #f1f5f9; color: #475569; }
+
+        .btn-icon {
+            background: none; border: none; cursor: pointer;
+            padding: 5px 8px; border-radius: 6px; font-size: 14px;
+            transition: all 0.15s;
+        }
+        .btn-icon:hover { background: #f1f5f9; }
+        .btn-icon.danger:hover { background: #fee2e2; }
+        .btn-icon.success:hover { background: #d1fae5; }
+        .btn-icon.info:hover { background: #dbeafe; }
+
+        .input-rapido {
+            width: 100%; padding: 14px 16px; font-size: 15px;
+            border: 2px solid #cbd5e1; border-radius: 12px;
+            background: #f8fafc; font-family: inherit;
+            transition: all 0.2s;
+        }
+        .input-rapido:focus {
+            outline: none; border-color: #1e293b; background: white;
+            box-shadow: 0 0 0 3px rgba(30,41,59,0.1);
+        }
+
+        .atag-help {
+            background: #f0f9ff; border-left: 3px solid #0ea5e9;
+            padding: 8px 12px; border-radius: 8px; font-size: 12px;
+            color: #0c4a6e; margin-top: 8px;
+        }
+        .atag-help code {
+            background: white; padding: 1px 6px; border-radius: 4px;
+            font-weight: 700; color: #0ea5e9;
+        }
+
+        .dia-separador {
+            background: #1e293b; color: white; padding: 8px 14px;
+            border-radius: 10px; font-weight: 900; font-size: 13px;
+            text-transform: uppercase; letter-spacing: 1px;
+            margin: 16px 0 8px 0; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 6px;
+        }
+        .dia-separador .contador {
+            background: rgba(255,255,255,0.2); padding: 2px 10px;
+            border-radius: 20px; font-size: 11px; font-weight: 700;
+        }
+
+        .filtro-chip {
+            padding: 6px 14px; border-radius: 20px; border: 1px solid #cbd5e1;
+            background: white; cursor: pointer; font-size: 12px;
+            font-weight: 600; transition: all 0.15s; color: #475569;
+        }
+        .filtro-chip:hover { border-color: #1e293b; }
+        .filtro-chip.active { background: #1e293b; color: white; border-color: #1e293b; }
+
+        .loading-spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-24 font-sans">
+
+    <header class="bg-white border-b border-slate-300 py-4 px-5 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-3xl mx-auto">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <div class="flex items-center space-x-3">
+                    <span class="text-3xl">📝</span>
+                    <div>
+                        <h1 class="text-lg font-black tracking-tight">BLOCK DE NOTAS</h1>
+                        <p class="text-xs text-slate-500 font-bold tracking-wider uppercase">Reunión semanal · Jefes</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="btn-cocinero" class="cocinero-badge bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition-all"></button>
+                    <button onclick="cargarNotas()" class="bg-slate-200 hover:bg-slate-300 px-3 py-2 rounded-xl text-xs font-bold transition-all">🔄</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto w-full px-4 mt-5 space-y-4">
+
+        <!-- INPUT RÁPIDO -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">✍️ Nueva nota</label>
+            <div class="flex gap-2 items-start">
+                <input
+                    type="text"
+                    id="input-nota"
+                    class="input-rapido flex-1"
+                    placeholder="Escribe... ej: #pedido empanada Namastelle para jueves"
+                    autocomplete="off"
+                    onkeypress="if(event.key==='Enter') guardarNota()"
+                >
+                <button onclick="guardarNota()" id="btn-guardar" class="bg-slate-900 hover:bg-slate-700 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
+                    ➕ Añadir
+                </button>
+            </div>
+            <div class="atag-help">
+                💡 Usa etiquetas al inicio: 
+                <code>#pedido</code> 
+                <code>#grupo</code> 
+                <code>#alergia</code> 
+                <code>#urgente</code>
+                <code>#personal</code>
+                <code>#proveedor</code>
+                <br>
+                Se detectan automáticamente y puedes filtrar por ellas.
+            </div>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="text-xs font-bold text-slate-500 uppercase mr-1">Estado:</span>
+                <button class="filtro-chip active" data-filtro="pendientes" onclick="setFiltroEstado('pendientes')">⏳ Pendientes</button>
+                <button class="filtro-chip" data-filtro="todos" onclick="setFiltroEstado('todos')">📋 Todos</button>
+                <button class="filtro-chip" data-filtro="hechos" onclick="setFiltroEstado('hechos')">✅ Hechos</button>
+            </div>
+
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="text-xs font-bold text-slate-500 uppercase mr-1">Etiqueta:</span>
+                <button class="filtro-chip active" data-tag="" onclick="setFiltroTag('')">Todas</button>
+                <button class="filtro-chip" data-tag="pedido" onclick="setFiltroTag('pedido')">📦 Pedido</button>
+                <button class="filtro-chip" data-tag="grupo" onclick="setFiltroTag('grupo')">👥 Grupo</button>
+                <button class="filtro-chip" data-tag="alergia" onclick="setFiltroTag('alergia')">⚠️ Alergia</button>
+                <button class="filtro-chip" data-tag="urgente" onclick="setFiltroTag('urgente')">🚨 Urgente</button>
+                <button class="filtro-chip" data-tag="personal" onclick="setFiltroTag('personal')">👤 Personal</button>
+                <button class="filtro-chip" data-tag="proveedor" onclick="setFiltroTag('proveedor')">🏢 Proveedor</button>
+            </div>
+
+            <div class="flex flex-wrap gap-2 items-center justify-between">
+                <div class="flex gap-2 items-center">
+                    <span class="text-xs font-bold text-slate-500 uppercase">Desde:</span>
+                    <select id="filtro-dias" onchange="cargarNotas()" class="text-sm bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 font-semibold">
+                        <option value="1">Hoy</option>
+                        <option value="7" selected>Última semana</option>
+                        <option value="30">Último mes</option>
+                        <option value="365">Todo</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="copiarTodo()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-2 rounded-lg text-xs transition-all">
+                        📋 Copiar todo
+                    </button>
+                    <button onclick="limpiarHechos()" class="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-2 rounded-lg text-xs transition-all">
+                        🗑️ Borrar hechos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA DE NOTAS -->
+        <div id="lista-notas">
+            <div class="text-center text-slate-400 py-12">
+                <div class="loading-spinner" style="border-color: #cbd5e1; border-top-color: #64748b;"></div>
+                <p class="mt-3 text-sm">Cargando notas...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+    // ============================================================
+    // BLOCK DE NOTAS — Reunión semanal
+    // ============================================================
+    const db = window.fredware.supabase;
+    const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+    let notasGlobal = [];
+    let filtroEstado = 'pendientes';
+    let filtroTag = '';
+
+    const TAGS_VALIDAS = ['pedido','grupo','alergia','urgente','personal','proveedor'];
+
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
+    function toast(msg, tipo='success') { window.fredware.ui.toast(msg, tipo); }
+    function esc(t) { return window.fredware.util.escapeHtml(t); }
+    function pad(n) { return String(n).padStart(2,'0'); }
+
+    function fechaHoy() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    function formatearFecha(f) {
+        if (!f) return '';
+        const d = new Date(f + 'T00:00:00');
+        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+    }
+
+    function diaSemana(fechaStr) {
+        const d = new Date(fechaStr + 'T00:00:00');
+        return DIAS[d.getDay()];
+    }
+
+    function tiempoRelativo(isoStr) {
+        if (!isoStr) return '';
+        const dif = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+        if (dif < 60) return 'ahora';
+        if (dif < 3600) return `hace ${Math.floor(dif/60)} min`;
+        if (dif < 86400) return `hace ${Math.floor(dif/3600)} h`;
+        if (dif < 604800) return `hace ${Math.floor(dif/86400)} d`;
+        return formatearFecha(isoStr.split('T')[0]);
+    }
+
+    // ============================================================
+    // DETECTAR ETIQUETAS
+    // ============================================================
+    function parsearEtiquetas(texto) {
+        const etiquetas = [];
+        const textoLimpio = texto.replace(/#(\w+)/g, (match, tag) => {
+            const tagLower = tag.toLowerCase();
+            if (TAGS_VALIDAS.includes(tagLower)) {
+                etiquetas.push(tagLower);
+                return ''; // quitar del texto
+            }
+            return match; // dejar tal cual si no es válida
+        });
+        return {
+            etiquetas: [...new Set(etiquetas)],
+            texto: textoLimpio.trim().replace(/\s+/g, ' ')
+        };
+    }
+
+    // ============================================================
+    // CARGAR NOTAS
+    // ============================================================
+    async function cargarNotas() {
+        const contenedor = document.getElementById('lista-notas');
+        contenedor.innerHTML = '<div class="text-center py-12"><div class="loading-spinner" style="border-color: #cbd5e1; border-top-color: #64748b;"></div></div>';
+
+        try {
+            const dias = parseInt(document.getElementById('filtro-dias').value) || 7;
+            const desde = new Date();
+            desde.setDate(desde.getDate() - dias);
+
+            const { data, error } = await db
+                .from('notas_reunion')
+                .select('*')
+                .gte('fecha', desde.toISOString().split('T')[0])
+                .order('urgente', { ascending: false })
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            notasGlobal = data || [];
+            renderNotas();
+
+        } catch (e) {
+            console.error('Error cargando notas:', e);
+            contenedor.innerHTML = `<div class="text-center text-red-500 py-8 text-sm">❌ Error: ${esc(e.message)}</div>`;
+        }
+    }
+
+    // ============================================================
+    // RENDER
+    // ============================================================
+    function renderNotas() {
+        const contenedor = document.getElementById('lista-notas');
+
+        // Aplicar filtros
+        let filtradas = [...notasGlobal];
+        if (filtroEstado === 'pendientes') filtradas = filtradas.filter(n => !n.hecho);
+        if (filtroEstado === 'hechos') filtradas = filtradas.filter(n => n.hecho);
+        if (filtroTag) filtradas = filtradas.filter(n => (n.etiquetas || []).includes(filtroTag));
+
+        if (filtradas.length === 0) {
+            contenedor.innerHTML = `
+                <div class="text-center text-slate-400 py-12 bg-white rounded-2xl border border-slate-200">
+                    <div class="text-5xl mb-3">📭</div>
+                    <div class="text-sm font-medium">No hay notas con estos filtros</div>
+                </div>
+            `;
+            return;
+        }
+
+        // Agrupar por fecha
+        const grupos = {};
+        filtradas.forEach(n => {
+            const f = n.fecha || fechaHoy();
+            if (!grupos[f]) grupos[f] = [];
+            grupos[f].push(n);
+        });
+
+        // Ordenar fechas descendente
+        const fechas = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
+
+        contenedor.innerHTML = fechas.map(fecha => {
+            const notasDelDia = grupos[fecha];
+            const pendientes = notasDelDia.filter(n => !n.hecho).length;
+            const urgenteHoy = notasDelDia.some(n => n.urgente);
+            const dia = diaSemana(fecha);
+
+            return `
+                <div class="dia-separador">
+                    <span>${dia === 'Martes' ? '📅' : '📆'} ${dia} ${formatearFecha(fecha)}</span>
+                    <span class="contador">${pendientes} pendiente${pendientes !== 1 ? 's' : ''}</span>
+                </div>
+                ${notasDelDia.map(n => renderNota(n)).join('')}
+            `;
+        }).join('');
+    }
+
+    function renderNota(n) {
+        const clases = ['nota-card'];
+        if (n.urgente) clases.push('urgente');
+        if (n.hecho) clases.push('hecho');
+
+        const etiquetasHTML = (n.etiquetas || []).map(tag => {
+            const claseMap = {
+                pedido: 'etiqueta-pedido',
+                grupo: 'etiqueta-grupo',
+                alergia: 'etiqueta-alergia',
+                urgente: 'etiqueta-urgente',
+                personal: 'etiqueta-personal',
+                proveedor: 'etiqueta-proveedor'
+            };
+            const iconoMap = {
+                pedido: '📦',
+                grupo: '👥',
+                alergia: '⚠️',
+                urgente: '🚨',
+                personal: '👤',
+                proveedor: '🏢'
+            };
+            const clase = claseMap[tag] || 'etiqueta-otro';
+            const icono = iconoMap[tag] || '•';
+            return `<span class="etiqueta-chip ${clase}">${icono} ${tag}</span>`;
+        }).join('');
+
+        const acciones = [];
+        if (n.hecho) {
+            acciones.push(`<button class="btn-icon success" onclick="toggleHecho(${n.id}, false)" title="Marcar como pendiente">↩️</button>`);
+        } else {
+            acciones.push(`<button class="btn-icon success" onclick="toggleHecho(${n.id}, true)" title="Marcar como hecho">✅</button>`);
+        }
+        if ((n.etiquetas || []).includes('pedido')) {
+            acciones.push(`<button class="btn-icon info" onclick="enviarACesta(${n.id})" title="Enviar a cesta de compras">🛒</button>`);
+        }
+        acciones.push(`<button class="btn-icon" onclick="editarNota(${n.id})" title="Editar">✏️</button>`);
+        acciones.push(`<button class="btn-icon danger" onclick="borrarNota(${n.id})" title="Borrar">🗑️</button>`);
+
+        return `
+            <div class="${clases.join(' ')}">
+                <div class="nota-texto">${n.urgente ? '🚨 ' : ''}${esc(n.texto)}</div>
+                <div class="nota-meta">
+                    ${etiquetasHTML}
+                    ${n.autor ? `<span>👤 ${esc(n.autor)}</span>` : ''}
+                    <span>🕐 ${tiempoRelativo(n.created_at)}</span>
+                    <div style="margin-left:auto; display:flex; gap:2px;">${acciones.join('')}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ============================================================
+    // GUARDAR NOTA
+    // ============================================================
+    async function guardarNota() {
+        const input = document.getElementById('input-nota');
+        const textoOriginal = input.value.trim();
+        if (!textoOriginal) return;
+
+        const { etiquetas, texto } = parsearEtiquetas(textoOriginal);
+        if (!texto) {
+            toast('⚠️ La nota está vacía', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('btn-guardar');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading-spinner"></span>';
+
+        try {
+            const autor = localStorage.getItem('fredware_jefe_nombre') || null;
+            const urgente = etiquetas.includes('urgente');
+
+            const { error } = await db.from('notas_reunion').insert([{
+                texto: texto,
+                fecha: fechaHoy(),
+                dia_semana: diaSemana(fechaHoy()),
+                etiquetas: etiquetas,
+                urgente: urgente,
+                autor: autor,
+                hecho: false
+            }]);
+
+            if (error) throw error;
+
+            input.value = '';
+            toast('✅ Nota guardada');
+            await cargarNotas();
+
+        } catch (e) {
+            console.error('Error:', e);
+            toast('❌ ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '➕ Añadir';
+            input.focus();
+        }
+    }
+
+    // ============================================================
+    // TOGGLE HECHO
+    // ============================================================
+    async function toggleHecho(id, nuevoEstado) {
+        try {
+            const { error } = await db
+                .from('notas_reunion')
+                .update({ hecho: nuevoEstado, updated_at: new Date().toISOString() })
+                .eq('id', id);
+            if (error) throw error;
+
+            const nota = notasGlobal.find(n => n.id === id);
+            if (nota) nota.hecho = nuevoEstado;
+            renderNotas();
+            toast(nuevoEstado ? '✅ Hecha' : '↩️ Vuelta a pendientes', 'success');
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    // ============================================================
+    // BORRAR NOTA
+    // ============================================================
+    async function borrarNota(id) {
+        const ok = await Swal.fire({
+            title: '¿Borrar esta nota?',
+            text: 'No se puede deshacer',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!ok.isConfirmed) return;
+
+        try {
+            const { error } = await db.from('notas_reunion').delete().eq('id', id);
+            if (error) throw error;
+            toast('🗑️ Nota borrada', 'info');
+            await cargarNotas();
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    // ============================================================
+    // EDITAR NOTA
+    // ============================================================
+    async function editarNota(id) {
+        const nota = notasGlobal.find(n => n.id === id);
+        if (!nota) return;
+
+        const { value: nuevoTexto } = await Swal.fire({
+            title: '✏️ Editar nota',
+            input: 'textarea',
+            inputValue: nota.texto,
+            inputAttributes: { rows: 3 },
+            showCancelButton: true,
+            confirmButtonText: '💾 Guardar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#1e293b'
+        });
+        if (!nuevoTexto || nuevoTexto.trim() === nota.texto) return;
+
+        try {
+            const { error } = await db
+                .from('notas_reunion')
+                .update({ texto: nuevoTexto.trim(), updated_at: new Date().toISOString() })
+                .eq('id', id);
+            if (error) throw error;
+            toast('✅ Nota actualizada');
+            await cargarNotas();
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    // ============================================================
+    // ENVIAR A CESTA
+    // ============================================================
+    async function enviarACesta(id) {
+        const nota = notasGlobal.find(n => n.id === id);
+        if (!nota) return;
+
+        const ok = await Swal.fire({
+            title: '🛒 Enviar a cesta de compras',
+            html: `<p style="font-size:14px;">Se añadirá como línea pendiente:</p><p style="font-weight:700; margin-top:8px;">"${esc(nota.texto)}"</p>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '🛒 Enviar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#0ea5e9'
+        });
+        if (!ok.isConfirmed) return;
+
+        try {
+            const { error } = await db.from('cesta_pedidos').insert([{
+                id: 'NOTA_' + Date.now() + '_' + Math.random().toString(36).substring(2,6),
+                detalle: `[1 UNIDADES] ${nota.texto}`,
+                proveedor_id: 'S/P',
+                estado: 'PENDIENTE',
+                fecha_registro: new Date().toISOString(),
+                fecha_entrega_esperada: fechaHoy()
+            }]);
+            if (error) throw error;
+
+            toast('🛒 Enviado a cesta de compras', 'success');
+            await toggleHecho(id, true);
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    // ============================================================
+    // COPIAR TODO
+    // ============================================================
+    function copiarTodo() {
+        let filtradas = [...notasGlobal];
+        if (filtroEstado === 'pendientes') filtradas = filtradas.filter(n => !n.hecho);
+        if (filtroTag) filtradas = filtradas.filter(n => (n.etiquetas || []).includes(filtroTag));
+
+        if (filtradas.length === 0) {
+            toast('No hay notas para copiar', 'warning');
+            return;
+        }
+
+        const grupos = {};
+        filtradas.forEach(n => {
+            const f = n.fecha || fechaHoy();
+            if (!grupos[f]) grupos[f] = [];
+            grupos[f].push(n);
+        });
+
+        const fechas = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
+        const lineas = ['📝 NOTAS REUNIÓN - FREDWARE', ''];
+
+        fechas.forEach(fecha => {
+            lineas.push(`📅 ${diaSemana(fecha)} ${formatearFecha(fecha)}`);
+            grupos[fecha].forEach(n => {
+                const tag = (n.etiquetas || []).length ? `[${n.etiquetas.map(t=>t.toUpperCase()).join('][')}] ` : '';
+                const check = n.hecho ? '✅' : '⏳';
+                lineas.push(`  ${check} ${tag}${n.texto}`);
+            });
+            lineas.push('');
+        });
+
+        const texto = lineas.join('\n');
+
+        navigator.clipboard.writeText(texto).then(() => {
+            toast('📋 Notas copiadas al portapapeles', 'success');
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = texto;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+            toast('📋 Notas copiadas', 'success');
+        });
+    }
+
+    // ============================================================
+    // LIMPIAR HECHOS
+    // ============================================================
+    async function limpiarHechos() {
+        const hechos = notasGlobal.filter(n => n.hecho);
+        if (hechos.length === 0) {
+            toast('No hay notas hechas para borrar', 'warning');
+            return;
+        }
+
+        const ok = await Swal.fire({
+            title: `¿Borrar ${hechos.length} notas hechas?`,
+            text: 'Esta acción no se puede deshacer',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!ok.isConfirmed) return;
+
+        try {
+            const ids = hechos.map(n => n.id);
+            const { error } = await db.from('notas_reunion').delete().in('id', ids);
+            if (error) throw error;
+            toast(`🗑️ ${ids.length} notas borradas`, 'info');
+            await cargarNotas();
+        } catch (e) {
+            toast('❌ ' + e.message, 'error');
+        }
+    }
+
+    // ============================================================
+    // FILTROS
+    // ============================================================
+    function setFiltroEstado(estado) {
+        filtroEstado = estado;
+        document.querySelectorAll('[data-filtro]').forEach(b => {
+            b.classList.toggle('active', b.dataset.filtro === estado);
+        });
+        renderNotas();
+    }
+
+    function setFiltroTag(tag) {
+        filtroTag = tag;
+        document.querySelectorAll('[data-tag]').forEach(b => {
+            b.classList.toggle('active', b.dataset.tag === tag);
+        });
+        renderNotas();
+    }
+
+    // ============================================================
+    // COCINERO / JEFE
+    // ============================================================
+    function editarCocinero() {
+        const actual = localStorage.getItem('fredware_jefe_nombre') || '';
+        const nuevo = prompt('👤 ¿Quién eres? (para firmar notas)', actual);
+        if (nuevo !== null && nuevo.trim()) {
+            localStorage.setItem('fredware_jefe_nombre', nuevo.trim());
+            actualizarBotonCocinero();
+            toast('✅ Guardado como: ' + nuevo.trim(), 'success');
+        }
+    }
+
+    function actualizarBotonCocinero() {
+        const nombre = localStorage.getItem('fredware_jefe_nombre') || '';
+        const btn = document.getElementById('btn-cocinero');
+        if (nombre) {
+            btn.innerHTML = '👤 ' + esc(nombre);
+            btn.className = 'cocinero-badge bg-emerald-100 text-emerald-800 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-emerald-200';
+        } else {
+            btn.innerHTML = '👤 Poner nombre';
+            btn.className = 'cocinero-badge bg-amber-100 text-amber-800 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-amber-200';
+        }
+    }
+
+    // ============================================================
+    // INICIALIZACIÓN
+    // ============================================================
+    document.getElementById('btn-cocinero').addEventListener('click', editarCocinero);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        actualizarBotonCocinero();
+        cargarNotas();
+        document.getElementById('input-nota').focus();
+    });
+    </script>
+</body>
+</html>
