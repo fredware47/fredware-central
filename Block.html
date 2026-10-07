@@ -74,6 +74,23 @@
             box-shadow: 0 0 0 3px rgba(30,41,59,0.1);
         }
 
+        /* Preview de detección automática */
+        .preview-deteccion {
+            background: #f0fdf4; border-left: 3px solid #10b981;
+            padding: 8px 12px; border-radius: 8px; font-size: 12px;
+            color: #065f46; margin-top: 8px;
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+        .preview-deteccion.visible { display: block; }
+        .preview-deteccion.sin-deteccion {
+            background: #f8fafc; border-left-color: #94a3b8; color: #64748b;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .atag-help {
             background: #f0f9ff; border-left: 3px solid #0ea5e9;
             padding: 8px 12px; border-radius: 8px; font-size: 12px;
@@ -135,7 +152,7 @@
 
     <main class="max-w-3xl mx-auto w-full px-4 mt-5 space-y-4">
 
-        <!-- INPUT RÁPIDO -->
+        <!-- INPUT RÁPIDO CON AUTO-DETECCIÓN -->
         <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">✍️ Nueva nota</label>
             <div class="flex gap-2 items-start">
@@ -143,25 +160,40 @@
                     type="text"
                     id="input-nota"
                     class="input-rapido flex-1"
-                    placeholder="Escribe... ej: #pedido empanada Namastelle para jueves"
+                    placeholder="Escribe natural... el sistema clasifica solo"
                     autocomplete="off"
+                    oninput="previsualizarDeteccion()"
                     onkeypress="if(event.key==='Enter') guardarNota()"
                 >
                 <button onclick="guardarNota()" id="btn-guardar" class="bg-slate-900 hover:bg-slate-700 text-white font-bold px-5 h-[50px] rounded-xl shadow-sm transition-all active:scale-95">
                     ➕ Añadir
                 </button>
             </div>
-            <div class="atag-help">
-                💡 Usa etiquetas al inicio: 
-                <code>#pedido</code> 
-                <code>#grupo</code> 
-                <code>#alergia</code> 
-                <code>#urgente</code>
-                <code>#personal</code>
-                <code>#proveedor</code>
-                <br>
-                Se detectan automáticamente y puedes filtrar por ellas.
-            </div>
+
+            <!-- Preview de detección automática -->
+            <div id="preview-deteccion" class="preview-deteccion"></div>
+
+            <!-- Ayuda colapsable -->
+            <details class="atag-help">
+                <summary style="cursor:pointer; font-weight:700;">💡 Cómo funciona la detección automática</summary>
+                <div style="margin-top:8px; line-height:1.6;">
+                    El sistema lee tu nota y detecta la etiqueta automáticamente:
+                    <br><br>
+                    <strong>📦 Pedido:</strong> <em>pedir, pedido, comprar, encargar, reponer, falta</em>
+                    <br>
+                    <strong>👥 Grupo:</strong> <em>grupo, pax, personas, comensales, reserva, mesa</em>
+                    <br>
+                    <strong>⚠️ Alergia:</strong> <em>alergia, intolerante, celíaco, sin gluten, vegano</em>
+                    <br>
+                    <strong>🚨 Urgente:</strong> <em>urgente, corre prisa, ya, hoy mismo, rápido</em>
+                    <br>
+                    <strong>👤 Personal:</strong> <em>personal, cocinero, libre, vacaciones, baja, turno</em>
+                    <br>
+                    <strong>🏢 Proveedor:</strong> <em>proveedor, reparto, distribuidor, Makro, Namastelle</em>
+                    <br><br>
+                    <em>También puedes forzar con <code>#pedido</code> al inicio si quieres control manual.</em>
+                </div>
+            </details>
         </div>
 
         <!-- FILTROS -->
@@ -217,7 +249,7 @@
 
     <script>
     // ============================================================
-    // BLOCK DE NOTAS — Reunión semanal
+    // BLOCK DE NOTAS — Reunión semanal (con auto-detección)
     // ============================================================
     const db = window.fredware.supabase;
     const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -227,6 +259,54 @@
     let filtroTag = '';
 
     const TAGS_VALIDAS = ['pedido','grupo','alergia','urgente','personal','proveedor'];
+
+    // ============================================================
+    // 🆕 DICCIONARIO DE AUTO-DETECCIÓN
+    // ============================================================
+    // Cada etiqueta tiene una lista de palabras clave que la activan.
+    // Se busca en el texto en minúsculas. Sin acentos también.
+    const DICCIONARIO = {
+        pedido: [
+            'pedir', 'pedido', 'pedidos', 'comprar', 'compra', 'compras',
+            'encargar', 'encargo', 'encargado', 'reponer', 'reposicion',
+            'falta', 'faltan', 'faltaba', 'agotado', 'se acabo',
+            'solicitar', 'solicitud', 'proveeduria'
+        ],
+        grupo: [
+            'grupo', 'grupos', 'pax', 'personas', 'comensales',
+            'reserva', 'reservas', 'mesa', 'mesas', 'evento', 'eventos',
+            'banquete', 'celebracion', 'cumpleaños', 'boda', 'comunion',
+            'empresa', 'colegio', 'excursion'
+        ],
+        alergia: [
+            'alergia', 'alergias', 'alergico', 'alergicos',
+            'intolerante', 'intolerantes', 'intolerancia',
+            'celiaco', 'celiacos', 'celiaquia',
+            'sin gluten', 'sin lactosa', 'sin huevo', 'sin frutos secos',
+            'vegano', 'veganos', 'vegetariano', 'vegetarianos',
+            'diabetico', 'diabeticos', 'apcc'
+        ],
+        urgente: [
+            'urgente', 'urgencia', 'urgentemente',
+            'corre prisa', 'prisa', 'rapido', 'ya mismo', 'hoy mismo',
+            'cuanto antes', 'inmediato', 'inmediatamente',
+            'critico', 'critica', 'para ayer'
+        ],
+        personal: [
+            'personal', 'cocinero', 'cocineros', 'cocina',
+            'libre', 'libra', 'librar', 'vacaciones', 'vacacion',
+            'baja', 'bajas', 'enfermo', 'enferma',
+            'turno', 'turnos', 'horario', 'horarios', 'fichar',
+            'falta personal', 'no viene', 'no puedo ir'
+        ],
+        proveedor: [
+            'proveedor', 'proveedores', 'proveeduria',
+            'reparto', 'repartos', 'reparte', 'no reparte',
+            'distribuidor', 'distribuidora', 'distribucion',
+            'makro', 'pescasa', 'namastelle', 'galicia',
+            'frutas pepe', 'cash', 'mayorista'
+        ]
+    };
 
     // ============================================================
     // UTILIDADES
@@ -260,23 +340,80 @@
         return formatearFecha(isoStr.split('T')[0]);
     }
 
+    // Quitar acentos para comparar
+    function normalizar(texto) {
+        return texto.toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+    }
+
     // ============================================================
-    // DETECTAR ETIQUETAS
+    // 🆕 AUTO-DETECCIÓN DE ETIQUETAS
     // ============================================================
-    function parsearEtiquetas(texto) {
-        const etiquetas = [];
-        const textoLimpio = texto.replace(/#(\w+)/g, (match, tag) => {
-            const tagLower = tag.toLowerCase();
-            if (TAGS_VALIDAS.includes(tagLower)) {
-                etiquetas.push(tagLower);
-                return ''; // quitar del texto
+    function detectarEtiquetas(textoOriginal) {
+        const textoNorm = normalizar(textoOriginal);
+        const etiquetasDetectadas = new Set();
+
+        // 1. Buscar primero los #tags explícitos (usuario avanzado)
+        const tagsExplicitos = textoOriginal.match(/#(\w+)/g) || [];
+        tagsExplicitos.forEach(tag => {
+            const tagLimpio = tag.substring(1).toLowerCase();
+            if (TAGS_VALIDAS.includes(tagLimpio)) {
+                etiquetasDetectadas.add(tagLimpio);
             }
-            return match; // dejar tal cual si no es válida
         });
+
+        // 2. Auto-detectar por palabras clave
+        Object.entries(DICCIONARIO).forEach(([etiqueta, palabras]) => {
+            const encontrado = palabras.some(palabra => {
+                const palabraNorm = normalizar(palabra);
+                // Buscar palabra completa o como fragmento rodeado de espacios/signos
+                return textoNorm.includes(palabraNorm);
+            });
+            if (encontrado) etiquetasDetectadas.add(etiqueta);
+        });
+
+        // 3. Limpiar el texto: quitar #tags explícitos
+        const textoLimpio = textoOriginal
+            .replace(/#\w+/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
         return {
-            etiquetas: [...new Set(etiquetas)],
-            texto: textoLimpio.trim().replace(/\s+/g, ' ')
+            etiquetas: Array.from(etiquetasDetectadas),
+            texto: textoLimpio
         };
+    }
+
+    // ============================================================
+    // 🆕 PREVIEW EN VIVO MIENTRAS ESCRIBES
+    // ============================================================
+    function previsualizarDeteccion() {
+        const input = document.getElementById('input-nota');
+        const preview = document.getElementById('preview-deteccion');
+        const texto = input.value.trim();
+
+        if (!texto || texto.length < 3) {
+            preview.classList.remove('visible');
+            return;
+        }
+
+        const { etiquetas } = detectarEtiquetas(texto);
+
+        if (etiquetas.length === 0) {
+            preview.className = 'preview-deteccion visible sin-deteccion';
+            preview.innerHTML = `📄 <em>Sin etiqueta — nota genérica</em>`;
+        } else {
+            const iconosMap = {
+                pedido: '📦', grupo: '👥', alergia: '⚠️',
+                urgente: '🚨', personal: '👤', proveedor: '🏢'
+            };
+            const chips = etiquetas.map(t => 
+                `<span class="etiqueta-chip etiqueta-${t}">${iconosMap[t]} ${t}</span>`
+            ).join(' ');
+            preview.className = 'preview-deteccion visible';
+            preview.innerHTML = `✨ Detectado: ${chips}`;
+        }
     }
 
     // ============================================================
@@ -314,7 +451,6 @@
     function renderNotas() {
         const contenedor = document.getElementById('lista-notas');
 
-        // Aplicar filtros
         let filtradas = [...notasGlobal];
         if (filtroEstado === 'pendientes') filtradas = filtradas.filter(n => !n.hecho);
         if (filtroEstado === 'hechos') filtradas = filtradas.filter(n => n.hecho);
@@ -330,7 +466,6 @@
             return;
         }
 
-        // Agrupar por fecha
         const grupos = {};
         filtradas.forEach(n => {
             const f = n.fecha || fechaHoy();
@@ -338,13 +473,11 @@
             grupos[f].push(n);
         });
 
-        // Ordenar fechas descendente
         const fechas = Object.keys(grupos).sort((a,b) => b.localeCompare(a));
 
         contenedor.innerHTML = fechas.map(fecha => {
             const notasDelDia = grupos[fecha];
             const pendientes = notasDelDia.filter(n => !n.hecho).length;
-            const urgenteHoy = notasDelDia.some(n => n.urgente);
             const dia = diaSemana(fecha);
 
             return `
@@ -417,7 +550,7 @@
         const textoOriginal = input.value.trim();
         if (!textoOriginal) return;
 
-        const { etiquetas, texto } = parsearEtiquetas(textoOriginal);
+        const { etiquetas, texto } = detectarEtiquetas(textoOriginal);
         if (!texto) {
             toast('⚠️ La nota está vacía', 'warning');
             return;
@@ -444,7 +577,13 @@
             if (error) throw error;
 
             input.value = '';
-            toast('✅ Nota guardada');
+            document.getElementById('preview-deteccion').classList.remove('visible');
+
+            const msg = etiquetas.length > 0 
+                ? `✅ Guardada · ${etiquetas.map(t => '#' + t).join(' ')}`
+                : '✅ Guardada (sin etiqueta)';
+            toast(msg);
+
             await cargarNotas();
 
         } catch (e) {
@@ -521,10 +660,18 @@
         });
         if (!nuevoTexto || nuevoTexto.trim() === nota.texto) return;
 
+        // Re-detectar etiquetas al editar
+        const { etiquetas } = detectarEtiquetas(nuevoTexto);
+
         try {
             const { error } = await db
                 .from('notas_reunion')
-                .update({ texto: nuevoTexto.trim(), updated_at: new Date().toISOString() })
+                .update({
+                    texto: nuevoTexto.trim(),
+                    etiquetas: etiquetas,
+                    urgente: etiquetas.includes('urgente'),
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', id);
             if (error) throw error;
             toast('✅ Nota actualizada');
