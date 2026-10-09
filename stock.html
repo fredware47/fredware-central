@@ -63,6 +63,7 @@
         .badge-bajo { background: #fed7aa; color: #9a3412; }
         .badge-sin { background: #fee2e2; color: #991b1b; }
         .badge-nodata { background: #e2e8f0; color: #64748b; }
+        .badge-archivado { background: #f1f5f9; color: #64748b; }
 
         .badge-tipo {
             display: inline-block; padding: 2px 8px; border-radius: 6px;
@@ -102,6 +103,31 @@
         }
         .btn-secondary:hover { background: #475569; }
 
+        /* 🆕 Botones de acción en tabla */
+        .btn-accion {
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.15s;
+            margin: 0 1px;
+        }
+        .btn-accion:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        .btn-accion.btn-archivar:hover {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+        .btn-accion.btn-eliminar:hover {
+            background: #fee2e2;
+            border-color: #dc2626;
+            color: #991b1b;
+        }
+
         .spinner {
             width: 16px; height: 16px;
             border: 2px solid rgba(255,255,255,0.3);
@@ -124,10 +150,43 @@
         }
         .tabla tr:hover { background: #f8fafc; }
 
+        /* Modal de confirmación con SweetAlert2 (personalización) */
+        .swal-detalles {
+            text-align: left;
+            font-size: 14px;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .swal-detalles p { margin: 4px 0; }
+        .swal-detalles code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .swal-referencias {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+        .swal-referencias ul {
+            margin: 6px 0 0 20px;
+            padding: 0;
+        }
+        .swal-referencias li { margin: 3px 0; }
+
         @media (max-width: 640px) {
             .tab-btn { padding: 10px 8px; font-size: 11px; }
             .tabla { font-size: 12px; }
             .tabla th, .tabla td { padding: 8px 4px; }
+            .btn-accion { padding: 3px 6px; font-size: 12px; }
         }
     </style>
 </head>
@@ -145,7 +204,7 @@
             <div class="flex flex-col items-end space-y-1">
                 <div class="flex items-center space-x-2">
                     <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.2</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.3</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -205,6 +264,7 @@
                         <option value="CERCA_MINIMO">🟡 Cerca del mínimo</option>
                         <option value="OK">🟢 OK</option>
                         <option value="SIN_CONFIG">⚪ Sin mínimo config.</option>
+                        <option value="ARCHIVADO">📦 Archivado</option>
                     </select>
                 </div>
 
@@ -218,10 +278,11 @@
                                 <th class="text-center">Mínimo</th>
                                 <th class="text-center">Raciones</th>
                                 <th class="text-center">Estado</th>
+                                <th class="text-center" style="width:90px;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="cuerpo-stock-vivo">
-                            <tr><td colspan="6" class="text-center italic text-slate-400 py-4">⏳ Cargando...</td></tr>
+                            <tr><td colspan="7" class="text-center italic text-slate-400 py-4">⏳ Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -409,14 +470,10 @@
         });
 
         // ============================================================
-        // CLIENTE SUPABASE (reutilizamos el del núcleo compartido)
+        // CLIENTE SUPABASE
         // ============================================================
-        // ✅ v1.2: usamos window.fredware.supabase para evitar
-        //    "Multiple GoTrueClient instances" en la consola.
-        //    shared-core.js se carga antes que este <script>, así que
-        //    window.fredware ya está instanciado.
         const db_nube = window.fredware.supabase;
-        console.log('✅ [Stock v1.2] Usando cliente del núcleo compartido');
+        console.log('✅ [Stock v1.3] Usando cliente del núcleo compartido');
 
         // ============================================================
         // ESTADO GLOBAL
@@ -528,7 +585,7 @@
         // ============================================================
         async function cargarStockVivo() {
             const cuerpo = document.getElementById('cuerpo-stock-vivo');
-            cuerpo.innerHTML = '<tr><td colspan="6" class="text-center italic text-slate-400 py-4">⏳ Cargando...</td></tr>';
+            cuerpo.innerHTML = '<tr><td colspan="7" class="text-center italic text-slate-400 py-4">⏳ Cargando...</td></tr>';
 
             try {
                 const { data, error } = await db_nube
@@ -553,11 +610,22 @@
                 renderStockVivo();
             } catch (e) {
                 console.error('Error cargando stock:', e);
-                cuerpo.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 py-4">❌ Error: ${escapeHtml(e.message)}</td></tr>`;
+                cuerpo.innerHTML = `<tr><td colspan="7" class="text-center text-red-500 py-4">❌ Error: ${escapeHtml(e.message)}</td></tr>`;
             }
         }
 
         function calcularEstadoStock(p) {
+            // 🆕 Si está archivado → estado propio
+            if (p.estado === 'ARCHIVADO') {
+                return {
+                    codigo: 'ARCHIVADO',
+                    orden: 99,
+                    label: 'Archivado',
+                    emoji: '📦',
+                    clase: 'badge-archivado'
+                };
+            }
+
             const s = Number(p.stock_actual || 0);
             const min = Number(p.stock_minimo || 0);
 
@@ -589,8 +657,11 @@
             const zona = document.getElementById('filtro-stock-zona').value;
             const estadoFiltro = document.getElementById('filtro-stock-estado').value;
 
-            let stats = { total: productosGlobal.length, sin: 0, bajo: 0, cerca: 0, sinConfig: 0, ok: 0 };
-            productosGlobal.forEach(p => {
+            // Solo contar activos (no archivados) en las stats
+            const activos = productosGlobal.filter(p => p.estado !== 'ARCHIVADO');
+
+            let stats = { total: activos.length, sin: 0, bajo: 0, cerca: 0, sinConfig: 0, ok: 0 };
+            activos.forEach(p => {
                 const est = calcularEstadoStock(p);
                 if (est.codigo === 'SIN_STOCK') stats.sin++;
                 if (est.codigo === 'BAJO_MINIMO') stats.bajo++;
@@ -621,15 +692,24 @@
                 num4.textContent = stats.cerca;
             }
 
+            // Por defecto ocultamos los archivados, salvo que el filtro sea ARCHIVADO
             let filtrados = productosGlobal.filter(p => {
+                if (estadoFiltro === 'ARCHIVADO') {
+                    if (p.estado !== 'ARCHIVADO') return false;
+                } else if (estadoFiltro) {
+                    if (p.estado === 'ARCHIVADO') return false;
+                    if (calcularEstadoStock(p).codigo !== estadoFiltro) return false;
+                } else {
+                    // Sin filtro de estado → ocultar archivados
+                    if (p.estado === 'ARCHIVADO') return false;
+                }
                 if (texto && !p.nombre_articulo.toUpperCase().includes(texto)) return false;
                 if (zona && p.zona !== zona) return false;
-                if (estadoFiltro && calcularEstadoStock(p).codigo !== estadoFiltro) return false;
                 return true;
             });
 
             if (filtrados.length === 0) {
-                cuerpo.innerHTML = '<tr><td colspan="6" class="text-center italic text-slate-400 py-4">Sin resultados</td></tr>';
+                cuerpo.innerHTML = '<tr><td colspan="7" class="text-center italic text-slate-400 py-4">Sin resultados</td></tr>';
                 return;
             }
 
@@ -648,17 +728,285 @@
                     ? Math.round(Number(p.stock_actual) / Number(p.peso_por_racion))
                     : '—';
 
+                // 🆕 Botones de acción
+                const esArchivado = p.estado === 'ARCHIVADO';
+                const botonArchivar = esArchivado
+                    ? `<button class="btn-accion" onclick="reactivarProducto('${escapeHtml(p.id)}')" title="Reactivar producto">♻️</button>`
+                    : `<button class="btn-accion btn-archivar" onclick="abrirModalEliminar('${escapeHtml(p.id)}')" title="Archivar / eliminar producto">🗑️</button>`;
+
                 return `
-                    <tr>
+                    <tr${esArchivado ? ' style="opacity:0.55;"' : ''}>
                         <td class="font-semibold">${escapeHtml(p.nombre_articulo)}</td>
                         <td class="text-xs text-slate-500">${escapeHtml(p.zona || '—')}</td>
                         <td class="text-center font-bold">${stock} <span class="text-xs text-slate-400 font-normal">${escapeHtml(p.unidad_compra || '')}</span></td>
                         <td class="text-center text-slate-500">${min}</td>
                         <td class="text-center">${raciones}</td>
                         <td class="text-center"><span class="badge-estado ${est.clase}">${est.emoji} ${est.label}</span></td>
+                        <td class="text-center">${botonArchivar}</td>
                     </tr>
                 `;
             }).join('');
+        }
+
+        // ============================================================
+        // 🆕 ELIMINAR / ARCHIVAR PRODUCTO
+        // ============================================================
+        async function abrirModalEliminar(productoId) {
+            const p = productosMapId[productoId];
+            if (!p) {
+                lanzarToast('Producto no encontrado', 'error');
+                return;
+            }
+
+            // 1. Comprobar referencias en paralelo
+            Swal.fire({
+                title: '⏳ Comprobando referencias...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            let referencias = {
+                movimientos: 0,
+                ingredientes: 0,
+                timbres: 0,
+                cesta: 0,
+                faltas: 0
+            };
+
+            try {
+                const [movs, ingr, timbres] = await Promise.all([
+                    db_nube.from('stock_movimientos').select('id', { count: 'exact', head: true }).eq('producto_id', productoId),
+                    db_nube.from('ingredientes_receta').select('id', { count: 'exact', head: true }).eq('producto_id', productoId),
+                    db_nube.from('timbres_catalogo').select('id', { count: 'exact', head: true }).eq('producto_racion_id', productoId)
+                ]);
+
+                referencias.movimientos = movs.count || 0;
+                referencias.ingredientes = ingr.count || 0;
+                referencias.timbres = timbres.count || 0;
+
+                // Cesta y faltas (búsqueda por texto, más bestia)
+                try {
+                    const cesta = await db_nube.from('cesta_pedidos').select('id', { count: 'exact', head: true }).ilike('detalle', `%${productoId}%`);
+                    referencias.cesta = cesta.count || 0;
+                } catch (e) { /* tabla puede no tener ese formato, ignoramos */ }
+
+                try {
+                    const faltas = await db_nube.from('faltas_cocina').select('id', { count: 'exact', head: true }).ilike('insumo', `%${productoId}%`);
+                    referencias.faltas = faltas.count || 0;
+                } catch (e) { /* ignorar */ }
+
+            } catch (e) {
+                console.warn('Error comprobando referencias:', e);
+            }
+
+            Swal.close();
+
+            const totalRefs = referencias.movimientos + referencias.ingredientes + referencias.timbres + referencias.cesta + referencias.faltas;
+            const tieneReferencias = totalRefs > 0;
+
+            // 2. Construir modal de confirmación
+            let refsHtml = '';
+            if (tieneReferencias) {
+                const items = [];
+                if (referencias.movimientos > 0) items.push(`📊 <strong>${referencias.movimientos}</strong> movimiento(s) en stock`);
+                if (referencias.ingredientes > 0) items.push(`📖 <strong>${referencias.ingredientes}</strong> receta(s) usan este producto`);
+                if (referencias.timbres > 0) items.push(`⏰ <strong>${referencias.timbres}</strong> timbre(s) del mise lo usan`);
+                if (referencias.cesta > 0) items.push(`🛒 <strong>${referencias.cesta}</strong> línea(s) en cesta de pedidos`);
+                if (referencias.faltas > 0) items.push(`⚠️ <strong>${referencias.faltas}</strong> falta(s) en cocina`);
+
+                refsHtml = `
+                    <div class="swal-referencias">
+                        <strong>⚠️ Este producto está referenciado:</strong>
+                        <ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>
+                        <p style="margin-top:8px;font-size:12px;color:#92400e;">
+                            ${referencias.movimientos > 0 ? '❌ <strong>NO se puede eliminar definitivamente</strong> (rompería el histórico).<br>' : ''}
+                            ${referencias.movimientos === 0 ? '✅ Sí se puede eliminar definitivamente.<br>' : ''}
+                            📦 Puedes <strong>archivarlo</strong> — desaparecerá de las apps pero el histórico se conserva.
+                        </p>
+                    </div>
+                `;
+            } else {
+                refsHtml = `
+                    <div class="swal-detalles">
+                        ✅ <strong>Sin referencias</strong>. Este producto no está en uso.
+                        <br>Puedes <strong>archivarlo</strong> o <strong>eliminarlo definitivamente</strong>.
+                    </div>
+                `;
+            }
+
+            const { value: accion } = await Swal.fire({
+                title: `🗑️ ${escapeHtml(p.nombre_articulo)}`,
+                html: `
+                    <div style="text-align:left;">
+                        <div class="swal-detalles">
+                            <p><strong>ID:</strong> <code>${escapeHtml(p.id)}</code></p>
+                            <p><strong>Zona:</strong> ${escapeHtml(p.zona || '—')}</p>
+                            <p><strong>Stock actual:</strong> ${Number(p.stock_actual || 0).toFixed(2)} ${escapeHtml(p.unidad_compra || '')}</p>
+                        </div>
+                        ${refsHtml}
+                        <p style="font-size:13px;color:#64748b;margin-top:10px;">¿Qué quieres hacer?</p>
+                    </div>
+                `,
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '📦 Archivar (recomendado)',
+                confirmButtonColor: '#f59e0b',
+                denyButtonText: '❌ Eliminar definitivo',
+                denyButtonColor: '#dc2626',
+                cancelButtonText: 'Cancelar',
+                cancelButtonColor: '#94a3b8',
+                width: 520,
+                preDeny: () => {
+                    if (tieneReferencias) {
+                        Swal.showValidationMessage('❌ No se puede eliminar: tiene referencias en el histórico. Usa "Archivar".');
+                        return false;
+                    }
+                    return true;
+                }
+            });
+
+            if (accion === true) {
+                await archivarProducto(productoId);
+            } else if (accion === false) {
+                await eliminarProductoDefinitivo(productoId);
+            }
+        }
+
+        async function archivarProducto(productoId) {
+            const p = productosMapId[productoId];
+            if (!p) return;
+
+            Swal.fire({
+                title: '📦 Archivando...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const { error } = await db_nube
+                    .from('productos_raciones')
+                    .update({
+                        estado: 'ARCHIVADO',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', productoId);
+
+                if (error) throw error;
+
+                Swal.close();
+                Swal.fire({
+                    title: '✅ Archivado',
+                    html: `<p><strong>${escapeHtml(p.nombre_articulo)}</strong> archivado.</p>
+                           <p style="font-size:13px;color:#64748b;margin-top:8px;">Ya no aparecerá en compras, stock ni alertas. El histórico se conserva.</p>`,
+                    icon: 'success',
+                    timer: 2500,
+                    showConfirmButton: false
+                });
+
+                await cargarStockVivo();
+
+            } catch (e) {
+                console.error('Error archivando:', e);
+                Swal.close();
+                lanzarToast('❌ ' + (e.message || 'Error al archivar'), 'error');
+            }
+        }
+
+        async function eliminarProductoDefinitivo(productoId) {
+            const p = productosMapId[productoId];
+            if (!p) return;
+
+            // Doble confirmación con texto
+            const { value: confirmacion } = await Swal.fire({
+                title: '⚠️ ELIMINAR DEFINITIVAMENTE',
+                html: `
+                    <p style="margin-bottom:10px;">Vas a borrar <strong>${escapeHtml(p.nombre_articulo)}</strong> de la base de datos.</p>
+                    <p style="color:#dc2626;font-weight:700;margin-bottom:10px;">Esta acción NO se puede deshacer.</p>
+                    <p style="font-size:13px;color:#64748b;">Escribe <code>ELIMINAR</code> para confirmar:</p>
+                `,
+                input: 'text',
+                inputPlaceholder: 'ELIMINAR',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: '❌ Borrar para siempre',
+                cancelButtonText: 'Cancelar',
+                preConfirm: (texto) => {
+                    if ((texto || '').trim().toUpperCase() !== 'ELIMINAR') {
+                        Swal.showValidationMessage('Debes escribir "ELIMINAR" para confirmar');
+                        return false;
+                    }
+                    return true;
+                }
+            });
+
+            if (!confirmacion) return;
+
+            Swal.fire({
+                title: '🗑️ Eliminando...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const { error } = await db_nube
+                    .from('productos_raciones')
+                    .delete()
+                    .eq('id', productoId);
+
+                if (error) throw error;
+
+                Swal.close();
+                Swal.fire({
+                    title: '✅ Eliminado',
+                    text: `${p.nombre_articulo} borrado definitivamente.`,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                await cargarStockVivo();
+
+            } catch (e) {
+                console.error('Error eliminando:', e);
+                Swal.close();
+                lanzarToast('❌ ' + (e.message || 'Error al eliminar'), 'error');
+            }
+        }
+
+        async function reactivarProducto(productoId) {
+            const p = productosMapId[productoId];
+            if (!p) return;
+
+            const ok = await Swal.fire({
+                title: '♻️ Reactivar producto',
+                html: `<p>¿Reactivar <strong>${escapeHtml(p.nombre_articulo)}</strong>?</p>
+                       <p style="font-size:13px;color:#64748b;margin-top:8px;">Volverá a aparecer en compras, stock y alertas.</p>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                confirmButtonText: '♻️ Reactivar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!ok.isConfirmed) return;
+
+            try {
+                const { error } = await db_nube
+                    .from('productos_raciones')
+                    .update({
+                        estado: 'CONFIGURADO',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', productoId);
+
+                if (error) throw error;
+
+                lanzarToast(`♻️ ${p.nombre_articulo} reactivado`, 'success');
+                await cargarStockVivo();
+
+            } catch (e) {
+                console.error('Error reactivando:', e);
+                lanzarToast('❌ ' + (e.message || 'Error al reactivar'), 'error');
+            }
         }
 
         // ============================================================
@@ -1016,7 +1364,7 @@
             if (appInicializada) return;
             appInicializada = true;
 
-            console.log('🚀 [Stock v1.2] Init');
+            console.log('🚀 [Stock v1.3] Init');
 
             const tabGuardada = localStorage.getItem('fredware_stock_tab') || 'stock';
             setTab(tabGuardada);
@@ -1089,7 +1437,7 @@
 
             await cargarStockVivo();
 
-            console.log('✅ [Stock v1.2] Inicializado');
+            console.log('✅ [Stock v1.3] Inicializado');
         }
 
         // ============================================================
@@ -1104,6 +1452,12 @@
         window.renderHistorial = renderHistorial;
         window.calcularDiferenciaAjuste = calcularDiferenciaAjuste;
         window.aplicarAjuste = aplicarAjuste;
+
+        // 🆕 Nuevas funciones expuestas
+        window.abrirModalEliminar = abrirModalEliminar;
+        window.archivarProducto = archivarProducto;
+        window.eliminarProductoDefinitivo = eliminarProductoDefinitivo;
+        window.reactivarProducto = reactivarProducto;
 
         // ============================================================
         // ARRANCAR
