@@ -42,13 +42,11 @@
         .btn-guardar-supabase { background: #3b82f6; color: white; font-weight: bold; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 13px; }
         .btn-guardar-supabase:hover { background: #2563eb; }
 
-        /* Botón urgente en faltas */
         .btn-urgente-falta { background: #f59e0b; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
         .btn-urgente-falta:hover { background: #d97706; transform: scale(1.03); }
         .btn-urgente-falta.activo { background: #dc2626; animation: pulse-urgente 1.5s ease-in-out infinite; }
         @keyframes pulse-urgente { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.7); } 50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } }
 
-        /* 🆕 Botón proveedor en faltas */
         .btn-prov-falta { background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
         .btn-prov-falta:hover { background: #0369a1; transform: scale(1.03); }
         .btn-prov-falta.sin-prov { background: #dc2626; animation: pulse-sinprov 1.5s ease-in-out infinite; }
@@ -102,7 +100,9 @@
         .buscador:focus { outline: none; border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
 
         /* ============================================================
-           ACORDEÓN MÓVIL v2
+           ACORDEÓN MÓVIL v3
+           Solo la lista de proveedores se pliega.
+           El contenido (plantilla) queda SIEMPRE visible debajo.
            ============================================================ */
         .acordeon-header {
             width: 100%;
@@ -171,7 +171,7 @@
             <div class="flex flex-col items-end space-y-1">
                 <div class="flex items-center space-x-2">
                     <span id="badge-red" class="badge-conn loading">🟡 CONECTANDO...</span>
-                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.6</span>
+                    <span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-300 font-mono font-bold">v1.7</span>
                 </div>
                 <span id="timestamp-sincro" class="text-[10px] text-slate-400 font-medium font-mono">Última actualización: --:--:--</span>
             </div>
@@ -204,7 +204,6 @@
                     </button>
                 </div>
 
-                <!-- Aviso faltas huérfanas -->
                 <div id="aviso-huerfanas" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap">
                     <div class="flex items-center gap-2 text-amber-800 text-xs font-bold">
                         <span>⚠️</span>
@@ -229,57 +228,63 @@
                 <span class="flecha">▼</span>
             </button>
 
-            <div class="acordeon-contenido" id="acordeon-prov-contenido">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="md:col-span-1 space-y-4">
-                        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-                            <div class="flex justify-between items-center mb-3">
-                                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:block">🏢 Distribuidores</h2>
-                                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider md:hidden">📋 Selecciona uno</h2>
-                                <button onclick="cargarProveedoresDesdeSupabase()" class="text-blue-600 text-xs font-bold hover:underline">🔄 Refrescar</button>
-                            </div>
-                            <div id="lista-proveedores" class="space-y-1.5 max-h-[50vh] md:max-h-[70vh] overflow-y-auto pr-1">
-                                <div class="text-xs text-slate-400 p-2">⏳ Leyendo agenda...</div>
-                            </div>
+            <!-- ============================================================
+                 LAYOUT: 2 columnas. Solo la columna de la LISTA de proveedores
+                 va dentro del acordeón. La columna de CONTENIDO queda siempre
+                 visible para que al plegar el acordeón el contenido no se oculte.
+                 ============================================================ -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <!-- COLUMNA 1: ACORDEÓN (solo la lista de proveedores) -->
+                <div class="acordeon-contenido md:col-span-1" id="acordeon-prov-contenido">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:block">🏢 Distribuidores</h2>
+                            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider md:hidden">📋 Selecciona uno</h2>
+                            <button onclick="cargarProveedoresDesdeSupabase()" class="text-blue-600 text-xs font-bold hover:underline">🔄 Refrescar</button>
+                        </div>
+                        <div id="lista-proveedores" class="space-y-1.5 max-h-[50vh] md:max-h-[70vh] overflow-y-auto pr-1">
+                            <div class="text-xs text-slate-400 p-2">⏳ Leyendo agenda...</div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="md:col-span-2 space-y-4">
-                        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                            <div class="p-5 border-b border-slate-100">
-                                <div class="flex justify-between items-start flex-wrap gap-3">
-                                    <div>
-                                        <h2 id="nombre-proveedor-activo" class="text-lg font-black text-slate-900">Selecciona un proveedor</h2>
-                                        <p id="info-proveedor-activo" class="text-xs text-slate-400 font-medium mt-1">Elige un distribuidor</p>
-                                    </div>
-                                    <button id="btn-add-articulo" onclick="toggleFormNuevoArticulo()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95 hidden">
-                                        ➕ Añadir Artículo
-                                    </button>
+                <!-- COLUMNA 2: CONTENIDO (siempre visible, fuera del acordeón) -->
+                <div class="md:col-span-2 space-y-4">
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div class="p-5 border-b border-slate-100">
+                            <div class="flex justify-between items-start flex-wrap gap-3">
+                                <div>
+                                    <h2 id="nombre-proveedor-activo" class="text-lg font-black text-slate-900">Selecciona un proveedor</h2>
+                                    <p id="info-proveedor-activo" class="text-xs text-slate-400 font-medium mt-1">Elige un distribuidor</p>
                                 </div>
-
-                                <div id="form-nuevo-articulo" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2 items-center">
-                                    <input type="text" id="nuevo-nombre-articulo" placeholder="Nombre del artículo..." class="flex-1 min-w-[180px] bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 uppercase">
-                                    <select id="nueva-unidad-articulo" class="bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm font-semibold focus:outline-none text-slate-600">
-                                        <option value="UNIDADES">Ud</option>
-                                        <option value="KG">Kg</option>
-                                        <option value="L">Litros</option>
-                                        <option value="CAJAS">Cajas</option>
-                                        <option value="BOTES">Botes</option>
-                                    </select>
-                                    <button onclick="agregarIngredienteASupabase()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm active:scale-95 transition-all">
-                                        💾 Guardar
-                                    </button>
-                                </div>
-
-                                <div id="contenedor-buscador" class="mt-4 hidden">
-                                    <input type="text" id="buscador" class="buscador" placeholder="🔍 Buscar artículo en esta plantilla..." oninput="filtrarArticulos()">
-                                </div>
+                                <button id="btn-add-articulo" onclick="toggleFormNuevoArticulo()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition-all active:scale-95 hidden">
+                                    ➕ Añadir Artículo
+                                </button>
                             </div>
 
-                            <div id="contenedor-ingredientes" class="max-h-[60vh] overflow-y-auto">
-                                <div class="text-center italic text-slate-400 text-sm py-12 px-4">
-                                    👈 Selecciona un distribuidor para ver su plantilla
-                                </div>
+                            <div id="form-nuevo-articulo" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+                                <input type="text" id="nuevo-nombre-articulo" placeholder="Nombre del artículo..." class="flex-1 min-w-[180px] bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 uppercase">
+                                <select id="nueva-unidad-articulo" class="bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm font-semibold focus:outline-none text-slate-600">
+                                    <option value="UNIDADES">Ud</option>
+                                    <option value="KG">Kg</option>
+                                    <option value="L">Litros</option>
+                                    <option value="CAJAS">Cajas</option>
+                                    <option value="BOTES">Botes</option>
+                                </select>
+                                <button onclick="agregarIngredienteASupabase()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm active:scale-95 transition-all">
+                                    💾 Guardar
+                                </button>
+                            </div>
+
+                            <div id="contenedor-buscador" class="mt-4 hidden">
+                                <input type="text" id="buscador" class="buscador" placeholder="🔍 Buscar artículo en esta plantilla..." oninput="filtrarArticulos()">
+                            </div>
+                        </div>
+
+                        <div id="contenedor-ingredientes" class="max-h-[60vh] overflow-y-auto">
+                            <div class="text-center italic text-slate-400 text-sm py-12 px-4">
+                                👈 Selecciona un distribuidor para ver su plantilla
                             </div>
                         </div>
                     </div>
@@ -378,7 +383,7 @@
         const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
         const SUPABASE_KEY = "sb_publishable_i-g5o4tO1R8u6Fe7Fc2Q8Q_V_FV271y";
         const db_nube = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ [Pedidos v1.6] Cliente Supabase listo:', SUPABASE_URL);
+        console.log('✅ [Pedidos v1.7] Cliente Supabase listo:', SUPABASE_URL);
 
         const API_URL = "https://untried-january-thinning.ngrok-free.dev";
         const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -659,7 +664,6 @@
             }
         }
 
-        // 🆕 Cambiar proveedor de una falta existente
         async function abrirModalAsignarProveedor(faltaId) {
             try {
                 const { data: falta, error: errFalta } = await db_nube
@@ -747,7 +751,6 @@
             }
         }
 
-        // 🆕 Revisar huérfanas de una en una
         async function revisarHuerfanasDeUnaEnUna() {
             try {
                 const { data: huerfanas, error } = await db_nube
@@ -884,14 +887,12 @@
                         estiloFondo = 'bg-red-50 border-red-300';
                     }
 
-                    // Botón urgente
                     const btnUrgente = `<button class="btn-urgente-falta ${esUrgente ? 'activo' : ''}" 
                         onclick="toggleUrgente(${item.id}, ${esUrgente})" 
                         title="${esUrgente ? 'Quitar urgencia' : 'Marcar como urgente'}">
                         ${esUrgente ? '🚨 URGENTE' : '⚡ URGENTE'}
                     </button>`;
 
-                    // 🆕 Botón proveedor
                     const btnProv = `<button class="btn-prov-falta ${sinProv ? 'sin-prov' : ''}" 
                         onclick="abrirModalAsignarProveedor(${item.id})" 
                         title="${sinProv ? '⚠️ Asignar proveedor urgente' : 'Cambiar proveedor'}">
@@ -1067,8 +1068,12 @@
             if (window.innerWidth < 768) {
                 cerrarAcordeon('prov');
                 setTimeout(() => {
-                    document.getElementById('nombre-proveedor-activo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
+                    const target = document.getElementById('nombre-proveedor-activo');
+                    if (!target) return;
+                    // Offset de 90px para que no lo tape el header sticky
+                    const y = target.getBoundingClientRect().top + window.pageYOffset - 90;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                }, 150);
             }
         }
 
@@ -1806,7 +1811,7 @@
         // INICIALIZACIÓN
         // ============================================================
         async function init() {
-            console.log('🚀 [Pedidos v1.6] Init');
+            console.log('🚀 [Pedidos v1.7] Init');
 
             const tabGuardada = localStorage.getItem('fredware_pedidos_tab') || 'faltas';
             setTab(tabGuardada);
