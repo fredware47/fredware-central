@@ -79,6 +79,9 @@
         @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
         .status-ok { background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
         .status-error { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .lote-wrapper { display: flex; gap: 8px; align-items: stretch; }
+        .lote-wrapper input { flex: 1; }
+        .lote-wrapper .btn-auto { padding: 14px 18px; font-size: 14px; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -129,7 +132,13 @@
 
             <div class="mt-2">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Lote</label>
-                <input type="text" id="lote-input" placeholder="Ej: 20260828" class="uppercase">
+                <div class="lote-wrapper">
+                    <input type="text" id="lote-input" placeholder="Ej: 161026" class="uppercase">
+                    <button type="button" onclick="generarLoteAuto()" class="btn btn-primary btn-auto" title="Generar lote con fecha de hoy (DDMMAA)">
+                        🔢 Auto
+                    </button>
+                </div>
+                <div class="text-xs text-slate-400 mt-1 text-center">Editable manualmente · Auto usa la fecha de hoy (DDMMAA)</div>
             </div>
 
             <div class="mt-2">
@@ -223,16 +232,13 @@
 
 <script>
 // ============================================================
-// CONFIGURACIÓN - CON TU CLAVE DE SERVICIO
+// CONFIGURACIÓN
 // ============================================================
 
 const API_URL = "https://untried-january-thinning.ngrok-free.dev";
 const SUPABASE_URL = "https://bhyprsjokwgazzzlfnbf.supabase.co";
-
-// 🔥 TU CLAVE DE SERVICIO CORRECTA
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeXByc2pva3dnYXp6emxmbmJmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTM3MjUwOCwiZXhwIjoyMDk2OTQ4NTA4fQ.J-p03JwlrGvo_78OUW5r3LdWb4uLXtLle_yICAFBpW4";
 
-// Inicializar cliente Supabase
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let historialGlobal = [];
@@ -275,6 +281,21 @@ function generarId() {
 
 function getFechaHoy() {
     return new Date();
+}
+
+// ============================================================
+// 🔢 GENERAR LOTE AUTOMÁTICO (DDMMAA)
+// ============================================================
+function generarLoteAuto() {
+    const hoy = new Date();
+    const dia = pad(hoy.getDate());
+    const mes = pad(hoy.getMonth() + 1);
+    const anio = pad(hoy.getFullYear() % 100); // solo 2 últimos dígitos
+    const lote = `${dia}${mes}${anio}`;
+    
+    document.getElementById('lote-input').value = lote;
+    actualizarPreview();
+    toast(`🔢 Lote generado: ${lote}`, 'info');
 }
 
 // ============================================================
@@ -553,7 +574,7 @@ function guardarNombreProducto(producto) {
 }
 
 // ============================================================
-// 🆕 FUNCIÓN: GUARDAR REGISTRO EN SUPABASE (NO BLOQUEA)
+// GUARDAR REGISTRO EN SUPABASE (NO BLOQUEA)
 // ============================================================
 async function guardarRegistroEnSupabase(registro) {
     try {
@@ -570,7 +591,7 @@ async function guardarRegistroEnSupabase(registro) {
 }
 
 // ============================================================
-// 🖨️ IMPRIMIR ETIQUETA (VERSIÓN RÁPIDA V2)
+// 🖨️ IMPRIMIR ETIQUETA
 // ============================================================
 async function imprimirEtiqueta() {
     const producto = document.getElementById('producto-input').value.trim().toUpperCase();
@@ -609,9 +630,7 @@ async function imprimirEtiqueta() {
         });
     }
     
-    const paquete = {
-        etiquetas: etiquetas
-    };
+    const paquete = { etiquetas: etiquetas };
     
     const registro = {
         id: generarId(),
@@ -626,7 +645,6 @@ async function imprimirEtiqueta() {
     };
     
     try {
-        // 🔥 CAMBIO: Usar V2 (ASÍNCRONO) - NO espera a que se imprima
         const response = await fetch(API_URL + '/imprimir_etiqueta_rapida_v2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -640,12 +658,10 @@ async function imprimirEtiqueta() {
             if (navigator.vibrate) navigator.vibrate(50);
             mostrarMarquesina(registro);
             
-            // Mostrar estado de cola si hay muchas pendientes
             if (data.cola && data.cola > 3) {
                 toast(`🔄 ${data.cola} etiquetas pendientes en cola`, 'info');
             }
             
-            // 🔥 Guardar en Supabase EN BACKGROUND (no esperar)
             setTimeout(() => {
                 guardarRegistroEnSupabase(registro);
             }, 100);
@@ -682,12 +698,9 @@ async function reimprimirEtiqueta(registro) {
         });
     }
     
-    const paquete = {
-        etiquetas: etiquetas
-    };
+    const paquete = { etiquetas: etiquetas };
     
     try {
-        // Reimprimir usa el endpoint V2 también (rápido)
         const response = await fetch(API_URL + '/imprimir_etiqueta_rapida_v2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
@@ -931,6 +944,7 @@ window.reimprimirDesdeBusqueda = reimprimirDesdeBusqueda;
 window.cambiarTab = cambiarTab;
 window.filtrarHistorial = filtrarHistorial;
 window.seleccionarTipo = seleccionarTipo;
+window.generarLoteAuto = generarLoteAuto;
 </script>
 </body>
 </html>
