@@ -82,7 +82,7 @@
         .emp-fecha-ausencia { font-size: 9px; color: #64748b; font-style: italic; margin-top: 2px; display: flex; align-items: center; gap: 3px; }
         .emp-fecha-ausencia.alerta { color: #dc2626; font-weight: 700; font-style: normal; }
 
-        /* ===== CELDA TURNO (ahora es <input>, no <select>) ===== */
+        /* ===== CELDA TURNO (input, no select) ===== */
         .celda-turno {
             width: 100%; min-width: 60px;
             padding: 5px 2px;
@@ -469,11 +469,11 @@ const TIPOS_EVENTO = [
 // Códigos que existen en tu Excel pero no en horarios_turnos.
 // El valor es el tipo CSS a usar para colorearlos.
 const CODIGOS_EXTRA = {
-    'F':   'V',   // Festivo → amarillo
-    'TE':  'L',   // Turno especial → rosa
-    'AP':  'L',   // Asunto propio → rosa
-    'DLR': 'LR',  // Día libre recuperado → verde
-    'X':   'P'    // Rango horario libre (12 A 4) → azul partido
+    'F':   'V',
+    'TE':  'L',
+    'AP':  'L',
+    'DLR': 'LR',
+    'X':   'P'
 };
 
 const CICLO_PICA_A = {
@@ -562,16 +562,13 @@ function parsearCodigo(raw) {
     if (!original) return { raw: '', base: '', extra: 0, nota: '', horasManual: null };
     const up = original.toUpperCase().replace(/\s+/g, ' ');
 
-    // Festivo con fecha: "F 01/01/26", "F06/01/26", "F 28/03/26"
     const mF = up.match(/^F\s*(\d{1,2}\/\d{1,2}\/\d{2,4})$/);
     if (mF) return { raw: original, base: 'F', extra: 0, nota: mF[1], horasManual: null };
 
-    // "Festivo" o el typo "Frestivo"
     if (up === 'FESTIVO' || up === 'FRESTIVO') {
         return { raw: original, base: 'F', extra: 0, nota: '', horasManual: null };
     }
 
-    // Rango horario: "12 A 4", "12 a 16"
     if (/^\d{1,2}\s*A\s*\d{1,2}$/.test(up)) {
         const m = up.match(/^(\d{1,2})\s*A\s*(\d{1,2})$/);
         let ini = parseInt(m[1]), fin = parseInt(m[2]);
@@ -579,7 +576,6 @@ function parsearCodigo(raw) {
         return { raw: original, base: 'X', extra: 0, nota: up, horasManual: fin - ini };
     }
 
-    // Código + extra: T2+1, M6+2, M1+1, P1+2, T2+2
     const mExtra = up.match(/^([A-Z]\d)\s*\+\s*(\d+(?:[.,]\d+)?)$/);
     if (mExtra) {
         return {
@@ -591,7 +587,6 @@ function parsearCodigo(raw) {
         };
     }
 
-    // Código con punto o espacio: L.R, L.r, F.R, T.E, A.P, D.L.R
     const sinPuntos = up.replace(/\./g, '').replace(/\s+/g, '');
     return { raw: original, base: sinPuntos, extra: 0, nota: '', horasManual: null };
 }
@@ -615,7 +610,6 @@ function calcularHorasCodigo(raw) {
 
 function normalizarCodigo(raw) { return parsearCodigo(raw).raw; }
 
-// 🆕 Migrar formato antiguo de eventos (string) a objeto
 function migrarEventos(eventos) {
     if (!eventos || typeof eventos !== 'object') return {};
     const resultado = {};
@@ -633,7 +627,6 @@ function migrarEventos(eventos) {
     return resultado;
 }
 
-// Suma de celda de evento: "24+50" → 74. Devuelve null si hay texto no numérico.
 function sumaCeldaEvento(raw) {
     if (raw == null) return 0;
     const s = String(raw).trim();
@@ -644,7 +637,6 @@ function sumaCeldaEvento(raw) {
     return null;
 }
 
-// Calcular total de personas por día (con detección de texto no parseable)
 function calcularTotalDia(dia) {
     const ev = state.semana.eventos[dia] || {};
     let total = 0;
@@ -1040,6 +1032,7 @@ function renderFilaEmpleado(emp, esPica = false) {
         inp.type = 'text';
         inp.className = 'celda-turno';
         inp.setAttribute('list', 'turnosDatalist');
+        inp.autocomplete = 'off';
         inp.maxLength = 20;
         inp.spellcheck = false;
         inp.placeholder = '—';
@@ -1050,32 +1043,45 @@ function renderFilaEmpleado(emp, esPica = false) {
         actualizarColorInput(inp, valorActual);
         inp.title = valorActual ? `${valorActual} (${calcularHorasCodigo(valorActual)}h)` : '';
 
+        let ultimoValorGuardado = valorActual;
+
         const commit = () => {
             if (!state.semana.asignaciones[emp.nombre]) {
                 state.semana.asignaciones[emp.nombre] = {};
             }
             const v = inp.value.trim();
+            if (v === ultimoValorGuardado) return;
+            ultimoValorGuardado = v;
             state.semana.asignaciones[emp.nombre][dia] = v;
             actualizarColorInput(inp, v);
             inp.title = v ? `${v} (${calcularHorasCodigo(v)}h)` : '';
             renderHorasEmpleado(emp.nombre);
             renderConflictos();
         };
+
+        // Solo change: se dispara al salir del input si el valor cambió
         inp.addEventListener('change', commit);
-        inp.addEventListener('blur', commit);
+
+        // Enter: guarda y salta a la siguiente celda
         inp.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 commit();
                 const todos = [...document.querySelectorAll('.celda-turno')];
                 const idx = todos.indexOf(inp);
-                if (idx >= 0 && todos[idx + 1]) {
-                    todos[idx + 1].focus();
-                    todos[idx + 1].select();
-                }
+                if (idx >= 0 && todos[idx + 1]) todos[idx + 1].focus();
             }
         });
-        inp.addEventListener('focus', () => inp.select());
+
+        // Selección completa al entrar, con margen para que el teclado móvil abra
+        inp.addEventListener('focus', () => {
+            if (!inp.value) return;
+            setTimeout(() => {
+                if (document.activeElement === inp) {
+                    try { inp.select(); } catch (e) { /* ignorar */ }
+                }
+            }, 30);
+        });
 
         td.appendChild(inp);
         tr.appendChild(td);
@@ -1150,6 +1156,7 @@ function renderFilaEvento(tipo) {
         inp.className = 'evento-input';
         inp.placeholder = '0';
         inp.maxLength = 20;
+        inp.autocomplete = 'off';
         inp.dataset.dia = dia;
         inp.dataset.tipo = tipo.key;
         const val = state.semana.eventos[dia]?.[tipo.key];
