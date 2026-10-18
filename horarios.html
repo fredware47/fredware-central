@@ -187,7 +187,7 @@
             padding-top: 12px;
             border-top: 2px dashed #cbd5e1;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 5px;
             font-size: 11px;
         }
@@ -199,7 +199,10 @@
             align-items: center;
             gap: 6px;
             border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: transform 0.1s;
         }
+        .leyenda-turnos .leyenda-item:hover { transform: scale(1.03); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .leyenda-turnos .leyenda-item .cod { font-weight: 900; }
         .leyenda-turnos .leyenda-item .nom { font-size: 9px; opacity: 0.75; flex: 1; text-align: left; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
         .leyenda-turnos .leyenda-item .h { font-size: 9px; opacity: 0.6; font-weight: 700; }
@@ -211,6 +214,59 @@
         .leyenda-turnos .tipo-LR { background: #a9dfbf; color: #14532d; }
         .leyenda-turnos .tipo-FR { background: #f1948a; color: #7f1d1d; }
         .leyenda-turnos .tipo-B  { background: #cbd5e1; color: #334155; }
+        .leyenda-turnos .leyenda-edit {
+            background: #e0e7ff;
+            color: #1e40af;
+            justify-content: center;
+            font-weight: 800;
+            border: 2px dashed #6366f1;
+        }
+        .leyenda-turnos .leyenda-edit:hover { background: #c7d2fe; }
+
+        /* ============ MODAL TURNOS ============ */
+        .turno-row {
+            display: grid;
+            grid-template-columns: 60px 1fr 70px 90px 1fr 40px;
+            gap: 6px;
+            align-items: center;
+            padding: 6px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        .turno-row .turno-cod {
+            font-weight: 900;
+            font-size: 12px;
+            text-align: center;
+            background: #0f172a;
+            color: white;
+            padding: 5px 4px;
+            border-radius: 6px;
+        }
+        .turno-row input, .turno-row select {
+            padding: 6px 8px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: inherit;
+            width: 100%;
+            background: white;
+            color: #1e293b;
+        }
+        .turno-row input:focus, .turno-row select:focus { outline: none; border-color: #2563eb; }
+        .turno-row.turno-row-nuevo { background: #ecfdf5; border-color: #10b981; }
+        .turno-row input.turno-cod-input {
+            font-weight: 900;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .turno-row .turno-hint {
+            grid-column: 1 / -1;
+            font-size: 10px;
+            color: #64748b;
+            font-style: italic;
+            margin-top: -3px;
+        }
 
         /* ============ SECCIONES INFO ============ */
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
@@ -265,7 +321,7 @@
             .header { background: white; color: black; padding: 8px 0; box-shadow: none; border-bottom: 2px solid #000; border-radius: 0; }
             .header h1 { color: black; }
             .header .sub { color: #666; }
-            .header-actions, .week-nav, .banco-alerta, .info-grid, .toast, .modal-overlay, .no-print, .toolbar-pica, .avisos-container { display: none !important; }
+            .header-actions, .week-nav, .banco-alerta, .info-grid, .toast, .modal-overlay, .no-print, .toolbar-pica, .avisos-container, .leyenda-edit { display: none !important; }
             .week-label { background: transparent; color: black; border: 1px solid black; }
             .tabla-container { box-shadow: none; padding: 0; border-radius: 0; }
             .tabla { font-size: 10px; min-width: auto; }
@@ -303,6 +359,7 @@
         </div>
         <div class="header-actions">
             <button class="btn btn-dark" onclick="toggleInactivos()" id="btnInactivos">👁️ Mostrar inactivos</button>
+            <button class="btn btn-dark" onclick="abrirModalTurnos()">⚙️ Turnos</button>
             <button class="btn btn-dark" onclick="abrirModalEmpleado()">➕ Nuevo empleado</button>
             <button class="btn btn-blue" onclick="cargarSemana()">📥 Cargar</button>
             <button class="btn btn-teal" onclick="duplicarSemanaAnterior()">📋 Duplicar anterior</button>
@@ -364,6 +421,26 @@
 </div>
 
 <datalist id="turnosDatalist"></datalist>
+
+<!-- MODAL TURNOS -->
+<div class="modal-overlay" id="modalTurnos">
+    <div class="modal" style="max-width: 900px;">
+        <h2>⚙️ Gestionar turnos</h2>
+        <p style="font-size:12px;color:#64748b;margin-bottom:14px;">
+            Edita las horas de cada turno. Para horarios partidos escribe los dos tramos separados por <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;">+</code>
+            (ej. <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;">11:30-16:15 + 20:00-23:15</code>) y pulsa ⟳ para calcular las horas exactas.
+            Después pulsa <strong>💾 Guardar todo</strong>.
+        </p>
+        <div id="turnosLista" style="display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto;padding-right:4px;"></div>
+        <div style="margin-top:12px;">
+            <button class="btn btn-blue btn-sm" onclick="agregarFilaTurno()">➕ Añadir turno nuevo</button>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-dark" onclick="cerrarModalTurnos()">Cancelar</button>
+            <button class="btn btn-green" onclick="guardarTurnos()">💾 Guardar todo</button>
+        </div>
+    </div>
+</div>
 
 <!-- MODAL EMPLEADO -->
 <div class="modal-overlay" id="modalEmpleado">
@@ -466,8 +543,6 @@ const TIPOS_EVENTO = [
     { key: 'coctel_noche',    label: 'Cóctel noche',    icono: '🍸', grupo: 'coctel' }
 ];
 
-// Códigos que existen en tu Excel pero no en horarios_turnos.
-// El valor es el tipo CSS a usar para colorearlos.
 const CODIGOS_EXTRA = {
     'F':   'V',
     'TE':  'L',
@@ -553,6 +628,27 @@ function escapeHtml(str) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// PARSEO DE HORAS (acepta "8", "7.5", "7:30")
+// ═══════════════════════════════════════════════════════════
+function parsearHoras(valor) {
+    if (valor == null) return 0;
+    if (typeof valor === 'number') return valor;
+    const s = String(valor).trim();
+    if (!s) return 0;
+    // Formato HH:MM → decimal
+    const m = s.match(/^(\d{1,2}):(\d{2})$/);
+    if (m) return parseInt(m[1]) + parseInt(m[2]) / 60;
+    return parseFloat(s.replace(',', '.')) || 0;
+}
+
+function formatHoras(h) {
+    if (h == null || h === 0) return '0h';
+    const n = Math.round(h * 100) / 100;
+    if (Number.isInteger(n)) return n + 'h';
+    return n.toString().replace(/0+$/, '').replace(/\.$/, '') + 'h';
+}
+
+// ═══════════════════════════════════════════════════════════
 // PARSEO DE CÓDIGOS (compatibilidad Excel ↔ DB)
 // ═══════════════════════════════════════════════════════════
 
@@ -604,7 +700,7 @@ function calcularHorasCodigo(raw) {
     if (!p.base) return 0;
     if (p.horasManual != null) return p.horasManual;
     const t = state.turnos[p.base];
-    const baseH = t ? (parseFloat(t.horas_totales) || 0) : 0;
+    const baseH = t ? parsearHoras(t.horas_totales) : 0;
     return baseH + (p.extra || 0);
 }
 
@@ -1041,7 +1137,7 @@ function renderFilaEmpleado(emp, esPica = false) {
         const valorActual = asig[dia] || '';
         inp.value = valorActual;
         actualizarColorInput(inp, valorActual);
-        inp.title = valorActual ? `${valorActual} (${calcularHorasCodigo(valorActual)}h)` : '';
+        inp.title = valorActual ? `${valorActual} (${formatHoras(calcularHorasCodigo(valorActual))})` : '';
 
         let ultimoValorGuardado = valorActual;
 
@@ -1054,15 +1150,12 @@ function renderFilaEmpleado(emp, esPica = false) {
             ultimoValorGuardado = v;
             state.semana.asignaciones[emp.nombre][dia] = v;
             actualizarColorInput(inp, v);
-            inp.title = v ? `${v} (${calcularHorasCodigo(v)}h)` : '';
+            inp.title = v ? `${v} (${formatHoras(calcularHorasCodigo(v))})` : '';
             renderHorasEmpleado(emp.nombre);
             renderConflictos();
         };
 
-        // Solo change: se dispara al salir del input si el valor cambió
         inp.addEventListener('change', commit);
-
-        // Enter: guarda y salta a la siguiente celda
         inp.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -1072,8 +1165,6 @@ function renderFilaEmpleado(emp, esPica = false) {
                 if (idx >= 0 && todos[idx + 1]) todos[idx + 1].focus();
             }
         });
-
-        // Selección completa al entrar, con margen para que el teclado móvil abra
         inp.addEventListener('focus', () => {
             if (!inp.value) return;
             setTimeout(() => {
@@ -1211,7 +1302,7 @@ function renderHorasEmpleado(nombre) {
     const el = document.getElementById(`horas-${cssId(nombre)}`);
     if (!el) return;
     const horas = calcularHorasEmpleado(nombre);
-    el.textContent = horas.toFixed(1) + 'h';
+    el.textContent = formatHoras(horas);
     el.classList.remove('over', 'ok');
     if (horas > 40) el.classList.add('over');
     else if (horas === 40) el.classList.add('ok');
@@ -1223,16 +1314,17 @@ function renderLeyenda() {
     const turnos = Object.values(state.turnos)
         .filter(t => t.codigo)
         .sort((a, b) => (a.orden || 0) - (b.orden || 0));
-    if (turnos.length === 0) { cont.innerHTML = ''; return; }
-    cont.innerHTML = turnos.map(t => {
+    const items = turnos.map(t => {
         const tipo = t.tipo || 'vacio';
-        const h = parseFloat(t.horas_totales) || 0;
-        return `<div class="leyenda-item tipo-${tipo}" title="${escapeHtml(t.nombre || '')}">
+        const h = parsearHoras(t.horas_totales);
+        return `<div class="leyenda-item tipo-${tipo}" title="${escapeHtml(t.nombre || '')} — click para editar" onclick="abrirModalTurnos()">
             <span class="cod">${escapeHtml(t.codigo)}</span>
             <span class="nom">${escapeHtml(t.nombre || '')}</span>
-            <span class="h">${h}h</span>
+            <span class="h">${formatHoras(h)}</span>
         </div>`;
     }).join('');
+    const editBtn = `<div class="leyenda-item leyenda-edit" onclick="abrirModalTurnos()">⚙️ Editar turnos</div>`;
+    cont.innerHTML = items + editBtn;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1244,8 +1336,8 @@ function renderConflictos() {
     visibles.forEach(emp => {
         const horas = calcularHorasEmpleado(emp.nombre);
         const asig = state.semana.asignaciones[emp.nombre] || {};
-        if (horas > 40) conflictos.push({ tipo: 'warn', msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (${(horas - 40).toFixed(1)}h extras)` });
-        if (horas < 40 && horas > 0 && emp.estado === 'ACTIVO') conflictos.push({ tipo: 'info', msg: `ℹ️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (le faltan ${(40 - horas).toFixed(1)}h)` });
+        if (horas > 40) conflictos.push({ tipo: 'warn', msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: ${formatHoras(horas)} (${formatHoras(horas - 40)} extras)` });
+        if (horas < 40 && horas > 0 && emp.estado === 'ACTIVO') conflictos.push({ tipo: 'info', msg: `ℹ️ <strong>${escapeHtml(emp.nombre)}</strong>: ${formatHoras(horas)} (le faltan ${formatHoras(40 - horas)})` });
         const libres = DIAS.map(d => {
             const v = asig[d];
             if (!v) return true;
@@ -1311,7 +1403,140 @@ async function eliminarBanco(id) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// MODALES
+// MODAL TURNOS
+// ═══════════════════════════════════════════════════════════
+const TIPOS_TURNO = ['M', 'T', 'P', 'L', 'V', 'LR', 'FR', 'B'];
+
+function abrirModalTurnos() {
+    renderTurnosLista();
+    document.getElementById('modalTurnos').classList.add('visible');
+}
+function cerrarModalTurnos() {
+    document.getElementById('modalTurnos').classList.remove('visible');
+}
+function renderTurnosLista() {
+    const cont = document.getElementById('turnosLista');
+    const turnos = Object.values(state.turnos).filter(t => t.codigo).sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    if (turnos.length === 0) {
+        cont.innerHTML = `<div class="info-empty">No hay turnos en la base de datos.</div>`;
+        return;
+    }
+    cont.innerHTML = turnos.map(t => {
+        const tipoOpts = TIPOS_TURNO.map(tp => `<option value="${tp}"${tp === t.tipo ? ' selected' : ''}>${tp}</option>`).join('');
+        return `<div class="turno-row" data-codigo="${escapeHtml(t.codigo)}">
+            <span class="turno-cod">${escapeHtml(t.codigo)}</span>
+            <input type="text" class="turno-nombre" value="${escapeHtml(t.nombre || '')}" placeholder="Nombre">
+            <select class="turno-tipo">${tipoOpts}</select>
+            <input type="number" class="turno-horas" value="${parsearHoras(t.horas_totales)}" step="0.25" min="0" max="24">
+            <input type="text" class="turno-horario" placeholder="ej: 11:30-16:15 + 20:00-23:15" style="font-size:11px;">
+            <button class="btn btn-sm btn-blue" onclick="calcularHorasTurnoDesdeBoton(this)" title="Calcular horas desde horario">⟳</button>
+        </div>`;
+    }).join('');
+}
+function agregarFilaTurno() {
+    const cont = document.getElementById('turnosLista');
+    const row = document.createElement('div');
+    row.className = 'turno-row turno-row-nuevo';
+    row.dataset.isNew = 'true';
+    const tipoOpts = TIPOS_TURNO.map(tp => `<option value="${tp}">${tp}</option>`).join('');
+    row.innerHTML = `
+        <input type="text" class="turno-cod-input" placeholder="COD" maxlength="5" style="font-weight:900;text-align:center;text-transform:uppercase;">
+        <input type="text" class="turno-nombre" placeholder="Nombre">
+        <select class="turno-tipo">${tipoOpts}</select>
+        <input type="number" class="turno-horas" value="8" step="0.25" min="0" max="24">
+        <input type="text" class="turno-horario" placeholder="ej: 11:30-16:15 + 20:00-23:15" style="font-size:11px;">
+        <button class="btn btn-sm btn-blue" onclick="calcularHorasTurnoDesdeBoton(this)" title="Calcular">⟳</button>
+    `;
+    cont.appendChild(row);
+    const input = row.querySelector('.turno-cod-input');
+    if (input) input.focus();
+}
+function calcularHorasDesdeHorario(txt) {
+    if (!txt) return null;
+    // Normaliza: quita espacios, convierte "a"/"A" a "-"
+    const limpio = txt.replace(/\s+/g, '').replace(/[aA]/g, '-').replace(/–/g, '-');
+    const matches = [...limpio.matchAll(/(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})/g)];
+    if (matches.length === 0) return null;
+    let totalMin = 0;
+    for (const m of matches) {
+        const h1 = parseInt(m[1]), min1 = parseInt(m[2]);
+        const h2 = parseInt(m[3]), min2 = parseInt(m[4]);
+        let mins = (h2 * 60 + min2) - (h1 * 60 + min1);
+        if (mins < 0) mins += 24 * 60;
+        totalMin += mins;
+    }
+    return totalMin / 60;
+}
+function calcularHorasTurnoDesdeBoton(btn) {
+    const row = btn.closest('.turno-row');
+    const horario = row.querySelector('.turno-horario').value.trim();
+    const horasInput = row.querySelector('.turno-horas');
+    const h = calcularHorasDesdeHorario(horario);
+    if (h === null) {
+        toast('No se pudo interpretar el horario. Usa formato 11:30-16:15 + 20:00-23:15', 'warning');
+        return;
+    }
+    horasInput.value = Math.round(h * 100) / 100;
+    toast(`⏱️ ${formatHoras(h)} calculadas`, 'success');
+}
+async function guardarTurnos() {
+    const rows = document.querySelectorAll('#turnosLista .turno-row');
+    const updates = [];
+    const inserts = [];
+    let errorValidacion = null;
+
+    rows.forEach(row => {
+        const isNew = row.dataset.isNew === 'true';
+        const codigo = isNew
+            ? (row.querySelector('.turno-cod-input')?.value || '').trim().toUpperCase()
+            : row.dataset.codigo;
+        if (!codigo) {
+            if (isNew) errorValidacion = 'Hay una fila nueva sin código.';
+            return;
+        }
+        const nombre = row.querySelector('.turno-nombre').value.trim();
+        const tipo = row.querySelector('.turno-tipo').value;
+        const horas = parseFloat(row.querySelector('.turno-horas').value) || 0;
+        const payload = { codigo, nombre: nombre || null, tipo, horas_totales: horas };
+        if (isNew) {
+            const maxOrden = Math.max(...Object.values(state.turnos).map(t => t.orden || 0), 0);
+            payload.orden = maxOrden + 1;
+            inserts.push(payload);
+        } else {
+            updates.push(payload);
+        }
+    });
+
+    if (errorValidacion) { toast(errorValidacion, 'error'); return; }
+
+    try {
+        for (const u of updates) {
+            const { error } = await db.from('horarios_turnos')
+                .update({ nombre: u.nombre, tipo: u.tipo, horas_totales: u.horas_totales })
+                .eq('codigo', u.codigo);
+            if (error) throw error;
+        }
+        if (inserts.length > 0) {
+            const { error } = await db.from('horarios_turnos').insert(inserts);
+            if (error) throw error;
+        }
+        // Recargar turnos
+        const { data, error: errLoad } = await db.from('horarios_turnos').select('*').order('orden');
+        if (errLoad) throw errLoad;
+        state.turnos = {};
+        (data || []).forEach(t => { if (t.codigo) state.turnos[t.codigo] = t; });
+
+        const total = updates.length + inserts.length;
+        toast(`💾 ${total} turno${total !== 1 ? 's' : ''} guardado${total !== 1 ? 's' : ''}`, 'success');
+        cerrarModalTurnos();
+        render();
+    } catch (e) {
+        toast('Error: ' + e.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODALES EMPLEADO / BANCO
 // ═══════════════════════════════════════════════════════════
 function abrirModalEmpleado(nombreEditando = null) {
     state.empleadoEditando = nombreEditando;
@@ -1409,11 +1634,11 @@ function imprimir() { window.print(); }
 // ═══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { cerrarModalEmpleado(); cerrarModalEstado(); cerrarModalBanco(); }
+        if (e.key === 'Escape') { cerrarModalEmpleado(); cerrarModalEstado(); cerrarModalBanco(); cerrarModalTurnos(); }
     });
     document.querySelectorAll('.modal-overlay').forEach(m => {
         m.addEventListener('click', (e) => {
-            if (e.target === m) { cerrarModalEmpleado(); cerrarModalEstado(); cerrarModalBanco(); }
+            if (e.target === m) { cerrarModalEmpleado(); cerrarModalEstado(); cerrarModalBanco(); cerrarModalTurnos(); }
         });
     });
     await cargarDatos();
