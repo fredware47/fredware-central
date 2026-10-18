@@ -27,6 +27,8 @@
         .btn-orange:hover { background: #d97706; }
         .btn-purple { background: #8b5cf6; color: white; }
         .btn-purple:hover { background: #7c3aed; }
+        .btn-teal { background: #14b8a6; color: white; }
+        .btn-teal:hover { background: #0d9488; }
         .btn-sm { padding: 5px 10px; font-size: 11px; }
 
         .week-nav { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
@@ -80,22 +82,34 @@
         .emp-fecha-ausencia { font-size: 9px; color: #64748b; font-style: italic; margin-top: 2px; display: flex; align-items: center; gap: 3px; }
         .emp-fecha-ausencia.alerta { color: #dc2626; font-weight: 700; font-style: normal; }
 
-        select.celda-turno { width: 100%; min-width: 60px; padding: 5px 2px; border: 2px solid #cbd5e1; border-radius: 6px; font-weight: 700; font-size: 12px; text-align: center; cursor: pointer; background: white; color: #1e293b; -webkit-appearance: none; appearance: none; }
-        select.celda-turno:focus { outline: none; border-color: #2563eb; }
-        select.celda-turno.tipo-M { background: #d5f5e3; }
-        select.celda-turno.tipo-T { background: #fadbd8; }
-        select.celda-turno.tipo-P { background: #d6eaf8; }
-        select.celda-turno.tipo-L { background: #f5b7b1; color: #7f1d1d; }
-        select.celda-turno.tipo-V { background: #f9e79f; color: #78350f; }
-        select.celda-turno.tipo-LR { background: #a9dfbf; color: #14532d; }
-        select.celda-turno.tipo-FR { background: #f1948a; color: #7f1d1d; }
-        select.celda-turno.tipo-B { background: #cbd5e1; color: #334155; }
-        select.celda-turno.tipo-vacio { background: white; color: #94a3b8; }
+        /* ===== CELDA TURNO (ahora es <input>, no <select>) ===== */
+        .celda-turno {
+            width: 100%; min-width: 60px;
+            padding: 5px 2px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            font-weight: 700; font-size: 12px;
+            text-align: center;
+            cursor: text;
+            background: white; color: #1e293b;
+            font-family: inherit;
+            text-transform: uppercase;
+        }
+        .celda-turno:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.2); }
+        .celda-turno.tipo-M  { background: #d5f5e3; }
+        .celda-turno.tipo-T  { background: #fadbd8; }
+        .celda-turno.tipo-P  { background: #d6eaf8; }
+        .celda-turno.tipo-L  { background: #f5b7b1; color: #7f1d1d; }
+        .celda-turno.tipo-V  { background: #f9e79f; color: #78350f; }
+        .celda-turno.tipo-LR { background: #a9dfbf; color: #14532d; }
+        .celda-turno.tipo-FR { background: #f1948a; color: #7f1d1d; }
+        .celda-turno.tipo-B  { background: #cbd5e1; color: #334155; }
+        .celda-turno.tipo-vacio { background: white; color: #94a3b8; }
 
         .tabla tr.fila-pica td.emp-col { background: #f0fdf4; }
         .tabla tr.fila-pica:hover td.emp-col { background: #dcfce7; }
 
-        /* ============ EVENTOS (NUEVO) ============ */
+        /* ============ EVENTOS ============ */
         .tabla tr.eventos-title-row td {
             background: linear-gradient(135deg, #fef3c7, #fde68a);
             padding: 8px 12px;
@@ -137,7 +151,7 @@
         .dot-coctel { background: #8b5cf6; }
 
         .evento-input {
-            width: 100%; min-width: 50px;
+            width: 100%; min-width: 60px;
             padding: 5px 4px;
             border: 1.5px solid #fbbf24;
             border-radius: 6px;
@@ -167,6 +181,37 @@
         .total-evento-cero { color: #a3a3a3; font-weight: 400; }
         .total-evento-alto { color: #dc2626; }
 
+        /* ============ LEYENDA TURNOS ============ */
+        .leyenda-turnos {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 2px dashed #cbd5e1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 5px;
+            font-size: 11px;
+        }
+        .leyenda-turnos .leyenda-item {
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .leyenda-turnos .leyenda-item .cod { font-weight: 900; }
+        .leyenda-turnos .leyenda-item .nom { font-size: 9px; opacity: 0.75; flex: 1; text-align: left; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+        .leyenda-turnos .leyenda-item .h { font-size: 9px; opacity: 0.6; font-weight: 700; }
+        .leyenda-turnos .tipo-M  { background: #d5f5e3; }
+        .leyenda-turnos .tipo-T  { background: #fadbd8; }
+        .leyenda-turnos .tipo-P  { background: #d6eaf8; }
+        .leyenda-turnos .tipo-L  { background: #f5b7b1; color: #7f1d1d; }
+        .leyenda-turnos .tipo-V  { background: #f9e79f; color: #78350f; }
+        .leyenda-turnos .tipo-LR { background: #a9dfbf; color: #14532d; }
+        .leyenda-turnos .tipo-FR { background: #f1948a; color: #7f1d1d; }
+        .leyenda-turnos .tipo-B  { background: #cbd5e1; color: #334155; }
+
         /* ============ SECCIONES INFO ============ */
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         @media (max-width: 900px) { .info-grid { grid-template-columns: 1fr; } }
@@ -190,6 +235,7 @@
         .toast.success { background: #059669; }
         .toast.error { background: #dc2626; }
         .toast.info { background: #2563eb; }
+        .toast.warning { background: #f59e0b; }
 
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
         .modal-overlay.visible { display: flex; }
@@ -225,9 +271,10 @@
             .tabla { font-size: 10px; min-width: auto; }
             .tabla th { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .tabla td.emp-col { background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            select.celda-turno { border: 1px solid #999; -webkit-appearance: none; appearance: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .celda-turno { border: 1px solid #999; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .evento-input { border: 1px solid #ccc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .tabla tr.separador-pica td, .tabla tr.eventos-title-row td, .tabla tr.eventos-total-row td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .leyenda-turnos { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
         @page { size: A4 landscape; margin: 8mm; }
 
@@ -258,6 +305,7 @@
             <button class="btn btn-dark" onclick="toggleInactivos()" id="btnInactivos">👁️ Mostrar inactivos</button>
             <button class="btn btn-dark" onclick="abrirModalEmpleado()">➕ Nuevo empleado</button>
             <button class="btn btn-blue" onclick="cargarSemana()">📥 Cargar</button>
+            <button class="btn btn-teal" onclick="duplicarSemanaAnterior()">📋 Duplicar anterior</button>
             <button class="btn btn-green" onclick="guardarSemana()">💾 Guardar</button>
             <button class="btn btn-purple" onclick="imprimir()">🖨️ Imprimir</button>
         </div>
@@ -299,6 +347,7 @@
         </thead>
         <tbody id="tablaBody"></tbody>
     </table>
+    <div id="leyendaTurnos" class="leyenda-turnos"></div>
 </div>
 
 <div class="info-grid">
@@ -313,6 +362,8 @@
         <div class="info-list" id="bancoList"><div class="info-empty">Sin pendientes</div></div>
     </div>
 </div>
+
+<datalist id="turnosDatalist"></datalist>
 
 <!-- MODAL EMPLEADO -->
 <div class="modal-overlay" id="modalEmpleado">
@@ -404,20 +455,26 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 const DIAS_LABEL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-// 🆕 Tipos de evento — clasificados
 const TIPOS_EVENTO = [
-    // Grupos (desayuno, almuerzo, cena)
     { key: 'grupo_desayuno',  label: 'Grupo desayuno',  icono: '🥐', grupo: 'grupo'  },
     { key: 'grupo_almuerzo',  label: 'Grupo almuerzo',  icono: '🍽️', grupo: 'grupo'  },
     { key: 'grupo_cena',      label: 'Grupo cena',      icono: '🌙', grupo: 'grupo'  },
-    // Eventos (almuerzo, cena)
     { key: 'evento_almuerzo', label: 'Evento almuerzo', icono: '🎉', grupo: 'evento' },
     { key: 'evento_cena',     label: 'Evento cena',     icono: '🎉', grupo: 'evento' },
-    // Cócteles
     { key: 'coctel_manana',   label: 'Cóctel mañana',   icono: '🍸', grupo: 'coctel' },
     { key: 'coctel_tarde',    label: 'Cóctel tarde',    icono: '🍸', grupo: 'coctel' },
     { key: 'coctel_noche',    label: 'Cóctel noche',    icono: '🍸', grupo: 'coctel' }
 ];
+
+// Códigos que existen en tu Excel pero no en horarios_turnos.
+// El valor es el tipo CSS a usar para colorearlos.
+const CODIGOS_EXTRA = {
+    'F':   'V',   // Festivo → amarillo
+    'TE':  'L',   // Turno especial → rosa
+    'AP':  'L',   // Asunto propio → rosa
+    'DLR': 'LR',  // Día libre recuperado → verde
+    'X':   'P'    // Rango horario libre (12 A 4) → azul partido
+};
 
 const CICLO_PICA_A = {
     'Daniel': { lunes: 'L', martes: 'L', miercoles: 'P2', jueves: 'P2', viernes: 'M3', sabado: 'M3', domingo: 'M3' },
@@ -495,6 +552,69 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+// ═══════════════════════════════════════════════════════════
+// PARSEO DE CÓDIGOS (compatibilidad Excel ↔ DB)
+// ═══════════════════════════════════════════════════════════
+
+function parsearCodigo(raw) {
+    if (raw == null) return { raw: '', base: '', extra: 0, nota: '', horasManual: null };
+    const original = String(raw).trim();
+    if (!original) return { raw: '', base: '', extra: 0, nota: '', horasManual: null };
+    const up = original.toUpperCase().replace(/\s+/g, ' ');
+
+    // Festivo con fecha: "F 01/01/26", "F06/01/26", "F 28/03/26"
+    const mF = up.match(/^F\s*(\d{1,2}\/\d{1,2}\/\d{2,4})$/);
+    if (mF) return { raw: original, base: 'F', extra: 0, nota: mF[1], horasManual: null };
+
+    // "Festivo" o el typo "Frestivo"
+    if (up === 'FESTIVO' || up === 'FRESTIVO') {
+        return { raw: original, base: 'F', extra: 0, nota: '', horasManual: null };
+    }
+
+    // Rango horario: "12 A 4", "12 a 16"
+    if (/^\d{1,2}\s*A\s*\d{1,2}$/.test(up)) {
+        const m = up.match(/^(\d{1,2})\s*A\s*(\d{1,2})$/);
+        let ini = parseInt(m[1]), fin = parseInt(m[2]);
+        if (fin <= ini) fin += 12;
+        return { raw: original, base: 'X', extra: 0, nota: up, horasManual: fin - ini };
+    }
+
+    // Código + extra: T2+1, M6+2, M1+1, P1+2, T2+2
+    const mExtra = up.match(/^([A-Z]\d)\s*\+\s*(\d+(?:[.,]\d+)?)$/);
+    if (mExtra) {
+        return {
+            raw: original,
+            base: mExtra[1],
+            extra: parseFloat(mExtra[2].replace(',', '.')),
+            nota: '',
+            horasManual: null
+        };
+    }
+
+    // Código con punto o espacio: L.R, L.r, F.R, T.E, A.P, D.L.R
+    const sinPuntos = up.replace(/\./g, '').replace(/\s+/g, '');
+    return { raw: original, base: sinPuntos, extra: 0, nota: '', horasManual: null };
+}
+
+function tipoDeCodigo(raw) {
+    const p = parsearCodigo(raw);
+    if (!p.base) return 'vacio';
+    const t = state.turnos[p.base];
+    if (t && t.tipo) return t.tipo;
+    return CODIGOS_EXTRA[p.base] || 'vacio';
+}
+
+function calcularHorasCodigo(raw) {
+    const p = parsearCodigo(raw);
+    if (!p.base) return 0;
+    if (p.horasManual != null) return p.horasManual;
+    const t = state.turnos[p.base];
+    const baseH = t ? (parseFloat(t.horas_totales) || 0) : 0;
+    return baseH + (p.extra || 0);
+}
+
+function normalizarCodigo(raw) { return parsearCodigo(raw).raw; }
+
 // 🆕 Migrar formato antiguo de eventos (string) a objeto
 function migrarEventos(eventos) {
     if (!eventos || typeof eventos !== 'object') return {};
@@ -502,7 +622,6 @@ function migrarEventos(eventos) {
     DIAS.forEach(dia => {
         const valorDia = eventos[dia];
         if (typeof valorDia === 'string') {
-            // Formato antiguo: string libre → migrar a "notas" del día (no perder información)
             resultado[dia] = {};
             if (valorDia.trim()) resultado[dia]._notas = valorDia;
         } else if (typeof valorDia === 'object' && valorDia !== null) {
@@ -514,24 +633,38 @@ function migrarEventos(eventos) {
     return resultado;
 }
 
-// 🆕 Calcular total de personas por día
+// Suma de celda de evento: "24+50" → 74. Devuelve null si hay texto no numérico.
+function sumaCeldaEvento(raw) {
+    if (raw == null) return 0;
+    const s = String(raw).trim();
+    if (!s) return 0;
+    if (/^[\d\s+]+$/.test(s)) {
+        return s.split('+').map(x => parseInt(x.trim()) || 0).reduce((a, b) => a + b, 0);
+    }
+    return null;
+}
+
+// Calcular total de personas por día (con detección de texto no parseable)
 function calcularTotalDia(dia) {
     const ev = state.semana.eventos[dia] || {};
     let total = 0;
+    let hayTexto = false;
     TIPOS_EVENTO.forEach(t => {
-        const v = parseInt(ev[t.key]) || 0;
-        total += v;
+        const raw = ev[t.key];
+        if (raw == null || raw === '') return;
+        const n = sumaCeldaEvento(raw);
+        if (n == null) hayTexto = true;
+        else total += n;
     });
-    return total;
+    return { total, hayTexto };
 }
 
-// 🆕 Calcular total por grupo (grupos, eventos, cócteles)
 function calcularTotalGrupo(dia, grupo) {
     const ev = state.semana.eventos[dia] || {};
     let total = 0;
     TIPOS_EVENTO.filter(t => t.grupo === grupo).forEach(t => {
-        const v = parseInt(ev[t.key]) || 0;
-        total += v;
+        const n = sumaCeldaEvento(ev[t.key]);
+        if (n != null) total += n;
     });
     return total;
 }
@@ -548,7 +681,7 @@ async function cargarDatos() {
         const { data: trn, error: errT } = await db.from('horarios_turnos').select('*').order('orden', { ascending: true });
         if (errT) throw errT;
         state.turnos = {};
-        (trn || []).forEach(t => { state.turnos[t.codigo] = t; });
+        (trn || []).forEach(t => { if (t.codigo) state.turnos[t.codigo] = t; });
 
         const { data: banc, error: errB } = await db.from('horarios_banco_horas')
             .select('*, horarios_empleados(nombre)').eq('estado', 'PENDIENTE')
@@ -616,6 +749,25 @@ async function guardarSemana() {
         console.error('Error guardando:', e);
         toast('❌ Error: ' + e.message, 'error');
         setStatus('❌ ' + e.message, 'error');
+    }
+}
+
+async function duplicarSemanaAnterior() {
+    if (!confirm('Esto reemplazará las asignaciones de la semana actual con las de la semana anterior. ¿Continuar?')) return;
+    let w = state.semana.numero_semana - 1;
+    let y = state.semana.año;
+    if (w < 1) { w = 52; y--; }
+    try {
+        const { data, error } = await db.from('horarios_semanas').select('*')
+            .eq('año', y).eq('numero_semana', w).maybeSingle();
+        if (error) throw error;
+        if (!data) { toast(`No hay semana ${w}/${y} guardada`, 'warning'); return; }
+        state.semana.asignaciones = JSON.parse(JSON.stringify(data.asignaciones || {}));
+        state.semana.eventos = migrarEventos(data.eventos);
+        render();
+        toast(`📋 Copiada semana ${w}/${y}`, 'success');
+    } catch (e) {
+        toast('Error: ' + e.message, 'error');
     }
 }
 
@@ -721,7 +873,7 @@ function renderAvisos() {
         if (dias < 0) avisos.push({ tipo: 'urgente', emoji: '⚠️', texto: `<strong>${escapeHtml(emp.nombre)}</strong> tenía previsto volver el ${formatFechaLarga(aus.fecha_fin)} (hace ${Math.abs(dias)}d). Actualiza su estado.` });
         else if (dias === 0) avisos.push({ tipo: 'vuelta', emoji: '🎉', texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve <strong>HOY</strong>.` });
         else if (dias === 1) avisos.push({ tipo: 'proxima', emoji: '⏰', texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve <strong>mañana</strong>.` });
-        else if (dias <= 7) avisos.push({ tipo: 'proxima', emoji: '📅', texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve en <strong>${dias} días</strong> (${formatFechaLargaL(aus.fecha_fin)}).`.replace('formatFechaLargaL', '') });
+        else if (dias <= 7) avisos.push({ tipo: 'proxima', emoji: '📅', texto: `<strong>${escapeHtml(emp.nombre)}</strong> vuelve en <strong>${dias} días</strong> (${formatFechaLarga(aus.fecha_fin)}).` });
     });
     avisos.sort((a, b) => ({ urgente: 0, vuelta: 1, proxima: 2 })[a.tipo] - ({ urgente: 0, vuelta: 1, proxima: 2 })[b.tipo]);
     avisos.forEach(av => {
@@ -801,11 +953,7 @@ function actualizarCabeceraSemana() {
 // ═══════════════════════════════════════════════════════════
 // CÁLCULO HORAS
 // ═══════════════════════════════════════════════════════════
-function calcularHorasTurno(codigo) {
-    if (!codigo) return 0;
-    const t = state.turnos[codigo];
-    return t ? (parseFloat(t.horas_totales) || 0) : 0;
-}
+function calcularHorasTurno(codigo) { return calcularHorasCodigo(codigo); }
 function calcularHorasEmpleado(nombre) {
     const asig = state.semana.asignaciones[nombre] || {};
     let total = 0;
@@ -817,11 +965,21 @@ function calcularHorasEmpleado(nombre) {
 // RENDER
 // ═══════════════════════════════════════════════════════════
 function render() {
+    renderDatalistTurnos();
     renderAvisos();
     renderTabla();
+    renderLeyenda();
     renderConflictos();
     renderBanco();
     renderBancoAlerta();
+}
+
+function renderDatalistTurnos() {
+    const dl = document.getElementById('turnosDatalist');
+    if (!dl) return;
+    const codigos = new Set(Object.keys(state.turnos));
+    Object.keys(CODIGOS_EXTRA).forEach(c => codigos.add(c));
+    dl.innerHTML = [...codigos].sort().map(c => `<option value="${c}">`).join('');
 }
 
 function renderTabla() {
@@ -842,7 +1000,6 @@ function renderTabla() {
         tbody.appendChild(trSep);
         picas.forEach(emp => tbody.appendChild(renderFilaEmpleado(emp, true)));
     }
-    // 🆕 Sección de eventos completa
     renderSeccionEventos(tbody);
 }
 
@@ -879,37 +1036,49 @@ function renderFilaEmpleado(emp, esPica = false) {
 
     DIAS.forEach(dia => {
         const td = document.createElement('td');
-        const select = document.createElement('select');
-        select.className = 'celda-turno';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'celda-turno';
+        inp.setAttribute('list', 'turnosDatalist');
+        inp.maxLength = 20;
+        inp.spellcheck = false;
+        inp.placeholder = '—';
+
         const asig = state.semana.asignaciones[emp.nombre] || {};
         const valorActual = asig[dia] || '';
-        select.value = valorActual;
-        actualizarColorSelect(select, valorActual);
-        const grupos = {
-            '— Libres —': ['L', 'LR', 'FR', 'V', 'B'],
-            '— Mañana —': ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7'],
-            '— Tarde —': ['T1', 'T2', 'T3', 'T4', 'T5'],
-            '— Partido —': ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7']
-        };
-        const optInicio = document.createElement('option');
-        optInicio.value = ''; optInicio.textContent = '—';
-        select.appendChild(optInicio);
-        Object.entries(grupos).forEach(([ng, cods]) => {
-            const g = document.createElement('optgroup'); g.label = ng;
-            cods.forEach(c => {
-                const t = state.turnos[c]; if (!t) return;
-                const o = document.createElement('option'); o.value = c; o.textContent = c; o.title = t.nombre; g.appendChild(o);
-            });
-            if (g.children.length > 0) select.appendChild(g);
-        });
-        select.onchange = (e) => {
-            if (!state.semana.asignaciones[emp.nombre]) state.semana.asignaciones[emp.nombre] = {};
-            state.semana.asignaciones[emp.nombre][dia] = e.target.value;
-            actualizarColorSelect(select, e.target.value);
+        inp.value = valorActual;
+        actualizarColorInput(inp, valorActual);
+        inp.title = valorActual ? `${valorActual} (${calcularHorasCodigo(valorActual)}h)` : '';
+
+        const commit = () => {
+            if (!state.semana.asignaciones[emp.nombre]) {
+                state.semana.asignaciones[emp.nombre] = {};
+            }
+            const v = inp.value.trim();
+            state.semana.asignaciones[emp.nombre][dia] = v;
+            actualizarColorInput(inp, v);
+            inp.title = v ? `${v} (${calcularHorasCodigo(v)}h)` : '';
             renderHorasEmpleado(emp.nombre);
             renderConflictos();
         };
-        td.appendChild(select); tr.appendChild(td);
+        inp.addEventListener('change', commit);
+        inp.addEventListener('blur', commit);
+        inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                commit();
+                const todos = [...document.querySelectorAll('.celda-turno')];
+                const idx = todos.indexOf(inp);
+                if (idx >= 0 && todos[idx + 1]) {
+                    todos[idx + 1].focus();
+                    todos[idx + 1].select();
+                }
+            }
+        });
+        inp.addEventListener('focus', () => inp.select());
+
+        td.appendChild(inp);
+        tr.appendChild(td);
     });
 
     const tdHoras = document.createElement('td');
@@ -920,68 +1089,48 @@ function renderFilaEmpleado(emp, esPica = false) {
     return tr;
 }
 
-// 🆕 Sección de eventos completa con subtítulos y totales
 function renderSeccionEventos(tbody) {
-    // Title
     const trTitle = document.createElement('tr');
     trTitle.className = 'eventos-title-row';
     trTitle.innerHTML = `<td colspan="9">📅 SERVICIOS ESPECIALES · Grupos · Eventos · Cócteles</td>`;
     tbody.appendChild(trTitle);
 
-    // Subtítulo: Grupos
     const trSubG = document.createElement('tr');
     trSubG.className = 'eventos-subtitle-row';
     trSubG.innerHTML = `<td colspan="9">🍽️ GRUPOS (desayuno, almuerzo, cena)</td>`;
     tbody.appendChild(trSubG);
+    TIPOS_EVENTO.filter(t => t.grupo === 'grupo').forEach(tipo => tbody.appendChild(renderFilaEvento(tipo)));
 
-    TIPOS_EVENTO.filter(t => t.grupo === 'grupo').forEach(tipo => {
-        tbody.appendChild(renderFilaEvento(tipo));
-    });
-
-    // Subtítulo: Eventos
     const trSubE = document.createElement('tr');
     trSubE.className = 'eventos-subtitle-row';
     trSubE.innerHTML = `<td colspan="9">🎉 EVENTOS (almuerzo, cena)</td>`;
     tbody.appendChild(trSubE);
+    TIPOS_EVENTO.filter(t => t.grupo === 'evento').forEach(tipo => tbody.appendChild(renderFilaEvento(tipo)));
 
-    TIPOS_EVENTO.filter(t => t.grupo === 'evento').forEach(tipo => {
-        tbody.appendChild(renderFilaEvento(tipo));
-    });
-
-    // Subtítulo: Cócteles
     const trSubC = document.createElement('tr');
     trSubC.className = 'eventos-subtitle-row';
     trSubC.innerHTML = `<td colspan="9">🍸 CÓCTELES</td>`;
     tbody.appendChild(trSubC);
+    TIPOS_EVENTO.filter(t => t.grupo === 'coctel').forEach(tipo => tbody.appendChild(renderFilaEvento(tipo)));
 
-    TIPOS_EVENTO.filter(t => t.grupo === 'coctel').forEach(tipo => {
-        tbody.appendChild(renderFilaEvento(tipo));
-    });
-
-    // Fila TOTAL
     const trTotal = document.createElement('tr');
     trTotal.className = 'eventos-total-row';
     const tdLabelTotal = document.createElement('td');
     tdLabelTotal.className = 'emp-col';
     tdLabelTotal.innerHTML = `📊 <strong>TOTAL SERVICIOS</strong>`;
     trTotal.appendChild(tdLabelTotal);
-
     DIAS.forEach(dia => {
         const td = document.createElement('td');
         td.id = `total-evento-${dia}`;
         td.textContent = '0';
         trTotal.appendChild(td);
     });
-
-    // Columna horas (vacía para totales)
     const tdVacio = document.createElement('td');
     tdVacio.className = 'horas-col';
     tdVacio.style.background = '#fde68a';
     trTotal.appendChild(tdVacio);
-
     tbody.appendChild(trTotal);
 
-    // Actualizar totales
     setTimeout(actualizarTotalesEventos, 0);
 }
 
@@ -997,20 +1146,31 @@ function renderFilaEvento(tipo) {
     DIAS.forEach(dia => {
         const td = document.createElement('td');
         const inp = document.createElement('input');
-        inp.type = 'number';
+        inp.type = 'text';
         inp.className = 'evento-input';
         inp.placeholder = '0';
-        inp.min = 0;
+        inp.maxLength = 20;
         inp.dataset.dia = dia;
         inp.dataset.tipo = tipo.key;
         const val = state.semana.eventos[dia]?.[tipo.key];
         inp.value = (val !== undefined && val !== null && val !== '') ? val : '';
-        inp.onchange = (e) => {
-            if (!state.semana.eventos[dia]) state.semana.eventos[dia] = {};
-            const v = e.target.value.trim();
-            state.semana.eventos[dia][tipo.key] = v === '' ? null : parseInt(v) || 0;
-            actualizarTotalesEventos();
+
+        const updateTooltip = () => {
+            const raw = inp.value.trim();
+            if (!raw) { inp.title = ''; return; }
+            const n = sumaCeldaEvento(raw);
+            inp.title = (n != null) ? `Suma: ${n}` : raw;
         };
+        updateTooltip();
+
+        inp.addEventListener('change', () => {
+            if (!state.semana.eventos[dia]) state.semana.eventos[dia] = {};
+            const v = inp.value.trim();
+            state.semana.eventos[dia][tipo.key] = v === '' ? null : v;
+            updateTooltip();
+            actualizarTotalesEventos();
+        });
+
         td.appendChild(inp);
         tr.appendChild(td);
     });
@@ -1022,24 +1182,22 @@ function renderFilaEvento(tipo) {
     return tr;
 }
 
-// 🆕 Actualizar los totales por día
 function actualizarTotalesEventos() {
     DIAS.forEach(dia => {
         const el = document.getElementById(`total-evento-${dia}`);
         if (!el) return;
-        const total = calcularTotalDia(dia);
-        el.textContent = total;
+        const { total, hayTexto } = calcularTotalDia(dia);
+        el.textContent = (total === 0 && hayTexto) ? '—' : `${total}${hayTexto ? '*' : ''}`;
         el.className = '';
         if (total === 0) el.classList.add('total-evento-cero');
         else if (total >= 50) el.classList.add('total-evento-alto');
+        el.title = hayTexto ? 'Alguna celda contiene texto no numérico' : '';
     });
 }
 
-function actualizarColorSelect(select, valor) {
-    select.classList.remove('tipo-M', 'tipo-T', 'tipo-P', 'tipo-L', 'tipo-V', 'tipo-LR', 'tipo-FR', 'tipo-B', 'tipo-vacio');
-    if (!valor) { select.classList.add('tipo-vacio'); return; }
-    const t = state.turnos[valor];
-    select.classList.add('tipo-' + (t ? (t.tipo || 'vacio') : 'vacio'));
+function actualizarColorInput(input, valor) {
+    input.classList.remove('tipo-M', 'tipo-T', 'tipo-P', 'tipo-L', 'tipo-V', 'tipo-LR', 'tipo-FR', 'tipo-B', 'tipo-vacio');
+    input.classList.add('tipo-' + tipoDeCodigo(valor));
 }
 
 function renderHorasEmpleado(nombre) {
@@ -1050,6 +1208,24 @@ function renderHorasEmpleado(nombre) {
     el.classList.remove('over', 'ok');
     if (horas > 40) el.classList.add('over');
     else if (horas === 40) el.classList.add('ok');
+}
+
+function renderLeyenda() {
+    const cont = document.getElementById('leyendaTurnos');
+    if (!cont) return;
+    const turnos = Object.values(state.turnos)
+        .filter(t => t.codigo)
+        .sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    if (turnos.length === 0) { cont.innerHTML = ''; return; }
+    cont.innerHTML = turnos.map(t => {
+        const tipo = t.tipo || 'vacio';
+        const h = parseFloat(t.horas_totales) || 0;
+        return `<div class="leyenda-item tipo-${tipo}" title="${escapeHtml(t.nombre || '')}">
+            <span class="cod">${escapeHtml(t.codigo)}</span>
+            <span class="nom">${escapeHtml(t.nombre || '')}</span>
+            <span class="h">${h}h</span>
+        </div>`;
+    }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1063,7 +1239,12 @@ function renderConflictos() {
         const asig = state.semana.asignaciones[emp.nombre] || {};
         if (horas > 40) conflictos.push({ tipo: 'warn', msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (${(horas - 40).toFixed(1)}h extras)` });
         if (horas < 40 && horas > 0 && emp.estado === 'ACTIVO') conflictos.push({ tipo: 'info', msg: `ℹ️ <strong>${escapeHtml(emp.nombre)}</strong>: ${horas.toFixed(1)}h (le faltan ${(40 - horas).toFixed(1)}h)` });
-        const libres = DIAS.map(d => !asig[d] || ['L', 'V', 'LR', 'FR', 'B'].includes(asig[d]));
+        const libres = DIAS.map(d => {
+            const v = asig[d];
+            if (!v) return true;
+            const base = parsearCodigo(v).base;
+            return ['L', 'V', 'LR', 'FR', 'B', 'F'].includes(base);
+        });
         const dosConsec = (libres[0] && libres[1]) || (libres[1] && libres[2]) || (libres[2] && libres[3]) || (libres[3] && libres[4]) || (libres[4] && libres[5]) || (libres[5] && libres[6]);
         if (emp.estado === 'ACTIVO' && horas > 0 && !dosConsec) conflictos.push({ tipo: 'warn', msg: `⚠️ <strong>${escapeHtml(emp.nombre)}</strong>: sin 2 libres consecutivos` });
     });
