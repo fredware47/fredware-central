@@ -7,9 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- 🆕 Librería QR para incluir en ficha A4 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- 🔥 NÚCLEO UNIFICADO v2 -->
     <script src="shared-core.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -43,6 +41,11 @@
         .ficha-item:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.1); }
         .ficha-item.seleccionada { border-color: #2563eb; background: #eff6ff; }
         .ficha-item.editando { border-color: #8b5cf6; background: #f5f3ff; box-shadow: 0 2px 8px rgba(139,92,246,0.15); }
+        .ficha-item.flash-update { animation: flash-green 1.5s ease; }
+        @keyframes flash-green {
+            0% { background: #d1fae5; border-color: #10b981; }
+            100% { background: #f8fafc; border-color: #e2e8f0; }
+        }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .flex { display: flex; }
@@ -73,10 +76,15 @@
         .badge-conn.online { background: #d1fae5; color: #065f46; }
         @keyframes pulse-badge { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
+        .realtime-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; background: #e0e7ff; color: #3730a3; }
+        .realtime-badge.ok { background: #d1fae5; color: #065f46; }
+        .realtime-badge.error { background: #fee2e2; color: #991b1b; }
+
         .badge-recibido { background: #d1fae5; color: #065f46; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; }
         .badge-no-recibido { background: #fee2e2; color: #991b1b; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; }
         .badge-antiguo { background: #fef3c7; color: #92400e; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; }
         .badge-editando { background: #ede9fe; color: #6d28d9; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; }
+        .badge-hoy { background: #fef3c7; color: #92400e; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; }
 
         input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #f8fafc; }
         input:focus, textarea:focus, select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
@@ -108,9 +116,10 @@
             <span class="text-3xl">📄</span>
             <div>
                 <h1>FREDWARE - Fichas de Producción</h1>
-                <span class="sub">Trazabilidad y Control de Producción · v4.2 (QR en ficha A4)</span>
+                <span class="sub">Trazabilidad y Control de Producción · v4.4 (Realtime sync)</span>
             </div>
             <div style="margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span id="realtime-fichas-status" class="realtime-badge">🟡 Sync...</span>
                 <span id="statusBadge" class="badge-conn loading">🟡 CONECTANDO...</span>
                 <button onclick="recargarDatos()" class="btn" style="background: #475569; color: white; font-size: 12px; padding: 8px 16px;">🔄 Recargar</button>
             </div>
@@ -235,7 +244,7 @@ const db = window.fredware.supabase;
 const API_URL = "https://untried-january-thinning.ngrok-free.dev";
 
 let fichasGlobal = [];
-let recepcionesGlobal = [];  // 🔥 Se rellena desde el núcleo
+let recepcionesGlobal = [];
 let ingredientesLista = [];
 let fichaEditandoId = null;
 
@@ -280,11 +289,6 @@ function sincronizarRecepcionesDesdeNucleo(recepcionesNucleo) {
 // SUSCRIPCIÓN AL NÚCLEO
 // ============================================================
 window.fredware.subscribe((state) => {
-    console.log('📡 [Fichas] Estado del núcleo:', {
-        recepciones: state.recepciones?.length,
-        inicializado: state.inicializado
-    });
-
     if (state.recepciones && state.recepciones.length > 0) {
         sincronizarRecepcionesDesdeNucleo(state.recepciones);
     }
@@ -297,24 +301,11 @@ async function esperarAlNucleo() {
     const MAX_INTENTOS = 30;
     for (let i = 0; i < MAX_INTENTOS; i++) {
         if (window.fredware && window.fredware.state && window.fredware.state.inicializado) {
-            console.log(`✅ [Fichas] Núcleo listo tras ${i + 1}s`);
             return true;
-        }
-        if (i > 0 && i % 5 === 0) {
-            console.log(`⏳ [Fichas] Esperando al núcleo... (${i}s)`);
         }
         await new Promise(r => setTimeout(r, 1000));
     }
-    console.warn('⚠️ [Fichas] Timeout esperando al núcleo. Continuando...');
     return false;
-}
-
-function actualizarBadgeOnline() {
-    const badge = document.getElementById('statusBadge');
-    if (badge) {
-        badge.className = 'badge-conn online';
-        badge.textContent = '🟢 ONLINE';
-    }
 }
 
 // ============================================================
@@ -340,8 +331,30 @@ function formatearFechaDDMMYYYY(fechaStr) {
     } catch { return fechaStr; }
 }
 
+function parseDate(str) {
+    if (!str) return null;
+    if (str.includes('/')) {
+        const parts = str.split('/');
+        if (parts.length === 3) {
+            const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            return isNaN(d) ? null : d;
+        }
+    }
+    const d = new Date(str);
+    return isNaN(d) ? null : d;
+}
+
+function generarLoteParaFecha(fechaStr) {
+    const ahora = new Date();
+    const datePart = fechaStr
+        ? fechaStr.replace(/-/g, '')
+        : `${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}`;
+    const timePart = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
+    return `LOTE-${datePart}-${timePart}`;
+}
+
 // ============================================================
-// 🆕 GENERAR QR COMO IMAGEN (DATA URL)
+// GENERAR QR COMO IMAGEN (DATA URL)
 // ============================================================
 function generarQRDataURL(texto, size = 120) {
     return new Promise((resolve) => {
@@ -377,7 +390,7 @@ function generarQRDataURL(texto, size = 120) {
 }
 
 // ============================================================
-// 🔍 CONSULTAR RECEPCIONES PARA AUTOCOMPLETADO
+// CONSULTAR RECEPCIONES
 // ============================================================
 function verificarRecepcion(producto) {
     if (!recepcionesGlobal || recepcionesGlobal.length === 0) return null;
@@ -448,7 +461,7 @@ async function eliminarFichaDB(id) {
 }
 
 // ============================================================
-// AUTOCOMPLETADO (usa recepcionesGlobal del núcleo)
+// AUTOCOMPLETADO
 // ============================================================
 function buscarAutocompletado(busqueda) {
     const box = document.getElementById('autocomplete-box');
@@ -681,9 +694,7 @@ function eliminarIngrediente(idx) {
 // CREAR / EDITAR FICHA
 // ============================================================
 function generarLoteAuto() {
-    const ahora = new Date();
-    const lote = `LOTE-${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}-${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
-    document.getElementById('ficha-lote').value = lote;
+    document.getElementById('ficha-lote').value = generarLoteParaFecha(getFechaHoy());
 }
 
 function setFechaHoy() {
@@ -770,7 +781,7 @@ async function guardarFicha() {
 // ============================================================
 // EDITAR FICHA DESDE HISTORIAL
 // ============================================================
-function editarFichaDesdeHistorial(id) {
+function editarFichaDesdeHistorial(id, overrides = {}) {
     const ficha = fichasGlobal.find(f => f.id === id);
     if (!ficha) {
         toast('❌ Ficha no encontrada', 'error');
@@ -792,11 +803,13 @@ function editarFichaDesdeHistorial(id) {
 
     fichaEditandoId = id;
     document.getElementById('ficha-nombre').value = ficha.nombre_produccion || '';
-    document.getElementById('ficha-lote').value = ficha.lote || '';
-    document.getElementById('ficha-fecha').value = ficha.fecha_preparacion || '';
+    document.getElementById('ficha-lote').value = overrides.lote || ficha.lote || '';
+    document.getElementById('ficha-fecha').value = overrides.fecha || ficha.fecha_preparacion || '';
 
     ingredientesLista = [];
-    if (ficha.ingredientes_detalle) {
+    if (overrides.ingredientes) {
+        ingredientesLista = overrides.ingredientes;
+    } else if (ficha.ingredientes_detalle) {
         ficha.ingredientes_detalle.split('\n').forEach(linea => {
             const limpia = linea.replace(/^•\s*/, '').trim();
             if (!limpia) return;
@@ -830,6 +843,317 @@ function editarFichaDesdeHistorial(id) {
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
     toast('✏️ Ficha cargada para editar', 'info');
+}
+
+// ============================================================
+// ACTUALIZAR FICHA CON RECEPCIONES (wizard manual de v4.3)
+// ============================================================
+async function actualizarFichaConRecepciones(id) {
+    const ficha = fichasGlobal.find(f => f.id === id);
+    if (!ficha) {
+        toast('❌ Ficha no encontrada', 'error');
+        return;
+    }
+
+    if (!recepcionesGlobal || recepcionesGlobal.length === 0) {
+        toast('⚠️ No hay recepciones cargadas. Recarga los datos primero.', 'warning');
+        return;
+    }
+
+    const lineas = (ficha.ingredientes_detalle || '').split('\n').filter(l => l.trim());
+    if (lineas.length === 0) {
+        toast('⚠️ Esta ficha no tiene ingredientes', 'warning');
+        return;
+    }
+
+    const fechaResult = await Swal.fire({
+        title: '🔄 Actualizar Ficha',
+        html: `<div style="text-align:left">
+            <p style="font-size:13px;color:#64748b;margin-bottom:12px">Vas a actualizar los insumos de:</p>
+            <p style="font-size:16px;font-weight:900;color:#1e293b;margin-bottom:16px">${escapeHtml(ficha.nombre_produccion)}</p>
+            <label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:4px">📅 Fecha de nueva producción</label>
+            <input id="swal-fecha-nueva" type="date" class="swal2-input" value="${getFechaHoy()}" style="width:100%;margin:0">
+        </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'Continuar →',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#2563eb',
+        preConfirm: () => {
+            const val = document.getElementById('swal-fecha-nueva').value;
+            if (!val) {
+                Swal.showValidationMessage('La fecha es obligatoria');
+                return false;
+            }
+            return val;
+        }
+    });
+
+    if (!fechaResult.isConfirmed) return;
+    const fechaNueva = fechaResult.value;
+
+    const comparacion = lineas.map(linea => {
+        const limpia = linea.replace(/^•\s*/, '').trim();
+        const match = limpia.match(/^(.+?)\s*\(Lote Prov:\s*(.+?)\)\s*-\s*Llegada:\s*(.+)$/i);
+
+        let producto, proveedor, fechaAnterior;
+        if (match) {
+            producto = match[1].trim();
+            proveedor = match[2].trim();
+            fechaAnterior = match[3].trim();
+        } else {
+            producto = limpia;
+            proveedor = 'S/P';
+            fechaAnterior = 'S/F';
+        }
+
+        const recepcion = verificarRecepcion(producto);
+        let fechaNuevaIngrediente = fechaAnterior;
+        let proveedorNuevo = proveedor;
+        let estado = 'sin_recepcion';
+
+        if (recepcion) {
+            const fechaRecibido = recepcion.fecha_recibido || recepcion.fecha_registro;
+            const fechaFormateada = formatearFechaDDMMYYYY(fechaRecibido);
+
+            if (fechaFormateada && fechaFormateada !== fechaAnterior) {
+                const dAnt = parseDate(fechaAnterior);
+                const dNue = parseDate(fechaRecibido);
+                if (!dAnt || (dNue && dNue > dAnt)) {
+                    fechaNuevaIngrediente = fechaFormateada;
+                    estado = 'actualizado';
+                } else {
+                    estado = 'mas_antigua';
+                }
+            } else {
+                estado = 'sin_cambio';
+            }
+
+            if (recepcion.proveedor && recepcion.proveedor !== 'S/P') {
+                proveedorNuevo = recepcion.proveedor.toUpperCase();
+            }
+        }
+
+        return {
+            producto,
+            proveedor: proveedorNuevo,
+            fechaAnterior,
+            fechaNueva: fechaNuevaIngrediente,
+            estado
+        };
+    });
+
+    const loteAuto = generarLoteParaFecha(fechaNueva);
+    const sinRecepcion = comparacion.filter(c => c.estado === 'sin_recepcion').length;
+    const actualizados = comparacion.filter(c => c.estado === 'actualizado').length;
+    const sinCambio = comparacion.filter(c => c.estado === 'sin_cambio' || c.estado === 'mas_antigua').length;
+
+    const filasHTML = comparacion.map(c => {
+        let estadoHTML = '';
+        if (c.estado === 'actualizado') estadoHTML = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap">✅ Actualizado</span>';
+        else if (c.estado === 'sin_cambio') estadoHTML = '<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap">⏸️ Igual</span>';
+        else if (c.estado === 'mas_antigua') estadoHTML = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap">⏪ Más antigua</span>';
+        else estadoHTML = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap">⚠️ Sin recepción</span>';
+
+        const fechaNuevaHTML = c.estado === 'actualizado'
+            ? `<strong style="color:#10b981">${escapeHtml(c.fechaNueva)}</strong>`
+            : escapeHtml(c.fechaNueva);
+
+        return `<tr style="border-bottom:1px solid #f1f5f9">
+            <td style="text-align:left;padding:6px 8px;font-weight:700;font-size:12px">${escapeHtml(c.producto)}</td>
+            <td style="text-align:left;padding:6px 8px;color:#64748b;font-size:12px">${escapeHtml(c.proveedor)}</td>
+            <td style="text-align:center;padding:6px 8px;color:#94a3b8;font-size:12px">${escapeHtml(c.fechaAnterior)}</td>
+            <td style="text-align:center;padding:6px 8px;font-size:12px">${fechaNuevaHTML}</td>
+            <td style="text-align:center;padding:6px 8px">${estadoHTML}</td>
+        </tr>`;
+    }).join('');
+
+    const result = await Swal.fire({
+        title: '📊 Vista previa de la actualización',
+        width: 900,
+        html: `
+            <div style="text-align:left">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                    <div>
+                        <label style="display:block;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:4px">📅 Fecha producción</label>
+                        <input type="date" value="${fechaNueva}" style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;background:#f8fafc;color:#475569" readonly>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:4px">📦 Lote</label>
+                        <input id="swal-lote" type="text" value="${loteAuto}" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;text-transform:uppercase">
+                    </div>
+                </div>
+
+                <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:12px">
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
+                                <th style="text-align:left;padding:8px;font-size:10px;text-transform:uppercase;color:#64748b">Ingrediente</th>
+                                <th style="text-align:left;padding:8px;font-size:10px;text-transform:uppercase;color:#64748b">Proveedor</th>
+                                <th style="text-align:center;padding:8px;font-size:10px;text-transform:uppercase;color:#64748b">Anterior</th>
+                                <th style="text-align:center;padding:8px;font-size:10px;text-transform:uppercase;color:#64748b">Nueva</th>
+                                <th style="text-align:center;padding:8px;font-size:10px;text-transform:uppercase;color:#64748b">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filasHTML}</tbody>
+                    </table>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+                    ${actualizados > 0 ? `<div style="background:#d1fae5;color:#065f46;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600">✅ ${actualizados} actualizado(s)</div>` : ''}
+                    ${sinCambio > 0 ? `<div style="background:#f1f5f9;color:#475569;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600">⏸️ ${sinCambio} sin cambios</div>` : ''}
+                    ${sinRecepcion > 0 ? `<div style="background:#fee2e2;color:#991b1b;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600">⚠️ ${sinRecepcion} sin recepción</div>` : ''}
+                </div>
+
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px">
+                    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px">⚙️ Modo de guardado</div>
+                    <label style="display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;border-radius:6px;margin-bottom:4px">
+                        <input type="radio" name="modo-guardado" value="update" checked style="width:16px;height:16px;accent-color:#2563eb">
+                        <span style="font-size:12px;text-align:left"><strong>💾 Actualizar esta ficha</strong> <span style="color:#64748b">— sobrescribe la ficha actual</span></span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;border-radius:6px">
+                        <input type="radio" name="modo-guardado" value="copy" style="width:16px;height:16px;accent-color:#2563eb">
+                        <span style="font-size:12px;text-align:left"><strong>📋 Crear nueva ficha</strong> <span style="color:#64748b">— mantiene esta como histórico</span></span>
+                    </label>
+                </div>
+
+                ${sinRecepcion > 0 ? '<div style="background:#fef3c7;color:#92400e;padding:10px;border-radius:8px;margin-top:12px;font-size:11px">⚠️ Los ingredientes sin recepción reciente mantienen su fecha anterior. Revísalos manualmente si es necesario.</div>' : ''}
+            </div>
+        `,
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: '✅ Validar y guardar',
+        denyButtonText: '✏️ Editar manualmente',
+        cancelButtonText: '❌ Cancelar',
+        confirmButtonColor: '#10b981',
+        denyButtonColor: '#8b5cf6',
+        preConfirm: () => {
+            const modo = document.querySelector('input[name="modo-guardado"]:checked').value;
+            const lote = document.getElementById('swal-lote').value.trim().toUpperCase();
+            if (!lote) {
+                Swal.showValidationMessage('El lote es obligatorio');
+                return false;
+            }
+            return { modo, lote };
+        }
+    });
+
+    if (result.isDenied) {
+        const nuevosIngredientes = comparacion.map(c => ({
+            producto: c.producto,
+            proveedor: c.proveedor,
+            fecha: c.fechaNueva,
+            texto: `${c.producto} (Lote Prov: ${c.proveedor}) - Llegada: ${c.fechaNueva}`
+        }));
+        editarFichaDesdeHistorial(id, {
+            fecha: fechaNueva,
+            lote: loteAuto,
+            ingredientes: nuevosIngredientes
+        });
+        return;
+    }
+    if (!result.isConfirmed) return;
+
+    const { modo, lote } = result.value;
+    const nuevoIngredientesTexto = comparacion.map(c =>
+        `• ${c.producto} (Lote Prov: ${c.proveedor}) - Llegada: ${c.fechaNueva}`
+    ).join('\n');
+
+    try {
+        if (modo === 'update') {
+            await actualizarFichaEnDB(id, {
+                lote: lote,
+                fecha_preparacion: fechaNueva,
+                fecha_llegada_ingredientes: fechaNueva,
+                ingredientes_detalle: nuevoIngredientesTexto
+            });
+            toast('✅ Ficha actualizada correctamente');
+        } else {
+            const nuevaFicha = {
+                id: generarId(),
+                nombre_produccion: ficha.nombre_produccion,
+                lote: lote,
+                fecha_preparacion: fechaNueva,
+                fecha_llegada_ingredientes: fechaNueva,
+                ingredientes_detalle: nuevoIngredientesTexto,
+                created_at: new Date().toISOString()
+            };
+            await guardarFichaEnDB(nuevaFicha);
+            toast('✅ Nueva ficha creada correctamente');
+        }
+        cargarHistorial();
+    } catch (error) {
+        toast('❌ Error al guardar: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// 🆕 REALTIME EN TABLA FICHAS
+// Escucha INSERT/UPDATE/DELETE en fichas (hechos por etiquetas.html u otras fuentes)
+// ============================================================
+let realtimeChannelFichas = null;
+
+function actualizarEstadoRealtimeFichas(status) {
+    const el = document.getElementById('realtime-fichas-status');
+    if (!el) return;
+
+    if (status === 'SUBSCRIBED') {
+        el.className = 'realtime-badge ok';
+        el.textContent = '🟢 Sync fichas';
+    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        el.className = 'realtime-badge error';
+        el.textContent = '🔴 Sin sync';
+    } else {
+        el.className = 'realtime-badge';
+        el.textContent = '🟡 Sync...';
+    }
+}
+
+function suscribirAFichasRealtime() {
+    if (realtimeChannelFichas) {
+        try { db.removeChannel(realtimeChannelFichas); } catch (_) {}
+    }
+
+    realtimeChannelFichas = db.channel('fichas-realtime-sync');
+
+    realtimeChannelFichas.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'fichas' },
+        (payload) => {
+            const eventType = payload.eventType;
+            const nombre = payload.new?.nombre_produccion || payload.old?.nombre_produccion || '?';
+            const id = payload.new?.id || payload.old?.id;
+
+            console.log(`📡 Ficha ${eventType}: ${nombre}`, payload);
+
+            // Toast según tipo
+            if (eventType === 'UPDATE') {
+                toast(`🔄 "${nombre}" actualizada`, 'info');
+            } else if (eventType === 'INSERT') {
+                toast(`➕ "${nombre}" añadida`, 'success');
+            } else if (eventType === 'DELETE') {
+                toast(`🗑️ "${nombre}" eliminada`, 'warning');
+            }
+
+            // Recargar historial
+            cargarHistorial().then(() => {
+                // Flash verde en el item actualizado
+                if (id && eventType === 'UPDATE') {
+                    setTimeout(() => {
+                        const el = document.querySelector(`.ficha-item[data-id="${id}"]`);
+                        if (el) {
+                            el.classList.add('flash-update');
+                            setTimeout(() => el.classList.remove('flash-update'), 1600);
+                        }
+                    }, 100);
+                }
+            });
+        }
+    );
+
+    realtimeChannelFichas.subscribe((status) => {
+        console.log('📡 Realtime fichas:', status);
+        actualizarEstadoRealtimeFichas(status);
+    });
 }
 
 // ============================================================
@@ -961,7 +1285,11 @@ async function cargarHistorial() {
     const container = document.getElementById('historial-lista');
     try {
         fichasGlobal = await obtenerFichas();
-        fichasSeleccionadas.clear();
+        // No limpiamos selección para no perderla con el realtime
+        const idsValidos = new Set(fichasGlobal.map(f => f.id));
+        Array.from(fichasSeleccionadas).forEach(id => {
+            if (!idsValidos.has(id)) fichasSeleccionadas.delete(id);
+        });
         renderizarHistorial(fichasGlobal);
         actualizarContadorSeleccionadas();
     } catch (error) {
@@ -976,18 +1304,22 @@ function renderizarHistorial(fichas) {
         return;
     }
 
+    const hoy = getFechaHoy();
+
     container.innerHTML = fichas.map(f => {
         const seleccionada = fichasSeleccionadas.has(f.id);
         const editando = fichaEditandoId === f.id;
         const claseEdit = editando ? 'editando' : '';
         const badgeEdit = editando ? `<span class="badge-editando">✏️ Editando ahora</span>` : '';
+        const esHoy = f.fecha_preparacion === hoy;
+        const badgeHoy = esHoy ? `<span class="badge-hoy">🔄 Hoy</span>` : '';
         return `
-        <div class="ficha-item ${seleccionada ? 'seleccionada' : ''} ${claseEdit}" onclick="toggleSeleccionFicha('${f.id}')">
+        <div class="ficha-item ${seleccionada ? 'seleccionada' : ''} ${claseEdit}" data-id="${f.id}" onclick="toggleSeleccionFicha('${f.id}')">
             <div class="flex justify-between items-start flex-wrap gap-2">
                 <div class="flex items-start gap-3">
                     <input type="checkbox" class="checkbox-seleccion mt-1" ${seleccionada ? 'checked' : ''} onclick="event.stopPropagation(); toggleSeleccionFicha('${f.id}')">
                     <div class="flex-1 min-w-0">
-                        <div class="font-black text-slate-800">${escapeHtml(f.nombre_produccion)} ${badgeEdit}</div>
+                        <div class="font-black text-slate-800">${escapeHtml(f.nombre_produccion)} ${badgeEdit} ${badgeHoy}</div>
                         <div class="text-sm text-slate-500">📦 ${escapeHtml(f.lote)}</div>
                         <div class="text-xs text-slate-400">📅 ${formatearFechaDDMMYYYY(f.fecha_preparacion) || f.fecha_preparacion}</div>
                         ${f.ingredientes_detalle ? `<div class="text-xs text-slate-600 mt-1 line-clamp-2">${escapeHtml(f.ingredientes_detalle.substring(0, 150))}${f.ingredientes_detalle.length > 150 ? '...' : ''}</div>` : ''}
@@ -996,6 +1328,7 @@ function renderizarHistorial(fichas) {
                 <div class="flex gap-2 flex-wrap">
                     <button onclick="event.stopPropagation(); imprimirFichaDesdeHistorial('${f.id}')" class="btn btn-success text-xs px-3 py-1.5">📄 A4</button>
                     <button onclick="event.stopPropagation(); imprimirStickerDesdeHistorial('${f.id}')" class="btn btn-warning text-xs px-3 py-1.5">🏷️ Sticker</button>
+                    <button onclick="event.stopPropagation(); actualizarFichaConRecepciones('${f.id}')" class="btn btn-primary text-xs px-3 py-1.5" title="Actualizar insumos con últimas recepciones">🔄 Actualizar</button>
                     <button onclick="event.stopPropagation(); editarFichaDesdeHistorial('${f.id}')" class="btn btn-purple text-xs px-3 py-1.5">✏️ Editar</button>
                     <button onclick="event.stopPropagation(); eliminarFicha('${f.id}')" class="btn btn-danger text-xs px-3 py-1.5">🗑️</button>
                 </div>
@@ -1186,7 +1519,7 @@ async function eliminarFicha(id) {
 }
 
 // ============================================================
-// VENTANA DE IMPRESIÓN A4 (con QR generado)
+// VENTANA DE IMPRESIÓN A4
 // ============================================================
 async function abrirVentanaImpresionA4(fichas) {
     if (!fichas || fichas.length === 0) {
@@ -1194,7 +1527,6 @@ async function abrirVentanaImpresionA4(fichas) {
         return;
     }
 
-    // 🆕 Generar QRs para cada ficha ANTES de abrir la ventana
     const fichasConQR = await Promise.all(fichas.map(async (f) => {
         const qrTexto = `PROD:${f.nombre}|LOTE:${f.lote}|FECHA:${f.fecha_prep}`;
         const qrDataURL = await generarQRDataURL(qrTexto, 120);
@@ -1268,7 +1600,7 @@ async function abrirVentanaImpresionA4(fichas) {
 }
 
 // ============================================================
-// GENERAR HTML DE FICHA A4 (con QR)
+// GENERAR HTML DE FICHA A4
 // ============================================================
 function generarHTMLFichaA4(ficha) {
     const ingredientesHTML = (ficha.ingredientes || '')
@@ -1281,7 +1613,6 @@ function generarHTMLFichaA4(ficha) {
         })
         .join('');
 
-    // 🆕 Bloque QR (solo si se ha generado)
     const qrHTML = ficha.qrDataURL
         ? `<div style="text-align:center; margin: 6mm 0 4mm 0;">
                <img src="${ficha.qrDataURL}" alt="QR" style="width: 30mm; height: 30mm; display: block; margin: 0 auto;">
@@ -1357,7 +1688,7 @@ function recargarHistorial() {
 // INICIALIZACIÓN
 // ============================================================
 async function initApp() {
-    console.log('🚀 [Fichas] Init — esperando al núcleo...');
+    console.log('🚀 [Fichas] Init — v4.4 (realtime)');
 
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById('tab-crear').classList.add('active');
@@ -1366,14 +1697,16 @@ async function initApp() {
 
     await cargarHistorial();
 
+    // Suscribirse al realtime de fichas
+    suscribirAFichasRealtime();
+
     await esperarAlNucleo();
 
     if (window.fredware.state.recepciones && window.fredware.state.recepciones.length > 0) {
         sincronizarRecepcionesDesdeNucleo(window.fredware.state.recepciones);
     }
 
-    actualizarBadgeOnline();
-    console.log(`✅ [Fichas] Recepciones disponibles del núcleo: ${recepcionesGlobal.length}`);
+    console.log(`✅ [Fichas] Recepciones disponibles: ${recepcionesGlobal.length}`);
 }
 
 // Exponer funciones globales
@@ -1399,6 +1732,7 @@ window.descargarTodasFichas = descargarTodasFichas;
 window.editarFichaDesdeHistorial = editarFichaDesdeHistorial;
 window.cancelarEdicion = cancelarEdicion;
 window.toggleSeleccionFicha = toggleSeleccionFicha;
+window.actualizarFichaConRecepciones = actualizarFichaConRecepciones;
 
 document.getElementById('ingrediente-input')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); agregarIngrediente(); }
