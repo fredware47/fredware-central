@@ -15,10 +15,10 @@ Fredware es un ecosistema de aplicaciones HTML + backend Python +
 Supabase para gestionar cocina, almacén y compras del restaurante
 Attica As Galeras.
 
-El objetivo final es crear un sistema que fusione lo mejor de:
-  · MarketMan      → gestión de inventario, pedidos, proveedores
-  · Apicbase       → recetas, costes, escandallos, producción
-  · Leanpath       → medición y prevención de mermas
+El objetivo final es crear un sistema que fusione:
+  ·      → gestión de inventario, pedidos, proveedores
+  ·      → recetas, costes, escandallos, producción
+  ·      → medición y prevención de mermas
 
 Pero hecho a medida, sin costes de licencia, integrado con
 el hardware existente (Brother QL-810W, ngrok, backend Python)
