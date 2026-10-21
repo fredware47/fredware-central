@@ -1,0 +1,358 @@
+════════════════════════════════════════════════════════════
+📌 FREDWARE — PROMPT: AUTO-ACTUALIZACIÓN DE FICHAS DESDE MISE
+📅 Creado: 21/10/2026
+📁 Archivo destino: miseandplace.html
+════════════════════════════════════════════════════════════
+
+🎯 OBJETIVO
+──────────
+Cuando desde `miseandplace.html` un cocinero imprima una etiqueta de
+ELABORACIÓN (botón 🏷️ → modal → IMPRIMIR), la app debe:
+
+  1. Guardar la etiqueta en `etiquetas_rapidas`          (✓ ya funciona)
+  2. Descontar stock si el item tiene `producto_racion_id`(✓ ya funciona)
+  3. 🆕 Actualizar la ficha de producción en `fichas`:
+        · Buscar ficha por nombre del producto (ILIKE exacto)
+        · Refrescar fechas de llegada de cada ingrediente
+          con la última recepción real de `recepciones`
+        · Actualizar `lote`, `fecha_preparacion`,
+          `fecha_llegada_ingredientes` e `ingredientes_detalle`
+
+⚠️ IMPORTANTE — LO QUE NO SE TOCA
+──────────────────────────────────
+· ❌ NO añadir tipo "congelación" al modal de mise.
+    · Mise = carta del día + elaboraciones para servicio
+    · Congelación = solo `etiquetas.html`
+    · El modal actual con (elaboracion | descongelacion) es correcto
+· ❌ NO duplicar el modal ni refactorizarlo
+· ❌ NO tocar el flujo de descongelación (no actualiza ficha, no descuenta)
+· ❌ NO crear tablas ni columnas nuevas
+· ❌ NO cambiar el QR actual (ya es compatible con caducidades.html)
+
+📊 CONTEXTO — QUÉ HACE CADA APP
+───────────────────────────────
+┌────────────────────────┬─────────────────────────────────────────┐
+│ miseandplace.html      │ Carta del día + chequeo + etiquetas     │
+│                        │ de ELABORACIÓN para servicio            │
+├────────────────────────┼─────────────────────────────────────────┤
+│ etiquetas.html         │ Etiquetas de uso general:               │
+│                        │ ELABORACIÓN + CONGELACIÓN + DESCONG.    │
+├────────────────────────┼─────────────────────────────────────────┤
+│ fichas_tecnicas.html   │ Repositorio de fichas técnicas          │
+│                        │ Ya escucha realtime de `fichas`         │
+├────────────────────────┼─────────────────────────────────────────┤
+│ caducidades.html       │ (backup) escanea QR de etiquetas        │
+└────────────────────────┴─────────────────────────────────────────┘
+
+Flujo correcto:
+  mise       → imprime etiqueta elaboración → actualiza ficha
+  etiquetas  → imprime etiqueta elabor./cong. → actualiza ficha
+  fichas     → recibe realtime → refresca UI
+
+📋 ESTADO ACTUAL DE miseandplace.html
+─────────────────────────────────────
+· Vue 2.7 (CDN)
+· Supabase conectado con key pública
+· Tablas que usa:
+    - timbres_catalogo    (catálogo de items)
+    - timbres_revision    (estado del día: hay/no/elaborar/descongelar)
+    - mise_snapshots      (ronda cerrada)
+    - etiquetas_rapidas   (etiquetas impresas)
+    - productos_raciones  (lectura para vínculo de stock)
+· Método `imprimirEtiquetaDesdeModal()`:
+    1. Guarda en etiquetas_rapidas ✓
+    2. Descuenta stock si elaboración y hay producto_racion_id ✓
+    3. Llama a /imprimir_etiqueta_rapida_v2 ✓
+    4. Marca el item como "hay" en la revisión ✓
+    5. Cierra el modal ✓
+· Modal etiqueta: 2 tipos (elaboracion | descongelacion)
+· QR actual: PROD:X|LOTE:Y|ELAB:DD/MM/YYYY|CAD:DD/MM/YYYY
+  → ✓ Compatible con caducidades.html
+
+🔮 CAMBIOS A APLICAR (cuando mise esté operativo)
+──────────────────────────────────────────────────
+
+PASO 1 — Añadir el método `actualizarFichaDesdeEtiqueta()` a los
+         methods de Vue.
+         Copiar LITERALMENTE desde `etiquetas.html` (ya probado).
+         Ver APÉNDICE A al final de este documento.
+
+PASO 2 — En `imprimirEtiquetaDesdeModal()`, al final del bloque
+         `if (r.ok) { ... }`, DESPUÉS de `this.cerrarModalEtiqueta()`,
+         añadir:
+
+   ┌───────────────────────────────────────────────────────┐
+   │ // 🆕 AUTO-ACTUALIZAR FICHA (solo elaboración)        │
+   │ if (this.etiquetaForm.tipo === 'elaboracion') {       │
+   │     this.actualizarFichaDesdeEtiqueta(                │
+   │         producto, lote, fechaOrigenDate, 'elaboracion'│
+   │     ).then(res => {                                   │
+   │         if (res.actualizada) {                        │
+   │             setTimeout(() => {                        │
+   │                 this.showToast(                       │
+   │                     `🔄 Ficha "${res.ficha_nombre}" ` │
+   │                     + `sincronizada`, 'info');        │
+   │             }, 800);                                  │
+   │         }                                             │
+   │         // Si motivo === 'sin_ficha' → silencio       │
+   │         // (es normal, no todas las etiquetas tienen  │
+   │         // ficha asociada)                            │
+   │     }).catch(e =>                                     │
+   │         console.warn('Error actualizando ficha:', e)  │
+   │     );                                                │
+   │ }                                                     │
+   └───────────────────────────────────────────────────────┘
+
+PASO 3 — Verificar el realtime en `fichas_tecnicas.html`:
+         Ya está implementado (escucha INSERT/UPDATE/DELETE).
+         Si no aparece el toast al actualizar, ejecutar en Supabase:
+
+   ┌───────────────────────────────────────────────────────┐
+   │ ALTER TABLE fichas REPLICA IDENTITY FULL;             │
+   │ ALTER PUBLICATION supabase_realtime ADD TABLE fichas; │
+   └───────────────────────────────────────────────────────┘
+
+🧪 CÓMO PROBAR (cuando esté operativo)
+──────────────────────────────────────
+1. Abre `fichas_tecnicas.html` en una pestaña → verás `🟢 Sync fichas`
+2. Abre `miseandplace.html` en otra pestaña
+3. En mise, pulsa `🏷️` en GUACAMOLE → modal → tipo ELABORACIÓN → imprimir
+4. Toasts esperados en mise:
+     · `⚡ 1 etiqueta en cola · 📦 Stock: X`
+     · `🔄 Ficha "GUACAMOLE" sincronizada`
+5. En la pestaña de fichas:
+     · Toast `🔄 "GUACAMOLE" actualizada`
+     · Badge `🔄 Hoy` en la ficha
+     · Flash verde en el item de la lista
+6. Verificar en Supabase:
+
+   ┌───────────────────────────────────────────────────────┐
+   │ SELECT nombre_produccion, lote, fecha_preparacion,    │
+   │        fecha_llegada_ingredientes, ingredientes_detalle│
+   │ FROM fichas                                           │
+   │ WHERE nombre_produccion ILIKE '%GUACAMOLE%'           │
+   │ ORDER BY created_at DESC LIMIT 1;                     │
+   └───────────────────────────────────────────────────────┘
+
+   · lote debe ser el de hoy (ej: 211026)
+   · fecha_preparacion debe ser HOY
+   · ingredientes_detalle debe tener fechas de llegada recientes
+
+7. Casos edge que probar:
+   · Producto SIN ficha → no toast, no error, sigue funcionando
+     Ej: "PIMIENTA NEGRA" (probablemente no tenga ficha)
+   · Producto CON ficha pero SIN ingredientes detallados → no rompe
+   · Producto CON ficha y con ingredientes sin recepciones → mantiene
+     las fechas antiguas
+   · Descongelación → NO debe actualizar ficha ni mostrar toast
+     (el flujo actual ya lo evita, verificar que sigue así)
+
+⚠️ DEPENDENCIAS A VERIFICAR ANTES DE APLICAR
+─────────────────────────────────────────────
+□ El catálogo de timbres está completo y estable
+□ Los items reales están vinculados a `productos_raciones`
+  (campo `producto_racion_id` en `timbres_catalogo`)
+□ Los nombres de items coinciden con los de fichas
+  (case-insensitive, match exacto por ILIKE)
+□ Realtime activo en `fichas`
+□ La función `ajustar_stock()` funciona bien desde mise
+□ El backend Python `/imprimir_etiqueta_rapida_v2` responde OK
+□ La tabla `recepciones` tiene las columnas:
+     producto, proveedor, fecha_recibido, fecha_registro
+□ La tabla `fichas` tiene las columnas:
+     id, nombre_produccion, lote, fecha_preparacion,
+     fecha_llegada_ingredientes, ingredientes_detalle, created_at
+
+🔍 VERIFICACIÓN DE NOMBRES (paso crítico)
+──────────────────────────────────────────
+Antes de activar la auto-actualización, verificar que los nombres
+de items del catálogo (timbres_catalogo.item_nombre) COINCIDEN con
+los nombres de fichas (fichas.nombre_produccion).
+
+Query de verificación:
+
+   ┌───────────────────────────────────────────────────────┐
+   │ SELECT DISTINCT                                       │
+   │   c.item_nombre AS item_catalogo,                     │
+   │   f.nombre_produccion AS ficha_asociada               │
+   │ FROM timbres_catalogo c                               │
+   │ LEFT JOIN fichas f                                    │
+   │   ON f.nombre_produccion ILIKE c.item_nombre          │
+   │ WHERE c.activo = true                                 │
+   │   AND c.item_bold = false                             │
+   │ ORDER BY f.fecha_preparacion DESC NULLS LAST;         │
+   └───────────────────────────────────────────────────────┘
+
+Items con `ficha_asociada = NULL` → no actualizarán nada (normal).
+Items con match → se actualizarán al imprimir.
+
+Si hay MUCHOS items sin match pero que SÍ tienen ficha, revisar:
+· Diferencias de nombre (acentos, mayúsculas, singular/plural)
+· Considerar crear un campo `ficha_id` en timbres_catalogo para
+  vincular explícitamente en vez de depender del nombre.
+
+❌ ERRORES A EVITAR
+───────────────────
+· NO añadir botón ni tipo "congelación" en el modal de mise
+· NO duplicar la lógica de actualización en varios sitios
+· NO hacer el toast de error visible cuando `motivo === 'sin_ficha'`
+  (es normal, la mayoría de items no tendrán ficha)
+· NO tocar el QR actual (los cambios que hicimos ya están bien)
+· NO cambiar el comportamiento de `ajustar_stock()`
+· NO hacer la actualización bloqueante (usar .then() sin await)
+
+📚 ARCHIVOS DE REFERENCIA
+─────────────────────────
+· etiquetas.html        → contiene la función ya probada
+                          `actualizarFichaDesdeEtiqueta()` (APÉNDICE A)
+· fichas_tecnicas.html  → ya escucha realtime de `fichas`
+· shared-core.js        → si se integra, usar window.fredware.supabase
+                          en vez de crear un cliente nuevo
+
+════════════════════════════════════════════════════════════
+📎 APÉNDICE A — CÓDIGO COMPLETO A COPIAR
+════════════════════════════════════════════════════════════
+
+Añadir este método COMPLETO a los `methods` de Vue en mise:
+
+────────────────────────────────────────────────────────────
+async actualizarFichaDesdeEtiqueta(producto, lote, fechaOrigenDate, tipo) {
+    try {
+        const { data: fichas, error } = await this.supabase
+            .from('fichas')
+            .select('*')
+            .ilike('nombre_produccion', producto)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error) throw error;
+
+        if (!fichas || fichas.length === 0) {
+            return { actualizada: false, motivo: 'sin_ficha' };
+        }
+
+        const ficha = fichas[0];
+
+        const { data: recepciones } = await this.supabase
+            .from('recepciones')
+            .select('producto, proveedor, fecha_recibido, fecha_registro')
+            .order('fecha_recibido', { ascending: false })
+            .limit(1000);
+
+        const recepList = recepciones || [];
+
+        const lineas = (ficha.ingredientes_detalle || '')
+            .split('\n')
+            .filter(l => l.trim());
+
+        const nuevosIngredientes = lineas.map(linea => {
+            const limpia = linea.replace(/^•\s*/, '').trim();
+            const match = limpia.match(
+                /^(.+?)\s*\(Lote Prov:\s*(.+?)\)\s*-\s*Llegada:\s*(.+)$/i
+            );
+
+            let prod, prov, fechaAnt;
+            if (match) {
+                prod = match[1].trim();
+                prov = match[2].trim();
+                fechaAnt = match[3].trim();
+            } else {
+                prod = limpia;
+                prov = 'S/P';
+                fechaAnt = 'S/F';
+            }
+
+            const recep = recepList.find(r =>
+                r.producto &&
+                r.producto.toUpperCase().includes(prod.toUpperCase())
+            );
+
+            if (recep) {
+                const fechaRec = recep.fecha_recibido || recep.fecha_registro;
+                const fechaNueva = this.formatDate(new Date(fechaRec));
+                const dAnt = this.parseDDMMYYYY(fechaAnt);
+                const dNue = new Date(fechaRec);
+                if (!dAnt || dNue > dAnt) {
+                    return `• ${prod} (Lote Prov: ${recep.proveedor || prov}) - Llegada: ${fechaNueva}`;
+                }
+            }
+
+            return `• ${prod} (Lote Prov: ${prov}) - Llegada: ${fechaAnt}`;
+        });
+
+        const fechaISO = fechaOrigenDate.toISOString().split('T')[0];
+        const { error: errUpd } = await this.supabase
+            .from('fichas')
+            .update({
+                lote: lote,
+                fecha_preparacion: fechaISO,
+                fecha_llegada_ingredientes: fechaISO,
+                ingredientes_detalle: nuevosIngredientes.join('\n')
+            })
+            .eq('id', ficha.id);
+
+        if (errUpd) throw errUpd;
+
+        return {
+            actualizada: true,
+            ficha_nombre: ficha.nombre_produccion
+        };
+    } catch (e) {
+        console.error('❌ Error actualizando ficha:', e);
+        return { actualizada: false, motivo: e.message };
+    }
+}
+────────────────────────────────────────────────────────────
+
+NOTA: El método usa `this.formatDate()` y `this.parseDDMMYYYY()` que
+ya existen en miseandplace.html. Verificar que estén antes de copiar.
+Si no existen, copiarlos también (ver APÉNDICE B).
+
+════════════════════════════════════════════════════════════
+📎 APÉNDICE B — HELPERS NECESARIOS
+════════════════════════════════════════════════════════════
+
+Si mise aún no los tiene, añadir también:
+
+────────────────────────────────────────────────────────────
+formatDate(fechaStr) {
+    if (!fechaStr) return 'S/F';
+    const d = new Date(fechaStr);
+    if (isNaN(d)) return fechaStr;
+    return `${String(d.getDate()).padStart(2,'0')}/` +
+           `${String(d.getMonth()+1).padStart(2,'0')}/` +
+           `${d.getFullYear()}`;
+},
+
+parseDDMMYYYY(str) {
+    if (!str || str === 'S/F' || str === 'S/L') return null;
+    const parts = String(str).split('/');
+    if (parts.length !== 3) return null;
+    const d = new Date(
+        parseInt(parts[2]),
+        parseInt(parts[1]) - 1,
+        parseInt(parts[0])
+    );
+    return isNaN(d) ? null : d;
+}
+────────────────────────────────────────────────────────────
+
+════════════════════════════════════════════════════════════
+📅 CHECKLIST DE ACTIVACIÓN (orden recomendado)
+════════════════════════════════════════════════════════════
+
+□ 1. Terminar la BD de mise (catálogo, vínculos, etc.)
+□ 2. Verificar que mise funciona con normalidad 1-2 días
+□ 3. Ejecutar query de verificación de nombres (arriba)
+□ 4. Copiar método `actualizarFichaDesdeEtiqueta()` (Apéndice A)
+□ 5. Verificar helpers `formatDate` y `parseDDMMYYYY` (Apéndice B)
+□ 6. Añadir el trigger en `imprimirEtiquetaDesdeModal()` (Paso 2)
+□ 7. Probar con GUACAMOLE (que sí tenga ficha) → verificar toast
+□ 8. Probar con producto SIN ficha → verificar que no rompe
+□ 9. Probar con descongelación → verificar que NO actualiza
+□ 10. Verificar realtime en fichas_tecnicas.html
+□ 11. Si todo OK → considerar aplicar lo mismo a otras apps
+
+════════════════════════════════════════════════════════════
+FIN DEL PROMPT
+════════════════════════════════════════════════════════════
