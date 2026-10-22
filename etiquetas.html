@@ -48,7 +48,6 @@
         .historial-item .nombre { font-weight: bold; color: #1e293b; font-size: 15px; }
         .historial-item .info { font-size: 13px; color: #64748b; }
         .historial-item .fecha-cad { color: #dc2626; font-weight: bold; }
-        .historial-item .tipo { background: #dbeafe; color: #1d4ed8; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; }
         .tab-btn { padding: 10px 16px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 13px; flex: 1; background: #e2e8f0; color: #475569; }
         .tab-btn.active { background: #2563eb; color: white; }
         .tab-content { display: none; }
@@ -78,11 +77,41 @@
         .cantidad-selector input { width: 70px; text-align: center; font-size: 20px; padding: 8px; }
         .cantidad-label { font-size: 14px; color: #64748b; font-weight: bold; }
         @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
-        .status-ok { background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
-        .status-error { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
         .lote-wrapper { display: flex; gap: 8px; align-items: stretch; }
         .lote-wrapper input { flex: 1; }
         .lote-wrapper .btn-auto { padding: 14px 18px; font-size: 14px; white-space: nowrap; }
+
+        /* 🆕 Estilos manipulación */
+        .manip-radio-group { display: flex; gap: 8px; margin: 8px 0; }
+        .manip-radio { flex: 1; padding: 10px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; background: white; }
+        .manip-radio:hover { border-color: #2563eb; }
+        .manip-radio.active { border-color: #8b5cf6; background: #f5f3ff; }
+        .manip-radio .icono { font-size: 18px; display: block; }
+        .manip-radio .label { font-size: 12px; font-weight: bold; color: #475569; margin-top: 2px; display: block; }
+        .manip-padre-panel { background: #f5f3ff; border: 2px solid #c4b5fd; border-radius: 12px; padding: 12px; margin-top: 8px; display: none; }
+        .manip-padre-panel.visible { display: block; }
+        .padre-card { background: white; border: 1px solid #ddd6fe; border-radius: 10px; padding: 10px 14px; margin-bottom: 6px; cursor: pointer; transition: all 0.15s; }
+        .padre-card:hover { border-color: #8b5cf6; background: #faf5ff; }
+        .padre-card.seleccionado { border-color: #8b5cf6; background: #ede9fe; box-shadow: 0 0 0 2px rgba(139,92,246,0.2); }
+        .padre-card .nombre { font-weight: bold; color: #1e293b; font-size: 14px; }
+        .padre-card .meta { font-size: 11px; color: #64748b; }
+        .padre-card .restante { font-weight: bold; color: #8b5cf6; }
+        .empty-padres { text-align: center; padding: 16px; color: #94a3b8; font-size: 13px; background: white; border-radius: 10px; }
+        .calc-box { background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 8px; padding: 10px 14px; margin-top: 8px; font-size: 14px; }
+        .calc-box .fila { display: flex; justify-content: space-between; padding: 2px 0; }
+        .calc-box .fila .label { color: #64748b; }
+        .calc-box .fila .valor { font-weight: bold; color: #1e293b; }
+        .calc-box .fila.resultado { border-top: 1px dashed #93c5fd; margin-top: 4px; padding-top: 6px; }
+        .calc-box .fila.resultado .valor { color: #8b5cf6; font-size: 16px; }
+        .aviso-cad { background: #fef3c7; border-left: 3px solid #f59e0b; padding: 8px 12px; border-radius: 6px; font-size: 12px; color: #92400e; margin-top: 6px; }
+        .arbol-item { padding: 8px 12px; margin: 4px 0; background: #f8fafc; border-radius: 8px; border-left: 3px solid #8b5cf6; font-size: 13px; position: relative; }
+        .arbol-item .nivel-badge { display: inline-block; background: #8b5cf6; color: white; border-radius: 50%; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 10px; font-weight: bold; margin-right: 6px; }
+        .arbol-item .flecha { color: #94a3b8; font-size: 14px; margin-right: 4px; }
+        .arbol-item .fecha { font-size: 11px; color: #64748b; }
+        .arbol-item .restante-info { font-weight: bold; color: #8b5cf6; }
+        .arbol-item .consumido-info { color: #dc2626; }
+        .arbol-item.raiz { border-left-color: #10b981; }
+        .arbol-item.raiz .nivel-badge { background: #10b981; }
     </style>
 </head>
 <body>
@@ -92,7 +121,7 @@
         <div class="header">
             <div>
                 <h1>🏷️ Etiquetas</h1>
-                <span class="sub">Elaboración · Congelación · Descongelación</span>
+                <span class="sub">Elaboración · Congelación · Descongelación · Manipulación</span>
             </div>
             <span id="statusBadge" class="badge-offline" style="font-size:10px;">🔴 Offline</span>
         </div>
@@ -135,15 +164,67 @@
                 <div id="autocomplete-suggestions" class="autocomplete-suggestions"></div>
             </div>
 
-            <div class="mt-2">
+            <!-- 🆕 BLOQUE MANIPULACIÓN -->
+            <div class="mt-3">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">🔗 ¿De dónde viene?</label>
+                <div class="manip-radio-group">
+                    <div class="manip-radio active" id="modo-nuevo" onclick="seleccionarModo('nuevo')">
+                        <span class="icono">🆕</span>
+                        <span class="label">Envase nuevo</span>
+                    </div>
+                    <div class="manip-radio" id="modo-manip" onclick="seleccionarModo('manipulacion')">
+                        <span class="icono">🔗</span>
+                        <span class="label">Viene de otro</span>
+                    </div>
+                </div>
+
+                <!-- Panel padre (solo visible si modo = manipulación) -->
+                <div id="manip-padre-panel" class="manip-padre-panel">
+                    <div class="text-xs font-bold text-purple-700 mb-2">📦 Envases disponibles de este producto:</div>
+                    <div id="lista-padres">
+                        <div class="empty-padres">Selecciona primero un producto arriba</div>
+                    </div>
+
+                    <!-- Zona de cantidades -->
+                    <div id="zona-cantidades" style="display:none; margin-top:12px;">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">⚖️ Cantidad consumida</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="number" id="cantidad-consumida" step="0.01" min="0" placeholder="0.0" style="flex:1; font-size:20px; text-align:center;" oninput="recalcularCantidades()">
+                            <select id="unidad-consumida" style="width:80px; padding:12px; font-size:14px; text-align:center;" onchange="recalcularCantidades()">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="L">L</option>
+                                <option value="ml">ml</option>
+                                <option value="ud">ud</option>
+                            </select>
+                        </div>
+
+                        <div id="calc-box" class="calc-box" style="display:none;">
+                            <div class="fila">
+                                <span class="label">Cantidad original:</span>
+                                <span class="valor" id="calc-original">-</span>
+                            </div>
+                            <div class="fila">
+                                <span class="label">Consumido:</span>
+                                <span class="valor" id="calc-consumido">-</span>
+                            </div>
+                            <div class="fila resultado">
+                                <span class="label">➜ Queda en el nuevo envase:</span>
+                                <span class="valor" id="calc-restante">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Lote</label>
                 <div class="lote-wrapper">
                     <input type="text" id="lote-input" placeholder="Ej: 161026" class="uppercase">
-                    <button type="button" onclick="generarLoteAuto()" class="btn btn-primary btn-auto" title="Generar lote con fecha de hoy (DDMMAA)">
+                    <button type="button" onclick="generarLoteAuto()" class="btn btn-primary btn-auto">
                         🔢 Auto
                     </button>
                 </div>
-                <div class="text-xs text-slate-400 mt-1 text-center">Editable manualmente · Auto usa la fecha de hoy (DDMMAA)</div>
             </div>
 
             <div class="mt-2">
@@ -160,6 +241,9 @@
                     <span class="text-sm text-slate-400 ml-1" id="dias-label">dias</span>
                 </div>
                 <div class="text-xs text-slate-400 text-center mt-1" id="cad-info">La caducidad se calcula desde la fecha de elaboración</div>
+                <div id="aviso-cad-padre" class="aviso-cad" style="display:none;">
+                    💡 <span id="aviso-cad-texto"></span>
+                </div>
             </div>
 
             <div class="mt-3">
@@ -196,13 +280,14 @@
 
     <div id="tab-consultar" class="tab-content">
         <div class="card">
-            <h3 class="font-bold text-slate-800 mb-4">🔍 Buscar ultima</h3>
+            <h3 class="font-bold text-slate-800 mb-4">🔍 Buscar producto</h3>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Producto</label>
             <div class="autocomplete-container">
                 <input type="text" id="buscar-producto" placeholder="Escribe el producto..." class="uppercase">
                 <div id="autocomplete-buscar" class="autocomplete-suggestions"></div>
             </div>
-            <button onclick="buscarUltimaElaboracion()" class="btn btn-primary mt-3" style="width:100%;">🔍 Buscar</button>
+            <button onclick="buscarUltimaElaboracion()" class="btn btn-primary mt-3" style="width:100%;">🔍 Buscar última</button>
+            <button onclick="verArbolProducto()" class="btn btn-outline mt-2" style="width:100%;">🌳 Ver árbol completo</button>
             <div id="resultado-busqueda" class="resultado-busqueda">
                 <div class="encontrado" id="res-producto">-</div>
                 <div class="detalle" id="res-tipo"></div>
@@ -210,6 +295,11 @@
                 <div class="detalle" id="res-fecha-origen">📅 Fecha: <span id="res-elab">-</span></div>
                 <div class="detalle">⚠️ Caducidad: <span id="res-cad">-</span></div>
                 <div class="detalle">📦 Dias: <span id="res-dias">-</span></div>
+                <div id="res-cantidades" style="display:none; margin-top:8px; padding-top:8px; border-top:1px dashed #cbd5e1;">
+                    <div class="detalle">📊 Original: <span id="res-orig">-</span></div>
+                    <div class="detalle">🔥 Consumido: <span id="res-cons">-</span></div>
+                    <div class="detalle" style="color:#8b5cf6; font-weight:bold;">💎 Queda: <span id="res-rest">-</span></div>
+                </div>
                 <button onclick="reimprimirDesdeBusqueda()" class="btn btn-success btn-sm mt-2">🔄 Reimprimir</button>
                 <span id="res-id" style="display:none;"></span>
             </div>
@@ -245,13 +335,16 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const DIAS_DEFECTO_CONGELACION = 90;
+const DIAS_DEFECTO_SECO_MANIP = 180; // 6 meses para secos reenvasados
+
 let historialGlobal = [];
 let ultimoRegistro = null;
 let ultimoBuscado = null;
 let tipoActual = 'elaboracion';
-
-// 🆕 Constante: días por defecto para congelación (3 meses)
-const DIAS_DEFECTO_CONGELACION = 90;
+let modoEntrada = 'nuevo';        // 'nuevo' | 'manipulacion'
+let padreSeleccionado = null;     // objeto etiqueta padre
+let etiquetasDisponibles = [];    // cache de padres disponibles
 
 // ============================================================
 // UTILIDADES
@@ -283,14 +376,6 @@ function formatearFechaInput(fecha) {
     return d.toISOString().split('T')[0];
 }
 
-function parseDDMMYYYY(str) {
-    if (!str || str === 'S/F' || str === 'S/L') return null;
-    const parts = String(str).split('/');
-    if (parts.length !== 3) return null;
-    const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-    return isNaN(d) ? null : d;
-}
-
 function generarId() {
     return 'ETIQ_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
 }
@@ -299,29 +384,18 @@ function getFechaHoy() {
     return new Date();
 }
 
-// ============================================================
-// 🆕 CALCULAR CADUCIDAD SEGÚN TIPO
-// - Congelación con días = 90 (default) → 3 MESES exactos
-// - Cualquier otro caso → N DÍAS exactos
-// ============================================================
 function calcularFechaCaducidad(tipo, fechaOrigenDate, dias) {
     const cad = new Date(fechaOrigenDate);
     const diasInt = parseInt(dias) || 5;
     
     if (tipo === 'congelacion' && diasInt === DIAS_DEFECTO_CONGELACION) {
-        // 90 días = "3 meses" → usar setMonth para meses exactos
         cad.setMonth(cad.getMonth() + 3);
     } else {
-        // Cualquier otro caso → usar días exactos
         cad.setDate(cad.getDate() + diasInt);
     }
     return cad;
 }
 
-// ============================================================
-// QR COMPATIBLE CON caducidades.html
-// Formato: PROD:X|LOTE:Y|FECHA:DD/MM/YYYY|CAD:DD/MM/YYYY|TIPO:ELAB|CONG|DESC
-// ============================================================
 function generarQRTexto(producto, lote, tipo, fechaOrigen, fechaCaducidad) {
     const tipoQR = tipo === 'congelacion' ? 'CONG' 
                  : tipo === 'descongelacion' ? 'DESC' 
@@ -329,16 +403,9 @@ function generarQRTexto(producto, lote, tipo, fechaOrigen, fechaCaducidad) {
     return `PROD:${producto}|LOTE:${lote}|FECHA:${fechaOrigen}|CAD:${fechaCaducidad}|TIPO:${tipoQR}`;
 }
 
-// ============================================================
-// GENERAR LOTE AUTOMÁTICO (DDMMAA)
-// ============================================================
 function generarLoteAuto() {
     const hoy = new Date();
-    const dia = pad(hoy.getDate());
-    const mes = pad(hoy.getMonth() + 1);
-    const anio = pad(hoy.getFullYear() % 100);
-    const lote = `${dia}${mes}${anio}`;
-    
+    const lote = `${pad(hoy.getDate())}${pad(hoy.getMonth() + 1)}${pad(hoy.getFullYear() % 100)}`;
     document.getElementById('lote-input').value = lote;
     actualizarPreview();
     toast(`🔢 Lote generado: ${lote}`, 'info');
@@ -353,20 +420,142 @@ function cambiarCantidad(cambio) {
 }
 
 // ============================================================
-// 🆕 ACTUALIZAR LABEL DINÁMICO DE DÍAS
+// 🆕 MODO ENTRADA (nuevo vs manipulación)
 // ============================================================
-function actualizarLabelDias() {
-    const dias = parseInt(document.getElementById('dias-input').value) || 0;
-    const label = document.getElementById('dias-label');
-    if (tipoActual === 'congelacion' && dias === DIAS_DEFECTO_CONGELACION) {
-        label.textContent = 'días (3 meses)';
+function seleccionarModo(modo) {
+    modoEntrada = modo;
+    document.querySelectorAll('.manip-radio').forEach(b => b.classList.remove('active'));
+    document.getElementById(modo === 'nuevo' ? 'modo-nuevo' : 'modo-manip').classList.add('active');
+    
+    const panel = document.getElementById('manip-padre-panel');
+    if (modo === 'manipulacion') {
+        panel.classList.add('visible');
+        // Si hay producto escrito, cargar padres
+        const producto = document.getElementById('producto-input').value.trim().toUpperCase();
+        if (producto) cargarPadresDisponibles(producto);
     } else {
-        label.textContent = 'días';
+        panel.classList.remove('visible');
+        padreSeleccionado = null;
+        document.getElementById('zona-cantidades').style.display = 'none';
+        document.getElementById('calc-box').style.display = 'none';
+        document.getElementById('aviso-cad-padre').style.display = 'none';
     }
+    actualizarPreview();
 }
 
 // ============================================================
-// SELECTOR DE TIPO (3 opciones, TODAS editables)
+// 🆕 CARGAR PADRES DISPONIBLES
+// ============================================================
+async function cargarPadresDisponibles(producto) {
+    const lista = document.getElementById('lista-padres');
+    lista.innerHTML = '<div class="empty-padres">⏳ Buscando envases disponibles...</div>';
+    
+    try {
+        const { data, error } = await db
+            .from('v_etiquetas_disponibles')
+            .select('*')
+            .ilike('producto', producto)
+            .order('fecha_origen', { ascending: false });
+        
+        if (error) throw error;
+        
+        etiquetasDisponibles = data || [];
+        
+        if (etiquetasDisponibles.length === 0) {
+            lista.innerHTML = '<div class="empty-padres">📭 No hay envases abiertos de este producto</div>';
+            return;
+        }
+        
+        lista.innerHTML = etiquetasDisponibles.map(p => {
+            const dias = Math.ceil((new Date(p.fecha_caducidad) - new Date()) / (1000*60*60*24));
+            const estado = dias < 0 ? '🔴 Caducado' : dias < 7 ? '🟡 Caduca pronto' : '🟢 OK';
+            const unidad = p.unidad_cantidad || 'kg';
+            return `
+                <div class="padre-card" data-id="${p.id}" onclick="seleccionarPadre('${p.id}')">
+                    <div class="nombre">📦 ${p.lote || 'S/L'} · ${p.producto}</div>
+                    <div class="meta">
+                        Abierto: ${formatearFecha(p.fecha_origen)} · 
+                        <span class="restante">${p.cantidad_restante} ${unidad}</span> · 
+                        ${estado} (${dias}d)
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (e) {
+        console.error('Error cargando padres:', e);
+        lista.innerHTML = '<div class="empty-padres">❌ Error al cargar envases</div>';
+    }
+}
+
+function seleccionarPadre(id) {
+    const padre = etiquetasDisponibles.find(p => p.id === id);
+    if (!padre) return;
+    
+    padreSeleccionado = padre;
+    
+    // Marcar visual
+    document.querySelectorAll('.padre-card').forEach(c => c.classList.remove('seleccionado'));
+    document.querySelector(`.padre-card[data-id="${id}"]`)?.classList.add('seleccionado');
+    
+    // Mostrar zona cantidades
+    document.getElementById('zona-cantidades').style.display = 'block';
+    document.getElementById('unidad-consumida').value = padre.unidad_cantidad || 'kg';
+    
+    // Sugerir caducidad (180 días para secos)
+    document.getElementById('dias-input').value = DIAS_DEFECTO_SECO_MANIP;
+    
+    recalcularCantidades();
+}
+
+// ============================================================
+// 🆕 RECALCULAR CANTIDADES
+// ============================================================
+function recalcularCantidades() {
+    if (!padreSeleccionado) return;
+    
+    const original = parseFloat(padreSeleccionado.cantidad_restante) || 0;
+    const consumido = parseFloat(document.getElementById('cantidad-consumida').value) || 0;
+    const unidad = document.getElementById('unidad-consumida').value;
+    
+    if (consumido > original) {
+        toast(`⚠️ No puedes consumir más de ${original} ${unidad}`, 'warning');
+        document.getElementById('cantidad-consumida').value = original;
+        return recalcularCantidades();
+    }
+    
+    const restante = Math.max(0, original - consumido);
+    
+    // Actualizar calc-box
+    const calcBox = document.getElementById('calc-box');
+    calcBox.style.display = 'block';
+    document.getElementById('calc-original').textContent = `${original} ${unidad}`;
+    document.getElementById('calc-consumido').textContent = `${consumido} ${unidad}`;
+    document.getElementById('calc-restante').textContent = `${restante.toFixed(2)} ${unidad}`;
+    
+    // Aviso de caducidad del padre
+    const avisoCad = document.getElementById('aviso-cad-padre');
+    const textoAviso = document.getElementById('aviso-cad-texto');
+    if (padreSeleccionado.fecha_caducidad) {
+        const dias = parseInt(document.getElementById('dias-input').value) || 180;
+        const fechaOrigen = new Date(document.getElementById('fecha-origen-input').value || new Date());
+        const nuevaCad = calcularFechaCaducidad(tipoActual, fechaOrigen, dias);
+        const cadPadre = new Date(padreSeleccionado.fecha_caducidad);
+        
+        if (nuevaCad > cadPadre) {
+            avisoCad.style.display = 'block';
+            textoAviso.innerHTML = `La nueva caducidad (${formatearFecha(nuevaCad)}) sería <strong>posterior</strong> a la del envase original (${formatearFecha(cadPadre)}). Considera no excederla.`;
+        } else {
+            avisoCad.style.display = 'block';
+            textoAviso.innerHTML = `Envase original caduca el <strong>${formatearFecha(cadPadre)}</strong>. La nueva caducidad (${formatearFecha(nuevaCad)}) está dentro del rango. ✅`;
+        }
+    }
+    
+    actualizarPreview();
+}
+
+// ============================================================
+// SELECTOR DE TIPO
 // ============================================================
 function seleccionarTipo(tipo) {
     tipoActual = tipo;
@@ -397,7 +586,7 @@ function seleccionarTipo(tipo) {
         diasInput.value = DIAS_DEFECTO_CONGELACION;
     } else if (tipo === 'descongelacion') {
         label.textContent = 'Fecha de Descongelación';
-        info.textContent = 'La caducidad se calcula desde la fecha de descongelación (+3 días por defecto)';
+        info.textContent = 'La caducidad se calcula desde la fecha de descongelación (+3 días)';
         previewTipo.textContent = '🧊 DESCONGELACIÓN';
         previewTipo.style.background = '#e0f2fe';
         previewTipo.style.color = '#0369a1';
@@ -407,32 +596,30 @@ function seleccionarTipo(tipo) {
     
     actualizarLabelDias();
     actualizarPreview();
+    if (padreSeleccionado) recalcularCantidades();
 }
 
-// ============================================================
-// GENERAR QR EN PREVIEW
-// ============================================================
+function actualizarLabelDias() {
+    const dias = parseInt(document.getElementById('dias-input').value) || 0;
+    const label = document.getElementById('dias-label');
+    if (tipoActual === 'congelacion' && dias === DIAS_DEFECTO_CONGELACION) {
+        label.textContent = 'días (3 meses)';
+    } else if (modoEntrada === 'manipulacion' && dias === DIAS_DEFECTO_SECO_MANIP) {
+        label.textContent = 'días (6 meses)';
+    } else {
+        label.textContent = 'días';
+    }
+}
+
 function generarQRPreview(texto) {
     const container = document.getElementById('preview-qr');
     container.innerHTML = '';
     if (!texto) return;
     try {
-        new QRCode(container, {
-            text: texto,
-            width: 110,
-            height: 110,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-    } catch(e) {
-        console.log('Error generando QR:', e);
-    }
+        new QRCode(container, { text: texto, width: 110, height: 110, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+    } catch(e) { console.log('Error QR:', e); }
 }
 
-// ============================================================
-// CAMBIAR TAB
-// ============================================================
 function cambiarTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -471,18 +658,13 @@ function buscarAutocompletado(inputId, suggestionsId, callback) {
     
     const resultados = Object.values(unicos).slice(0, 8);
     
-    if (resultados.length === 0) {
-        box.style.display = 'none';
-        return;
-    }
+    if (resultados.length === 0) { box.style.display = 'none'; return; }
     
     box.innerHTML = '';
     resultados.forEach(item => {
         const div = document.createElement('div');
         div.className = 'suggestion-item';
-        const tipoLabel = item.tipo === 'congelacion' ? '❄️ Cong.' 
-                        : item.tipo === 'descongelacion' ? '🧊 Desc.' 
-                        : '🍳 Elab.';
+        const tipoLabel = item.tipo === 'congelacion' ? '❄️' : item.tipo === 'descongelacion' ? '🧊' : '🍳';
         div.innerHTML = `
             <div>
                 <span class="nombre">${item.producto}</span>
@@ -501,7 +683,6 @@ function buscarAutocompletado(inputId, suggestionsId, callback) {
         };
         box.appendChild(div);
     });
-    
     box.style.display = 'block';
 }
 
@@ -509,21 +690,30 @@ document.getElementById('producto-input').addEventListener('input', function() {
     clearTimeout(timeoutAutocomplete);
     timeoutAutocomplete = setTimeout(() => {
         buscarAutocompletado('producto-input', 'autocomplete-suggestions', (item) => {
-            if (item.tipo) {
-                seleccionarTipo(item.tipo);
-            }
-            // 🆕 Cargar el valor de días guardado (aplica a TODOS los tipos, incluido congelación)
-            document.getElementById('dias-input').value = item.dias_caducidad || (item.tipo === 'congelacion' ? DIAS_DEFECTO_CONGELACION : 5);
+            if (item.tipo) seleccionarTipo(item.tipo);
+            document.getElementById('dias-input').value = item.dias_caducidad || 5;
             document.getElementById('fecha-origen-input').value = formatearFechaInput(item.fecha_origen);
-            if (item.lote) {
-                document.getElementById('lote-input').value = item.lote;
-            }
+            if (item.lote) document.getElementById('lote-input').value = item.lote;
             actualizarLabelDias();
             actualizarPreview();
             mostrarMarquesina(item);
             guardarNombreProducto(item.producto);
         });
     }, 300);
+});
+
+// 🆕 Al escribir en producto, si modo=manip, recargar padres
+document.getElementById('producto-input').addEventListener('blur', function() {
+    const producto = this.value.trim().toUpperCase();
+    if (producto && producto.length >= 3) {
+        if (modoEntrada === 'manipulacion') {
+            cargarPadresDisponibles(producto);
+        }
+        const existe = historialGlobal.some(e => 
+            e.producto && e.producto.toUpperCase() === producto
+        );
+        if (!existe) guardarNombreProducto(producto);
+    }
 });
 
 document.getElementById('buscar-producto').addEventListener('input', function() {
@@ -560,10 +750,7 @@ function mostrarMarquesina(item) {
 }
 
 function reimprimirUltimo() {
-    if (!ultimoRegistro) {
-        toast('No hay ultimo registro', 'warning');
-        return;
-    }
+    if (!ultimoRegistro) { toast('No hay ultimo registro', 'warning'); return; }
     reimprimirEtiqueta(ultimoRegistro);
 }
 
@@ -571,13 +758,13 @@ function reimprimirUltimo() {
 // PREVIEW
 // ============================================================
 function cambiarDias(cambio) {
-    // ✅ Ya NO se bloquea en congelación
     const input = document.getElementById('dias-input');
     let valor = parseInt(input.value) || 5;
     valor = Math.max(1, Math.min(365, valor + cambio));
     input.value = valor;
     actualizarLabelDias();
     actualizarPreview();
+    if (padreSeleccionado) recalcularCantidades();
 }
 
 function actualizarPreview() {
@@ -613,11 +800,14 @@ function limpiarTodo() {
     document.getElementById('producto-input').value = '';
     document.getElementById('lote-input').value = '';
     document.getElementById('cantidad-input').value = '1';
+    document.getElementById('cantidad-consumida').value = '';
     document.getElementById('preview').style.display = 'none';
     document.getElementById('preview-qr').innerHTML = '';
     document.getElementById('marquesina').style.display = 'none';
     document.getElementById('producto-input').focus();
     ultimoRegistro = null;
+    padreSeleccionado = null;
+    seleccionarModo('nuevo');
     seleccionarTipo('elaboracion');
 }
 
@@ -626,131 +816,81 @@ function limpiarTodo() {
 // ============================================================
 function guardarNombreProducto(producto) {
     if (!producto) return;
-    
-    const existe = historialGlobal.some(e => 
-        e.producto && e.producto.toUpperCase() === producto.toUpperCase()
-    );
-    
+    const existe = historialGlobal.some(e => e.producto && e.producto.toUpperCase() === producto.toUpperCase());
     if (!existe) {
         const registro = {
-            id: generarId(),
-            producto: producto,
-            lote: 'S/L',
-            tipo: 'elaboracion',
+            id: generarId(), producto, lote: 'S/L', tipo: 'elaboracion',
             dias_caducidad: 5,
             fecha_origen: new Date().toISOString(),
             fecha_caducidad: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
             created_at: new Date().toISOString(),
             cantidad: 1
         };
-        
         db.from('etiquetas_rapidas').insert([registro]).then(({ error }) => {
-            if (!error) {
-                cargarHistorial();
-            }
+            if (!error) cargarHistorial();
         });
     }
 }
 
-// ============================================================
-// GUARDAR REGISTRO EN SUPABASE (NO BLOQUEA)
-// ============================================================
 async function guardarRegistroEnSupabase(registro) {
     try {
         const { error } = await db.from('etiquetas_rapidas').insert([registro]);
         if (error) {
             console.error('Error guardando etiqueta:', error);
-            if (error.message && (error.message.includes('check') || error.message.toLowerCase().includes('tipo'))) {
-                console.warn('⚠️ Verifica que el campo "tipo" de etiquetas_rapidas acepte "congelacion"');
-                toast('⚠️ El campo "tipo" no acepta "congelacion" — revisa la tabla', 'warning');
+            if (error.message && error.message.toLowerCase().includes('check')) {
+                toast('⚠️ Revisa constraints de la tabla', 'warning');
             }
         } else {
-            console.log('✅ Etiqueta guardada en Supabase');
             cargarHistorial();
         }
-    } catch (e) {
-        console.error('Error guardando en background:', e);
-    }
+    } catch (e) { console.error(e); }
 }
 
 // ============================================================
-// 🆕 ACTUALIZAR FICHA DE PRODUCCIÓN AUTOMÁTICAMENTE
+// ACTUALIZAR FICHA (auto)
 // ============================================================
 async function actualizarFichaDesdeEtiqueta(producto, lote, fechaOrigenDate, tipo) {
     try {
-        const { data: fichas, error } = await db
-            .from('fichas')
-            .select('*')
+        const { data: fichas, error } = await db.from('fichas').select('*')
             .ilike('nombre_produccion', producto)
-            .order('created_at', { ascending: false })
-            .limit(1);
-        
+            .order('created_at', { ascending: false }).limit(1);
         if (error) throw error;
-        
-        if (!fichas || fichas.length === 0) {
-            console.log(`ℹ️ No hay ficha para "${producto}" — no se actualiza`);
-            return { actualizada: false, motivo: 'sin_ficha' };
-        }
-        
+        if (!fichas || fichas.length === 0) return { actualizada: false, motivo: 'sin_ficha' };
         const ficha = fichas[0];
         
-        const { data: recepciones } = await db
-            .from('recepciones')
+        const { data: recepciones } = await db.from('recepciones')
             .select('producto, proveedor, fecha_recibido, fecha_registro')
-            .order('fecha_recibido', { ascending: false })
-            .limit(1000);
-        
+            .order('fecha_recibido', { ascending: false }).limit(1000);
         const recepList = recepciones || [];
         
         const lineas = (ficha.ingredientes_detalle || '').split('\n').filter(l => l.trim());
         const nuevosIngredientes = lineas.map(linea => {
             const limpia = linea.replace(/^•\s*/, '').trim();
             const match = limpia.match(/^(.+?)\s*\(Lote Prov:\s*(.+?)\)\s*-\s*Llegada:\s*(.+)$/i);
-            
             let prod, prov, fechaAnt;
-            if (match) {
-                prod = match[1].trim();
-                prov = match[2].trim();
-                fechaAnt = match[3].trim();
-            } else {
-                prod = limpia;
-                prov = 'S/P';
-                fechaAnt = 'S/F';
-            }
+            if (match) { prod = match[1].trim(); prov = match[2].trim(); fechaAnt = match[3].trim(); }
+            else { prod = limpia; prov = 'S/P'; fechaAnt = 'S/F'; }
             
-            const recep = recepList.find(r => 
-                r.producto && r.producto.toUpperCase().includes(prod.toUpperCase())
-            );
-            
+            const recep = recepList.find(r => r.producto && r.producto.toUpperCase().includes(prod.toUpperCase()));
             if (recep) {
                 const fechaRec = recep.fecha_recibido || recep.fecha_registro;
                 const fechaNueva = formatearFecha(new Date(fechaRec));
-                const dAnt = parseDDMMYYYY(fechaAnt);
+                const dAnt = fechaAnt.includes('/') ? new Date(fechaAnt.split('/').reverse().join('-')) : null;
                 const dNue = new Date(fechaRec);
-                if (!dAnt || dNue > dAnt) {
+                if (!dAnt || isNaN(dAnt) || dNue > dAnt) {
                     return `• ${prod} (Lote Prov: ${recep.proveedor || prov}) - Llegada: ${fechaNueva}`;
                 }
             }
-            
             return `• ${prod} (Lote Prov: ${prov}) - Llegada: ${fechaAnt}`;
         });
         
         const fechaISO = fechaOrigenDate.toISOString().split('T')[0];
         const { error: errUpd } = await db.from('fichas').update({
-            lote: lote,
-            fecha_preparacion: fechaISO,
-            fecha_llegada_ingredientes: fechaISO,
+            lote, fecha_preparacion: fechaISO, fecha_llegada_ingredientes: fechaISO,
             ingredientes_detalle: nuevosIngredientes.join('\n')
         }).eq('id', ficha.id);
-        
         if (errUpd) throw errUpd;
-        
-        console.log(`🔄 Ficha "${ficha.nombre_produccion}" actualizada automáticamente`);
-        return { 
-            actualizada: true, 
-            ficha_nombre: ficha.nombre_produccion 
-        };
-        
+        return { actualizada: true, ficha_nombre: ficha.nombre_produccion };
     } catch (e) {
         console.error('❌ Error actualizando ficha:', e);
         return { actualizada: false, motivo: e.message };
@@ -758,7 +898,7 @@ async function actualizarFichaDesdeEtiqueta(producto, lote, fechaOrigenDate, tip
 }
 
 // ============================================================
-// 🖨️ IMPRIMIR ETIQUETA
+// 🖨️ IMPRIMIR ETIQUETA (con soporte manipulación)
 // ============================================================
 async function imprimirEtiqueta() {
     const producto = document.getElementById('producto-input').value.trim().toUpperCase();
@@ -767,15 +907,36 @@ async function imprimirEtiqueta() {
     const cantidad = parseInt(document.getElementById('cantidad-input').value) || 1;
     const fechaOrigen = document.getElementById('fecha-origen-input').value;
     
-    if (!producto) {
-        toast('⚠️ Escribe o selecciona un producto', 'warning');
-        document.getElementById('producto-input').focus();
-        return;
-    }
+    if (!producto) { toast('⚠️ Escribe o selecciona un producto', 'warning'); return; }
+    if (!fechaOrigen) { toast('⚠️ Selecciona una fecha', 'warning'); return; }
     
-    if (!fechaOrigen) {
-        toast('⚠️ Selecciona una fecha', 'warning');
-        return;
+    // Validaciones de manipulación
+    let cantidadConsumida = 0;
+    let cantidadOriginal = null;
+    let cantidadRestante = null;
+    let lotePadreId = null;
+    let unidadCantidad = 'kg';
+    
+    if (modoEntrada === 'manipulacion') {
+        if (!padreSeleccionado) {
+            toast('⚠️ Selecciona el envase del que viene', 'warning');
+            return;
+        }
+        cantidadConsumida = parseFloat(document.getElementById('cantidad-consumida').value) || 0;
+        unidadCantidad = document.getElementById('unidad-consumida').value;
+        
+        if (cantidadConsumida <= 0) {
+            toast('⚠️ Indica cuánto has consumido del envase padre', 'warning');
+            return;
+        }
+        if (cantidadConsumida > parseFloat(padreSeleccionado.cantidad_restante)) {
+            toast('⚠️ No puedes consumir más de lo que hay', 'error');
+            return;
+        }
+        
+        cantidadOriginal = parseFloat(padreSeleccionado.cantidad_restante);
+        cantidadRestante = Math.max(0, cantidadOriginal - cantidadConsumida);
+        lotePadreId = padreSeleccionado.id;
     }
     
     const fechaOrigenDate = new Date(fechaOrigen);
@@ -791,70 +952,68 @@ async function imprimirEtiqueta() {
     const etiquetas = [];
     for (let i = 0; i < cantidad; i++) {
         etiquetas.push({
-            producto: producto,
-            unidad: `${lote}`,
+            producto, unidad: lote,
             fecha: `${tipoTexto}: ${fechaOrig}`,
             texto_qr: qrTexto
         });
     }
     
-    const paquete = { etiquetas: etiquetas };
-    
-    // Calcular dias_caducidad reales para guardar
     const diffMs = caducidad - fechaOrigenDate;
     const diasAGuardar = Math.round(diffMs / (1000 * 60 * 60 * 24));
     
     const registro = {
         id: generarId(),
-        producto: producto,
-        lote: lote,
-        tipo: tipoActual,
+        producto, lote, tipo: tipoActual,
         dias_caducidad: diasAGuardar,
         fecha_origen: fechaOrigenDate.toISOString(),
         fecha_caducidad: caducidad.toISOString(),
         created_at: new Date().toISOString(),
-        cantidad: cantidad
+        cantidad,
+        // 🆕 Campos de manipulación
+        lote_padre_id: lotePadreId,
+        cantidad_original: cantidadOriginal,
+        cantidad_consumida: cantidadConsumida > 0 ? cantidadConsumida : 0,
+        cantidad_restante: cantidadRestante !== null ? cantidadRestante : 1,
+        unidad_cantidad: unidadCantidad
     };
     
     try {
         const response = await fetch(API_URL + '/imprimir_etiqueta_rapida_v2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-            body: JSON.stringify(paquete)
+            body: JSON.stringify({ etiquetas })
         });
         
         const data = await response.json();
         
         if (response.ok) {
             const iconoTipo = tipoActual === 'congelacion' ? '❄️' : tipoActual === 'descongelacion' ? '🧊' : '🍳';
-            toast(`${iconoTipo} ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} en cola de impresión`, 'success');
-            if (navigator.vibrate) navigator.vibrate(50);
-            mostrarMarquesina(registro);
-            
-            if (data.cola && data.cola > 3) {
-                toast(`🔄 ${data.cola} etiquetas pendientes en cola`, 'info');
+            let msgExtra = '';
+            if (modoEntrada === 'manipulacion') {
+                msgExtra = ` · 🔗 Manipulación (quedan ${cantidadRestante.toFixed(2)}${unidadCantidad})`;
             }
+            toast(`${iconoTipo} ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} en cola${msgExtra}`, 'success');
             
-            // Guardar registro en background
-            setTimeout(() => {
-                guardarRegistroEnSupabase(registro);
-            }, 100);
+            setTimeout(() => guardarRegistroEnSupabase(registro), 100);
             
-            // AUTO-UPDATE DE FICHA (solo elaboración y congelación)
+            // Actualizar ficha (solo elaboración o congelación)
             if (tipoActual === 'elaboracion' || tipoActual === 'congelacion') {
                 actualizarFichaDesdeEtiqueta(producto, lote, fechaOrigenDate, tipoActual)
                     .then(res => {
                         if (res.actualizada) {
-                            setTimeout(() => {
-                                toast(`🔄 Ficha "${res.ficha_nombre}" sincronizada`, 'info');
-                            }, 800);
-                        } else if (res.motivo === 'sin_ficha') {
-                            setTimeout(() => {
-                                toast(`ℹ️ Sin ficha para "${producto}" (no se actualiza)`, 'warning');
-                            }, 800);
+                            setTimeout(() => toast(`🔄 Ficha "${res.ficha_nombre}" sincronizada`, 'info'), 800);
                         }
                     })
-                    .catch(e => console.warn('Error auto-actualizando ficha:', e));
+                    .catch(e => console.warn(e));
+            }
+            
+            mostrarMarquesina(registro);
+            
+            // Si era manipulación → avisar que el padre quedó cerrado
+            if (modoEntrada === 'manipulacion' && padreSeleccionado) {
+                setTimeout(() => {
+                    toast(`📦 Envase original ${padreSeleccionado.lote} cerrado (manipulado)`, 'info');
+                }, 1500);
             }
             
         } else {
@@ -884,23 +1043,19 @@ async function reimprimirEtiqueta(registro) {
     const etiquetas = [];
     for (let i = 0; i < cantidad; i++) {
         etiquetas.push({
-            producto: registro.producto,
-            unidad: `${lote}`,
-            fecha: `${tipoTexto}: ${fechaOrig}`,
-            texto_qr: qrTexto
+            producto: registro.producto, unidad: `${lote}`,
+            fecha: `${tipoTexto}: ${fechaOrig}`, texto_qr: qrTexto
         });
     }
-    
-    const paquete = { etiquetas: etiquetas };
     
     try {
         const response = await fetch(API_URL + '/imprimir_etiqueta_rapida_v2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-            body: JSON.stringify(paquete)
+            body: JSON.stringify({ etiquetas })
         });
         if (response.ok) {
-            toast(`✅ ${cantidad} etiqueta${cantidad > 1 ? 's' : ''} de ${registro.producto} reimpresa${cantidad > 1 ? 's' : ''}`, 'success');
+            toast(`✅ ${cantidad} etiqueta(s) de ${registro.producto} reimpresa(s)`, 'success');
         } else {
             toast('❌ Error al reimprimir', 'error');
         }
@@ -917,18 +1072,12 @@ async function buscarUltimaElaboracion() {
     const resultadoDiv = document.getElementById('resultado-busqueda');
     const noEncontrado = document.getElementById('resultado-no-encontrado');
     
-    if (!producto) {
-        toast('⚠️ Escribe un producto para buscar', 'warning');
-        return;
-    }
+    if (!producto) { toast('⚠️ Escribe un producto para buscar', 'warning'); return; }
     
     try {
-        const { data, error } = await db
-            .from('etiquetas_rapidas')
-            .select('*')
+        const { data, error } = await db.from('etiquetas_rapidas').select('*')
             .ilike('producto', '%' + producto + '%')
-            .order('fecha_origen', { ascending: false })
-            .limit(1);
+            .order('fecha_origen', { ascending: false }).limit(1);
         
         if (error) throw error;
         
@@ -946,6 +1095,19 @@ async function buscarUltimaElaboracion() {
             document.getElementById('res-elab').textContent = formatearFecha(item.fecha_origen);
             document.getElementById('res-cad').textContent = formatearFecha(item.fecha_caducidad);
             document.getElementById('res-dias').textContent = item.dias_caducidad + ' dias';
+            
+            // Mostrar cantidades si tiene
+            const cantDiv = document.getElementById('res-cantidades');
+            if (item.cantidad_original) {
+                cantDiv.style.display = 'block';
+                const u = item.unidad_cantidad || 'kg';
+                document.getElementById('res-orig').textContent = `${item.cantidad_original} ${u}`;
+                document.getElementById('res-cons').textContent = `${item.cantidad_consumida || 0} ${u}`;
+                document.getElementById('res-rest').textContent = `${item.cantidad_restante || 0} ${u}`;
+            } else {
+                cantDiv.style.display = 'none';
+            }
+            
             document.getElementById('res-id').textContent = item.id;
             mostrarMarquesina(item);
         } else {
@@ -959,19 +1121,77 @@ async function buscarUltimaElaboracion() {
     }
 }
 
-function reimprimirDesdeBusqueda() {
-    if (ultimoBuscado) {
-        reimprimirEtiqueta(ultimoBuscado);
-    } else {
-        toast('⚠️ No hay resultado', 'warning');
+// 🆕 VER ÁRBOL COMPLETO
+async function verArbolProducto() {
+    const producto = document.getElementById('buscar-producto').value.trim().toUpperCase();
+    if (!producto) { toast('⚠️ Escribe un producto primero', 'warning'); return; }
+    
+    try {
+        const { data, error } = await db.from('v_arbol_manipulaciones').select('*')
+            .ilike('producto', '%' + producto + '%')
+            .order('raiz_id').order('nivel').order('fecha_origen');
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            toast(`📭 No hay manipulaciones de "${producto}"`, 'warning');
+            return;
+        }
+        
+        // Agrupar por raíz
+        const arboles = {};
+        data.forEach(item => {
+            if (!arboles[item.raiz_id]) arboles[item.raiz_id] = [];
+            arboles[item.raiz_id].push(item);
+        });
+        
+        let html = '';
+        for (const raizId in arboles) {
+            const items = arboles[raizId];
+            html += `<div style="margin-bottom:16px;">`;
+            items.forEach(item => {
+                const indent = '  '.repeat(item.nivel);
+                const u = item.unidad_cantidad || 'kg';
+                const clases = item.nivel === 0 ? 'arbol-item raiz' : 'arbol-item';
+                html += `
+                    <div class="${clases}" style="margin-left:${item.nivel * 20}px;">
+                        <span class="nivel-badge">${item.nivel}</span>
+                        ${item.nivel > 0 ? '<span class="flecha">└─</span>' : ''}
+                        <strong>${item.lote}</strong>
+                        <span class="fecha">📅 ${formatearFecha(item.fecha_origen)}</span>
+                        <div style="margin-top:4px;">
+                            <span class="restante-info">💎 Quedan: ${item.cantidad_restante} ${u}</span>
+                            ${item.cantidad_consumida > 0 ? `<span class="consumido-info"> · 🔥 Consumido: ${item.cantidad_consumida} ${u}</span>` : ''}
+                        </div>
+                        <div class="fecha">⚠️ CAD: ${formatearFecha(item.fecha_caducidad)}</div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+        
+        Swal.fire({
+            title: `🌳 Árbol de ${producto}`,
+            html: `<div style="text-align:left; max-height:60vh; overflow-y:auto; padding:8px;">${html}</div>`,
+            width: 700,
+            showCloseButton: true,
+            confirmButtonText: 'Cerrar',
+            confirmButtonColor: '#8b5cf6'
+        });
+        
+    } catch (e) {
+        console.error('Error al cargar árbol:', e);
+        toast('❌ Error al cargar árbol', 'error');
     }
 }
 
+function reimprimirDesdeBusqueda() {
+    if (ultimoBuscado) reimprimirEtiqueta(ultimoBuscado);
+    else toast('⚠️ No hay resultado', 'warning');
+}
+
 document.getElementById('buscar-producto').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        buscarUltimaElaboracion();
-    }
+    if (e.key === 'Enter') { e.preventDefault(); buscarUltimaElaboracion(); }
 });
 
 // ============================================================
@@ -980,14 +1200,10 @@ document.getElementById('buscar-producto').addEventListener('keypress', (e) => {
 async function cargarHistorial() {
     const container = document.getElementById('historial-lista');
     try {
-        const { data, error } = await db
-            .from('etiquetas_rapidas')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(50);
+        const { data, error } = await db.from('etiquetas_rapidas').select('*')
+            .order('created_at', { ascending: false }).limit(50);
         
         if (error) throw error;
-        
         historialGlobal = data || [];
         
         if (historialGlobal.length === 0) {
@@ -1001,18 +1217,23 @@ async function cargarHistorial() {
         document.getElementById('statusBadge').textContent = '🟢 Online';
         
         container.innerHTML = historialGlobal.map(entry => {
-            const tipoTexto = entry.tipo === 'congelacion' ? '❄️ Cong.' 
-                            : entry.tipo === 'descongelacion' ? '🧊 Desc.' 
-                            : '🍳 Elab.';
+            const tipoTexto = entry.tipo === 'congelacion' ? '❄️' 
+                            : entry.tipo === 'descongelacion' ? '🧊' 
+                            : '🍳';
             const cant = entry.cantidad || 1;
+            const esManip = entry.lote_padre_id ? '🔗' : '';
+            const restInfo = entry.cantidad_original 
+                ? `<div class="info" style="color:#8b5cf6;">💎 Quedan: ${entry.cantidad_restante} ${entry.unidad_cantidad || 'kg'}</div>` 
+                : '';
             return `
             <div class="historial-item">
                 <div>
-                    <div class="nombre">${entry.producto}</div>
+                    <div class="nombre">${tipoTexto} ${esManip} ${entry.producto}</div>
                     <div class="info">📦 Lote: ${entry.lote || 'S/L'}</div>
-                    <div class="info">${tipoTexto} ${formatearFecha(entry.fecha_origen)}</div>
+                    <div class="info">📅 ${formatearFecha(entry.fecha_origen)}</div>
                     <div class="info fecha-cad">⚠️ CAD: ${formatearFecha(entry.fecha_caducidad)}</div>
-                    <div class="info">📄 ${cant} etiqueta${cant > 1 ? 's' : ''} · ${entry.dias_caducidad}d</div>
+                    <div class="info">📄 ${cant} etiqueta${cant > 1 ? 's' : ''}</div>
+                    ${restInfo}
                 </div>
                 <button onclick="reimprimirEtiqueta(historialGlobal.find(e => e.id === '${entry.id}'))" class="btn btn-success btn-sm">🔄 Reimprimir</button>
             </div>
@@ -1029,34 +1250,24 @@ async function cargarHistorial() {
 function filtrarHistorial() {
     const filtro = document.getElementById('filtro-historial').value.trim().toUpperCase();
     const container = document.getElementById('historial-lista');
+    if (!filtro) { cargarHistorial(); return; }
     
-    if (!filtro) {
-        cargarHistorial();
-        return;
-    }
-    
-    const filtradas = historialGlobal.filter(e => 
-        e.producto && e.producto.toUpperCase().includes(filtro)
-    );
-    
+    const filtradas = historialGlobal.filter(e => e.producto && e.producto.toUpperCase().includes(filtro));
     if (filtradas.length === 0) {
         container.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No hay coincidencias</div>';
         return;
     }
     
     container.innerHTML = filtradas.map(entry => {
-        const tipoTexto = entry.tipo === 'congelacion' ? '❄️ Cong.' 
-                        : entry.tipo === 'descongelacion' ? '🧊 Desc.' 
-                        : '🍳 Elab.';
+        const tipoTexto = entry.tipo === 'congelacion' ? '❄️' : entry.tipo === 'descongelacion' ? '🧊' : '🍳';
         const cant = entry.cantidad || 1;
         return `
         <div class="historial-item">
             <div>
-                <div class="nombre">${entry.producto}</div>
+                <div class="nombre">${tipoTexto} ${entry.producto}</div>
                 <div class="info">📦 Lote: ${entry.lote || 'S/L'}</div>
-                <div class="info">${tipoTexto} ${formatearFecha(entry.fecha_origen)}</div>
+                <div class="info">📅 ${formatearFecha(entry.fecha_origen)}</div>
                 <div class="info fecha-cad">⚠️ CAD: ${formatearFecha(entry.fecha_caducidad)}</div>
-                <div class="info">📄 ${cant} etiqueta${cant > 1 ? 's' : ''} · ${entry.dias_caducidad}d</div>
             </div>
             <button onclick="reimprimirEtiqueta(historialGlobal.find(e => e.id === '${entry.id}'))" class="btn btn-success btn-sm">🔄 Reimprimir</button>
         </div>
@@ -1064,48 +1275,19 @@ function filtrarHistorial() {
 }
 
 // ============================================================
-// AUTOGUARDADO AL PERDER EL FOCO
-// ============================================================
-document.getElementById('producto-input').addEventListener('blur', function() {
-    const producto = this.value.trim().toUpperCase();
-    if (producto && producto.length >= 3) {
-        const existe = historialGlobal.some(e => 
-            e.producto && e.producto.toUpperCase() === producto
-        );
-        if (!existe) {
-            guardarNombreProducto(producto);
-            toast('📝 Producto guardado en el historial', 'info');
-        }
-    }
-});
-
-// ============================================================
 // EVENTOS
 // ============================================================
 document.getElementById('producto-input').addEventListener('input', actualizarPreview);
 document.getElementById('lote-input').addEventListener('input', actualizarPreview);
 document.getElementById('producto-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('lote-input').focus();
-    }
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('lote-input').focus(); }
 });
 document.getElementById('lote-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('fecha-origen-input').focus();
-    }
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('fecha-origen-input').focus(); }
 });
-document.getElementById('fecha-origen-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        imprimirEtiqueta();
-    }
-});
-// 🆕 El input de días actualiza tanto el label como el preview
-document.getElementById('dias-input').addEventListener('change', () => { actualizarLabelDias(); actualizarPreview(); });
+document.getElementById('dias-input').addEventListener('change', () => { actualizarLabelDias(); actualizarPreview(); if (padreSeleccionado) recalcularCantidades(); });
 document.getElementById('dias-input').addEventListener('input', () => { actualizarLabelDias(); actualizarPreview(); });
-document.getElementById('fecha-origen-input').addEventListener('change', actualizarPreview);
+document.getElementById('fecha-origen-input').addEventListener('change', () => { actualizarPreview(); if (padreSeleccionado) recalcularCantidades(); });
 document.getElementById('cantidad-input').addEventListener('change', actualizarPreview);
 document.getElementById('cantidad-input').addEventListener('input', actualizarPreview);
 
@@ -1116,21 +1298,10 @@ cargarHistorial();
 document.getElementById('producto-input').focus();
 seleccionarTipo('elaboracion');
 
-fetch(API_URL + '/health', { 
-    headers: { 'ngrok-skip-browser-warning': 'true' } 
-})
-.then(res => {
-    if (res.ok) {
-        document.getElementById('statusBadge').className = 'badge-online';
-        document.getElementById('statusBadge').textContent = '🟢 Online';
-    }
-})
-.catch(() => {
-    document.getElementById('statusBadge').className = 'badge-offline';
-    document.getElementById('statusBadge').textContent = '🔴 Offline';
-});
+fetch(API_URL + '/health', { headers: { 'ngrok-skip-browser-warning': 'true' } })
+.then(res => { if (res.ok) { document.getElementById('statusBadge').className = 'badge-online'; document.getElementById('statusBadge').textContent = '🟢 Online'; } })
+.catch(() => { document.getElementById('statusBadge').className = 'badge-offline'; document.getElementById('statusBadge').textContent = '🔴 Offline'; });
 
-// Exponer funciones
 window.cambiarDias = cambiarDias;
 window.cambiarCantidad = cambiarCantidad;
 window.imprimirEtiqueta = imprimirEtiqueta;
@@ -1144,6 +1315,10 @@ window.cambiarTab = cambiarTab;
 window.filtrarHistorial = filtrarHistorial;
 window.seleccionarTipo = seleccionarTipo;
 window.generarLoteAuto = generarLoteAuto;
+window.seleccionarModo = seleccionarModo;
+window.seleccionarPadre = seleccionarPadre;
+window.recalcularCantidades = recalcularCantidades;
+window.verArbolProducto = verArbolProducto;
 </script>
 </body>
 </html>
