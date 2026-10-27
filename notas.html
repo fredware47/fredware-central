@@ -141,6 +141,9 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 22px; flex-shrink: 0;
         }
+        .pdf-icono.excel {
+            background: #d1fae5; color: #059669;
+        }
         .pdf-info { flex: 1; min-width: 0; }
         .pdf-nombre {
             font-weight: 700; font-size: 13px; color: #1e293b;
@@ -159,6 +162,14 @@
         .badge-expira.urgente { background: #fee2e2; color: #991b1b; }
         .badge-expira.cerca { background: #fef3c7; color: #92400e; }
         .badge-expira.ok { background: #d1fae5; color: #065f46; }
+
+        .badge-tipo {
+            display: inline-block; padding: 1px 8px; border-radius: 10px;
+            font-size: 9px; font-weight: 800; letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .badge-tipo.pdf { background: #fee2e2; color: #991b1b; }
+        .badge-tipo.excel { background: #d1fae5; color: #065f46; }
 
         .zona-upload {
             border: 2px dashed #cbd5e1; border-radius: 12px;
@@ -212,26 +223,26 @@
                     <span id="contador-pdfs" class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
                 </h2>
                 <div class="flex gap-2 flex-wrap">
-                    <button onclick="limpiarExpiradosManual()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition-all" title="Eliminar PDFs expirados">
+                    <button onclick="limpiarExpiradosManual()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition-all" title="Eliminar archivos expirados">
                         🧹 Limpiar
                     </button>
                     <button onclick="abrirSelectorPDF()" class="bg-red-500 hover:bg-red-600 text-white font-bold text-xs px-3 py-2 rounded-lg transition-all">
-                        ➕ Subir PDF
+                        ➕ Subir archivo
                     </button>
                 </div>
             </div>
 
             <div id="zona-upload" class="zona-upload mb-3">
-                <div style="font-size:32px; margin-bottom:4px;">📄</div>
-                <div style="font-size:13px; font-weight:700; color:#475569;">Arrastra el PDF aquí o pulsa "Subir PDF"</div>
-                <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Máximo 10 MB · Solo PDFs</div>
+                <div style="font-size:32px; margin-bottom:4px;">📄📊</div>
+                <div style="font-size:13px; font-weight:700; color:#475569;">Arrastra el archivo aquí o pulsa "Subir archivo"</div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Máximo 10 MB · PDF o Excel (.xls, .xlsx)</div>
                 <div style="font-size:10px; color:#94a3b8; margin-top:2px;">💡 Se borrará el miércoles siguiente</div>
                 <div id="barra-progreso" class="barra-progreso">
                     <div id="barra-progreso-fill" class="barra-progreso-fill"></div>
                 </div>
             </div>
 
-            <input type="file" id="input-pdf" accept="application/pdf" style="display:none;">
+            <input type="file" id="input-pdf" accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
 
             <div id="lista-pdfs" class="space-y-2">
                 <div class="text-center text-slate-400 text-xs py-3">Cargando...</div>
@@ -335,10 +346,20 @@
     <script>
     // ============================================================
     // BLOCK DE NOTAS + HOJAS DE SERVICIO CON EXPIRACIÓN
+    // Soporta PDF y Excel (.xls, .xlsx)
     // ============================================================
     const db = window.fredware.supabase;
     const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const BUCKET_PDFS = 'hojas-servicio';
+
+    // ✅ NUEVO: tipos de archivo permitidos
+    const TIPOS_PERMITIDOS = {
+        'application/pdf':   { ext: 'pdf',  icono: '📄', label: 'PDF' },
+        'application/vnd.ms-excel': { ext: 'xls', icono: '📊', label: 'Excel' },
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { ext: 'xlsx', icono: '📊', label: 'Excel' }
+    };
+    // Fallback por extensión (algunos navegadores no dan bien el MIME)
+    const EXT_PERMITIDAS = ['pdf', 'xls', 'xlsx'];
 
     let notasGlobal = [];
     let pdfsGlobal = [];
@@ -410,30 +431,34 @@
         return `${año}-W${String(semana).padStart(2, '0')}`;
     }
 
-    // ============================================================
-    // 🆕 CALCULAR FECHA DE EXPIRACIÓN
-    // Regla: Miércoles siguiente al domingo de la semana del PDF
-    // ============================================================
-    function calcularExpiracion(fechaStr) {
-        const fecha = new Date(fechaStr + 'T00:00:00');
-        const diaSemana = fecha.getDay(); // 0=domingo, 1=lunes... 6=sábado
+    // ✅ NUEVO: detecta tipo de archivo (MIME o extensión)
+    function detectarTipoArchivo(file) {
+        if (TIPOS_PERMITIDOS[file.type]) return TIPOS_PERMITIDOS[file.type];
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        if (EXT_PERMITIDAS.includes(ext)) {
+            return { ext, icono: ext === 'pdf' ? '📄' : '📊', label: ext === 'pdf' ? 'PDF' : 'Excel' };
+        }
+        return null;
+    }
 
-        // Días hasta el domingo de esta semana
-        const diasHastaDomingo = (7 - diaSemana) % 7;
-
-        const domingo = new Date(fecha);
-        domingo.setDate(fecha.getDate() + diasHastaDomingo);
-
-        // Miércoles siguiente = domingo + 3
-        const miercoles = new Date(domingo);
-        miercoles.setDate(domingo.getDate() + 3);
-
-        return miercoles.toISOString().split('T')[0];
+    function quitarExtension(nombre) {
+        return nombre.replace(/\.(pdf|xlsx?|xls)$/i, '');
     }
 
     // ============================================================
-    // 🆕 DÍAS RESTANTES HASTA EXPIRACIÓN
+    // CALCULAR FECHA DE EXPIRACIÓN
     // ============================================================
+    function calcularExpiracion(fechaStr) {
+        const fecha = new Date(fechaStr + 'T00:00:00');
+        const diaSemana = fecha.getDay();
+        const diasHastaDomingo = (7 - diaSemana) % 7;
+        const domingo = new Date(fecha);
+        domingo.setDate(fecha.getDate() + diasHastaDomingo);
+        const miercoles = new Date(domingo);
+        miercoles.setDate(domingo.getDate() + 3);
+        return miercoles.toISOString().split('T')[0];
+    }
+
     function diasHastaExpirar(fechaExpira) {
         const hoy = new Date();
         hoy.setHours(0,0,0,0);
@@ -442,7 +467,7 @@
     }
 
     // ============================================================
-    // 🆕 AUTO-DETECCIÓN DE ETIQUETAS
+    // AUTO-DETECCIÓN DE ETIQUETAS
     // ============================================================
     function detectarEtiquetas(textoOriginal) {
         const textoNorm = normalizar(textoOriginal);
@@ -498,7 +523,7 @@
     }
 
     // ============================================================
-    // 🆕 LIMPIAR PDFs EXPIRADOS (AUTOMÁTICO)
+    // LIMPIAR ARCHIVOS EXPIRADOS (AUTOMÁTICO)
     // ============================================================
     async function limpiarExpiradosAuto(silencioso = false) {
         try {
@@ -514,14 +539,11 @@
             let borrados = 0;
 
             for (const pdf of expirados) {
-                // 1. Borrar de Storage
                 try {
                     await db.storage.from(BUCKET_PDFS).remove([pdf.storage_path]);
                 } catch (e) {
                     console.warn('Storage error:', e);
                 }
-
-                // 2. Borrar de BD
                 try {
                     const { error: dbErr } = await db
                         .from('hojas_servicio')
@@ -544,11 +566,10 @@
         }
     }
 
-    // Botón manual
     async function limpiarExpiradosManual() {
         const ok = await Swal.fire({
             title: '🧹 Limpiar expirados',
-            text: 'Se eliminarán los PDFs cuya fecha de expiración ya pasó',
+            text: 'Se eliminarán los archivos cuya fecha de expiración ya pasó',
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: '🧹 Limpiar ahora',
@@ -559,21 +580,19 @@
 
         const borrados = await limpiarExpiradosAuto(false);
         if (borrados === 0) {
-            toast('✅ No hay PDFs expirados', 'success');
+            toast('✅ No hay archivos expirados', 'success');
         }
         await cargarPDFs();
     }
 
     // ============================================================
-    // PDFs — CARGAR
+    // ARCHIVOS — CARGAR
     // ============================================================
     async function cargarPDFs() {
         const contenedor = document.getElementById('lista-pdfs');
         try {
-            // 🆕 Primero limpia expirados (silencioso)
             await limpiarExpiradosAuto(true);
 
-            // Luego carga solo los NO expirados
             const hoy = fechaHoy();
             const { data, error } = await db
                 .from('hojas_servicio')
@@ -589,7 +608,7 @@
             document.getElementById('contador-pdfs').textContent = pdfsGlobal.length;
             renderPDFs();
         } catch (e) {
-            console.error('Error PDFs:', e);
+            console.error('Error archivos:', e);
             contenedor.innerHTML = `<div class="text-center text-red-500 text-xs py-3">❌ ${esc(e.message)}</div>`;
         }
     }
@@ -606,12 +625,17 @@
             return;
         }
 
-        const hoy = fechaHoy();
-
         contenedor.innerHTML = pdfsGlobal.map(pdf => {
             const diasRestantes = diasHastaExpirar(pdf.expira_en);
+            const tipo = (pdf.tipo_archivo || 'pdf').toLowerCase();
+            const esExcel = tipo === 'xls' || tipo === 'xlsx';
+            const iconoHTML = esExcel
+                ? `<div class="pdf-icono excel">📊</div>`
+                : `<div class="pdf-icono">📄</div>`;
+            const badgeTipo = esExcel
+                ? `<span class="badge-tipo excel">XLS${tipo === 'xlsx' ? 'X' : ''}</span>`
+                : `<span class="badge-tipo pdf">PDF</span>`;
 
-            // Clases según urgencia
             let claseCard = 'pdf-card';
             let claseBadge = 'badge-expira';
             let textoBadge = '';
@@ -636,10 +660,11 @@
 
             return `
                 <div class="${claseCard}">
-                    <div class="pdf-icono">📄</div>
+                    ${iconoHTML}
                     <div class="pdf-info">
                         <div class="pdf-nombre" title="${esc(pdf.nombre)}">${esc(pdf.nombre)}</div>
                         <div class="pdf-meta">
+                            ${badgeTipo}
                             <span>📅 ${formatearFecha(pdf.fecha)}</span>
                             ${pdf.tamaño_kb ? `<span>💾 ${formatearBytes(pdf.tamaño_kb * 1024)}</span>` : ''}
                             ${pdf.autor ? `<span>👤 ${esc(pdf.autor)}</span>` : ''}
@@ -650,8 +675,8 @@
                         </div>
                     </div>
                     <div class="pdf-acciones">
-                        <button class="btn-icon info" onclick="verPDF('${esc(pdf.url_pdf)}')" title="Ver PDF">👁️</button>
-                        <button class="btn-icon" onclick="descargarPDF('${esc(pdf.url_pdf)}', '${esc(pdf.nombre)}')" title="Descargar">⬇️</button>
+                        <button class="btn-icon info" onclick="verArchivo('${esc(pdf.url_pdf)}', '${tipo}', '${esc(pdf.nombre)}')" title="Ver/Descargar">👁️</button>
+                        <button class="btn-icon" onclick="descargarArchivo('${esc(pdf.url_pdf)}', '${esc(pdf.nombre)}', '${tipo}')" title="Descargar">⬇️</button>
                         <button class="btn-icon danger" onclick="borrarPDF(${pdf.id}, '${esc(pdf.storage_path)}')" title="Borrar">🗑️</button>
                     </div>
                 </div>
@@ -660,7 +685,7 @@
     }
 
     // ============================================================
-    // PDFs — SUBIR
+    // ARCHIVOS — SUBIR
     // ============================================================
     function abrirSelectorPDF() {
         document.getElementById('input-pdf').click();
@@ -669,8 +694,9 @@
     async function subirPDF(file) {
         if (!file) return;
 
-        if (file.type !== 'application/pdf') {
-            toast('⚠️ Solo se permiten PDFs', 'warning');
+        const tipoInfo = detectarTipoArchivo(file);
+        if (!tipoInfo) {
+            toast('⚠️ Solo se permiten PDF o Excel (.xls, .xlsx)', 'warning');
             return;
         }
         if (file.size > 10 * 1024 * 1024) {
@@ -678,19 +704,19 @@
             return;
         }
 
-        // Calcular expiración por defecto (basado en hoy)
         const expiraDefault = calcularExpiracion(fechaHoy());
+        const nombreSinExt = quitarExtension(file.name);
 
         const { value: formData } = await Swal.fire({
-            title: '📄 Subir hoja de servicio',
+            title: `${tipoInfo.icono} Subir hoja de servicio`,
             html: `
                 <div style="text-align:left; font-size:14px;">
                     <p style="margin-bottom:12px; color:#64748b;">
                         <strong>${esc(file.name)}</strong><br>
-                        <span style="font-size:12px;">${formatearBytes(file.size)}</span>
+                        <span style="font-size:12px;">${formatearBytes(file.size)} · ${tipoInfo.label}</span>
                     </p>
                     <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Nombre visible</label>
-                    <input id="pdf-nombre" type="text" value="${esc(file.name.replace('.pdf',''))}" 
+                    <input id="pdf-nombre" type="text" value="${esc(nombreSinExt)}" 
                            style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; margin-bottom:12px;">
                     
                     <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Fecha del servicio</label>
@@ -748,12 +774,12 @@
         try {
             const timestamp = Date.now();
             const nombreSeguro = formData.nombre.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 60);
-            const storagePath = `${formData.fecha}/${timestamp}_${nombreSeguro}.pdf`;
+            const storagePath = `${formData.fecha}/${timestamp}_${nombreSeguro}.${tipoInfo.ext}`;
 
             const { error: uploadError } = await db.storage
                 .from(BUCKET_PDFS)
                 .upload(storagePath, file, {
-                    contentType: 'application/pdf',
+                    contentType: file.type || 'application/octet-stream',
                     cacheControl: '3600',
                     upsert: false
                 });
@@ -775,7 +801,9 @@
                 storage_path: storagePath,
                 tamaño_kb: Math.round(file.size / 1024),
                 autor: autor,
-                notas: formData.notas || null
+                notas: formData.notas || null,
+                tipo_archivo: tipoInfo.ext,
+                mime_type: file.type || null
             }]);
 
             if (dbError) throw dbError;
@@ -786,7 +814,7 @@
             await cargarPDFs();
 
         } catch (e) {
-            console.error('Error subiendo PDF:', e);
+            console.error('Error subiendo archivo:', e);
             toast('❌ ' + (e.message || 'Error al subir'), 'error');
         } finally {
             setTimeout(() => {
@@ -797,21 +825,34 @@
     }
 
     // ============================================================
-    // PDFs — VER / DESCARGAR / BORRAR
+    // ARCHIVOS — VER / DESCARGAR / BORRAR
     // ============================================================
-    function verPDF(url) {
-        window.open(url, '_blank');
+    function verArchivo(url, tipo, nombre) {
+        const esExcel = tipo === 'xls' || tipo === 'xlsx';
+        if (esExcel) {
+            // Excel no se previsualiza en navegador → descarga directa
+            descargarArchivo(url, nombre, tipo);
+            toast('📊 Excel descargado (no se previsualiza)', 'info');
+        } else {
+            window.open(url, '_blank');
+        }
     }
 
-    function descargarPDF(url, nombre) {
+    function descargarArchivo(url, nombre, tipo) {
+        const ext = tipo || 'pdf';
+        const nombreFinal = quitarExtension(nombre) + '.' + ext;
         const a = document.createElement('a');
         a.href = url;
-        a.download = nombre + '.pdf';
+        a.download = nombreFinal;
         a.target = '_blank';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
     }
+
+    // Alias para compatibilidad con llamadas antiguas
+    function verPDF(url, tipo, nombre) { verArchivo(url, tipo, nombre); }
+    function descargarPDF(url, nombre, tipo) { descargarArchivo(url, nombre, tipo); }
 
     async function borrarPDF(id, storagePath) {
         const ok = await Swal.fire({
@@ -835,7 +876,7 @@
             const { error: dbError } = await db.from('hojas_servicio').delete().eq('id', id);
             if (dbError) throw dbError;
 
-            toast('🗑️ PDF borrado', 'info');
+            toast('🗑️ Archivo borrado', 'info');
             await cargarPDFs();
         } catch (e) {
             toast('❌ ' + e.message, 'error');
