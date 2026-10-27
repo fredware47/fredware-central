@@ -123,7 +123,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* PDF cards */
+        /* Tarjetas de archivos */
         .pdf-card {
             background: white; border: 1px solid #e2e8f0;
             border-radius: 12px; padding: 12px 14px;
@@ -141,8 +141,8 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 22px; flex-shrink: 0;
         }
-        .pdf-icono.excel {
-            background: #d1fae5; color: #059669;
+        .pdf-icono.word {
+            background: #dbeafe; color: #1d4ed8;
         }
         .pdf-info { flex: 1; min-width: 0; }
         .pdf-nombre {
@@ -169,7 +169,7 @@
             text-transform: uppercase;
         }
         .badge-tipo.pdf { background: #fee2e2; color: #991b1b; }
-        .badge-tipo.excel { background: #d1fae5; color: #065f46; }
+        .badge-tipo.word { background: #dbeafe; color: #1e40af; }
 
         .zona-upload {
             border: 2px dashed #cbd5e1; border-radius: 12px;
@@ -233,16 +233,16 @@
             </div>
 
             <div id="zona-upload" class="zona-upload mb-3">
-                <div style="font-size:32px; margin-bottom:4px;">📄📊</div>
+                <div style="font-size:32px; margin-bottom:4px;">📄📝</div>
                 <div style="font-size:13px; font-weight:700; color:#475569;">Arrastra el archivo aquí o pulsa "Subir archivo"</div>
-                <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Máximo 10 MB · PDF o Excel (.xls, .xlsx)</div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:4px;">Máximo 10 MB · PDF o Word (.doc, .docx)</div>
                 <div style="font-size:10px; color:#94a3b8; margin-top:2px;">💡 Se borrará el miércoles siguiente</div>
                 <div id="barra-progreso" class="barra-progreso">
                     <div id="barra-progreso-fill" class="barra-progreso-fill"></div>
                 </div>
             </div>
 
-            <input type="file" id="input-pdf" accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
+            <input type="file" id="input-pdf" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none;">
 
             <div id="lista-pdfs" class="space-y-2">
                 <div class="text-center text-slate-400 text-xs py-3">Cargando...</div>
@@ -346,20 +346,20 @@
     <script>
     // ============================================================
     // BLOCK DE NOTAS + HOJAS DE SERVICIO CON EXPIRACIÓN
-    // Soporta PDF y Excel (.xls, .xlsx)
+    // Soporta PDF y Word (.doc, .docx)
     // ============================================================
     const db = window.fredware.supabase;
     const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const BUCKET_PDFS = 'hojas-servicio';
 
-    // ✅ NUEVO: tipos de archivo permitidos
+    // ✅ Tipos de archivo permitidos
     const TIPOS_PERMITIDOS = {
         'application/pdf':   { ext: 'pdf',  icono: '📄', label: 'PDF' },
-        'application/vnd.ms-excel': { ext: 'xls', icono: '📊', label: 'Excel' },
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { ext: 'xlsx', icono: '📊', label: 'Excel' }
+        'application/msword': { ext: 'doc', icono: '📝', label: 'Word' },
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { ext: 'docx', icono: '📝', label: 'Word' }
     };
     // Fallback por extensión (algunos navegadores no dan bien el MIME)
-    const EXT_PERMITIDAS = ['pdf', 'xls', 'xlsx'];
+    const EXT_PERMITIDAS = ['pdf', 'doc', 'docx'];
 
     let notasGlobal = [];
     let pdfsGlobal = [];
@@ -431,18 +431,19 @@
         return `${año}-W${String(semana).padStart(2, '0')}`;
     }
 
-    // ✅ NUEVO: detecta tipo de archivo (MIME o extensión)
+    // ✅ Detecta tipo de archivo (MIME o extensión)
     function detectarTipoArchivo(file) {
         if (TIPOS_PERMITIDOS[file.type]) return TIPOS_PERMITIDOS[file.type];
         const ext = (file.name.split('.').pop() || '').toLowerCase();
         if (EXT_PERMITIDAS.includes(ext)) {
-            return { ext, icono: ext === 'pdf' ? '📄' : '📊', label: ext === 'pdf' ? 'PDF' : 'Excel' };
+            if (ext === 'pdf') return { ext, icono: '📄', label: 'PDF' };
+            return { ext, icono: '📝', label: 'Word' };
         }
         return null;
     }
 
     function quitarExtension(nombre) {
-        return nombre.replace(/\.(pdf|xlsx?|xls)$/i, '');
+        return nombre.replace(/\.(pdf|docx?)$/i, '');
     }
 
     // ============================================================
@@ -628,12 +629,12 @@
         contenedor.innerHTML = pdfsGlobal.map(pdf => {
             const diasRestantes = diasHastaExpirar(pdf.expira_en);
             const tipo = (pdf.tipo_archivo || 'pdf').toLowerCase();
-            const esExcel = tipo === 'xls' || tipo === 'xlsx';
-            const iconoHTML = esExcel
-                ? `<div class="pdf-icono excel">📊</div>`
+            const esWord = tipo === 'doc' || tipo === 'docx';
+            const iconoHTML = esWord
+                ? `<div class="pdf-icono word">📝</div>`
                 : `<div class="pdf-icono">📄</div>`;
-            const badgeTipo = esExcel
-                ? `<span class="badge-tipo excel">XLS${tipo === 'xlsx' ? 'X' : ''}</span>`
+            const badgeTipo = esWord
+                ? `<span class="badge-tipo word">DOC${tipo === 'docx' ? 'X' : ''}</span>`
                 : `<span class="badge-tipo pdf">PDF</span>`;
 
             let claseCard = 'pdf-card';
@@ -696,7 +697,7 @@
 
         const tipoInfo = detectarTipoArchivo(file);
         if (!tipoInfo) {
-            toast('⚠️ Solo se permiten PDF o Excel (.xls, .xlsx)', 'warning');
+            toast('⚠️ Solo se permiten PDF o Word (.doc, .docx)', 'warning');
             return;
         }
         if (file.size > 10 * 1024 * 1024) {
@@ -828,11 +829,11 @@
     // ARCHIVOS — VER / DESCARGAR / BORRAR
     // ============================================================
     function verArchivo(url, tipo, nombre) {
-        const esExcel = tipo === 'xls' || tipo === 'xlsx';
-        if (esExcel) {
-            // Excel no se previsualiza en navegador → descarga directa
+        const esWord = tipo === 'doc' || tipo === 'docx';
+        if (esWord) {
+            // Word no se previsualiza en navegador → descarga directa
             descargarArchivo(url, nombre, tipo);
-            toast('📊 Excel descargado (no se previsualiza)', 'info');
+            toast('📝 Word descargado (no se previsualiza)', 'info');
         } else {
             window.open(url, '_blank');
         }
@@ -850,7 +851,7 @@
         document.body.removeChild(a);
     }
 
-    // Alias para compatibilidad con llamadas antiguas
+    // Alias para compatibilidad
     function verPDF(url, tipo, nombre) { verArchivo(url, tipo, nombre); }
     function descargarPDF(url, nombre, tipo) { descargarArchivo(url, nombre, tipo); }
 
