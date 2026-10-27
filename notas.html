@@ -191,6 +191,32 @@
             height: 100%; background: #dc2626; width: 0%;
             transition: width 0.2s;
         }
+
+        /* ============================================================
+           IMPRESIÓN
+           ============================================================ */
+        #zona-impresion { display: none; }
+
+        @media print {
+            /* Oculta todo excepto la zona de impresión */
+            body > *:not(#zona-impresion) { display: none !important; }
+            #zona-impresion {
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            @page {
+                margin: 15mm;
+                size: A4;
+            }
+            .impresion-hoja {
+                font-family: 'Georgia', 'Times New Roman', serif;
+                color: #000;
+                font-size: 11pt;
+                line-height: 1.5;
+            }
+            .impresion-hoja .no-imprimir { display: none !important; }
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-24 font-sans">
@@ -324,6 +350,9 @@
                     </select>
                 </div>
                 <div class="flex gap-2 flex-wrap">
+                    <button onclick="imprimirNotas()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs transition-all">
+                        🖨️ Imprimir
+                    </button>
                     <button onclick="copiarTodo()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-2 rounded-lg text-xs transition-all">
                         📋 Copiar todo
                     </button>
@@ -343,6 +372,9 @@
 
     </main>
 
+    <!-- Contenedor oculto que se rellena al imprimir -->
+    <div id="zona-impresion"></div>
+
     <script>
     // ============================================================
     // BLOCK DE NOTAS + HOJAS DE SERVICIO CON EXPIRACIÓN
@@ -358,7 +390,6 @@
         'application/msword': { ext: 'doc', icono: '📝', label: 'Word' },
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { ext: 'docx', icono: '📝', label: 'Word' }
     };
-    // Fallback por extensión (algunos navegadores no dan bien el MIME)
     const EXT_PERMITIDAS = ['pdf', 'doc', 'docx'];
 
     let notasGlobal = [];
@@ -431,7 +462,6 @@
         return `${año}-W${String(semana).padStart(2, '0')}`;
     }
 
-    // ✅ Detecta tipo de archivo (MIME o extensión)
     function detectarTipoArchivo(file) {
         if (TIPOS_PERMITIDOS[file.type]) return TIPOS_PERMITIDOS[file.type];
         const ext = (file.name.split('.').pop() || '').toLowerCase();
@@ -831,7 +861,6 @@
     function verArchivo(url, tipo, nombre) {
         const esWord = tipo === 'doc' || tipo === 'docx';
         if (esWord) {
-            // Word no se previsualiza en navegador → descarga directa
             descargarArchivo(url, nombre, tipo);
             toast('📝 Word descargado (no se previsualiza)', 'info');
         } else {
@@ -851,7 +880,6 @@
         document.body.removeChild(a);
     }
 
-    // Alias para compatibilidad
     function verPDF(url, tipo, nombre) { verArchivo(url, tipo, nombre); }
     function descargarPDF(url, nombre, tipo) { descargarArchivo(url, nombre, tipo); }
 
@@ -1288,6 +1316,192 @@
             btn.innerHTML = '👤 Poner nombre';
             btn.className = 'bg-amber-100 text-amber-800 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-amber-200';
         }
+    }
+
+    // ============================================================
+    // IMPRESIÓN DE NOTAS
+    // ============================================================
+    async function imprimirNotas() {
+        // 1. Fechas disponibles
+        const fechasDisponibles = [...new Set(notasGlobal.map(n => n.fecha || fechaHoy()))]
+            .sort((a, b) => b.localeCompare(a));
+
+        if (fechasDisponibles.length === 0) {
+            toast('No hay notas para imprimir', 'warning');
+            return;
+        }
+
+        // 2. Opciones del selector
+        const opcionesFecha = fechasDisponibles.map(f => {
+            const total = notasGlobal.filter(n => (n.fecha || fechaHoy()) === f).length;
+            return `<option value="${f}">${diaSemana(f)} ${formatearFecha(f)} · ${total} nota${total !== 1 ? 's' : ''}</option>`;
+        }).join('');
+
+        // 3. Diálogo
+        const { value: config } = await Swal.fire({
+            title: '🖨️ Imprimir notas',
+            html: `
+                <div style="text-align:left; font-size:14px;">
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">
+                        📅 Fecha de la reunión
+                    </label>
+                    <select id="print-fecha" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; margin-bottom:14px;">
+                        <option value="TODAS">— Todas las fechas disponibles —</option>
+                        ${opcionesFecha}
+                    </select>
+
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:6px;">
+                        📋 Qué incluir
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; padding:6px 0; cursor:pointer;">
+                        <input type="checkbox" id="print-pendientes" checked style="width:16px; height:16px;">
+                        <span>⏳ Pendientes</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; padding:6px 0; cursor:pointer;">
+                        <input type="checkbox" id="print-hechos" style="width:16px; height:16px;">
+                        <span>✅ Ya hechos</span>
+                    </label>
+
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin:14px 0 6px 0;">
+                        👤 Firmante (opcional)
+                    </label>
+                    <input id="print-firmante" type="text" value="${esc(localStorage.getItem('fredware_jefe_nombre') || '')}"
+                           placeholder="Nombre de quien imprime"
+                           style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px;">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '🖨️ Imprimir',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#059669',
+            preConfirm: () => {
+                const fechaSel = document.getElementById('print-fecha').value;
+                const incluirPendientes = document.getElementById('print-pendientes').checked;
+                const incluirHechos = document.getElementById('print-hechos').checked;
+                const firmante = document.getElementById('print-firmante').value.trim();
+                if (!incluirPendientes && !incluirHechos) {
+                    Swal.showValidationMessage('Selecciona al menos un tipo de nota');
+                    return false;
+                }
+                return { fechaSel, incluirPendientes, incluirHechos, firmante };
+            }
+        });
+
+        if (!config) return;
+
+        // 4. Filtrar
+        let filtradas = [...notasGlobal];
+        if (config.fechaSel !== 'TODAS') {
+            filtradas = filtradas.filter(n => (n.fecha || fechaHoy()) === config.fechaSel);
+        }
+        filtradas = filtradas.filter(n => {
+            if (n.hecho && config.incluirHechos) return true;
+            if (!n.hecho && config.incluirPendientes) return true;
+            return false;
+        });
+
+        if (filtradas.length === 0) {
+            toast('No hay notas con esos filtros para imprimir', 'warning');
+            return;
+        }
+
+        // 5. Agrupar por fecha
+        const grupos = {};
+        filtradas.forEach(n => {
+            const f = n.fecha || fechaHoy();
+            if (!grupos[f]) grupos[f] = [];
+            grupos[f].push(n);
+        });
+        const fechasOrdenadas = Object.keys(grupos).sort((a, b) => b.localeCompare(a));
+
+        fechasOrdenadas.forEach(f => {
+            grupos[f].sort((a, b) => {
+                if (a.urgente !== b.urgente) return a.urgente ? -1 : 1;
+                return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+            });
+        });
+
+        // 6. HTML de impresión
+        const iconosMap = { pedido:'📦', grupo:'👥', alergia:'⚠️', urgente:'🚨', personal:'👤', proveedor:'🏢', llamada:'📞', revisar:'👁️' };
+
+        const seccionesHTML = fechasOrdenadas.map(fecha => {
+            const notasDelDia = grupos[fecha];
+            const totalPend = notasDelDia.filter(n => !n.hecho).length;
+            const totalHechas = notasDelDia.filter(n => n.hecho).length;
+
+            const filasHTML = notasDelDia.map(n => {
+                const tags = (n.etiquetas || []).map(t => iconosMap[t] || '•').join(' ');
+                const check = n.hecho ? '☑' : '☐';
+                const estiloHecho = n.hecho ? 'text-decoration: line-through; color: #888;' : '';
+                const estiloUrgente = n.urgente ? 'border-left: 3px solid #dc2626; padding-left: 8px;' : '';
+                const meta = [];
+                if (tags) meta.push(tags);
+                if (n.autor) meta.push(`👤 ${n.autor}`);
+                if (n.created_at) {
+                    const h = new Date(n.created_at);
+                    meta.push(`🕐 ${pad(h.getHours())}:${pad(h.getMinutes())}`);
+                }
+
+                return `
+                    <div style="display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #e5e5e5; ${estiloUrgente}">
+                        <div style="font-size: 16px; flex-shrink: 0;">${check}</div>
+                        <div style="flex: 1;">
+                            <div style="${estiloHecho} font-size: 11pt;">${esc(n.texto)}</div>
+                            ${meta.length ? `<div style="font-size: 8.5pt; color: #666; margin-top: 3px;">${meta.join(' · ')}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div style="margin-bottom: 24px; page-break-inside: avoid;">
+                    <div style="background: #1e293b; color: white; padding: 8px 14px; border-radius: 6px; font-size: 11pt; font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between;">
+                        <span>📅 ${diaSemana(fecha)} ${formatearFecha(fecha)}</span>
+                        <span style="font-weight: 400; font-size: 9pt;">
+                            ${totalPend} pendiente${totalPend !== 1 ? 's' : ''}${totalHechas ? ` · ${totalHechas} hecha${totalHechas !== 1 ? 's' : ''}` : ''}
+                        </span>
+                    </div>
+                    ${filasHTML}
+                </div>
+            `;
+        }).join('');
+
+        const fechaImpresion = new Date();
+        const ahoraStr = `${pad(fechaImpresion.getDate())}/${pad(fechaImpresion.getMonth() + 1)}/${fechaImpresion.getFullYear()} ${pad(fechaImpresion.getHours())}:${pad(fechaImpresion.getMinutes())}`;
+
+        const html = `
+            <div class="impresion-hoja">
+                <div style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 3px double #1e293b;">
+                    <h1 style="margin: 0; font-size: 18pt; color: #1e293b;">📝 Notas de Reunión</h1>
+                    <p style="margin: 6px 0 0 0; font-size: 10pt; color: #666;">Fredware · Reunión semanal de jefes</p>
+                </div>
+
+                ${seccionesHTML}
+
+                <div style="margin-top: 30px; padding-top: 16px; border-top: 1px solid #ccc; font-size: 9pt; color: #666;">
+                    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <div>Impreso: ${ahoraStr}</div>
+                            ${config.firmante ? `<div style="margin-top: 8px;">Firmante: <strong style="color: #1e293b;">${esc(config.firmante)}</strong></div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div>Total notas: <strong>${filtradas.length}</strong></div>
+                            <div>Pendientes: <strong>${filtradas.filter(n => !n.hecho).length}</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 7. Rellenar y lanzar impresión
+        document.getElementById('zona-impresion').innerHTML = html;
+
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                document.getElementById('zona-impresion').innerHTML = '';
+            }, 1000);
+        }, 200);
     }
 
     // ============================================================
