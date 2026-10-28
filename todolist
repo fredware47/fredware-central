@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎤 Todo List Speech - Fredware</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231e293b'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%23fbbf24' font-family='Arial'%3E🎤%3C/text%3E%3C/svg%3E">
+    <meta name="theme-color" content="#1e293b">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        .tarea-card {
+            background: white; border: 1px solid #e2e8f0;
+            border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+            transition: all 0.2s; position: relative;
+            display: flex; gap: 12px; align-items: flex-start;
+        }
+        .tarea-card:hover { border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .tarea-card.urgente { border-left: 4px solid #dc2626; background: #fef2f2; }
+        .tarea-card.hecha { opacity: 0.55; background: #f8fafc; }
+        .tarea-card.hecha .tarea-texto { text-decoration: line-through; color: #94a3b8; }
+        .tarea-card.pedido { border-left: 4px solid #0ea5e9; background: #f0f9ff; }
+
+        .tarea-check {
+            width: 24px; height: 24px; border-radius: 6px;
+            border: 2px solid #cbd5e1; cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; transition: all 0.15s; background: white;
+            margin-top: 2px;
+        }
+        .tarea-check:hover { border-color: #10b981; }
+        .tarea-check.checked { background: #10b981; border-color: #10b981; color: white; }
+
+        .tarea-contenido { flex: 1; min-width: 0; }
+        .tarea-texto {
+            font-size: 15px; color: #1e293b; line-height: 1.4;
+            word-break: break-word; font-weight: 500;
+        }
+        .tarea-meta {
+            font-size: 11px; color: #94a3b8; margin-top: 6px;
+            display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+        }
+
+        .badge-pedido {
+            display: inline-block; padding: 3px 10px; border-radius: 20px;
+            font-size: 10px; font-weight: 800; letter-spacing: 0.3px;
+            background: #dbeafe; color: #1e40af;
+            text-transform: uppercase;
+        }
+        .badge-urgente {
+            display: inline-block; padding: 3px 10px; border-radius: 20px;
+            font-size: 10px; font-weight: 800; letter-spacing: 0.3px;
+            background: #fee2e2; color: #991b1b;
+            text-transform: uppercase;
+        }
+
+        .btn-icon {
+            background: none; border: none; cursor: pointer;
+            padding: 5px 8px; border-radius: 6px; font-size: 14px;
+            transition: all 0.15s;
+        }
+        .btn-icon:hover { background: #f1f5f9; }
+        .btn-icon.danger:hover { background: #fee2e2; }
+        .btn-icon.success:hover { background: #d1fae5; }
+        .btn-icon.info:hover { background: #dbeafe; }
+
+        .input-rapido {
+            width: 100%; padding: 14px 16px; font-size: 15px;
+            border: 2px solid #cbd5e1; border-radius: 12px;
+            background: #f8fafc; font-family: inherit;
+            transition: all 0.2s;
+        }
+        .input-rapido:focus {
+            outline: none; border-color: #1e293b; background: white;
+            box-shadow: 0 0 0 3px rgba(30,41,59,0.1);
+        }
+
+        /* Botón de micrófono */
+        .btn-micro {
+            width: 54px; height: 54px; border-radius: 50%;
+            border: none; cursor: pointer; font-size: 24px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; flex-shrink: 0;
+            background: #1e293b; color: white;
+            box-shadow: 0 2px 8px rgba(30,41,59,0.3);
+        }
+        .btn-micro:hover { transform: scale(1.05); background: #334155; }
+        .btn-micro.escuchando {
+            background: #dc2626; animation: pulso 1.2s infinite;
+        }
+        .btn-micro.escuchando:hover { background: #b91c1c; }
+        @keyframes pulso {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.6); }
+            50% { box-shadow: 0 0 0 14px rgba(220,38,38,0); }
+        }
+
+        .estado-voz {
+            padding: 10px 14px; border-radius: 10px; font-size: 13px;
+            margin-top: 10px; display: none; text-align: center;
+            font-weight: 600;
+        }
+        .estado-voz.visible { display: block; }
+        .estado-voz.escuchando { background: #fee2e2; color: #991b1b; }
+        .estado-voz.error { background: #fee2e2; color: #991b1b; }
+        .estado-voz.ok { background: #d1fae5; color: #065f46; }
+
+        .transcripcion-interina {
+            font-size: 12px; color: #64748b; font-style: italic;
+            margin-top: 6px; min-height: 16px;
+        }
+
+        /* Vista previa de detección */
+        .preview-item {
+            padding: 10px 12px; border-radius: 10px; margin-top: 8px;
+            font-size: 13px; border-left: 4px solid;
+            animation: fadeIn 0.2s ease;
+        }
+        .preview-item.tarea { background: #f0fdf4; border-color: #10b981; color: #065f46; }
+        .preview-item.pedido { background: #eff6ff; border-color: #0ea5e9; color: #0c4a6e; }
+        .preview-item .preview-titulo { font-weight: 700; margin-bottom: 4px; }
+        .preview-item .preview-detalle { font-size: 12px; opacity: 0.85; line-height: 1.5; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .atag-help {
+            background: #f0f9ff; border-left: 3px solid #0ea5e9;
+            padding: 8px 12px; border-radius: 8px; font-size: 12px;
+            color: #0c4a6e; margin-top: 8px;
+        }
+
+        .dia-separador {
+            background: #1e293b; color: white; padding: 8px 14px;
+            border-radius: 10px; font-weight: 900; font-size: 13px;
+            text-transform: uppercase; letter-spacing: 1px;
+            margin: 16px 0 8px 0; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 6px;
+        }
+        .dia-separador.sin-fecha { background: #64748b; }
+        .dia-separador .contador {
+            background: rgba(255,255,255,0.2); padding: 2px 10px;
+            border-radius: 20px; font-size: 11px; font-weight: 700;
+        }
+
+        .filtro-chip {
+            padding: 6px 14px; border-radius: 20px; border: 1px solid #cbd5e1;
+            background: white; cursor: pointer; font-size: 12px;
+            font-weight: 600; transition: all 0.15s; color: #475569;
+        }
+        .filtro-chip:hover { border-color: #1e293b; }
+        .filtro-chip.active { background: #1e293b; color: white; border-color: #1e293b; }
+
+        /* IMPRESIÓN */
+        #zona-impresion { display: none; }
+        @media print {
+            body > *:not(#zona-impresion) { display: none !important; }
+            #zona-impresion {
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            @page { margin: 15mm; size: A4; }
+            .impresion-hoja {
+                font-family: 'Georgia', 'Times New Roman', serif;
+                color: #000; font-size: 11pt; line-height: 1.5;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-24 font-sans">
+
+    <header class="bg-white border-b border-slate-300 py-4 px-5 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-3xl mx-auto">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <div class="flex items-center space-x-3">
+                    <span class="text-3xl">🎤</span>
+                    <div>
+                        <h1 class="text-lg font-black tracking-tight">TODO LIST SPEECH</h1>
+                        <p class="text-xs text-slate-500 font-bold tracking-wider uppercase">Dicta · Organiza · Imprime</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="btn-usuario" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition-all"></button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto w-full px-4 mt-5 space-y-4">
+
+        <!-- DICTADO POR VOZ -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">🎤 Dicta tus tareas</label>
+
+            <div class="flex gap-3 items-start">
+                <button id="btn-micro" class="btn-micro" onclick="toggleDictado()" title="Pulsa para dictar">
+                    🎤
+                </button>
+                <div class="flex-1">
+                    <textarea
+                        id="input-dictado"
+                        class="input-rapido"
+                        rows="3"
+                        placeholder='Pulsa el micrófono y habla... Ej: "Comprar a Makro atún, llamar al fontanero mañana y revisar la cámara el viernes"'
+                        style="resize: vertical; min-height: 90px;"
+                        oninput="previsualizarDictado()"
+                    ></textarea>
+                    <div id="transcripcion-interina" class="transcripcion-interina"></div>
+                </div>
+            </div>
+
+            <div id="estado-voz" class="estado-voz"></div>
+
+            <div id="preview-deteccion"></div>
+
+            <div class="flex gap-2 mt-3 flex-wrap">
+                <button onclick="procesarDictado()" id="btn-procesar" class="flex-1 min-w-[140px] bg-slate-900 hover:bg-slate-700 text-white font-bold px-4 py-3 rounded-xl shadow-sm transition-all active:scale-95">
+                    ✨ Procesar
+                </button>
+                <button onclick="limpiarDictado()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-3 rounded-xl transition-all text-sm">
+                    🗑️ Limpiar
+                </button>
+            </div>
+
+            <details class="atag-help">
+                <summary style="cursor:pointer; font-weight:700;">💡 Cómo dictar (guía rápida)</summary>
+                <div style="margin-top:8px; line-height:1.8;">
+                    <strong>📝 Tarea normal:</strong><br>
+                    <em>"Llamar al fontanero mañana"</em> → agenda
+                    <br><br>
+                    <strong>🛒 Comando de pedido:</strong><br>
+                    <em>"Comprar a Makro atún"</em> → envía a pedidos: producto <strong>atún</strong>, proveedor <strong>Makro</strong>
+                    <br><br>
+                    <strong>📅 Fechas reconocidas:</strong><br>
+                    hoy, mañana, pasado mañana, lunes…domingo, la semana que viene
+                    <br><br>
+                    <strong>🗣️ Separa tareas con comas o "y":</strong><br>
+                    <em>"Llamar al fontanero y comprar a Makro atún"</em>
+                </div>
+            </details>
+        </div>
+
+        <!-- FILTROS Y ACCIONES -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="text-xs font-bold text-slate-500 uppercase mr-1">Ver:</span>
+                <button class="filtro-chip active" data-filtro="pendientes" onclick="setFiltro('pendientes')">⏳ Pendientes</button>
+                <button class="filtro-chip" data-filtro="todas" onclick="setFiltro('todas')">📋 Todas</button>
+                <button class="filtro-chip" data-filtro="hechas" onclick="setFiltro('hechas')">✅ Hechas</button>
+            </div>
+
+            <div class="flex flex-wrap gap-2 items-center justify-between">
+                <div class="text-xs text-slate-500 font-semibold" id="contador-total"></div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="imprimirAgenda()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs transition-all">
+                        🖨️ Imprimir agenda
+                    </button>
+                    <button onclick="borrarHechas()" class="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-2 rounded-lg text-xs transition-all">
+                        🗑️ Borrar hechas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="lista-tareas">
+            <div class="text-center text-slate-400 py-12 bg-white rounded-2xl border border-slate-200">
+                <div class="text-5xl mb-3">🎤</div>
+                <div class="text-sm font-medium">Dicta tu primera tarea para empezar</div>
+            </div>
+        </div>
+
+        <!-- PEDIDOS ENVIADOS -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    🛒 Pedidos enviados
+                    <span id="contador-pedidos" class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                </h2>
+                <button onclick="borrarPedidosEnviados()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition-all">
+                    🗑️ Limpiar
+                </button>
+            </div>
+            <div id="lista-pedidos" class="space-y-2">
+                <div class="text-center text-slate-400 text-xs py-3">Sin pedidos enviados aún</div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Contenedor oculto para impresión -->
+    <div id="zona-impresion"></div>
+
+    <script>
+    // ============================================================
+    // TODO LIST SPEECH - Fredware
+    // - Agenda por fechas (sin etiquetas)
+    // - Comandos de pedido → enviar a módulo de pedidos
+    // ============================================================
+    const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const STORAGE_KEY = 'fredware_todolist_speech';
+    const STORAGE_PEDIDOS = 'fredware_todolist_pedidos';
+
+    let tareas = [];
+    let pedidosEnviados = [];
+    let filtroActual = 'pendientes';
+    let reconocimiento = null;
+    let escuchando = false;
+
+    // ============================================================
+    // PROVEEDORES CONOCIDOS (para detectar el proveedor del pedido)
+    // ============================================================
+    const PROVEEDORES = [
+        'makro', 'pescasa', 'namastelle', 'galicia', 'frutas pepe',
+        'cash', 'mercado', 'mercadona', 'carrefour', 'dia', 'lidl',
+        'alcampo', 'eroski', 'consum', 'bonpreu', 'caprabo',
+        'carnicas', 'pescaderia', 'verduleria', 'panaderia',
+        'coca cola', 'mahou', 'heineken', 'estrella galicia'
+    ];
+
+    // Palabras que indican pedido
+    const PALABRAS_PEDIDO = [
+        'comprar', 'compra', 'pedir', 'pedido', 'encargar', 'encargo',
+        'reponer', 'reposicion', 'solicitar', 'solicitud', 'adquirir'
+    ];
+
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
+    function toast(msg, tipo='success') {
+        Swal.fire({
+            toast: true, position: 'top-end', icon: tipo,
+            title: msg, showConfirmButton: false, timer: 2500,
+            timerProgressBar: true
+        });
+    }
+    function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function pad(n) { return String(n).padStart(2,'0'); }
+
+    function fechaHoy() {
+        const d = new Date();
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+
+    function sumarDias(fechaStr, dias) {
+        const d = new Date(fechaStr + 'T00:00:00');
+        d.setDate(d.getDate() + dias);
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+
+    function formatearFecha(f) {
+        if (!f) return '';
+        const d = new Date(f + 'T00:00:00');
+        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+    }
+
+    function diaSemana(fechaStr) {
+        if (!fechaStr) return '';
+        const d = new Date(fechaStr + 'T00:00:00');
+        return DIAS[d.getDay()];
+    }
+
+    function normalizar(texto) {
+        return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function guardar() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tareas));
+        localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(pedidosEnviados));
+    }
+
+    function cargar() {
+        try {
+            const d1 = localStorage.getItem(STORAGE_KEY);
+            tareas = d1 ? JSON.parse(d1) : [];
+            const d2 = localStorage.getItem(STORAGE_PEDIDOS);
+            pedidosEnviados = d2 ? JSON.parse(d2) : [];
+        } catch (e) {
+            tareas = [];
+            pedidosEnviados = [];
+        }
+    }
+
+    // ============================================================
+    // DETECCIÓN DE FECHAS
+    // ============================================================
+    function detectarFecha(texto) {
+        const textoNorm = normalizar(texto);
+        const hoy = fechaHoy();
+
+        if (/\bpasado\s+mañana\b/.test(textoNorm)) return { fecha: sumarDias(hoy, 2), coincidencia: 'pasado mañana' };
+        if (/\bmañana\b/.test(textoNorm)) return { fecha: sumarDias(hoy, 1), coincidencia: 'mañana' };
+        if (/\bhoy\b/.test(textoNorm)) return { fecha: hoy, coincidencia: 'hoy' };
+        if (/\bla\s+semana\s+que\s+viene\b/.test(textoNorm)) return { fecha: sumarDias(hoy, 7), coincidencia: 'la semana que viene' };
+
+        const diasMap = {
+            'lunes': 1, 'martes': 2, 'miercoles': 3, 'jueves': 4,
+            'viernes': 5, 'sabado': 6, 'domingo': 0
+        };
+        const hoyDate = new Date(hoy + 'T00:00:00');
+        const diaHoy = hoyDate.getDay();
+
+        for (const [nombre, numDia] of Object.entries(diasMap)) {
+            const regex = new RegExp(`\\b${nombre}\\b`);
+            if (regex.test(textoNorm)) {
+                let diff = (numDia - diaHoy + 7) % 7;
+                if (diff === 0) diff = 7;
+                return { fecha: sumarDias(hoy, diff), coincidencia: nombre };
+            }
+        }
+
+        return { fecha: null, coincidencia: null };
+    }
+
+    // ============================================================
+    // DETECCIÓN DE URGENTE
+    // ============================================================
+    function esUrgente(texto) {
+        const t = normalizar(texto);
+        return ['urgente', 'urgencia', 'corre prisa', 'ya mismo', 'cuanto antes', 'inmediato', 'para ayer'].some(p => t.includes(p));
+    }
+
+    // ============================================================
+    // DETECCIÓN DE COMANDO PEDIDO
+    // Formato esperado: "comprar [a/para/en] PROVEEDOR PRODUCTO"
+    //   o: "pedir PRODUCTO a PROVEEDOR"
+    // Devuelve { esPedido, producto, proveedor, textoOriginal }
+    // ============================================================
+    function detectarPedido(texto) {
+        const textoNorm = normalizar(texto);
+        const palabras = texto.split(/\s+/);
+
+        // Buscar verbo de pedido
+        const tieneVerbo = PALABRAS_PEDIDO.some(p => {
+            const regex = new RegExp(`\\b${p}\\b`);
+            return regex.test(textoNorm);
+        });
+
+        if (!tieneVerbo) return { esPedido: false };
+
+        // Buscar proveedor conocido
+        let proveedorDetectado = null;
+        let proveedorOriginal = null;
+
+        for (const prov of PROVEEDORES) {
+            const regex = new RegExp(`\\b${prov.replace(/\s+/g, '\\s+')}\\b`, 'i');
+            const match = texto.match(regex);
+            if (match) {
+                proveedorDetectado = prov;
+                proveedorOriginal = match[0];
+                break;
+            }
+        }
+
+        if (!proveedorDetectado) return { esPedido: false };
+
+        // Extraer producto: quitar verbo, preposiciones, proveedor y fechas
+        let producto = texto;
+
+        // Quitar verbo inicial
+        for (const p of PALABRAS_PEDIDO) {
+            const regex = new RegExp(`^\\s*${p}\\s+`, 'i');
+            producto = producto.replace(regex, '');
+        }
+
+        // Quitar preposiciones "a", "para", "en", "de", "al", "del"
+        producto = producto.replace(/\b(a|para|en|de|al|del)\s+/gi, ' ');
+
+        // Quitar el nombre del proveedor
+        const regexProv = new RegExp(proveedorOriginal.replace(/\s+/g, '\\s+'), 'gi');
+        producto = producto.replace(regexProv, ' ');
+
+        // Quitar fechas
+        producto = producto
+            .replace(/\b(pasado\s+mañana|la\s+semana\s+que\s+viene|hoy|mañana|lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\b/gi, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        // Capitalizar
+        if (producto) producto = producto.charAt(0).toUpperCase() + producto.slice(1);
+
+        return {
+            esPedido: true,
+            producto: producto || '(sin especificar)',
+            proveedor: proveedorDetectado,
+            proveedorOriginal: proveedorOriginal
+        };
+    }
+
+    // ============================================================
+    // DIVIDIR DICTADO EN TAREAS
+    // ============================================================
+    function dividirEnTareas(texto) {
+        let limpio = texto
+            .replace(/^(apunta|apuntar|añade|añadir|anota|anotar|recuerda|recordar|tengo que|hay que)\s+/i, '')
+            .trim();
+
+        let partes = limpio
+            .split(/[,;]+|\s+y\s+(?=[a-záéíóúñ])/i)
+            .map(p => p.trim())
+            .filter(p => p.length >= 3);
+
+        if (partes.length === 0 && limpio.length >= 3) partes = [limpio];
+
+        return partes.map(p => {
+            let textoLimpio = p
+                .replace(/\b(pasado\s+mañana|la\s+semana\s+que\s+viene|hoy|mañana|lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\b/gi, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (textoLimpio) textoLimpio = textoLimpio.charAt(0).toUpperCase() + textoLimpio.slice(1);
+            return { texto: textoLimpio || p, original: p };
+        }).filter(t => t.texto.length >= 3);
+    }
+
+    // ============================================================
+    // PREVISUALIZACIÓN
+    // ============================================================
+    function previsualizarDictado() {
+        const input = document.getElementById('input-dictado');
+        const preview = document.getElementById('preview-deteccion');
+        const texto = input.value.trim();
+
+        if (!texto || texto.length < 3) {
+            preview.innerHTML = '';
+            return;
+        }
+
+        const partes = dividirEnTareas(texto);
+        if (partes.length === 0) {
+            preview.innerHTML = '';
+            return;
+        }
+
+        const itemsHTML = partes.map(p => {
+            const pedido = detectarPedido(p.original);
+
+            if (pedido.esPedido) {
+                return `
+                    <div class="preview-item pedido">
+                        <div class="preview-titulo">🛒 Se enviará a PEDIDOS</div>
+                        <div class="preview-detalle">
+                            Producto: <strong>${esc(pedido.producto)}</strong><br>
+                            Proveedor: <strong>${esc(pedido.proveedor)}</strong>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const { fecha, coincidencia } = detectarFecha(p.original);
+            const urgente = esUrgente(p.texto);
+
+            return `
+                <div class="preview-item tarea">
+                    <div class="preview-titulo">📝 Irá a la AGENDA</div>
+                    <div class="preview-detalle">
+                        ${urgente ? '🚨 ' : ''}${esc(p.texto)}<br>
+                        ${fecha ? `📅 ${coincidencia} · ${formatearFecha(fecha)}` : '📅 sin fecha'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        preview.innerHTML = itemsHTML;
+    }
+
+    // ============================================================
+    // DICTADO POR VOZ
+    // ============================================================
+    function initReconocimiento() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return null;
+
+        const rec = new SpeechRecognition();
+        rec.lang = 'es-ES';
+        rec.continuous = true;
+        rec.interimResults = true;
+
+        rec.onstart = () => {
+            escuchando = true;
+            actualizarBotonMicro();
+            mostrarEstadoVoz('escuchando', '🎤 Escuchando... habla ahora');
+        };
+
+        rec.onresult = (event) => {
+            let interim = '';
+            let final = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    final += transcript + ' ';
+                } else {
+                    interim += transcript;
+                }
+            }
+
+            if (final) {
+                const input = document.getElementById('input-dictado');
+                input.value = (input.value + ' ' + final).trim();
+                previsualizarDictado();
+            }
+
+            document.getElementById('transcripcion-interina').textContent = interim ? `"${interim}"` : '';
+        };
+
+        rec.onerror = (event) => {
+            let msg = '❌ Error de reconocimiento';
+            if (event.error === 'no-speech') msg = '🔇 No se detectó voz. Inténtalo de nuevo.';
+            else if (event.error === 'audio-capture') msg = '🎤 No se encontró micrófono.';
+            else if (event.error === 'not-allowed') msg = '🚫 Permiso de micrófono denegado.';
+            else if (event.error === 'network') msg = '🌐 Error de red.';
+
+            mostrarEstadoVoz('error', msg);
+            escuchando = false;
+            actualizarBotonMicro();
+        };
+
+        rec.onend = () => {
+            escuchando = false;
+            actualizarBotonMicro();
+            document.getElementById('transcripcion-interina').textContent = '';
+            const estado = document.getElementById('estado-voz');
+            if (estado.classList.contains('escuchando')) {
+                mostrarEstadoVoz('ok', '✅ Dictado detenido');
+                setTimeout(() => estado.classList.remove('visible'), 2000);
+            }
+        };
+
+        return rec;
+    }
+
+    function toggleDictado() {
+        if (!reconocimiento) {
+            reconocimiento = initReconocimiento();
+            if (!reconocimiento) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Navegador no compatible',
+                    html: `
+                        <p>Tu navegador no soporta reconocimiento de voz.</p>
+                        <p style="margin-top:10px; font-size:13px; color:#64748b;">
+                            Prueba con <strong>Chrome</strong>, <strong>Edge</strong> o <strong>Safari</strong>.
+                        </p>
+                        <p style="margin-top:10px; font-size:12px; color:#94a3b8;">
+                            Mientras tanto, puedes escribir directamente en el cuadro de texto.
+                        </p>
+                    `,
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+        }
+
+        if (escuchando) {
+            reconocimiento.stop();
+        } else {
+            try {
+                reconocimiento.start();
+            } catch (e) {
+                console.warn('Error iniciando reconocimiento:', e);
+            }
+        }
+    }
+
+    function actualizarBotonMicro() {
+        const btn = document.getElementById('btn-micro');
+        if (escuchando) {
+            btn.classList.add('escuchando');
+            btn.innerHTML = '⏹️';
+            btn.title = 'Pulsa para detener';
+        } else {
+            btn.classList.remove('escuchando');
+            btn.innerHTML = '🎤';
+            btn.title = 'Pulsa para dictar';
+        }
+    }
+
+    function mostrarEstadoVoz(tipo, mensaje) {
+        const estado = document.getElementById('estado-voz');
+        estado.className = 'estado-voz visible ' + tipo;
+        estado.textContent = mensaje;
+    }
+
+    function limpiarDictado() {
+        document.getElementById('input-dictado').value = '';
+        document.getElementById('transcripcion-interina').textContent = '';
+        document.getElementById('preview-deteccion').innerHTML = '';
+        const estado = document.getElementById('estado-voz');
+        estado.classList.remove('visible');
+    }
+
+    // ============================================================
+    // PROCESAR DICTADO
+    // ============================================================
+    function procesarDictado() {
+        const input = document.getElementById('input-dictado');
+        const texto = input.value.trim();
+
+        if (!texto || texto.length < 3) {
+            toast('Escribe o dicta algo primero', 'warning');
+            return;
+        }
+
+        const partes = dividirEnTareas(texto);
+        if (partes.length === 0) {
+            toast('No se detectaron tareas', 'warning');
+            return;
+        }
+
+        let tareasAñadidas = 0;
+        let pedidosAñadidos = 0;
+
+        partes.forEach(p => {
+            const pedido = detectarPedido(p.original);
+
+            if (pedido.esPedido) {
+                pedidosEnviados.push({
+                    id: Date.now() + Math.random(),
+                    producto: pedido.producto,
+                    proveedor: pedido.proveedor,
+                    textoOriginal: p.original,
+                    enviado: new Date().toISOString()
+                });
+                pedidosAñadidos++;
+                return;
+            }
+
+            const { fecha } = detectarFecha(p.original);
+            const urgente = esUrgente(p.texto);
+
+            tareas.push({
+                id: Date.now() + Math.random(),
+                texto: p.texto,
+                fecha: fecha || null,
+                urgente: urgente,
+                hecha: false,
+                creada: new Date().toISOString()
+            });
+            tareasAñadidas++;
+        });
+
+        guardar();
+        renderTareas();
+        renderPedidos();
+        limpiarDictado();
+
+        const msgs = [];
+        if (tareasAñadidas > 0) msgs.push(`${tareasAñadidas} tarea${tareasAñadidas !== 1 ? 's' : ''} en agenda`);
+        if (pedidosAñadidos > 0) msgs.push(`${pedidosAñadidos} pedido${pedidosAñadidos !== 1 ? 's' : ''} enviado${pedidosAñadidos !== 1 ? 's' : ''}`);
+
+        if (msgs.length > 0) {
+            toast('✅ ' + msgs.join(' · '), 'success');
+        } else {
+            toast('No se pudo procesar nada', 'warning');
+        }
+    }
+
+    // ============================================================
+    // RENDERIZADO DE TAREAS
+    // ============================================================
+    function renderTareas() {
+        const contenedor = document.getElementById('lista-tareas');
+
+        let filtradas = [...tareas];
+        if (filtroActual === 'pendientes') filtradas = filtradas.filter(t => !t.hecha);
+        if (filtroActual === 'hechas') filtradas = filtradas.filter(t => t.hecha);
+
+        const total = tareas.length;
+        const pend = tareas.filter(t => !t.hecha).length;
+        document.getElementById('contador-total').textContent = 
+            `${total} tarea${total !== 1 ? 's' : ''} · ${pend} pendiente${pend !== 1 ? 's' : ''}`;
+
+        if (filtradas.length === 0) {
+            contenedor.innerHTML = `
+                <div class="text-center text-slate-400 py-12 bg-white rounded-2xl border border-slate-200">
+                    <div class="text-5xl mb-3">${filtroActual === 'hechas' ? '✅' : '📭'}</div>
+                    <div class="text-sm font-medium">
+                        ${filtroActual === 'hechas' ? 'No hay tareas completadas' : 'No hay tareas pendientes'}
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        const grupos = {};
+        filtradas.forEach(t => {
+            const key = t.fecha || 'SIN_FECHA';
+            if (!grupos[key]) grupos[key] = [];
+            grupos[key].push(t);
+        });
+
+        const claves = Object.keys(grupos).sort((a, b) => {
+            if (a === 'SIN_FECHA') return 1;
+            if (b === 'SIN_FECHA') return -1;
+            return a.localeCompare(b);
+        });
+
+        contenedor.innerHTML = claves.map(clave => {
+            const tareasDelGrupo = grupos[clave];
+            const pendientes = tareasDelGrupo.filter(t => !t.hecha).length;
+
+            let titulo, claseSep;
+            if (clave === 'SIN_FECHA') {
+                titulo = '📌 Sin fecha';
+                claseSep = 'dia-separador sin-fecha';
+            } else {
+                const dia = diaSemana(clave);
+                const esHoy = clave === fechaHoy();
+                const esMañana = clave === sumarDias(fechaHoy(), 1);
+                let prefijo = '📆';
+                if (esHoy) prefijo = '🔴 HOY';
+                else if (esMañana) prefijo = '🟡 MAÑANA';
+                titulo = prefijo === '📆' ? `📆 ${dia} ${formatearFecha(clave)}` : `${prefijo} · ${formatearFecha(clave)}`;
+                claseSep = 'dia-separador';
+            }
+
+            tareasDelGrupo.sort((a, b) => {
+                if (a.urgente !== b.urgente) return a.urgente ? -1 : 1;
+                return new Date(a.creada) - new Date(b.creada);
+            });
+
+            return `
+                <div class="${claseSep}">
+                    <span>${titulo}</span>
+                    <span class="contador">${pendientes} pendiente${pendientes !== 1 ? 's' : ''}</span>
+                </div>
+                ${tareasDelGrupo.map(t => renderTarea(t)).join('')}
+            `;
+        }).join('');
+    }
+
+    function renderTarea(t) {
+        const clases = ['tarea-card'];
+        if (t.urgente) clases.push('urgente');
+        if (t.hecha) clases.push('hecha');
+
+        return `
+            <div class="${clases.join(' ')}">
+                <div class="tarea-check ${t.hecha ? 'checked' : ''}" onclick="toggleTarea(${t.id})" title="${t.hecha ? 'Marcar pendiente' : 'Marcar hecha'}">
+                    ${t.hecha ? '✓' : ''}
+                </div>
+                <div class="tarea-contenido">
+                    <div class="tarea-texto">${t.urgente ? '🚨 ' : ''}${esc(t.texto)}</div>
+                    <div class="tarea-meta">
+                        <div style="margin-left:auto; display:flex; gap:2px;">
+                            <button class="btn-icon" onclick="editarTarea(${t.id})" title="Editar">✏️</button>
+                            <button class="btn-icon danger" onclick="borrarTarea(${t.id})" title="Borrar">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ============================================================
+    // RENDERIZADO DE PEDIDOS
+    // ============================================================
+    function renderPedidos() {
+        const contenedor = document.getElementById('lista-pedidos');
+        document.getElementById('contador-pedidos').textContent = pedidosEnviados.length;
+
+        if (pedidosEnviados.length === 0) {
+            contenedor.innerHTML = '<div class="text-center text-slate-400 text-xs py-3">Sin pedidos enviados aún</div>';
+            return;
+        }
+
+        contenedor.innerHTML = pedidosEnviados.slice().reverse().map(p => {
+            const fecha = new Date(p.enviado);
+            const hora = `${pad(fecha.getHours())}:${pad(fecha.getMinutes())}`;
+            return `
+                <div style="background:#f0f9ff; border:1px solid #bae6fd; border-left:4px solid #0ea5e9; border-radius:10px; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+                    <div style="font-size:22px;">🛒</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:700; font-size:13px; color:#0c4a6e;">
+                            ${esc(p.producto)}
+                        </div>
+                        <div style="font-size:11px; color:#0369a1; margin-top:2px;">
+                            🏢 ${esc(p.proveedor)} · 🕐 ${hora}
+                        </div>
+                    </div>
+                    <button class="btn-icon danger" onclick="borrarPedido(${p.id})" title="Quitar de la lista">🗑️</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ============================================================
+    // ACCIONES SOBRE TAREAS
+    // ============================================================
+    function toggleTarea(id) {
+        const t = tareas.find(x => x.id === id);
+        if (!t) return;
+        t.hecha = !t.hecha;
+        guardar();
+        renderTareas();
+    }
+
+    async function editarTarea(id) {
+        const t = tareas.find(x => x.id === id);
+        if (!t) return;
+
+        const { value: formData } = await Swal.fire({
+            title: '✏️ Editar tarea',
+            html: `
+                <div style="text-align:left; font-size:14px;">
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Texto</label>
+                    <textarea id="edit-texto" rows="3" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; margin-bottom:12px;">${esc(t.texto)}</textarea>
+
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">Fecha</label>
+                    <input id="edit-fecha" type="date" value="${t.fecha || ''}" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; margin-bottom:12px;">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '💾 Guardar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#1e293b',
+            preConfirm: () => ({
+                texto: document.getElementById('edit-texto').value.trim(),
+                fecha: document.getElementById('edit-fecha').value || null
+            })
+        });
+
+        if (!formData) return;
+        if (!formData.texto) {
+            toast('El texto no puede estar vacío', 'warning');
+            return;
+        }
+
+        t.texto = formData.texto;
+        t.fecha = formData.fecha;
+        t.urgente = esUrgente(t.texto);
+        guardar();
+        renderTareas();
+        toast('✅ Tarea actualizada');
+    }
+
+    async function borrarTarea(id) {
+        const ok = await Swal.fire({
+            title: '¿Borrar esta tarea?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!ok.isConfirmed) return;
+
+        tareas = tareas.filter(t => t.id !== id);
+        guardar();
+        renderTareas();
+        toast('🗑️ Tarea borrada', 'info');
+    }
+
+    async function borrarHechas() {
+        const hechas = tareas.filter(t => t.hecha);
+        if (hechas.length === 0) {
+            toast('No hay tareas hechas', 'warning');
+            return;
+        }
+
+        const ok = await Swal.fire({
+            title: `¿Borrar ${hechas.length} tarea${hechas.length !== 1 ? 's' : ''} hecha${hechas.length !== 1 ? 's' : ''}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!ok.isConfirmed) return;
+
+        tareas = tareas.filter(t => !t.hecha);
+        guardar();
+        renderTareas();
+        toast(`🗑️ ${hechas.length} borrada${hechas.length !== 1 ? 's' : ''}`, 'info');
+    }
+
+    async function borrarPedidosEnviados() {
+        if (pedidosEnviados.length === 0) {
+            toast('No hay pedidos enviados', 'warning');
+            return;
+        }
+
+        const ok = await Swal.fire({
+            title: `¿Limpiar ${pedidosEnviados.length} pedido${pedidosEnviados.length !== 1 ? 's' : ''}?`,
+            text: 'Solo se borra de esta lista. Los pedidos ya están en el módulo de pedidos.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'Sí, limpiar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!ok.isConfirmed) return;
+
+        pedidosEnviados = [];
+        guardar();
+        renderPedidos();
+        toast('🗑️ Lista de pedidos limpia', 'info');
+    }
+
+    async function borrarPedido(id) {
+        pedidosEnviados = pedidosEnviados.filter(p => p.id !== id);
+        guardar();
+        renderPedidos();
+        toast('🗑️ Pedido quitado de la lista', 'info');
+    }
+
+    function setFiltro(filtro) {
+        filtroActual = filtro;
+        document.querySelectorAll('[data-filtro]').forEach(b => {
+            b.classList.toggle('active', b.dataset.filtro === filtro);
+        });
+        renderTareas();
+    }
+
+    // ============================================================
+    // IMPRESIÓN DE AGENDA
+    // ============================================================
+    async function imprimirAgenda() {
+        if (tareas.length === 0) {
+            toast('No hay tareas para imprimir', 'warning');
+            return;
+        }
+
+        const { value: config } = await Swal.fire({
+            title: '🖨️ Imprimir agenda',
+            html: `
+                <div style="text-align:left; font-size:14px;">
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:6px;">
+                        📋 Qué incluir
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; padding:6px 0; cursor:pointer;">
+                        <input type="checkbox" id="print-pendientes" checked style="width:16px; height:16px;">
+                        <span>⏳ Pendientes</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; padding:6px 0; cursor:pointer;">
+                        <input type="checkbox" id="print-hechas" style="width:16px; height:16px;">
+                        <span>✅ Ya hechas</span>
+                    </label>
+
+                    <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin:14px 0 6px 0;">
+                        👤 Firmante (opcional)
+                    </label>
+                    <input id="print-firmante" type="text" value="${esc(localStorage.getItem('fredware_usuario') || '')}"
+                           placeholder="Nombre"
+                           style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px;">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '🖨️ Imprimir',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#059669',
+            preConfirm: () => {
+                const incluirPend = document.getElementById('print-pendientes').checked;
+                const incluirHechas = document.getElementById('print-hechas').checked;
+                const firmante = document.getElementById('print-firmante').value.trim();
+                if (!incluirPend && !incluirHechas) {
+                    Swal.showValidationMessage('Selecciona al menos un tipo de tarea');
+                    return false;
+                }
+                return { incluirPend, incluirHechas, firmante };
+            }
+        });
+
+        if (!config) return;
+
+        let filtradas = tareas.filter(t => {
+            if (t.hecha && config.incluirHechas) return true;
+            if (!t.hecha && config.incluirPend) return true;
+            return false;
+        });
+
+        if (filtradas.length === 0) {
+            toast('No hay tareas con esos filtros', 'warning');
+            return;
+        }
+
+        const grupos = {};
+        filtradas.forEach(t => {
+            const key = t.fecha || 'SIN_FECHA';
+            if (!grupos[key]) grupos[key] = [];
+            grupos[key].push(t);
+        });
+
+        const claves = Object.keys(grupos).sort((a, b) => {
+            if (a === 'SIN_FECHA') return 1;
+            if (b === 'SIN_FECHA') return -1;
+            return a.localeCompare(b);
+        });
+
+        const seccionesHTML = claves.map(clave => {
+            const items = grupos[clave];
+            const totalPend = items.filter(t => !t.hecha).length;
+            const totalHechas = items.filter(t => t.hecha).length;
+
+            let titulo;
+            if (clave === 'SIN_FECHA') {
+                titulo = '📌 Sin fecha';
+            } else {
+                titulo = `📅 ${diaSemana(clave)} ${formatearFecha(clave)}`;
+            }
+
+            const filasHTML = items.map(t => {
+                const check = t.hecha ? '☑' : '☐';
+                const estiloHecho = t.hecha ? 'text-decoration: line-through; color: #888;' : '';
+                const estiloUrgente = t.urgente ? 'border-left: 3px solid #dc2626; padding-left: 8px;' : '';
+                return `
+                    <div style="display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #e5e5e5; ${estiloUrgente}">
+                        <div style="font-size: 16px; flex-shrink: 0;">${check}</div>
+                        <div style="flex: 1;">
+                            <div style="${estiloHecho} font-size: 11pt;">${esc(t.texto)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div style="margin-bottom: 24px; page-break-inside: avoid;">
+                    <div style="background: #1e293b; color: white; padding: 8px 14px; border-radius: 6px; font-size: 11pt; font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between;">
+                        <span>${titulo}</span>
+                        <span style="font-weight: 400; font-size: 9pt;">
+                            ${totalPend} pendiente${totalPend !== 1 ? 's' : ''}${totalHechas ? ` · ${totalHechas} hecha${totalHechas !== 1 ? 's' : ''}` : ''}
+                        </span>
+                    </div>
+                    ${filasHTML}
+                </div>
+            `;
+        }).join('');
+
+        const ahora = new Date();
+        const ahoraStr = `${pad(ahora.getDate())}/${pad(ahora.getMonth()+1)}/${ahora.getFullYear()} ${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
+
+        const html = `
+            <div class="impresion-hoja">
+                <div style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 3px double #1e293b;">
+                    <h1 style="margin: 0; font-size: 18pt; color: #1e293b;">🎤 Agenda de Tareas</h1>
+                    <p style="margin: 6px 0 0 0; font-size: 10pt; color: #666;">Fredware · Todo List Speech</p>
+                </div>
+
+                ${seccionesHTML}
+
+                <div style="margin-top: 30px; padding-top: 16px; border-top: 1px solid #ccc; font-size: 9pt; color: #666;">
+                    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <div>Impreso: ${ahoraStr}</div>
+                            ${config.firmante ? `<div style="margin-top: 8px;">Firmante: <strong style="color: #1e293b;">${esc(config.firmante)}</strong></div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div>Total tareas: <strong>${filtradas.length}</strong></div>
+                            <div>Pendientes: <strong>${filtradas.filter(t => !t.hecha).length}</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('zona-impresion').innerHTML = html;
+
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                document.getElementById('zona-impresion').innerHTML = '';
+            }, 1000);
+        }, 200);
+    }
+
+    // ============================================================
+    // USUARIO
+    // ============================================================
+    function editarUsuario() {
+        const actual = localStorage.getItem('fredware_usuario') || '';
+        const nuevo = prompt('👤 ¿Quién eres?', actual);
+        if (nuevo !== null && nuevo.trim()) {
+            localStorage.setItem('fredware_usuario', nuevo.trim());
+            actualizarBotonUsuario();
+            toast('✅ Guardado como: ' + nuevo.trim());
+        }
+    }
+
+    function actualizarBotonUsuario() {
+        const nombre = localStorage.getItem('fredware_usuario') || '';
+        const btn = document.getElementById('btn-usuario');
+        if (nombre) {
+            btn.innerHTML = '👤 ' + esc(nombre);
+            btn.className = 'bg-emerald-100 text-emerald-800 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-emerald-200';
+        } else {
+            btn.innerHTML = '👤 Poner nombre';
+            btn.className = 'bg-amber-100 text-amber-800 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-amber-200';
+        }
+    }
+
+    // ============================================================
+    // INICIALIZACIÓN
+    // ============================================================
+    document.getElementById('btn-usuario').addEventListener('click', editarUsuario);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        actualizarBotonUsuario();
+        cargar();
+        renderTareas();
+        renderPedidos();
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            mostrarEstadoVoz('error', '⚠️ Tu navegador no soporta dictado por voz. Usa Chrome, Edge o Safari. Puedes escribir manualmente.');
+        } else {
+            reconocimiento = initReconocimiento();
+        }
+    });
+    </script>
+</body>
+</html>
